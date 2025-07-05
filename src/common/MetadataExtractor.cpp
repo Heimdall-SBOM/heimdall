@@ -257,8 +257,14 @@ bool MetadataExtractor::isELF(const std::string& filePath)
         return false;
     }
     
-    char magic[4];
+    char magic[4] = {0}; // Initialize to zero
     file.read(magic, 4);
+    
+    // Check if we actually read 4 bytes
+    if (file.gcount() != 4)
+    {
+        return false;
+    }
     
     return (magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F');
 }
@@ -271,8 +277,15 @@ bool MetadataExtractor::isMachO(const std::string& filePath)
     {
         return false;
     }
-    uint32_t magic;
+    uint32_t magic = 0; // Initialize to zero
     file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    
+    // Check if we actually read the expected number of bytes
+    if (file.gcount() != sizeof(magic))
+    {
+        return false;
+    }
+    
     return (magic == MH_MAGIC || magic == MH_MAGIC_64 || 
             magic == MH_CIGAM || magic == MH_CIGAM_64 ||
             magic == FAT_MAGIC || magic == FAT_CIGAM);
@@ -290,7 +303,7 @@ bool MetadataExtractor::isPE(const std::string& filePath)
     }
     
     // Check for PE magic number (MZ)
-    char magic[2];
+    char magic[2] = {0}; // Initialize to zero
     file.read(magic, 2);
     if (file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z') {
         return true;
@@ -307,7 +320,7 @@ bool MetadataExtractor::isArchive(const std::string& filePath)
     }
     
     // Check for Unix archive magic number (!<arch>)
-    char magic[8];
+    char magic[8] = {0}; // Initialize to zero
     file.read(magic, 8);
     if (file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0) {
         return true;
@@ -418,8 +431,16 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath)
     {
         return false;
     }
-    char magic[16];
+    char magic[16] = {0}; // Initialize to zero
     file.read(magic, sizeof(magic));
+    
+    // Check if we actually read enough bytes for the smallest magic number check
+    if (file.gcount() < 4)
+    {
+        fileFormat = "Unknown";
+        return false;
+    }
+    
     if (magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F')
     {
         fileFormat = "ELF";
@@ -430,19 +451,22 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath)
         fileFormat = "PE";
         return true;
     }
-    else if (strncmp(magic, "!<arch>", 7) == 0)
+    else if (file.gcount() >= 8 && strncmp(magic, "!<arch>", 7) == 0)
     {
         fileFormat = "Archive";
         return true;
     }
 #ifdef __APPLE__
-    uint32_t* magic32 = reinterpret_cast<uint32_t*>(magic);
-    if (*magic32 == MH_MAGIC || *magic32 == MH_MAGIC_64 || 
-        *magic32 == MH_CIGAM || *magic32 == MH_CIGAM_64 ||
-        *magic32 == FAT_MAGIC || *magic32 == FAT_CIGAM)
+    if (file.gcount() >= 4)
     {
-        fileFormat = "Mach-O";
-        return true;
+        uint32_t* magic32 = reinterpret_cast<uint32_t*>(magic);
+        if (*magic32 == MH_MAGIC || *magic32 == MH_MAGIC_64 || 
+            *magic32 == MH_CIGAM || *magic32 == MH_CIGAM_64 ||
+            *magic32 == FAT_MAGIC || *magic32 == FAT_CIGAM)
+        {
+            fileFormat = "Mach-O";
+            return true;
+        }
     }
 #endif
     fileFormat = "Unknown";
@@ -459,8 +483,14 @@ bool isELF(const std::string& filePath)
         return false;
     }
     
-    char magic[4];
+    char magic[4] = {0}; // Initialize to zero
     file.read(magic, 4);
+    
+    // Check if we actually read 4 bytes
+    if (file.gcount() != 4)
+    {
+        return false;
+    }
     
     return (magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F');
 }
@@ -472,8 +502,15 @@ bool isMachO(const std::string& filePath)
     if (!file.is_open()) {
         return false;
     }
-    uint32_t magic;
+    uint32_t magic = 0; // Initialize to zero
     file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    
+    // Check if we actually read the expected number of bytes
+    if (file.gcount() != sizeof(magic))
+    {
+        return false;
+    }
+    
     return (magic == MH_MAGIC || magic == MH_MAGIC_64 || 
             magic == MH_CIGAM || magic == MH_CIGAM_64 ||
             magic == FAT_MAGIC || magic == FAT_CIGAM);
