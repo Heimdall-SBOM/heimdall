@@ -20,11 +20,15 @@ endif()
 add_executable(heimdall_tests
     main.cpp
     test_utils.cpp
+    test_utils_extended.cpp
     test_component_info.cpp
     test_sbom_generator.cpp
     test_metadata_extractor.cpp
+    test_metadata_extractor_extended.cpp
     test_linux_support.cpp
     test_package_manager_and_archive.cpp
+    test_dwarf_extractor.cpp
+    test_plugin_interface.cpp
 )
 
 # Link GoogleTest and other dependencies

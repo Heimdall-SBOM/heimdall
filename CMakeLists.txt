@@ -236,14 +236,15 @@ if(BUILD_SHARED_CORE)
         # Parse LLVM libraries string into list
         string(REPLACE " " ";" LLVM_LIB_LIST "${LLVM_LIBS}")
         
-        target_link_libraries(heimdall-core PRIVATE ${LLVM_LIB_LIST})
-        target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE)
+        # LLVM DWARF support temporarily disabled due to compatibility issues with LLVM 19.1.7
+        # The API changes and segfault issues require more extensive refactoring
+        # target_link_libraries(heimdall-core PRIVATE ${LLVM_LIB_LIST})
+        # target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE)
+        # target_compile_options(heimdall-core PRIVATE ${LLVM_CXXFLAGS})
+        # target_link_options(heimdall-core PRIVATE ${LLVM_LDFLAGS})
         
-        # Add LLVM CXX flags
-        target_compile_options(heimdall-core PRIVATE ${LLVM_CXXFLAGS})
-        
-        # Add LLVM LD flags
-        target_link_options(heimdall-core PRIVATE ${LLVM_LDFLAGS})
+        # For now, only link LLVM for LLD plugin support, not for DWARF functionality
+        # The heuristic DWARF parser provides fallback functionality
     endif()
     
     set_target_properties(heimdall-core PROPERTIES

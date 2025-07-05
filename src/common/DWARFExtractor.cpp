@@ -36,71 +36,10 @@ DWARFExtractor::~DWARFExtractor() = default;
 
 bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) {
 #ifdef LLVM_DWARF_AVAILABLE
-    try {
-        if (!LLVM_DWARF_AVAILABLE) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: LLVM DWARF not available" << std::endl;
-#endif
-            return false;
-        }
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: About to create DWARF context" << std::endl;
-#endif
-        if (!createDWARFContext(filePath)) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: Failed to create DWARF context for " << filePath << std::endl;
-#endif
-            return false;
-        }
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: DWARF context created, about to get compile units" << std::endl;
-#endif
-        try {
-            auto compileUnits = context_->compile_units();
-            for (const auto& unit : compileUnits) {
-                if (!unit) continue;
-                llvm::DWARFDie die = unit->getUnitDIE();
-                if (die.isValid()) {
-                    extractSourceFilesFromDie(die, sourceFiles);
-                }
-            }
-            for (const auto& unit : compileUnits) {
-                if (!unit) continue;
-                const llvm::DWARFDebugLine::LineTable* lineTable = context_->getLineTableForUnit(unit.get());
-                if (lineTable) {
-                    for (const auto& row : lineTable->Rows) {
-                        if (row.File > 0 && lineTable->hasFileAtIndex(row.File)) {
-                            std::string fileName;
-                            if (lineTable->getFileNameByIndex(row.File, "", 
-                                llvm::DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, fileName)) {
-                                if (!fileName.empty() && std::find(sourceFiles.begin(), sourceFiles.end(), fileName) == sourceFiles.end()) {
-                                    sourceFiles.push_back(fileName);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (!sourceFiles.empty()) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-                std::cout << "DWARFExtractor: Successfully extracted " << sourceFiles.size() << " source files using LLVM DWARF" << std::endl;
-#endif
-                return true;
-            }
-        } catch (...) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: LLVM DWARF parsing failed, falling back to heuristic parser" << std::endl;
-#endif
-        }
-    } catch (const std::exception& e) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception during LLVM DWARF extraction: " << e.what() << std::endl;
-#endif
-    } catch (...) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Unknown exception during LLVM DWARF extraction" << std::endl;
-#endif
-    }
+    // Temporarily disable LLVM DWARF due to compatibility issues with LLVM 19.1.7
+    // The API changes and segfault issues require more extensive refactoring
+    (void)filePath;
+    (void)sourceFiles;
 #endif
     // Fallback to heuristic parsing
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -111,29 +50,10 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector
 
 bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) {
 #ifdef LLVM_DWARF_AVAILABLE
-    try {
-        if (!createDWARFContext(filePath)) {
-            return false;
-        }
-        compileUnits.clear();
-        for (const auto& unit : context_->compile_units()) {
-            if (unit) {
-                llvm::DWARFDie die = unit->getUnitDIE();
-                if (die.isValid()) {
-                    extractCompileUnitFromDie(die, compileUnits);
-                }
-            }
-        }
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Extracted " << compileUnits.size() << " compile units from " << filePath << std::endl;
-#endif
-        return true;
-    } catch (const std::exception& e) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception during compile unit extraction: " << e.what() << std::endl;
-#endif
-        return false;
-    }
+    // Temporarily disable LLVM DWARF due to compatibility issues with LLVM 19.1.7
+    (void)filePath;
+    (void)compileUnits;
+    return false;
 #else
     (void)filePath;
     (void)compileUnits;
@@ -143,29 +63,10 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vecto
 
 bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<std::string>& functions) {
 #ifdef LLVM_DWARF_AVAILABLE
-    try {
-        if (!createDWARFContext(filePath)) {
-            return false;
-        }
-        functions.clear();
-        for (const auto& unit : context_->compile_units()) {
-            if (unit) {
-                llvm::DWARFDie die = unit->getUnitDIE();
-                if (die.isValid()) {
-                    extractFunctionsFromDie(die, functions);
-                }
-            }
-        }
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Extracted " << functions.size() << " functions from " << filePath << std::endl;
-#endif
-        return true;
-    } catch (const std::exception& e) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception during function extraction: " << e.what() << std::endl;
-#endif
-        return false;
-    }
+    // Temporarily disable LLVM DWARF due to compatibility issues with LLVM 19.1.7
+    (void)filePath;
+    (void)functions;
+    return false;
 #else
     (void)filePath;
     (void)functions;
@@ -175,40 +76,10 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<s
 
 bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<std::string>& lineInfo) {
 #ifdef LLVM_DWARF_AVAILABLE
-    try {
-        if (!createDWARFContext(filePath)) {
-            return false;
-        }
-        lineInfo.clear();
-        for (const auto& unit : context_->compile_units()) {
-            if (unit) {
-                const llvm::DWARFDebugLine::LineTable* lineTable = context_->getLineTableForUnit(unit.get());
-                if (lineTable) {
-                    for (const auto& row : lineTable->Rows) {
-                        if (row.Line > 0 && row.File > 0) {
-                            std::string fileName;
-                            if (lineTable->getFileNameByIndex(row.File, "", 
-                                llvm::DILineInfoSpecifier::FileLineInfoKind::AbsoluteFilePath, fileName)) {
-                                std::string info = fileName + ":" + std::to_string(row.Line);
-                                if (std::find(lineInfo.begin(), lineInfo.end(), info) == lineInfo.end()) {
-                                    lineInfo.push_back(info);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Extracted " << lineInfo.size() << " line info entries from " << filePath << std::endl;
-#endif
-        return true;
-    } catch (const std::exception& e) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception during line info extraction: " << e.what() << std::endl;
-#endif
-        return false;
-    }
+    // Temporarily disable LLVM DWARF due to compatibility issues with LLVM 19.1.7
+    (void)filePath;
+    (void)lineInfo;
+    return false;
 #else
     (void)filePath;
     (void)lineInfo;
@@ -218,17 +89,10 @@ bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<st
 
 bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) {
 #ifdef LLVM_DWARF_AVAILABLE
-    try {
-        if (!createDWARFContext(filePath)) {
-            return false;
-        }
-        return !context_->compile_units().empty();
-    } catch (const std::exception& e) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception checking DWARF info: " << e.what() << std::endl;
-#endif
-        return false;
-    }
+    // Temporarily disable LLVM DWARF due to compatibility issues with LLVM 19.1.7
+    // The API changes and segfault issues require more extensive refactoring
+    (void)filePath;
+    return false;
 #else
     (void)filePath;
     return false;
@@ -241,6 +105,24 @@ bool DWARFExtractor::createDWARFContext(const std::string& filePath) {
 #ifdef HEIMDALL_DEBUG_ENABLED
         std::cout << "DWARFExtractor: Creating DWARF context for: " << filePath << std::endl;
 #endif
+        
+        // Check if file exists and is readable
+        if (filePath.empty()) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+            std::cout << "DWARFExtractor: File path is empty" << std::endl;
+#endif
+            return false;
+        }
+        
+        std::ifstream testFile(filePath);
+        if (!testFile.good()) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+            std::cout << "DWARFExtractor: File is not readable: " << filePath << std::endl;
+#endif
+            return false;
+        }
+        testFile.close();
+        
         // Create memory buffer from file
         auto bufferOrErr = llvm::MemoryBuffer::getFile(filePath);
         if (!bufferOrErr) {
@@ -260,10 +142,61 @@ bool DWARFExtractor::createDWARFContext(const std::string& filePath) {
             buffer_.reset();
             return false;
         }
+        
+        // Additional safety check - ensure object file is valid
+        if (!objOrErr.get()) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+            std::cout << "DWARFExtractor: Object file is null after creation" << std::endl;
+#endif
+            buffer_.reset();
+            return false;
+        }
+        
         objectFile_ = std::move(objOrErr.get());
 
-        // Create DWARF context
-        context_ = llvm::DWARFContext::create(*objectFile_);
+        // Create DWARF context with new LLVM 19.1.7 API
+        try {
+            auto newContext = llvm::DWARFContext::create(*objectFile_, 
+                                                        llvm::DWARFContext::ProcessDebugRelocations::Process,
+                                                        nullptr, "", 
+                                                        [](llvm::Error) {}, // RecoverableErrorHandler - ignore errors
+                                                        [](llvm::Error) {}, // WarningHandler - ignore warnings
+                                                        false); // ThreadSafe - single-threaded for now
+            
+            // Additional safety check - ensure the context is valid
+            if (!newContext) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+                std::cout << "DWARFExtractor: DWARF context creation returned null" << std::endl;
+#endif
+                context_.reset(); // Ensure context is reset
+                buffer_.reset();
+                objectFile_.reset();
+                return false;
+            }
+            
+                    // Test if the context is usable by trying to access compile units
+        try {
+            auto testUnits = newContext->compile_units();
+            // If we can access compile units, the context is valid
+            context_ = std::move(newContext);
+        } catch (...) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+            std::cout << "DWARFExtractor: DWARF context is not usable" << std::endl;
+#endif
+            context_.reset(); // Ensure context is reset
+            buffer_.reset();
+            objectFile_.reset();
+            return false;
+        }
+        } catch (...) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+            std::cout << "DWARFExtractor: Exception during DWARF context creation" << std::endl;
+#endif
+            context_.reset(); // Ensure context is reset
+            buffer_.reset();
+            objectFile_.reset();
+            return false;
+        }
 #ifdef HEIMDALL_DEBUG_ENABLED
         if (context_) {
             std::cout << "DWARFExtractor: Successfully created DWARF context" << std::endl;
@@ -271,7 +204,15 @@ bool DWARFExtractor::createDWARFContext(const std::string& filePath) {
             std::cout << "DWARFExtractor: Failed to create DWARF context" << std::endl;
         }
 #endif
-        return static_cast<bool>(context_);
+        
+        // Additional safety check - ensure context is valid
+        if (!context_) {
+            buffer_.reset();
+            objectFile_.reset();
+            return false;
+        }
+        
+        return true;
     } catch (const std::exception& e) {
 #ifdef HEIMDALL_DEBUG_ENABLED
         std::cout << "DWARFExtractor: Exception creating DWARF context: " << e.what() << std::endl;
@@ -373,6 +314,7 @@ void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die, std::vec
         extractFunctionsFromDie(child, functions);
     }
 }
+#endif
 
 bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath, std::vector<std::string>& sourceFiles) {
 #ifdef __linux__
@@ -462,6 +404,5 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath, st
     return false;
 #endif
 }
-#endif
 
 } // namespace heimdall 

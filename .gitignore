@@ -74,4 +74,12 @@ __pycache__/
 *.jar
 
 # Ignore large files (over 1MB) that might be accidentally committed
-# (This is a safety measure - adjust size as needed) 
+# (This is a safety measure - adjust size as needed)
+
+# Ignore coverage and profiling files
+*.gcda
+*.gcno
+*.gcov
+coverage.info
+*.prof
+coverage/ 

@@ -7,6 +7,7 @@
 #include <cstring>
 #include <regex>
 #include <algorithm>
+#include <filesystem>
 
 #ifdef __linux__
 #include <elf.h>
@@ -41,80 +42,85 @@ MetadataExtractor::~MetadataExtractor() = default;
 
 bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 {
-    if (!heimdall::Utils::fileExists(component.filePath))
-    {
-        heimdall::Utils::errorPrint("File does not exist: " + component.filePath);
+    try {
+        if (!heimdall::Utils::fileExists(component.filePath))
+        {
+            heimdall::Utils::errorPrint("File does not exist: " + component.filePath);
+            return false;
+        }
+        
+        // Detect file format
+        if (!pImpl->detectFileFormat(component.filePath))
+        {
+            heimdall::Utils::warningPrint("Could not detect file format for: " + component.filePath);
+        }
+        
+        bool success = true;
+        
+        // Extract basic metadata
+        success &= extractVersionInfo(component);
+        success &= extractLicenseInfo(component);
+        success &= extractSymbolInfo(component);
+        success &= extractSectionInfo(component);
+        
+        if (pImpl->extractDebugInfo)
+        {
+            success &= extractDebugInfo(component);
+        }
+        
+        success &= extractDependencyInfo(component);
+        
+        // Enhanced package manager detection and metadata extraction
+        bool packageManagerDetected = false;
+        
+        // Try RPM detection
+        if (heimdall::MetadataHelpers::detectRpmMetadata(component)) {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected RPM package metadata");
+        }
+        
+        // Try Debian detection
+        if (!packageManagerDetected && heimdall::MetadataHelpers::detectDebMetadata(component)) {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Debian package metadata");
+        }
+        
+        // Try Conan detection
+        if (!packageManagerDetected && heimdall::MetadataHelpers::detectConanMetadata(component)) {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Conan package metadata");
+        }
+        
+        // Try vcpkg detection
+        if (!packageManagerDetected && heimdall::MetadataHelpers::detectVcpkgMetadata(component)) {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected vcpkg package metadata");
+        }
+        
+        // Try Spack detection
+        if (!packageManagerDetected && heimdall::MetadataHelpers::detectSpackMetadata(component)) {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Spack package metadata");
+        }
+        
+        // Fallback to generic package manager detection
+        if (!packageManagerDetected) {
+            std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
+            if (packageManager == "conan") {
+                extractConanMetadata(component);
+            } else if (packageManager == "vcpkg") {
+                extractVcpkgMetadata(component);
+            } else if (packageManager == "system") {
+                extractSystemMetadata(component);
+            }
+        }
+        
+        component.markAsProcessed();
+        return success;
+    } catch (const std::filesystem::filesystem_error& e) {
+        heimdall::Utils::errorPrint(std::string("Filesystem error in extractMetadata: ") + e.what());
         return false;
     }
-    
-    // Detect file format
-    if (!pImpl->detectFileFormat(component.filePath))
-    {
-        heimdall::Utils::warningPrint("Could not detect file format for: " + component.filePath);
-    }
-    
-    bool success = true;
-    
-    // Extract basic metadata
-    success &= extractVersionInfo(component);
-    success &= extractLicenseInfo(component);
-    success &= extractSymbolInfo(component);
-    success &= extractSectionInfo(component);
-    
-    if (pImpl->extractDebugInfo)
-    {
-        success &= extractDebugInfo(component);
-    }
-    
-    success &= extractDependencyInfo(component);
-    
-    // Enhanced package manager detection and metadata extraction
-    bool packageManagerDetected = false;
-    
-    // Try RPM detection
-    if (heimdall::MetadataHelpers::detectRpmMetadata(component)) {
-        packageManagerDetected = true;
-        heimdall::Utils::debugPrint("Detected RPM package metadata");
-    }
-    
-    // Try Debian detection
-    if (!packageManagerDetected && heimdall::MetadataHelpers::detectDebMetadata(component)) {
-        packageManagerDetected = true;
-        heimdall::Utils::debugPrint("Detected Debian package metadata");
-    }
-    
-    // Try Conan detection
-    if (!packageManagerDetected && heimdall::MetadataHelpers::detectConanMetadata(component)) {
-        packageManagerDetected = true;
-        heimdall::Utils::debugPrint("Detected Conan package metadata");
-    }
-    
-    // Try vcpkg detection
-    if (!packageManagerDetected && heimdall::MetadataHelpers::detectVcpkgMetadata(component)) {
-        packageManagerDetected = true;
-        heimdall::Utils::debugPrint("Detected vcpkg package metadata");
-    }
-    
-    // Try Spack detection
-    if (!packageManagerDetected && heimdall::MetadataHelpers::detectSpackMetadata(component)) {
-        packageManagerDetected = true;
-        heimdall::Utils::debugPrint("Detected Spack package metadata");
-    }
-    
-    // Fallback to generic package manager detection
-    if (!packageManagerDetected) {
-        std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
-        if (packageManager == "conan") {
-            extractConanMetadata(component);
-        } else if (packageManager == "vcpkg") {
-            extractVcpkgMetadata(component);
-        } else if (packageManager == "system") {
-            extractSystemMetadata(component);
-        }
-    }
-    
-    component.markAsProcessed();
-    return success;
 }
 
 bool MetadataExtractor::extractVersionInfo(ComponentInfo& component)
@@ -373,6 +379,17 @@ bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component
         return true;
     }
 #endif
+    
+    // Try other package managers
+    if (heimdall::MetadataHelpers::detectConanMetadata(component)) {
+        return true;
+    }
+    if (heimdall::MetadataHelpers::detectVcpkgMetadata(component)) {
+        return true;
+    }
+    if (heimdall::MetadataHelpers::detectSpackMetadata(component)) {
+        return true;
+    }
     
     // Try to extract version from package manager
     std::string packageName = heimdall::Utils::extractPackageName(component.filePath);
@@ -1645,10 +1662,12 @@ bool detectRpmMetadata(heimdall::ComponentInfo& component)
     std::string fileName = heimdall::Utils::getFileName(filePath);
     std::string dirName = heimdall::Utils::getDirectory(filePath);
     
-    // Look for RPM database or package files
-    if (dirName.find("/var/lib/rpm") != std::string::npos ||
-        dirName.find("/usr/lib") != std::string::npos ||
-        dirName.find("/usr/lib64") != std::string::npos) {
+    // Look for RPM-specific paths
+    if (dirName.find("/usr/lib/rpm") != std::string::npos ||
+        dirName.find("/var/lib/rpm") != std::string::npos) {
+        
+        // Set package manager to rpm
+        component.setPackageManager("rpm");
         
         // Try to extract version from filename
         std::string version = heimdall::Utils::extractVersionFromPath(fileName);
@@ -1679,10 +1698,13 @@ bool detectDebMetadata(heimdall::ComponentInfo& component)
     std::string fileName = heimdall::Utils::getFileName(filePath);
     std::string dirName = heimdall::Utils::getDirectory(filePath);
     
-    // Look for Debian package locations
-    if (dirName.find("/usr/lib") != std::string::npos ||
-        dirName.find("/usr/lib/x86_64-linux-gnu") != std::string::npos ||
-        dirName.find("/usr/lib/aarch64-linux-gnu") != std::string::npos) {
+    // Look for Debian-specific paths
+    if (dirName.find("/usr/lib/x86_64-linux-gnu") != std::string::npos ||
+        dirName.find("/usr/lib/aarch64-linux-gnu") != std::string::npos ||
+        dirName.find("/usr/lib/arm-linux-gnueabihf") != std::string::npos) {
+        
+        // Set package manager to deb
+        component.setPackageManager("deb");
         
         // Try to extract version from filename
         std::string version = heimdall::Utils::extractVersionFromPath(fileName);
@@ -1713,10 +1735,12 @@ bool detectPacmanMetadata(heimdall::ComponentInfo& component)
     std::string fileName = heimdall::Utils::getFileName(filePath);
     std::string dirName = heimdall::Utils::getDirectory(filePath);
     
-    // Look for Pacman package locations
-    if (dirName.find("/usr/lib") != std::string::npos ||
-        dirName.find("/usr/lib64") != std::string::npos ||
-        dirName.find("/opt") != std::string::npos) {
+    // Look for Pacman-specific paths
+    if (dirName.find("/usr/lib/pacman") != std::string::npos ||
+        dirName.find("/var/lib/pacman") != std::string::npos) {
+        
+        // Set package manager to pacman
+        component.setPackageManager("pacman");
         
         // Try to extract version from filename
         std::string version = heimdall::Utils::extractVersionFromPath(fileName);
