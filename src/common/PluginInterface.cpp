@@ -1,3 +1,10 @@
+/**
+ * @file PluginInterface.cpp
+ * @brief Implementation of common plugin interface for linker plugins
+ * @author Trevor Bakker
+ * @date 2025
+ */
+
 #include "PluginInterface.hpp"
 #include "Utils.hpp"
 #include <iostream>
@@ -8,6 +15,9 @@
 
 namespace heimdall {
 
+/**
+ * @brief Default constructor
+ */
 PluginInterface::PluginInterface()
     : sbomGenerator(std::make_unique<SBOMGenerator>())
     , verbose(false)
@@ -16,8 +26,15 @@ PluginInterface::PluginInterface()
 {
 }
 
+/**
+ * @brief Destructor
+ */
 PluginInterface::~PluginInterface() = default;
 
+/**
+ * @brief Add a component to the processed list
+ * @param component The component to add
+ */
 void PluginInterface::addComponent(const ComponentInfo& component)
 {
     // Check if we should process this component
@@ -42,6 +59,12 @@ void PluginInterface::addComponent(const ComponentInfo& component)
     }
 }
 
+/**
+ * @brief Update an existing component with new information
+ * @param name The component name
+ * @param filePath The file path
+ * @param symbols The symbols to add
+ */
 void PluginInterface::updateComponent(const std::string& name, const std::string& filePath, 
                                      const std::vector<SymbolInfo>& symbols)
 {
@@ -76,6 +99,11 @@ void PluginInterface::updateComponent(const std::string& name, const std::string
     addComponent(newComponent);
 }
 
+/**
+ * @brief Check if a file should be processed
+ * @param filePath The file path to check
+ * @return true if the file should be processed
+ */
 bool PluginInterface::shouldProcessFile(const std::string& filePath) const
 {
     // Skip system libraries if not requested
@@ -99,6 +127,11 @@ bool PluginInterface::shouldProcessFile(const std::string& filePath) const
     return std::find(validExtensions.begin(), validExtensions.end(), extension) != validExtensions.end();
 }
 
+/**
+ * @brief Extract component name from file path
+ * @param filePath The file path
+ * @return The extracted component name
+ */
 std::string PluginInterface::extractComponentName(const std::string& filePath) const
 {
     std::string fileName = Utils::getFileName(filePath);
@@ -128,9 +161,17 @@ std::string PluginInterface::extractComponentName(const std::string& filePath) c
     return fileName;
 }
 
-// PluginUtils implementation
-namespace PluginUtils {
+/**
+ * @brief Namespace containing common plugin utilities
+ */
+namespace PluginUtils
+{
 
+/**
+ * @brief Check if a file is an object file
+ * @param filePath The file path to check
+ * @return true if the file is an object file
+ */
 bool isObjectFile(const std::string& filePath)
 {
     std::string extension = Utils::getFileExtension(filePath);
@@ -138,6 +179,11 @@ bool isObjectFile(const std::string& filePath)
     return extension == ".o" || extension == ".obj";
 }
 
+/**
+ * @brief Check if a file is a static library
+ * @param filePath The file path to check
+ * @return true if the file is a static library
+ */
 bool isStaticLibrary(const std::string& filePath)
 {
     std::string extension = Utils::getFileExtension(filePath);
@@ -145,6 +191,11 @@ bool isStaticLibrary(const std::string& filePath)
     return extension == ".a" || extension == ".lib";
 }
 
+/**
+ * @brief Check if a file is a shared library
+ * @param filePath The file path to check
+ * @return true if the file is a shared library
+ */
 bool isSharedLibrary(const std::string& filePath)
 {
     std::string extension = Utils::getFileExtension(filePath);
@@ -152,6 +203,11 @@ bool isSharedLibrary(const std::string& filePath)
     return extension == ".so" || extension == ".dylib" || extension == ".dll";
 }
 
+/**
+ * @brief Check if a file is an executable
+ * @param filePath The file path to check
+ * @return true if the file is an executable
+ */
 bool isExecutable(const std::string& filePath)
 {
     std::string extension = Utils::getFileExtension(filePath);
@@ -159,21 +215,40 @@ bool isExecutable(const std::string& filePath)
     return extension == ".exe" || extension.empty();
 }
 
+/**
+ * @brief Normalize a library path
+ * @param libraryPath The library path to normalize
+ * @return The normalized path
+ */
 std::string normalizeLibraryPath(const std::string& libraryPath)
 {
     return Utils::normalizePath(libraryPath);
 }
 
+/**
+ * @brief Resolve a library name to its full path
+ * @param libraryName The library name to resolve
+ * @return The resolved library path
+ */
 std::string resolveLibraryPath(const std::string& libraryName)
 {
     return Utils::findLibrary(libraryName);
 }
 
+/**
+ * @brief Get the list of library search paths
+ * @return Vector of library search paths
+ */
 std::vector<std::string> getLibrarySearchPaths()
 {
     return Utils::getLibrarySearchPaths();
 }
 
+/**
+ * @brief Check if a symbol is a system symbol
+ * @param symbolName The symbol name to check
+ * @return true if the symbol is a system symbol
+ */
 bool isSystemSymbol(const std::string& symbolName)
 {
     // Common system symbol prefixes
@@ -193,6 +268,11 @@ bool isSystemSymbol(const std::string& symbolName)
     return false;
 }
 
+/**
+ * @brief Check if a symbol is a weak symbol
+ * @param symbolName The symbol name to check
+ * @return true if the symbol is a weak symbol
+ */
 bool isWeakSymbol(const std::string& symbolName)
 {
     // Weak symbols often have specific patterns

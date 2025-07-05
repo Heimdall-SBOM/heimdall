@@ -1,44 +1,36 @@
+/**
+ * @file ComponentInfo.cpp
+ * @brief Implementation of ComponentInfo class and related data structures
+ * @author Trevor Bakker
+ * @date 2025
+ */
+
 #include "ComponentInfo.hpp"
+#include "Utils.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <openssl/sha.h>
+#include <cctype>
 
 namespace heimdall {
 
-// Helper function to calculate SHA256 checksum
+/**
+ * @brief Calculate SHA256 checksum of a file using modern OpenSSL EVP API
+ * @param filePath The path to the file
+ * @return The SHA256 hash as a hexadecimal string
+ */
 std::string calculateSHA256(const std::string& filePath)
 {
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open())
-    {
-        return "";
-    }
-
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-
-    char buffer[4096];
-    while (file.read(buffer, sizeof(buffer)))
-    {
-        SHA256_Update(&sha256, buffer, file.gcount());
-    }
-    SHA256_Update(&sha256, buffer, file.gcount());
-
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_Final(hash, &sha256);
-
-    std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
-    {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
-    }
-    return ss.str();
+    return Utils::getFileChecksum(filePath);
 }
 
-// Helper function to get file size
+/**
+ * @brief Helper function to get file size
+ * @param filePath The path to the file
+ * @return The file size in bytes
+ */
 uint64_t getFileSize(const std::string& filePath)
 {
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
@@ -49,7 +41,11 @@ uint64_t getFileSize(const std::string& filePath)
     return file.tellg();
 }
 
-// Helper function to determine file type from extension
+/**
+ * @brief Helper function to determine file type from extension
+ * @param filePath The path to the file
+ * @return The determined file type
+ */
 FileType determineFileType(const std::string& filePath)
 {
     std::string lowerPath = filePath;
@@ -81,7 +77,11 @@ FileType determineFileType(const std::string& filePath)
     return FileType::Unknown;
 }
 
-// ComponentInfo methods
+/**
+ * @brief Constructor with component name and file path
+ * @param componentName The name of the component
+ * @param path The file path
+ */
 ComponentInfo::ComponentInfo(const std::string& componentName, const std::string& path)
     : name(componentName)
     , filePath(path)
@@ -96,6 +96,10 @@ ComponentInfo::ComponentInfo(const std::string& componentName, const std::string
 {
 }
 
+/**
+ * @brief Add a dependency to the component
+ * @param dependency The dependency to add
+ */
 void ComponentInfo::addDependency(const std::string& dependency)
 {
     if (std::find(dependencies.begin(), dependencies.end(), dependency) == dependencies.end())
@@ -104,6 +108,10 @@ void ComponentInfo::addDependency(const std::string& dependency)
     }
 }
 
+/**
+ * @brief Add a source file to the component
+ * @param sourceFile The source file to add
+ */
 void ComponentInfo::addSourceFile(const std::string& sourceFile)
 {
     if (std::find(sourceFiles.begin(), sourceFiles.end(), sourceFile) == sourceFiles.end())
@@ -112,79 +120,139 @@ void ComponentInfo::addSourceFile(const std::string& sourceFile)
     }
 }
 
+/**
+ * @brief Set the component version
+ * @param ver The version string
+ */
 void ComponentInfo::setVersion(const std::string& ver)
 {
     version = ver;
 }
 
+/**
+ * @brief Set the component supplier
+ * @param sup The supplier name
+ */
 void ComponentInfo::setSupplier(const std::string& sup)
 {
     supplier = sup;
 }
 
+/**
+ * @brief Set the download location
+ * @param location The download URL
+ */
 void ComponentInfo::setDownloadLocation(const std::string& location)
 {
     downloadLocation = location;
 }
 
+/**
+ * @brief Set the homepage URL
+ * @param page The homepage URL
+ */
 void ComponentInfo::setHomepage(const std::string& page)
 {
     homepage = page;
 }
 
+/**
+ * @brief Set the license information
+ * @param lic The license string
+ */
 void ComponentInfo::setLicense(const std::string& lic)
 {
     license = lic;
 }
 
+/**
+ * @brief Set the package manager
+ * @param pkgMgr The package manager name
+ */
 void ComponentInfo::setPackageManager(const std::string& pkgMgr)
 {
     packageManager = pkgMgr;
 }
 
+/**
+ * @brief Mark the component as processed
+ */
 void ComponentInfo::markAsProcessed()
 {
     wasProcessed = true;
 }
 
+/**
+ * @brief Set a processing error message
+ * @param error The error message
+ */
 void ComponentInfo::setProcessingError(const std::string& error)
 {
     processingError = error;
     wasProcessed = false;
 }
 
+/**
+ * @brief Set the linker that detected this component
+ * @param linker The linker type
+ */
 void ComponentInfo::setDetectedBy(LinkerType linker)
 {
     detectedBy = linker;
 }
 
+/**
+ * @brief Mark the component as a system library
+ */
 void ComponentInfo::markAsSystemLibrary()
 {
     isSystemLibrary = true;
 }
 
+/**
+ * @brief Set whether the component contains debug information
+ * @param hasDebug true if debug info is present
+ */
 void ComponentInfo::setContainsDebugInfo(bool hasDebug)
 {
     containsDebugInfo = hasDebug;
 }
 
+/**
+ * @brief Set whether the component has been stripped
+ * @param stripped true if the file has been stripped
+ */
 void ComponentInfo::setStripped(bool stripped)
 {
     isStripped = stripped;
 }
 
+/**
+ * @brief Check if the component has a specific symbol
+ * @param symbolName The symbol name to look for
+ * @return true if the symbol is found
+ */
 bool ComponentInfo::hasSymbol(const std::string& symbolName) const
 {
     return std::any_of(symbols.begin(), symbols.end(),
         [&symbolName](const SymbolInfo& symbol) { return symbol.name == symbolName; });
 }
 
+/**
+ * @brief Check if the component has a specific section
+ * @param sectionName The section name to look for
+ * @return true if the section is found
+ */
 bool ComponentInfo::hasSection(const std::string& sectionName) const
 {
     return std::any_of(sections.begin(), sections.end(),
         [&sectionName](const SectionInfo& section) { return section.name == sectionName; });
 }
 
+/**
+ * @brief Get the file type as a string
+ * @return String representation of the file type
+ */
 std::string ComponentInfo::getFileTypeString() const
 {
     switch (fileType)
@@ -197,6 +265,10 @@ std::string ComponentInfo::getFileTypeString() const
     }
 }
 
+/**
+ * @brief Get the linker type as a string
+ * @return String representation of the linker type
+ */
 std::string ComponentInfo::getLinkerTypeString() const
 {
     switch (detectedBy)

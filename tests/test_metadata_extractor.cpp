@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include "MetadataExtractor.hpp"
 #include "ComponentInfo.hpp"
+#include <iostream>
 
 using namespace heimdall;
 
@@ -30,9 +31,9 @@ __attribute__((visibility("default")))
 const char* test_license = "MIT";
 )";
         
-        // Compile it into a shared library
+        // Compile it into a shared library with symbols
         test_lib = test_dir / "libtest.so";
-        std::string compile_cmd = "gcc -shared -fPIC -o " + test_lib.string() + 
+        std::string compile_cmd = "gcc -shared -fPIC -g -o " + test_lib.string() + 
                                  " " + test_source.string() + " 2>/dev/null";
         system(compile_cmd.c_str());
         
@@ -53,11 +54,28 @@ TEST_F(MetadataExtractorTest, ExtractMetadataBasic) {
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
     
+    // Debug: Check if the library exists and its size
+    std::cout << "Test library path: " << test_lib.string() << std::endl;
+    std::cout << "Test library exists: " << std::filesystem::exists(test_lib) << std::endl;
+    std::cout << "Test library size: " << std::filesystem::file_size(test_lib) << std::endl;
+    
+    // Debug: Check if it's recognized as ELF
+    std::cout << "Is ELF: " << extractor.isELF(test_lib.string()) << std::endl;
+    
     // Test individual extraction methods
     if (std::filesystem::file_size(test_lib) > 100) {
         // Real library - should extract symbols and sections
-        EXPECT_TRUE(extractor.extractSymbolInfo(component));
-        EXPECT_TRUE(extractor.extractSectionInfo(component));
+        std::cout << "Testing symbol extraction..." << std::endl;
+        bool symbolResult = extractor.extractSymbolInfo(component);
+        std::cout << "Symbol extraction result: " << symbolResult << std::endl;
+        std::cout << "Number of symbols extracted: " << component.symbols.size() << std::endl;
+        EXPECT_TRUE(symbolResult);
+        
+        std::cout << "Testing section extraction..." << std::endl;
+        bool sectionResult = extractor.extractSectionInfo(component);
+        std::cout << "Section extraction result: " << sectionResult << std::endl;
+        std::cout << "Number of sections extracted: " << component.sections.size() << std::endl;
+        EXPECT_TRUE(sectionResult);
         
         // Test the full extraction process
         bool result = extractor.extractMetadata(component);
@@ -83,7 +101,7 @@ TEST_F(MetadataExtractorTest, FileFormatDetection) {
     
     // Test with the actual library
     if (std::filesystem::file_size(test_lib) > 100) {
-        // On macOS, should detect Mach-O format for real library
-        EXPECT_TRUE(extractor.isMachO(test_lib.string()));
+        // On Linux, should detect ELF format for real library
+        EXPECT_TRUE(extractor.isELF(test_lib.string()));
     }
 } 

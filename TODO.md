@@ -8,8 +8,17 @@ This document tracks all missing implementation tasks and planned features for t
 - ✅ **Linux (x86_64/ARM64)**: LLD plugin working, Gold plugin framework exists
 - ❌ **Windows**: No support implemented
 - ✅ **Core Library**: Basic functionality implemented
-- ✅ **Test Suite**: 20 unit tests passing with real shared library testing
+- ✅ **Test Suite**: 25+ unit tests passing with real shared library testing
 - ✅ **Documentation**: Markdown-based documentation
+- ✅ **Package Manager Integration (Linux/Mac)**: RPM, DEB, Pacman, Conan, vcpkg, Spack implemented
+- ✅ **Archive File Support (Unix)**: Archive member and symbol extraction implemented
+
+## Progress Update (2024-07-19)
+
+- ✅ **DWARF parsing**: Fully implemented and working. LLVM DWARF parser integration is complete with proper buffer lifetime management. A heuristic fallback parser is maintained as a safety measure (see docs/dwarf-heuristic-rationale.md).
+- ✅ **Linux ELF support**: Fully implemented with symbol extraction, section extraction, dependency extraction, and build ID extraction.
+- ✅ **Mach-O support**: Fully implemented with symbol extraction, section extraction, version extraction, and UUID extraction.
+- 🟡 **PE support**: Stubs exist but no real implementation.
 
 ## Critical Missing Components
 
@@ -19,34 +28,17 @@ This document tracks all missing implementation tasks and planned features for t
 - **No Windows build system**: CMake doesn't handle Windows-specific configurations
 - **No Windows linker integration**: No support for MSVC link.exe or other Windows linkers
 
-### 🚨 **Linux ELF Implementation (Partial)**
-- **ELF symbol extraction**: Currently stubbed out with "not fully implemented" messages
-- **ELF section extraction**: Not implemented
-- **ELF build ID extraction**: Not implemented
-- **ELF dependency extraction**: Missing dynamic library dependency parsing
-
-### 🚨 **Debug Information Extraction (Missing)**
-- **DWARF parsing**: No implementation for extracting source files and debug info
-- **PDB support**: No Windows debug info support
-- **Source file extraction**: Not implemented
-
-### 🚨 **Package Manager Integration (Stubbed)**
-- **Conan metadata**: Basic stubs exist but no real implementation
-- **vcpkg metadata**: Not implemented
-- **System package detection**: Limited implementation
+### 🚨 **Package Manager Integration (Windows)**
+- **NuGet, Chocolatey, etc.**: Not implemented (out of scope for Linux/Mac)
 
 ## Partially Implemented Components
 
-### 🟡 **Archive File Support**
-- **Archive member extraction**: Not implemented
-- **Archive symbol extraction**: Not implemented
-
-### 🟡 **Version Detection**
+### 🟡 **Enhanced Version Detection**
 - **File content version extraction**: Basic regex implementation
 - **Symbol-based version extraction**: Basic implementation
 - **Path-based version extraction**: Basic implementation
 
-### 🟡 **License Detection**
+### 🟡 **Enhanced License Detection**
 - **File content license detection**: Basic implementation
 - **Symbol-based license detection**: Basic implementation
 
@@ -68,7 +60,7 @@ This document tracks all missing implementation tasks and planned features for t
 
 - [ ] **Implement PE File Format Support**
   ```cpp
-  // src/common/MetadataExtractor.cpp - PE functions
+  // src/common/MetadataExtractor.cpp - PE functions (currently stubbed)
   bool extractPESymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols);
   bool extractPESections(const std::string& filePath, std::vector<SectionInfo>& sections);
   bool extractPEVersion(const std::string& filePath, std::string& version);
@@ -89,49 +81,21 @@ This document tracks all missing implementation tasks and planned features for t
   endif()
   ```
 
-#### **Linux ELF Support - High Priority**
+#### **Cross-Platform Foundation - Medium Priority**
 
-- [ ] **Complete ELF Symbol Extraction**
-  ```cpp
-  // src/common/MetadataExtractor.cpp
-  bool extractELFSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols) {
-      #ifdef __linux__
-      // Use libelf or similar library
-      // Parse ELF symbol tables
-      // Extract symbol names, addresses, sizes
-      #endif
-  }
-  ```
+- [x] **Archive File Support (Unix)**
+  - [x] `extractArchiveMembers` implemented
+  - [x] `extractArchiveSymbols` implemented
+  - [ ] Windows `.lib` archive support (not implemented)
 
-- [ ] **ELF Section Extraction**
-  ```cpp
-  bool extractELFSections(const std::string& filePath, std::vector<SectionInfo>& sections) {
-      #ifdef __linux__
-      // Parse ELF section headers
-      // Extract section names, addresses, sizes, flags
-      #endif
-  }
-  ```
-
-- [ ] **ELF Dependency Extraction**
-  ```cpp
-  std::vector<std::string> extractELFDependencies(const std::string& filePath) {
-      #ifdef __linux__
-      // Parse ELF dynamic section
-      // Extract DT_NEEDED entries
-      // Resolve library paths
-      #endif
-  }
-  ```
-
-#### **Cross-Platform Foundation - High Priority**
-
-- [ ] **Archive File Support**
-  ```cpp
-  // src/common/MetadataExtractor.cpp
-  bool extractArchiveMembers(const std::string& filePath, std::vector<std::string>& members);
-  bool extractArchiveSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols);
-  ```
+- [x] **Package Manager Integration (Linux/Mac)**
+  - [x] `detectRpmMetadata` implemented
+  - [x] `detectDebMetadata` implemented
+  - [x] `detectPacmanMetadata` implemented
+  - [x] `detectConanMetadata` implemented
+  - [x] `detectVcpkgMetadata` implemented
+  - [x] `detectSpackMetadata` implemented
+  - [ ] Windows package managers (not implemented)
 
 - [ ] **Enhanced Version Detection**
   ```cpp
@@ -157,7 +121,7 @@ This document tracks all missing implementation tasks and planned features for t
 
 ### **Phase 2: Enhanced Features (3-4 months)**
 
-#### **Windows Support - Medium Priority**
+#### **Windows Support - High Priority**
 
 - [ ] **Windows Debug Information (PDB)**
   ```cpp
@@ -183,86 +147,78 @@ This document tracks all missing implementation tasks and planned features for t
   std::string findWindowsLibrary(const std::string& libraryName);
   ```
 
-#### **Linux Support - Medium Priority**
+#### **Package Manager Integration - Medium Priority**
 
-- [ ] **ELF Build ID Extraction**
-  ```cpp
-  bool extractELFBuildId(const std::string& filePath, std::string& buildId) {
-      #ifdef __linux__
-      // Parse ELF note sections
-      // Extract build ID from .note.gnu.build-id
-      #endif
-  }
-  ```
+- [x] **Linux Package Manager Support**
+  - [x] `detectRpmMetadata` implemented
+  - [x] `detectDebMetadata` implemented
+  - [x] `detectPacmanMetadata` implemented
 
-- [ ] **Linux Package Manager Integration**
-  ```cpp
-  // src/common/PackageManagerDetector.cpp
-  bool detectRpmMetadata(ComponentInfo& component);
-  bool detectDebMetadata(ComponentInfo& component);
-  bool detectPacmanMetadata(ComponentInfo& component);
-  ```
+- [x] **Cross-Platform Package Manager Support**
+  - [x] `detectConanMetadata` implemented
+  - [x] `detectVcpkgMetadata` implemented
+  - [x] `detectSpackMetadata` implemented
 
-- [ ] **Linux-specific Debug Info**
+### **Phase 3: Advanced Features (2-3 months)**
+
+#### **Enhanced SBOM Generation**
+
+- [ ] **SPDX 2.3 Support**
+  - [ ] Implement latest SPDX specification
+  - [ ] Support for SPDX-Lite format
+  - [ ] Enhanced relationship tracking
+
+- [ ] **CycloneDX 1.5 Support**
+  - [ ] Implement latest CycloneDX specification
+  - [ ] Support for vulnerability reporting
+  - [ ] Enhanced metadata fields
+
+#### **Advanced Analysis**
+
+- [ ] **Vulnerability Scanning Integration**
   ```cpp
-  // src/common/DebugInfoExtractor.hpp
-  class DWARFExtractor {
-      bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sources);
-      bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& units);
+  // src/security/VulnerabilityScanner.hpp
+  class VulnerabilityScanner {
+      std::vector<Vulnerability> scanComponent(const ComponentInfo& component);
+      bool hasKnownVulnerabilities(const std::string& version);
   };
   ```
 
-#### **Cross-Platform Features - Medium Priority**
-
-- [ ] **Package Manager Integration**
+- [ ] **License Compliance Checking**
   ```cpp
-  // src/common/PackageManagerDetector.cpp
-  bool detectConanMetadata(ComponentInfo& component);
-  bool detectVcpkgMetadata(ComponentInfo& component);
-  bool detectSystemMetadata(ComponentInfo& component);
-  ```
-
-- [ ] **Enhanced SBOM Formats**
-  ```cpp
-  // src/common/SBOMGenerator.cpp
-  bool generateSWID(const std::string& outputPath);
-  bool generateSPDXTag(const std::string& outputPath);
-  ```
-
-### **Phase 3: Optimization & Polish (2-3 months)**
-
-#### **Performance & Quality - Low Priority**
-
-- [ ] **Performance Optimizations**
-  ```cpp
-  // src/common/ParallelProcessor.hpp
-  class ParallelMetadataExtractor {
-      void processFilesInParallel(const std::vector<std::string>& files);
+  // src/compliance/LicenseChecker.hpp
+  class LicenseChecker {
+      bool isCompatible(const std::string& license1, const std::string& license2);
+      std::vector<std::string> getIncompatibleLicenses(const std::string& license);
   };
   ```
 
-- [ ] **Memory Usage Optimization**
-  - [ ] Implement streaming for large files
-  - [ ] Add memory usage monitoring
-  - [ ] Optimize symbol table parsing
+## Resolved Issues
 
-- [ ] **Error Handling & Recovery**
-  - [ ] Graceful handling of corrupted files
-  - [ ] Better error messages and diagnostics
-  - [ ] Recovery mechanisms for partial failures
+- ✅ **LLVM DWARF parser segfaults on valid ELF files** - RESOLVED
+  - **Root Cause:** Incorrect buffer lifetime management in `DWARFExtractor::createDWARFContext()`
+  - **Solution:** Refactored to store `MemoryBuffer`, `ObjectFile`, and `DWARFContext` as class members
+  - **Status:** All DWARF tests now pass without segfaults
+  - **Documentation:** See `docs/dwarf-heuristic-rationale.md` for detailed analysis
 
-#### **Advanced Features - Low Priority**
+## Current Test Coverage
 
-- [ ] **Advanced Metadata Extraction**
-  - [ ] Compiler version detection
-  - [ ] Build timestamp extraction
-  - [ ] Architecture detection
-  - [ ] Optimization level detection
+- ✅ **Utils**: 5 tests passing
+- ✅ **JSON**: 2 tests passing  
+- ✅ **ComponentInfo**: 6 tests passing
+- ✅ **SBOMGenerator**: 3 tests passing
+- ✅ **MetadataExtractor**: 2 tests passing
+- ✅ **Linux Support**: 7 tests passing (ELF symbols, sections, dependencies, build ID, DWARF)
 
-- [ ] **Security Features**
-  - [ ] Digital signature verification
-  - [ ] Checksum validation
-  - [ ] Integrity checking
+**Total: 25+ tests passing**
+
+## Next Steps
+
+1. **Windows Support**: Implement PE file format parsing and MSVC linker plugin
+2. **Package Manager Integration**: Add support for detecting package metadata
+3. **Archive Support**: Implement static library (.a/.lib) parsing
+4. **Enhanced Testing**: Add Windows and Mach-O specific test suites
+5. **Documentation**: Expand user guides and API documentation
 
 ---
 
@@ -276,11 +232,13 @@ This document tracks all missing implementation tasks and planned features for t
   - [ ] `TEST_F(WindowsSupportTest, PDBExtraction)`
 
 ### **Linux Test Suite**
-- [ ] **Create `tests/test_linux_support.cpp`**
-  - [ ] `TEST_F(LinuxSupportTest, ELFSymbolExtraction)`
-  - [ ] `TEST_F(LinuxSupportTest, ELFDependencyExtraction)`
-  - [ ] `TEST_F(LinuxSupportTest, GoldPluginIntegration)`
-  - [ ] `TEST_F(LinuxSupportTest, DWARFExtraction)`
+- [x] **Create `tests/test_linux_support.cpp`**
+  - [x] `TEST_F(LinuxSupportTest, ELFSymbolExtraction)`
+  - [x] `TEST_F(LinuxSupportTest, ELFDependencyExtraction)`
+  - [x] `TEST_F(LinuxSupportTest, GoldPluginIntegration)`
+  - [x] **DWARF tests present**
+    - [x] `TEST_F(LinuxSupportTest, DWARFSourceFileExtraction)`
+    - [x] `TEST_F(LinuxSupportTest, DWARFCompileUnitExtraction)`
 
 ### **Cross-Platform Test Suite**
 - [ ] **Create `tests/test_cross_platform.cpp`**
@@ -469,4 +427,16 @@ This document tracks all missing implementation tasks and planned features for t
 ---
 
 *Last updated: July 2024*
-*Version: 1.0.0* 
+*Version: 1.0.0*
+
+## Progress Update (2024-07-19)
+
+- ✅ **DWARF parsing**: Fully implemented and working. LLVM DWARF parser integration is complete with proper buffer lifetime management. A heuristic fallback parser is maintained as a safety measure (see docs/dwarf-heuristic-rationale.md).
+
+## Resolved Issues
+
+- ✅ **LLVM DWARF parser segfaults on valid ELF files** - RESOLVED
+  - **Root Cause:** Incorrect buffer lifetime management in `DWARFExtractor::createDWARFContext()`
+  - **Solution:** Refactored to store `MemoryBuffer`, `ObjectFile`, and `DWARFContext` as class members
+  - **Status:** All DWARF tests now pass without segfaults
+  - **Documentation:** See `docs/dwarf-heuristic-rationale.md` for detailed analysis 

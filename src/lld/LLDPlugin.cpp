@@ -34,7 +34,8 @@ namespace {
 extern "C" {
 
 // Plugin initialization
-int onload(void* tv) {
+int onload(void* tv)
+{
     std::cout << "Heimdall LLD Plugin activated" << std::endl;
     
     // Initialize the adapter
@@ -54,7 +55,8 @@ int onload(void* tv) {
 }
 
 // Plugin cleanup
-void onunload() {
+void onunload()
+{
     if (globalAdapter) {
         globalAdapter->finalize();
     }
@@ -67,16 +69,19 @@ void onunload() {
 }
 
 // Plugin metadata
-const char* heimdall_lld_version() {
+const char* heimdall_lld_version()
+{
     return "1.0.0";
 }
 
-const char* heimdall_lld_description() {
+const char* heimdall_lld_description()
+{
     return "Heimdall SBOM Generator Plugin for LLVM LLD Linker";
 }
 
 // Configuration functions
-int heimdall_set_output_path(const char* path) {
+int heimdall_set_output_path(const char* path)
+{
     if (path) {
         outputPath = std::string(path);
         if (globalSBOMGenerator) {
@@ -90,7 +95,8 @@ int heimdall_set_output_path(const char* path) {
     return -1;
 }
 
-int heimdall_set_format(const char* fmt) {
+int heimdall_set_format(const char* fmt)
+{
     if (fmt) {
         format = std::string(fmt);
         if (globalSBOMGenerator) {
@@ -104,12 +110,14 @@ int heimdall_set_format(const char* fmt) {
     return -1;
 }
 
-void heimdall_set_verbose(bool v) {
+void heimdall_set_verbose(bool v)
+{
     verbose = v;
 }
 
 // File processing functions
-int heimdall_process_input_file(const char* filePath) {
+int heimdall_process_input_file(const char* filePath)
+{
     if (!globalAdapter || !filePath) return -1;
     
     std::string path(filePath);
@@ -214,7 +222,8 @@ int heimdall_process_input_file(const char* filePath) {
     return 0; // Success
 }
 
-void heimdall_process_library(const char* libraryPath) {
+void heimdall_process_library(const char* libraryPath)
+{
     if (!globalAdapter || !libraryPath) return;
     
     std::string path(libraryPath);
@@ -255,7 +264,8 @@ void heimdall_process_library(const char* libraryPath) {
 }
 
 // Finalization
-void heimdall_finalize() {
+void heimdall_finalize()
+{
     if (verbose) {
         std::cout << "Heimdall: Finalizing SBOM generation" << std::endl;
     }
@@ -324,7 +334,8 @@ char HeimdallPass::ID = 0;
 
 // Simple pass registration
 extern "C" {
-    void heimdall_register_pass() {
+    void heimdall_register_pass()
+    {
         // This will be called when the plugin is loaded
         std::cout << "Heimdall: LLVM Pass registered" << std::endl;
     }
@@ -334,7 +345,8 @@ extern "C" {
 // LLD Plugin Interface - Working Implementation
 extern "C" {
     // LLD Plugin entry point - called when plugin is loaded
-    void heimdall_lld_plugin_init() {
+    void heimdall_lld_plugin_init()
+    {
         std::cout << "Heimdall: LLD Plugin loaded and initialized" << std::endl;
         
         // Initialize our plugin
@@ -342,7 +354,8 @@ extern "C" {
     }
     
     // LLD Plugin cleanup - called when plugin is unloaded
-    void heimdall_lld_plugin_cleanup() {
+    void heimdall_lld_plugin_cleanup()
+    {
         std::cout << "Heimdall: LLD Plugin cleanup" << std::endl;
         
         // Finalize SBOM generation
@@ -353,14 +366,16 @@ extern "C" {
     }
     
     // LLD Plugin hook for file processing
-    void heimdall_lld_process_file(const char* filePath) {
+    void heimdall_lld_process_file(const char* filePath)
+    {
         if (filePath) {
             heimdall_process_input_file(filePath);
         }
     }
     
     // LLD Plugin hook for library processing
-    void heimdall_lld_process_library(const char* libraryPath) {
+    void heimdall_lld_process_library(const char* libraryPath)
+    {
         if (libraryPath) {
             heimdall_process_library(libraryPath);
         }

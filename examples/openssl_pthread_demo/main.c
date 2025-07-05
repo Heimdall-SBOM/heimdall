@@ -11,7 +11,8 @@
 #define BUFFER_SIZE 1024
 
 // Thread function that performs OpenSSL operations
-void* openssl_worker(void* arg) {
+void* openssl_worker(void* arg)
+{
     int thread_id = *(int*)arg;
     printf("Thread %d: Starting OpenSSL operations\n", thread_id);
     
@@ -60,7 +61,8 @@ void* openssl_worker(void* arg) {
 }
 
 // Thread function that performs pthread operations
-void* pthread_worker(void* arg) {
+void* pthread_worker(void* arg)
+{
     int thread_id = *(int*)arg;
     printf("Thread %d: Starting pthread operations\n", thread_id);
     
@@ -90,7 +92,8 @@ void* pthread_worker(void* arg) {
     return NULL;
 }
 
-int main() {
+int main()
+{
     printf("🔧 Heimdall OpenSSL + Pthreads Demo\n");
     printf("====================================\n");
     printf("This program demonstrates OpenSSL and pthreads usage\n");

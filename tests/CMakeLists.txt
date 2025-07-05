@@ -1,8 +1,20 @@
 # Heimdall Test Configuration
+cmake_minimum_required(VERSION 3.16)
+
+include(FetchContent)
+
 enable_testing()
 
-# Find Google Test
-find_package(GTest REQUIRED)
+# Download GoogleTest if not found
+find_package(GTest QUIET)
+if(NOT GTest_FOUND)
+    message(STATUS "GoogleTest not found, downloading with FetchContent...")
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+    FetchContent_MakeAvailable(googletest)
+endif()
 
 # Create test executable
 add_executable(heimdall_tests
@@ -11,60 +23,36 @@ add_executable(heimdall_tests
     test_component_info.cpp
     test_sbom_generator.cpp
     test_metadata_extractor.cpp
+    test_linux_support.cpp
+    test_package_manager_and_archive.cpp
 )
 
-# Force static linking for Google Test on macOS
-if(APPLE)
-    # Find static libraries explicitly
-    find_library(GTEST_LIBRARY
-        NAMES libgtest.a gtest
-        PATHS /opt/homebrew/Cellar/googletest/*/lib
-        NO_DEFAULT_PATH
-    )
-    find_library(GTEST_MAIN_LIBRARY
-        NAMES libgtest_main.a gtest_main
-        PATHS /opt/homebrew/Cellar/googletest/*/lib
-        NO_DEFAULT_PATH
-    )
-    
-    if(GTEST_LIBRARY AND GTEST_MAIN_LIBRARY)
-        target_link_libraries(heimdall_tests
-            ${GTEST_LIBRARY}
-            ${GTEST_MAIN_LIBRARY}
-            heimdall-core
-            ${OPENSSL_LIBRARIES}
-        )
-    else()
-        # Fallback to CMake's find_package
-        target_link_libraries(heimdall_tests
-            GTest::gtest
-            GTest::gtest_main
-            heimdall-core
-            ${OPENSSL_LIBRARIES}
-        )
-    endif()
-    
-    # Set rpath to include build directory
-    set_target_properties(heimdall_tests PROPERTIES
-        BUILD_WITH_INSTALL_RPATH TRUE
-        INSTALL_RPATH "@executable_path;@executable_path/../lib"
-    )
-else()
-    # Non-Apple platforms
+# Link GoogleTest and other dependencies
+if(TARGET GTest::gtest AND TARGET GTest::gtest_main)
     target_link_libraries(heimdall_tests
         GTest::gtest
         GTest::gtest_main
         heimdall-core
         ${OPENSSL_LIBRARIES}
     )
+else()
+    # Fallback for older CMake/GoogleTest
+    target_link_libraries(heimdall_tests
+        gtest
+        gtest_main
+        heimdall-core
+        ${OPENSSL_LIBRARIES}
+    )
 endif()
 
 # Include directories
+# Only add project and OpenSSL includes
+# GoogleTest includes are handled by the imported target
+
 target_include_directories(heimdall_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/common
     ${OPENSSL_INCLUDE_DIR}
-    /opt/homebrew/Cellar/googletest/1.17.0/include
 )
 
 # Add test
@@ -124,3 +112,62 @@ add_custom_target(test-metadata-extractor
     DEPENDS heimdall_tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+# === Test Archive Generation ===
+set(TESTDATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/testdata)
+set(CONAN_LIB_DIR ${TESTDATA_DIR}/conan/lib)
+set(SPACK_LIB_DIR ${TESTDATA_DIR}/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-abcdef/lib)
+set(VCPKG_LIB_DIR ${TESTDATA_DIR}/vcpkg/installed/x64-linux/lib)
+
+file(MAKE_DIRECTORY ${CONAN_LIB_DIR})
+file(MAKE_DIRECTORY ${SPACK_LIB_DIR})
+file(MAKE_DIRECTORY ${VCPKG_LIB_DIR})
+
+add_custom_command(
+    OUTPUT ${TESTDATA_DIR}/test_lib.o
+    COMMAND ${CMAKE_C_COMPILER} -c ${TESTDATA_DIR}/test_lib.c -o ${TESTDATA_DIR}/test_lib.o
+    DEPENDS ${TESTDATA_DIR}/test_lib.c
+    COMMENT "Compiling test_lib.o for test archives"
+)
+
+add_custom_command(
+    OUTPUT ${TESTDATA_DIR}/libtest.a
+    COMMAND ar rcs ${TESTDATA_DIR}/libtest.a ${TESTDATA_DIR}/test_lib.o
+    DEPENDS ${TESTDATA_DIR}/test_lib.o
+    COMMENT "Creating libtest.a archive"
+)
+
+add_custom_command(
+    OUTPUT ${TESTDATA_DIR}/libtest_with_syms.a
+    COMMAND ar rcs ${TESTDATA_DIR}/libtest_with_syms.a ${TESTDATA_DIR}/test_lib.o
+    DEPENDS ${TESTDATA_DIR}/test_lib.o
+    COMMENT "Creating libtest_with_syms.a archive"
+)
+
+add_custom_command(
+    OUTPUT ${CONAN_LIB_DIR}/libz.a
+    COMMAND ${CMAKE_COMMAND} -E echo "dummy conan libz" > ${CONAN_LIB_DIR}/libz.a
+    COMMENT "Creating dummy conan libz.a"
+)
+
+add_custom_command(
+    OUTPUT ${SPACK_LIB_DIR}/libz.a
+    COMMAND ${CMAKE_COMMAND} -E echo "dummy spack libz" > ${SPACK_LIB_DIR}/libz.a
+    COMMENT "Creating dummy spack libz.a"
+)
+
+add_custom_command(
+    OUTPUT ${VCPKG_LIB_DIR}/libz.a
+    COMMAND ${CMAKE_COMMAND} -E echo "dummy vcpkg libz" > ${VCPKG_LIB_DIR}/libz.a
+    COMMENT "Creating dummy vcpkg libz.a"
+)
+
+add_custom_target(generate_test_archives ALL
+    DEPENDS
+        ${TESTDATA_DIR}/libtest.a
+        ${TESTDATA_DIR}/libtest_with_syms.a
+        ${CONAN_LIB_DIR}/libz.a
+        ${SPACK_LIB_DIR}/libz.a
+        ${VCPKG_LIB_DIR}/libz.a
+)
+add_dependencies(heimdall_tests generate_test_archives)

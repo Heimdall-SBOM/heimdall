@@ -1,3 +1,10 @@
+/**
+ * @file SBOMGenerator.cpp
+ * @brief Implementation of Software Bill of Materials (SBOM) generator
+ * @author Trevor Bakker
+ * @date 2025
+ */
+
 #include "SBOMGenerator.hpp"
 #include "MetadataExtractor.hpp"
 #include "Utils.hpp"
@@ -10,36 +17,102 @@
 
 namespace heimdall {
 
-class SBOMGenerator::Impl {
+/**
+ * @brief Implementation class for SBOMGenerator
+ */
+class SBOMGenerator::Impl
+{
 public:
-    std::unordered_map<std::string, ComponentInfo> components;
-    std::string outputPath;
-    std::string format = "spdx";
-    std::unique_ptr<MetadataExtractor> metadataExtractor;
-    BuildInfo buildInfo;
+    std::unordered_map<std::string, ComponentInfo> components;  ///< Map of processed components
+    std::string outputPath;                                     ///< Output file path
+    std::string format = "spdx";                                ///< Output format
+    std::unique_ptr<MetadataExtractor> metadataExtractor;       ///< Metadata extractor instance
+    BuildInfo buildInfo;                                        ///< Build information
     
-    // SBOM generation methods
+    /**
+     * @brief Generate SBOM in SPDX format
+     * @param outputPath The output file path
+     * @return true if generation was successful
+     */
     bool generateSPDX(const std::string& outputPath);
+    
+    /**
+     * @brief Generate SBOM in CycloneDX format
+     * @param outputPath The output file path
+     * @return true if generation was successful
+     */
     bool generateCycloneDX(const std::string& outputPath);
+    
+    /**
+     * @brief Generate SPDX document content
+     * @return The SPDX document as a string
+     */
     std::string generateSPDXDocument();
+    
+    /**
+     * @brief Generate CycloneDX document content
+     * @return The CycloneDX document as a string
+     */
     std::string generateCycloneDXDocument();
     
-    // Helper methods
+    /**
+     * @brief Generate SPDX component entry
+     * @param component The component to generate entry for
+     * @return The SPDX component entry as a string
+     */
     std::string generateSPDXComponent(const ComponentInfo& component);
+    
+    /**
+     * @brief Generate CycloneDX component entry
+     * @param component The component to generate entry for
+     * @return The CycloneDX component entry as a string
+     */
     std::string generateCycloneDXComponent(const ComponentInfo& component);
+    
+    /**
+     * @brief Get current timestamp in ISO format
+     * @return Current timestamp string
+     */
     std::string getCurrentTimestamp();
+    
+    /**
+     * @brief Generate SPDX ID for a component
+     * @param name The component name
+     * @return The generated SPDX ID
+     */
     std::string generateSPDXId(const std::string& name);
+    
+    /**
+     * @brief Generate verification code for SPDX
+     * @return The verification code string
+     */
     std::string generateVerificationCode();
+    
+    /**
+     * @brief Generate Package URL (PURL) for a component
+     * @param component The component to generate PURL for
+     * @return The generated PURL string
+     */
     std::string generatePURL(const ComponentInfo& component);
 };
 
+/**
+ * @brief Default constructor
+ */
 SBOMGenerator::SBOMGenerator() : pImpl(std::make_unique<Impl>())
 {
     pImpl->metadataExtractor = std::make_unique<MetadataExtractor>();
 }
 
+/**
+ * @brief Destructor
+ */
 SBOMGenerator::~SBOMGenerator() = default;
 
+/**
+ * @brief Process a component and add it to the SBOM
+ * @param component The component to process
+ */
 void SBOMGenerator::processComponent(const ComponentInfo& component)
 {
     std::string key = component.name + ":" + component.filePath;
@@ -87,6 +160,9 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
     }
 }
 
+/**
+ * @brief Generate the SBOM in the specified format
+ */
 void SBOMGenerator::generateSBOM()
 {
     if (pImpl->outputPath.empty())
@@ -122,21 +198,38 @@ void SBOMGenerator::generateSBOM()
     }
 }
 
+/**
+ * @brief Set the output path for the SBOM
+ * @param path The output file path
+ */
 void SBOMGenerator::setOutputPath(const std::string& path)
 {
     pImpl->outputPath = path;
 }
 
+/**
+ * @brief Set the output format for the SBOM
+ * @param fmt The format (e.g., "spdx", "cyclonedx")
+ */
 void SBOMGenerator::setFormat(const std::string& fmt)
 {
     pImpl->format = Utils::toLower(fmt);
 }
 
+/**
+ * @brief Get the number of components in the SBOM
+ * @return Number of components
+ */
 size_t SBOMGenerator::getComponentCount() const
 {
     return pImpl->components.size();
 }
 
+/**
+ * @brief Check if a component exists in the SBOM
+ * @param name The component name to check
+ * @return true if the component exists
+ */
 bool SBOMGenerator::hasComponent(const std::string& name) const
 {
     for (const auto& pair : pImpl->components)
@@ -149,6 +242,9 @@ bool SBOMGenerator::hasComponent(const std::string& name) const
     return false;
 }
 
+/**
+ * @brief Print statistics about the SBOM
+ */
 void SBOMGenerator::printStatistics() const
 {
     std::cout << "SBOM Generator Statistics:" << std::endl;
@@ -184,7 +280,11 @@ void SBOMGenerator::printStatistics() const
     std::cout << "  Stripped: " << stripped << std::endl;
 }
 
-// Implementation methods
+/**
+ * @brief Generate SBOM in SPDX format
+ * @param outputPath The output file path
+ * @return true if generation was successful
+ */
 bool SBOMGenerator::Impl::generateSPDX(const std::string& outputPath)
 {
     std::string document = generateSPDXDocument();

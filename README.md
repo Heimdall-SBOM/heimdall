@@ -138,7 +138,7 @@ sudo apt-get install -y \
 
 #### Fedora/RHEL/CentOS
 ```bash
-# Install dependencies
+# Install dependencies (required for build and tests)
 sudo yum install -y \
     gcc-c++ \
     cmake \
@@ -147,11 +147,16 @@ sudo yum install -y \
     lld-devel \
     binutils-gold \
     openssl-devel \
-    pkgconfig
+    pkgconfig \
+    zlib-devel \
+    llvm-googletest \
+    binutils-devel
 
 # Build Heimdall
 ./build.sh
 ```
+
+**Note**: The `binutils-devel` package provides the BFD headers required for the Gold plugin. Without this package, the Gold plugin will not be built, but the LLD plugin and core library will still work.
 
 #### Arch Linux
 ```bash
@@ -568,9 +573,3 @@ cd build && make test
 
 Licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
 
-## Acknowledgments
-
-- LLVM Project for the excellent LLD linker
-- GNU Binutils for the Gold linker
-- SPDX and CycloneDX communities for the SBOM standards
-- All contributors and users of Heimdall

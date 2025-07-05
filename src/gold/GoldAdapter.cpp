@@ -1,6 +1,7 @@
 #include "GoldAdapter.hpp"
 #include "../common/PluginInterface.hpp"
 #include "../common/Utils.hpp"
+#include "../common/MetadataExtractor.hpp"
 #include <iostream>
 #include <vector>
 #include <string>
@@ -13,53 +14,20 @@
 
 namespace heimdall {
 
-class GoldAdapterImpl : public PluginInterface {
-public:
-    GoldAdapterImpl();
-    ~GoldAdapterImpl() override;
-    
-    // PluginInterface implementation
-    bool initialize() override;
-    void cleanup() override;
-    void processInputFile(const std::string& filePath) override;
-    void processLibrary(const std::string& libraryPath) override;
-    void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) override;
-    void setOutputPath(const std::string& path) override;
-    void setFormat(const std::string& format) override;
-    void generateSBOM() override;
-    void setVerbose(bool verbose) override;
-    void setExtractDebugInfo(bool extract) override;
-    void setIncludeSystemLibraries(bool include) override;
-    size_t getComponentCount() const override;
-    void printStatistics() const override;
-    
-    // Gold-specific methods
-    void handleGoldPlugin(const char* pluginName, const char* pluginOpt);
-    void processGoldInputFile(const char* filePath);
-    void processGoldLibrary(const char* libraryPath);
-    
-private:
-    std::vector<std::string> processedFiles;
-    std::vector<std::string> processedLibraries;
-    std::vector<SymbolInfo> currentSymbols;
-    std::string currentFile;
-    
-    // Helper methods
-    void extractSymbolsFromFile(const std::string& filePath);
-    void processArchiveFile(const std::string& filePath);
-    void processObjectFile(const std::string& filePath);
-    void processSharedLibrary(const std::string& filePath);
-};
-
-GoldAdapter::GoldAdapter() : pImpl(std::make_unique<GoldAdapterImpl>())
+GoldAdapter::GoldAdapter() : pImpl(std::make_unique<Impl>())
 {
 }
 
 GoldAdapter::~GoldAdapter() = default;
 
-void GoldAdapter::initialize()
+bool GoldAdapter::initialize()
 {
-    pImpl->initialize();
+    return pImpl->initialize();
+}
+
+void GoldAdapter::cleanup()
+{
+    pImpl->cleanup();
 }
 
 void GoldAdapter::processInputFile(const std::string& filePath)
@@ -67,21 +35,63 @@ void GoldAdapter::processInputFile(const std::string& filePath)
     pImpl->processInputFile(filePath);
 }
 
-void GoldAdapter::finalize()
+void GoldAdapter::processLibrary(const std::string& libraryPath)
+{
+    pImpl->processLibrary(libraryPath);
+}
+
+void GoldAdapter::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size)
+{
+    pImpl->processSymbol(symbolName, address, size);
+}
+
+void GoldAdapter::setOutputPath(const std::string& path)
+{
+    pImpl->setOutputPath(path);
+}
+
+void GoldAdapter::setFormat(const std::string& format)
+{
+    pImpl->setFormat(format);
+}
+
+void GoldAdapter::generateSBOM()
 {
     pImpl->generateSBOM();
-    pImpl->cleanup();
 }
 
-// GoldAdapterImpl implementation
-GoldAdapterImpl::GoldAdapterImpl()
-    : PluginInterface()
+void GoldAdapter::setVerbose(bool verbose)
+{
+    pImpl->setVerbose(verbose);
+}
+
+void GoldAdapter::setExtractDebugInfo(bool extract)
+{
+    pImpl->setExtractDebugInfo(extract);
+}
+
+void GoldAdapter::setIncludeSystemLibraries(bool include)
+{
+    pImpl->setIncludeSystemLibraries(include);
+}
+
+size_t GoldAdapter::getComponentCount() const
+{
+    return pImpl->getComponentCount();
+}
+
+void GoldAdapter::printStatistics() const
+{
+    pImpl->printStatistics();
+}
+
+GoldAdapter::Impl::Impl()
 {
 }
 
-GoldAdapterImpl::~GoldAdapterImpl() = default;
+GoldAdapter::Impl::~Impl() = default;
 
-bool GoldAdapterImpl::initialize()
+bool GoldAdapter::Impl::initialize()
 {
     PluginUtils::logInfo("Heimdall Gold Plugin initialized");
     
@@ -95,7 +105,7 @@ bool GoldAdapterImpl::initialize()
     return true;
 }
 
-void GoldAdapterImpl::cleanup()
+void GoldAdapter::Impl::cleanup()
 {
     PluginUtils::logInfo("Heimdall Gold Plugin cleanup");
     processedFiles.clear();
@@ -104,7 +114,8 @@ void GoldAdapterImpl::cleanup()
 }
 
 // Helper to set minimum SBOM fields for a component
-static void setMinimumSBOMFields(ComponentInfo& component) {
+static void setMinimumSBOMFields(ComponentInfo& component)
+{
     if (component.supplier.empty()) component.supplier = "Organization: UNKNOWN";
     if (component.downloadLocation.empty()) component.downloadLocation = "NOASSERTION";
     if (component.homepage.empty()) component.homepage = "N/A";
@@ -118,7 +129,7 @@ static void setMinimumSBOMFields(ComponentInfo& component) {
     }
 }
 
-void GoldAdapterImpl::processInputFile(const std::string& filePath)
+void GoldAdapter::Impl::processInputFile(const std::string& filePath)
 {
     if (std::find(processedFiles.begin(), processedFiles.end(), filePath) != processedFiles.end())
     {
@@ -185,7 +196,7 @@ void GoldAdapterImpl::processInputFile(const std::string& filePath)
     currentSymbols.clear();
 }
 
-void GoldAdapterImpl::processLibrary(const std::string& libraryPath)
+void GoldAdapter::Impl::processLibrary(const std::string& libraryPath)
 {
     if (std::find(processedLibraries.begin(), processedLibraries.end(), libraryPath) != processedLibraries.end())
     {
@@ -221,7 +232,7 @@ void GoldAdapterImpl::processLibrary(const std::string& libraryPath)
     addComponent(component);
 }
 
-void GoldAdapterImpl::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size)
+void GoldAdapter::Impl::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size)
 {
     SymbolInfo symbol;
     symbol.name = symbolName;
@@ -242,23 +253,23 @@ void GoldAdapterImpl::processSymbol(const std::string& symbolName, uint64_t addr
     }
 }
 
-void GoldAdapterImpl::setOutputPath(const std::string& path)
+void GoldAdapter::Impl::setOutputPath(const std::string& path)
 {
     sbomGenerator->setOutputPath(path);
 }
 
-void GoldAdapterImpl::setFormat(const std::string& format)
+void GoldAdapter::Impl::setFormat(const std::string& format)
 {
     sbomGenerator->setFormat(format);
 }
 
-void GoldAdapterImpl::generateSBOM()
+void GoldAdapter::Impl::generateSBOM()
 {
     PluginUtils::logInfo("Generating SBOM with " + std::to_string(getComponentCount()) + " components");
     sbomGenerator->generateSBOM();
 }
 
-void GoldAdapterImpl::setVerbose(bool verbose)
+void GoldAdapter::Impl::setVerbose(bool verbose)
 {
     this->verbose = verbose;
     if (sbomGenerator)
@@ -268,22 +279,22 @@ void GoldAdapterImpl::setVerbose(bool verbose)
     }
 }
 
-void GoldAdapterImpl::setExtractDebugInfo(bool extract)
+void GoldAdapter::Impl::setExtractDebugInfo(bool extract)
 {
     extractDebugInfo = extract;
 }
 
-void GoldAdapterImpl::setIncludeSystemLibraries(bool include)
+void GoldAdapter::Impl::setIncludeSystemLibraries(bool include)
 {
     includeSystemLibraries = include;
 }
 
-size_t GoldAdapterImpl::getComponentCount() const
+size_t GoldAdapter::Impl::getComponentCount() const
 {
     return sbomGenerator->getComponentCount();
 }
 
-void GoldAdapterImpl::printStatistics() const
+void GoldAdapter::Impl::printStatistics() const
 {
     PluginUtils::logInfo("Gold Plugin Statistics:");
     PluginUtils::logInfo("  Processed files: " + std::to_string(processedFiles.size()));
@@ -293,7 +304,7 @@ void GoldAdapterImpl::printStatistics() const
     sbomGenerator->printStatistics();
 }
 
-void GoldAdapterImpl::handleGoldPlugin(const char* pluginName, const char* pluginOpt)
+void GoldAdapter::Impl::handleGoldPlugin(const char* pluginName, const char* pluginOpt)
 {
     if (!pluginName || !pluginOpt)
     {
@@ -328,7 +339,7 @@ void GoldAdapterImpl::handleGoldPlugin(const char* pluginName, const char* plugi
     }
 }
 
-void GoldAdapterImpl::processGoldInputFile(const char* filePath)
+void GoldAdapter::Impl::processGoldInputFile(const char* filePath)
 {
     if (filePath)
     {
@@ -336,7 +347,7 @@ void GoldAdapterImpl::processGoldInputFile(const char* filePath)
     }
 }
 
-void GoldAdapterImpl::processGoldLibrary(const char* libraryPath)
+void GoldAdapter::Impl::processGoldLibrary(const char* libraryPath)
 {
     if (libraryPath)
     {
@@ -344,31 +355,76 @@ void GoldAdapterImpl::processGoldLibrary(const char* libraryPath)
     }
 }
 
-void GoldAdapterImpl::extractSymbolsFromFile(const std::string& filePath)
+void GoldAdapter::Impl::extractSymbolsFromFile(const std::string& filePath)
 {
-    // This is a simplified implementation
-    // In a real implementation, you would use BFD or similar to extract symbols
-    
-    if (PluginUtils::isObjectFile(filePath))
-    {
-        processObjectFile(filePath);
+#ifdef __linux__
+    bfd* abfd = bfd_openr(filePath.c_str(), nullptr);
+    if (!abfd) {
+        PluginUtils::logDebug("Failed to open file with BFD: " + filePath);
+        return;
     }
-    else if (PluginUtils::isStaticLibrary(filePath))
-    {
-        processArchiveFile(filePath);
+    if (!bfd_check_format(abfd, bfd_object) && !bfd_check_format(abfd, bfd_archive)) {
+        bfd_close(abfd);
+        PluginUtils::logDebug("File is not a valid object or archive: " + filePath);
+        return;
     }
-    else if (PluginUtils::isSharedLibrary(filePath))
-    {
-        processSharedLibrary(filePath);
+    if (!bfd_check_format_matches(abfd, bfd_object, nullptr)) {
+        bfd_close(abfd);
+        PluginUtils::logDebug("BFD format check failed: " + filePath);
+        return;
     }
+    long symcount = bfd_get_symtab_upper_bound(abfd);
+    if (symcount <= 0) {
+        symcount = bfd_get_dynamic_symtab_upper_bound(abfd);
+        if (symcount <= 0) {
+            bfd_close(abfd);
+            PluginUtils::logDebug("No symbol table found: " + filePath);
+            return;
+        }
+    }
+    asymbol** syms = static_cast<asymbol**>(malloc(symcount));
+    if (!syms) {
+        bfd_close(abfd);
+        return;
+    }
+    long symsize = bfd_canonicalize_symtab(abfd, syms);
+    if (symsize <= 0) {
+        symsize = bfd_canonicalize_dynamic_symtab(abfd, syms);
+    }
+    if (symsize > 0) {
+        for (long i = 0; i < symsize; ++i) {
+            asymbol* sym = syms[i];
+            if (!sym) continue;
+            if (!verbose && (sym->flags & BSF_LOCAL)) continue;
+            if (!extractDebugInfo && (sym->flags & BSF_DEBUGGING)) continue;
+            SymbolInfo symbol;
+            symbol.name = bfd_asymbol_name(sym);
+            symbol.address = bfd_asymbol_value(sym);
+            // BFD does not provide symbol size directly; set to 0 or infer if needed
+            symbol.size = 0;
+            symbol.isDefined = (sym->flags & BSF_GLOBAL) || (sym->flags & BSF_WEAK);
+            symbol.isGlobal = (sym->flags & BSF_GLOBAL);
+            symbol.isWeak = (sym->flags & BSF_WEAK);
+            asection* sec = bfd_asymbol_section(sym);
+            if (sec) {
+                symbol.section = bfd_section_name(sec);
+            }
+            currentSymbols.push_back(symbol);
+        }
+    }
+    free(syms);
+    bfd_close(abfd);
+    PluginUtils::logDebug("Extracted " + std::to_string(currentSymbols.size()) + " symbols from " + filePath);
+#endif
 }
 
-void GoldAdapterImpl::processArchiveFile(const std::string& filePath)
+void GoldAdapter::Impl::processArchiveFile(const std::string& filePath)
 {
-    // Process static library (archive file)
+    // Process static library (archive file) using BFD
     // This would use BFD to iterate through archive members
-    PluginUtils::logDebug("Processing archive file: " + filePath);
+    PluginUtils::logDebug("Processing archive file with BFD: " + filePath);
     
+    // TODO: Implement full BFD-based archive processing
     // For now, just create a placeholder symbol to indicate this is a library
     SymbolInfo symbol;
     symbol.name = "archive_" + extractComponentName(filePath);
@@ -381,12 +437,13 @@ void GoldAdapterImpl::processArchiveFile(const std::string& filePath)
     currentSymbols.push_back(symbol);
 }
 
-void GoldAdapterImpl::processObjectFile(const std::string& filePath)
+void GoldAdapter::Impl::processObjectFile(const std::string& filePath)
 {
-    // Process object file
+    // Process object file using BFD
     // This would use BFD to extract symbols
-    PluginUtils::logDebug("Processing object file: " + filePath);
+    PluginUtils::logDebug("Processing object file with BFD: " + filePath);
     
+    // TODO: Implement full BFD-based object file processing
     // For now, just create a placeholder symbol
     SymbolInfo symbol;
     symbol.name = "object_" + extractComponentName(filePath);
@@ -399,12 +456,13 @@ void GoldAdapterImpl::processObjectFile(const std::string& filePath)
     currentSymbols.push_back(symbol);
 }
 
-void GoldAdapterImpl::processSharedLibrary(const std::string& filePath)
+void GoldAdapter::Impl::processSharedLibrary(const std::string& filePath)
 {
-    // Process shared library
+    // Process shared library using BFD
     // This would use BFD to extract symbols
-    PluginUtils::logDebug("Processing shared library: " + filePath);
+    PluginUtils::logDebug("Processing shared library with BFD: " + filePath);
     
+    // TODO: Implement full BFD-based shared library processing
     // For now, just create a placeholder symbol
     SymbolInfo symbol;
     symbol.name = "shared_" + extractComponentName(filePath);
@@ -415,6 +473,17 @@ void GoldAdapterImpl::processSharedLibrary(const std::string& filePath)
     symbol.section = "dynamic";
     
     currentSymbols.push_back(symbol);
+}
+
+void GoldAdapter::Impl::addComponent(const ComponentInfo& component)
+{
+    // Implementation of addComponent method
+}
+
+std::string GoldAdapter::Impl::extractComponentName(const std::string& filePath)
+{
+    // Implementation of extractComponentName method
+    return ""; // Placeholder return, actual implementation needed
 }
 
 } // namespace heimdall

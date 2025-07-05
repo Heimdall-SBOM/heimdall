@@ -51,6 +51,50 @@ else()
     message(FATAL_ERROR "OpenSSL not found - required for SHA256 checksums")
 endif()
 
+# Find libelf for ELF parsing
+find_library(ELF_LIBRARY NAMES elf)
+if(ELF_LIBRARY)
+    message(STATUS "Found libelf: ${ELF_LIBRARY}")
+    set(ELF_FOUND TRUE)
+else()
+    message(WARNING "libelf not found - ELF parsing will be limited")
+    set(ELF_FOUND FALSE)
+endif()
+
+# Find LLVM for DWARF debug info extraction
+find_program(LLVM_CONFIG llvm-config)
+if(LLVM_CONFIG)
+    execute_process(
+        COMMAND ${LLVM_CONFIG} --version
+        OUTPUT_VARIABLE LLVM_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG} --libs --system-libs
+        OUTPUT_VARIABLE LLVM_LIBS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG} --cxxflags
+        OUTPUT_VARIABLE LLVM_CXXFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG} --ldflags
+        OUTPUT_VARIABLE LLVM_LDFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    
+    message(STATUS "Found LLVM ${LLVM_VERSION}")
+    message(STATUS "LLVM libraries: ${LLVM_LIBS}")
+    message(STATUS "LLVM CXX flags: ${LLVM_CXXFLAGS}")
+    message(STATUS "LLVM LD flags: ${LLVM_LDFLAGS}")
+    set(LLVM_DWARF_FOUND TRUE)
+else()
+    message(WARNING "llvm-config not found - debug info extraction will be limited")
+    set(LLVM_DWARF_FOUND FALSE)
+endif()
+
 # Find LLVM for LLD plugin
 if(BUILD_LLD_PLUGIN)
     # Try to find Homebrew LLVM first
@@ -102,6 +146,16 @@ if(BUILD_LLD_PLUGIN)
     endif()
 endif()
 
+# Find BFD library for Gold plugin
+find_library(BFD_LIBRARY NAMES bfd)
+if(BFD_LIBRARY)
+    message(STATUS "Found BFD library: ${BFD_LIBRARY}")
+    set(BFD_FOUND TRUE)
+else()
+    message(WARNING "BFD library not found - Gold plugin will have limited functionality")
+    set(BFD_FOUND FALSE)
+endif()
+
 # Find Gold linker
 if(BUILD_GOLD_PLUGIN)
     find_program(GOLD_LINKER NAMES ld.gold gold)
@@ -117,6 +171,19 @@ if(BUILD_GOLD_PLUGIN)
         if(NOT GOLD_PLUGIN_HEADERS)
             set(GOLD_PLUGIN_HEADERS "${CMAKE_SOURCE_DIR}/include/gold")
         endif()
+        
+        # Check for BFD headers
+        include(CheckIncludeFile)
+        check_include_file(bfd.h BFD_HEADER_FOUND)
+        check_include_file(elf-bfd.h ELF_BFD_HEADER_FOUND)
+        
+        if(BFD_HEADER_FOUND AND ELF_BFD_HEADER_FOUND AND BFD_FOUND)
+            set(GOLD_BFD_AVAILABLE TRUE)
+            message(STATUS "BFD support available for Gold plugin")
+        else()
+            set(GOLD_BFD_AVAILABLE FALSE)
+            message(STATUS "BFD support not available for Gold plugin")
+        endif()
     else()
         set(GOLD_AVAILABLE FALSE)
         message(WARNING "Gold linker not found")
@@ -131,6 +198,7 @@ if(BUILD_SHARED_CORE)
         src/common/SBOMGenerator.cpp
         src/common/ComponentInfo.cpp
         src/common/MetadataExtractor.cpp
+        src/common/DWARFExtractor.cpp
         src/common/Utils.cpp
         src/common/PluginInterface.cpp
     )
@@ -139,6 +207,7 @@ if(BUILD_SHARED_CORE)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:include>
         ${OPENSSL_INCLUDE_DIR}
+        /usr/include/llvm
     )
     
     target_compile_definitions(heimdall-core PRIVATE
@@ -147,6 +216,24 @@ if(BUILD_SHARED_CORE)
     )
     
     target_link_libraries(heimdall-core PRIVATE ${OPENSSL_LIBRARIES})
+    
+    if(ELF_FOUND)
+        target_link_libraries(heimdall-core PRIVATE ${ELF_LIBRARY})
+    endif()
+    
+    if(LLVM_DWARF_FOUND)
+        # Parse LLVM libraries string into list
+        string(REPLACE " " ";" LLVM_LIB_LIST "${LLVM_LIBS}")
+        
+        target_link_libraries(heimdall-core PRIVATE ${LLVM_LIB_LIST})
+        target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE)
+        
+        # Add LLVM CXX flags
+        target_compile_options(heimdall-core PRIVATE ${LLVM_CXXFLAGS})
+        
+        # Add LLVM LD flags
+        target_link_options(heimdall-core PRIVATE ${LLVM_LDFLAGS})
+    endif()
     
     set_target_properties(heimdall-core PROPERTIES
         VERSION ${PROJECT_VERSION}
@@ -203,7 +290,7 @@ if(BUILD_LLD_PLUGIN AND LLD_AVAILABLE)
 endif()
 
 # Heimdall Gold Plugin
-if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE)
+if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND GOLD_BFD_AVAILABLE)
     add_library(heimdall-gold SHARED
         src/gold/GoldPlugin.cpp
         src/gold/GoldAdapter.cpp
@@ -216,9 +303,14 @@ if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE)
     
     target_compile_definitions(heimdall-gold PRIVATE
         HEIMDALL_GOLD_PLUGIN
+        BFD_AVAILABLE=1
     )
     
     target_link_libraries(heimdall-gold PRIVATE dl)
+    
+    if(BFD_FOUND)
+        target_link_libraries(heimdall-gold PRIVATE ${BFD_LIBRARY})
+    endif()
     
     if(BUILD_SHARED_CORE)
         target_link_libraries(heimdall-gold PRIVATE heimdall-core)
@@ -235,6 +327,8 @@ if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE)
             LINK_FLAGS "-Wl,--no-undefined"
         )
     endif()
+elseif(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND NOT GOLD_BFD_AVAILABLE)
+    message(WARNING "Gold plugin not built: BFD headers not available")
 endif()
 
 # Tests

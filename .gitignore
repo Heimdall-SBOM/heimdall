@@ -8,6 +8,7 @@ CTestTestfile.cmake
 Makefile
 *.ninja
 *.swp
+*.swo
 
 # Ignore binary/object/library files
 *.o
@@ -26,6 +27,7 @@ Makefile
 *.cyclonedx.json
 *.json
 *.log
+*.xml
 examples/*/build/
 examples/*/*.spdx
 examples/*/*.cyclonedx.json
@@ -50,4 +52,26 @@ tests/output/
 *~
 *.bak
 *.tmp
-*.old 
+*.old
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
+*.sublime-*
+.project
+.classpath
+
+# Ignore patch files
+*.orig
+*.rej
+
+# Ignore Python cache
+*.pyc
+__pycache__/
+
+# Ignore Java files
+*.class
+*.jar
+
+# Ignore large files (over 1MB) that might be accidentally committed
+# (This is a safety measure - adjust size as needed) 

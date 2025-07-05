@@ -148,6 +148,20 @@ Tests for binary file analysis:
 - **Edge Cases**: Empty files, large files, special characters
 - **Platform Support**: Different file types across platforms
 
+## Test Archive Generation (Static Libraries)
+
+Some tests require static library archives (e.g., `libtest.a`, `libtest_with_syms.a`, and dummy `libz.a` files for Conan, Spack, and vcpkg test directories). **These files are not checked into version control.**
+
+Instead, they are automatically generated as part of the test build using CMake custom commands. When you build the tests, CMake will:
+
+- Compile `test_lib.c` to `test_lib.o`
+- Create `libtest.a` and `libtest_with_syms.a` from `test_lib.o`
+- Create small dummy `libz.a` files in the appropriate package manager subdirectories
+
+This ensures that a fresh clone/build will always have the necessary test archives for the test suite to run successfully.
+
+**You do not need to manually create or check in these files.**
+
 ## Test Data
 
 The `data/test_files/` directory contains sample files used by tests:
@@ -155,6 +169,15 @@ The `data/test_files/` directory contains sample files used by tests:
 - `empty.txt`: Empty file for testing edge cases
 - `sample.txt`: Sample text file with known content
 - `binary.bin`: Sample binary file for testing binary operations
+
+The `testdata/` directory contains source files and generated archives for archive and package manager tests:
+
+- `test_lib.c`: Source file for generating test object and archive files
+- `libtest.a`, `libtest_with_syms.a`: Generated static libraries for archive tests
+- `conan/lib/libz.a`, `spack/.../libz.a`, `vcpkg/.../libz.a`: Dummy static libraries for package manager tests (generated)
+- `notanarchive.txt`: Dummy file for negative archive tests
+
+All `.a` files and `test_lib.o` are generated automatically by CMake and are not tracked in git.
 
 ## Test Environment
 

@@ -1,7 +1,15 @@
+/**
+ * @file Utils.cpp
+ * @brief Implementation of utility functions for file operations, string manipulation, and system interactions
+ * @author Trevor Bakker
+ * @date 2025
+ */
+
 #include "Utils.hpp"
 #include <iostream>
 #include <cstring>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 #include <iomanip>
 #include <sstream>
 
@@ -19,36 +27,86 @@ namespace heimdall {
 
 namespace Utils {
 
-// File and path utilities
+/**
+ * @brief Extract the filename from a file path
+ * @param filePath The full file path
+ * @return The filename without the directory path
+ */
 std::string getFileName(const std::string& filePath)
 {
     std::filesystem::path path(filePath);
     return path.filename().string();
 }
 
+/**
+ * @brief Extract the file extension from a file path
+ * @param filePath The full file path
+ * @return The file extension (including the dot)
+ */
 std::string getFileExtension(const std::string& filePath)
 {
     std::filesystem::path path(filePath);
     return path.extension().string();
 }
 
+/**
+ * @brief Extract the directory path from a file path
+ * @param filePath The full file path
+ * @return The directory path without the filename
+ */
 std::string getDirectory(const std::string& filePath)
 {
     std::filesystem::path path(filePath);
     return path.parent_path().string();
 }
 
+/**
+ * @brief Normalize a file path (resolve relative paths, remove redundant separators)
+ * @param path The path to normalize
+ * @return The normalized path
+ */
 std::string normalizePath(const std::string& path)
 {
     std::filesystem::path fsPath(path);
     return fsPath.lexically_normal().string();
 }
 
+/**
+ * @brief Split a path into its components
+ * @param path The path to split
+ * @return Vector of path components
+ */
+std::vector<std::string> splitPath(const std::string& path)
+{
+    std::vector<std::string> result;
+    std::filesystem::path fsPath(path);
+    
+    for (const auto& part : fsPath)
+    {
+        if (!part.empty() && part.string() != "." && part.string() != "..")
+        {
+            result.push_back(part.string());
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * @brief Check if a file exists
+ * @param filePath The path to check
+ * @return true if the file exists, false otherwise
+ */
 bool fileExists(const std::string& filePath)
 {
     return std::filesystem::exists(filePath);
 }
 
+/**
+ * @brief Get the size of a file in bytes
+ * @param filePath The path to the file
+ * @return The file size in bytes, or 0 if the file doesn't exist
+ */
 uint64_t getFileSize(const std::string& filePath)
 {
     if (!fileExists(filePath))
@@ -60,6 +118,11 @@ uint64_t getFileSize(const std::string& filePath)
     return std::filesystem::file_size(path);
 }
 
+/**
+ * @brief Calculate SHA256 checksum of a file
+ * @param filePath The path to the file
+ * @return The SHA256 hash as a hexadecimal string
+ */
 std::string getFileChecksum(const std::string& filePath)
 {
     std::ifstream file(filePath, std::ios::binary);
@@ -68,28 +131,58 @@ std::string getFileChecksum(const std::string& filePath)
         return "";
     }
 
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    if (!mdctx)
+    {
+        return "";
+    }
+    const EVP_MD* md = EVP_sha256();
+    if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1)
+    {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
 
     char buffer[4096];
     while (file.read(buffer, sizeof(buffer)))
     {
-        SHA256_Update(&sha256, buffer, file.gcount());
+        if (EVP_DigestUpdate(mdctx, buffer, file.gcount()) != 1)
+        {
+            EVP_MD_CTX_free(mdctx);
+            return "";
+        }
     }
-    SHA256_Update(&sha256, buffer, file.gcount());
+    if (file.gcount() > 0)
+    {
+        if (EVP_DigestUpdate(mdctx, buffer, file.gcount()) != 1)
+        {
+            EVP_MD_CTX_free(mdctx);
+            return "";
+        }
+    }
 
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_Final(hash, &sha256);
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int hash_len = 0;
+    if (EVP_DigestFinal_ex(mdctx, hash, &hash_len) != 1)
+    {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+    EVP_MD_CTX_free(mdctx);
 
     std::stringstream ss;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++)
+    for (unsigned int i = 0; i < hash_len; i++)
     {
         ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
     }
     return ss.str();
 }
 
-// String utilities
+/**
+ * @brief Convert a string to lowercase
+ * @param str The string to convert
+ * @return The lowercase version of the string
+ */
 std::string toLower(const std::string& str)
 {
     std::string result = str;
@@ -97,6 +190,11 @@ std::string toLower(const std::string& str)
     return result;
 }
 
+/**
+ * @brief Convert a string to uppercase
+ * @param str The string to convert
+ * @return The uppercase version of the string
+ */
 std::string toUpper(const std::string& str)
 {
     std::string result = str;
@@ -104,6 +202,11 @@ std::string toUpper(const std::string& str)
     return result;
 }
 
+/**
+ * @brief Remove leading and trailing whitespace from a string
+ * @param str The string to trim
+ * @return The trimmed string
+ */
 std::string trim(const std::string& str)
 {
     size_t start = str.find_first_not_of(" \t\n\r");
@@ -116,6 +219,12 @@ std::string trim(const std::string& str)
     return str.substr(start, end - start + 1);
 }
 
+/**
+ * @brief Split a string by a delimiter
+ * @param str The string to split
+ * @param delimiter The delimiter character
+ * @return Vector of substrings
+ */
 std::vector<std::string> split(const std::string& str, char delimiter)
 {
     std::vector<std::string> result;
@@ -133,6 +242,12 @@ std::vector<std::string> split(const std::string& str, char delimiter)
     return result;
 }
 
+/**
+ * @brief Join a vector of strings with a separator
+ * @param parts The vector of strings to join
+ * @param separator The separator string
+ * @return The joined string
+ */
 std::string join(const std::vector<std::string>& parts, const std::string& separator)
 {
     if (parts.empty())
@@ -149,6 +264,12 @@ std::string join(const std::vector<std::string>& parts, const std::string& separ
     return result;
 }
 
+/**
+ * @brief Check if a string starts with a prefix
+ * @param str The string to check
+ * @param prefix The prefix to look for
+ * @return true if the string starts with the prefix
+ */
 bool startsWith(const std::string& str, const std::string& prefix)
 {
     if (str.length() < prefix.length())
@@ -158,6 +279,12 @@ bool startsWith(const std::string& str, const std::string& prefix)
     return str.compare(0, prefix.length(), prefix) == 0;
 }
 
+/**
+ * @brief Check if a string ends with a suffix
+ * @param str The string to check
+ * @param suffix The suffix to look for
+ * @return true if the string ends with the suffix
+ */
 bool endsWith(const std::string& str, const std::string& suffix)
 {
     if (str.length() < suffix.length())
@@ -167,6 +294,13 @@ bool endsWith(const std::string& str, const std::string& suffix)
     return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
 }
 
+/**
+ * @brief Replace all occurrences of a substring in a string
+ * @param str The original string
+ * @param from The substring to replace
+ * @param to The replacement substring
+ * @return The string with replacements made
+ */
 std::string replace(const std::string& str, const std::string& from, const std::string& to)
 {
     std::string result = str;
@@ -179,7 +313,10 @@ std::string replace(const std::string& str, const std::string& from, const std::
     return result;
 }
 
-// System utilities
+/**
+ * @brief Get the current working directory
+ * @return The current working directory path
+ */
 std::string getCurrentWorkingDirectory()
 {
     char buffer[4096];
@@ -190,12 +327,21 @@ std::string getCurrentWorkingDirectory()
     return "";
 }
 
+/**
+ * @brief Get the value of an environment variable
+ * @param name The name of the environment variable
+ * @return The value of the environment variable, or empty string if not found
+ */
 std::string getEnvironmentVariable(const std::string& name)
 {
     const char* value = std::getenv(name.c_str());
     return value ? std::string(value) : "";
 }
 
+/**
+ * @brief Get the list of library search paths
+ * @return Vector of library search paths
+ */
 std::vector<std::string> getLibrarySearchPaths()
 {
     std::vector<std::string> paths;
@@ -237,6 +383,11 @@ std::vector<std::string> getLibrarySearchPaths()
     return paths;
 }
 
+/**
+ * @brief Find a library in the system search paths
+ * @param libraryName The name of the library to find
+ * @return The full path to the library, or empty string if not found
+ */
 std::string findLibrary(const std::string& libraryName)
 {
     std::vector<std::string> searchPaths = getLibrarySearchPaths();
@@ -253,6 +404,11 @@ std::string findLibrary(const std::string& libraryName)
     return "";
 }
 
+/**
+ * @brief Check if a library is a system library
+ * @param libraryPath The path to the library
+ * @return true if the library is in a system directory
+ */
 bool isSystemLibrary(const std::string& libraryPath)
 {
     std::string normalizedPath = normalizePath(libraryPath);
@@ -274,7 +430,11 @@ bool isSystemLibrary(const std::string& libraryPath)
     return false;
 }
 
-// Package manager detection
+/**
+ * @brief Detect the package manager based on file path
+ * @param filePath The path to the file
+ * @return The detected package manager name (e.g., "rpm", "deb", "conan", etc.)
+ */
 std::string detectPackageManager(const std::string& filePath)
 {
     std::string normalizedPath = normalizePath(filePath);
@@ -305,6 +465,11 @@ std::string detectPackageManager(const std::string& filePath)
     return "unknown";
 }
 
+/**
+ * @brief Extract version information from a file path
+ * @param filePath The path to extract version from
+ * @return The extracted version string, or empty if not found
+ */
 std::string extractVersionFromPath(const std::string& filePath)
 {
     std::regex versionRegex(R"((\d+\.\d+\.\d+))");
@@ -318,6 +483,11 @@ std::string extractVersionFromPath(const std::string& filePath)
     return "";
 }
 
+/**
+ * @brief Extract package name from a file path
+ * @param filePath The path to extract package name from
+ * @return The extracted package name, or empty if not found
+ */
 std::string extractPackageName(const std::string& filePath)
 {
     std::string fileName = getFileName(filePath);
@@ -347,7 +517,10 @@ std::string extractPackageName(const std::string& filePath)
     return fileName;
 }
 
-// Debug and logging
+/**
+ * @brief Print a debug message (only if HEIMDALL_DEBUG_ENABLED is defined)
+ * @param message The message to print
+ */
 void debugPrint(const std::string& message)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -355,17 +528,29 @@ void debugPrint(const std::string& message)
 #endif
 }
 
+/**
+ * @brief Print an error message
+ * @param message The error message to print
+ */
 void errorPrint(const std::string& message)
 {
     std::cerr << "[ERROR] " << message << std::endl;
 }
 
+/**
+ * @brief Print a warning message
+ * @param message The warning message to print
+ */
 void warningPrint(const std::string& message)
 {
     std::cerr << "[WARNING] " << message << std::endl;
 }
 
-// JSON utilities
+/**
+ * @brief Escape special characters in a string for JSON output
+ * @param str The string to escape
+ * @return The escaped string
+ */
 std::string escapeJsonString(const std::string& str)
 {
     std::string result;
@@ -400,6 +585,11 @@ std::string escapeJsonString(const std::string& str)
     return result;
 }
 
+/**
+ * @brief Format a value for JSON output
+ * @param value The value to format
+ * @return The formatted JSON value
+ */
 std::string formatJsonValue(const std::string& value)
 {
     if (value.empty())
@@ -409,6 +599,11 @@ std::string formatJsonValue(const std::string& value)
     return "\"" + escapeJsonString(value) + "\"";
 }
 
+/**
+ * @brief Format an array of strings for JSON output
+ * @param array The array to format
+ * @return The formatted JSON array string
+ */
 std::string formatJsonArray(const std::vector<std::string>& array)
 {
     if (array.empty())
@@ -427,36 +622,65 @@ std::string formatJsonArray(const std::vector<std::string>& array)
     return result;
 }
 
-// File type detection functions
+/**
+ * @brief Check if a file is an object file (.o, .obj)
+ * @param filePath The path to the file
+ * @return true if the file is an object file
+ */
 bool isObjectFile(const std::string& filePath)
 {
     std::string ext = toLower(getFileExtension(filePath));
     return ext == ".o" || ext == ".obj";
 }
 
+/**
+ * @brief Check if a file is a static library (.a, .lib)
+ * @param filePath The path to the file
+ * @return true if the file is a static library
+ */
 bool isStaticLibrary(const std::string& filePath)
 {
     std::string ext = toLower(getFileExtension(filePath));
     return ext == ".a" || ext == ".lib";
 }
 
+/**
+ * @brief Check if a file is a shared library (.so, .dylib, .dll)
+ * @param filePath The path to the file
+ * @return true if the file is a shared library
+ */
 bool isSharedLibrary(const std::string& filePath)
 {
     std::string ext = toLower(getFileExtension(filePath));
     return ext == ".so" || ext == ".dylib" || ext == ".dll";
 }
 
+/**
+ * @brief Check if a file is an executable
+ * @param filePath The path to the file
+ * @return true if the file is an executable
+ */
 bool isExecutable(const std::string& filePath)
 {
     std::string ext = toLower(getFileExtension(filePath));
     return ext == ".exe" || ext == "" || filePath.find("bin/") != std::string::npos;
 }
 
+/**
+ * @brief Calculate SHA256 hash of a file (alias for getFileChecksum)
+ * @param filePath The path to the file
+ * @return The SHA256 hash as a hexadecimal string
+ */
 std::string calculateSHA256(const std::string& filePath)
 {
     return getFileChecksum(filePath);
 }
 
+/**
+ * @brief Detect license based on component name
+ * @param componentName The name of the component
+ * @return The detected license, or empty if not detected
+ */
 std::string detectLicenseFromName(const std::string& componentName)
 {
     std::string lowerName = toLower(componentName);
@@ -464,69 +688,89 @@ std::string detectLicenseFromName(const std::string& componentName)
     // OpenSSL and related libraries
     if (lowerName.find("openssl") != std::string::npos || 
         lowerName.find("ssl") != std::string::npos || 
-        lowerName.find("crypto") != std::string::npos) {
+        lowerName.find("crypto") != std::string::npos)
+    {
         return "Apache-2.0";
     }
     
     // Pthread and threading libraries
     if (lowerName.find("pthread") != std::string::npos || 
-        lowerName.find("thread") != std::string::npos) {
+        lowerName.find("thread") != std::string::npos)
+    {
         return "MIT";
     }
     
     // System libraries (libc, libm, etc.)
-    if (lowerName.find("libc") != std::string::npos) {
+    if (lowerName.find("libc") != std::string::npos)
+    {
         return "LGPL-2.1";
     }
-    if (lowerName.find("libm") != std::string::npos) {
+    if (lowerName.find("libm") != std::string::npos)
+    {
         return "LGPL-2.1";
     }
-    if (lowerName.find("libdl") != std::string::npos) {
+    if (lowerName.find("libdl") != std::string::npos)
+    {
         return "LGPL-2.1";
     }
-    if (lowerName.find("libutil") != std::string::npos) {
+    if (lowerName.find("libutil") != std::string::npos)
+    {
         return "BSD-3-Clause";
     }
     
     // Apple system libraries
-    if (lowerName.find("libsystem") != std::string::npos) {
+    if (lowerName.find("libsystem") != std::string::npos)
+    {
         return "Apple-PSL";
     }
-    if (lowerName.find("libobjc") != std::string::npos) {
+    if (lowerName.find("libobjc") != std::string::npos)
+    {
         return "GPL-2.0";
     }
     
     // Common development libraries
-    if (lowerName.find("libgcc") != std::string::npos) {
+    if (lowerName.find("libgcc") != std::string::npos)
+    {
         return "GPL-3.0";
     }
-    if (lowerName.find("libstdc++") != std::string::npos) {
+    if (lowerName.find("libstdc++") != std::string::npos)
+    {
         return "GPL-3.0";
     }
     
     return "NOASSERTION";
 }
 
+/**
+ * @brief Detect license based on file path
+ * @param filePath The path to the file
+ * @return The detected license, or empty if not detected
+ */
 std::string detectLicenseFromPath(const std::string& filePath)
 {
     std::string lowerPath = toLower(filePath);
     
     // System library paths
-    if (lowerPath.find("/usr/lib") != std::string::npos) {
+    if (lowerPath.find("/usr/lib") != std::string::npos)
+    {
         return "LGPL-2.1";
     }
-    if (lowerPath.find("/usr/local/lib") != std::string::npos) {
+    if (lowerPath.find("/usr/local/lib") != std::string::npos)
+    {
         return "MIT";
     }
-    if (lowerPath.find("/opt/local/lib") != std::string::npos) {
+    if (lowerPath.find("/opt/local/lib") != std::string::npos)
+    {
         return "MIT";
     }
-    if (lowerPath.find("/opt/homebrew/lib") != std::string::npos) {
+    if (lowerPath.find("/opt/homebrew/lib") != std::string::npos)
+    {
         return "MIT";
     }
     
     // Apple system paths
-    if (lowerPath.find("/system/library") != std::string::npos) {
+    if (lowerPath.find("/system/library") != std::string::npos)
+    {
         return "Apple-PSL";
     }
     

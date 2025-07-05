@@ -1,5 +1,7 @@
 #include "MetadataExtractor.hpp"
+#include "ComponentInfo.hpp"
 #include "Utils.hpp"
+#include "DWARFExtractor.hpp"
 #include <fstream>
 #include <iostream>
 #include <cstring>
@@ -8,7 +10,9 @@
 
 #ifdef __linux__
 #include <elf.h>
-#include <link.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <libelf.h>
 #endif
 
 #ifdef __APPLE__
@@ -37,16 +41,16 @@ MetadataExtractor::~MetadataExtractor() = default;
 
 bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 {
-    if (!Utils::fileExists(component.filePath))
+    if (!heimdall::Utils::fileExists(component.filePath))
     {
-        Utils::errorPrint("File does not exist: " + component.filePath);
+        heimdall::Utils::errorPrint("File does not exist: " + component.filePath);
         return false;
     }
     
     // Detect file format
     if (!pImpl->detectFileFormat(component.filePath))
     {
-        Utils::warningPrint("Could not detect file format for: " + component.filePath);
+        heimdall::Utils::warningPrint("Could not detect file format for: " + component.filePath);
     }
     
     bool success = true;
@@ -64,19 +68,49 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
     
     success &= extractDependencyInfo(component);
     
-    // Package manager specific extraction
-    std::string packageManager = Utils::detectPackageManager(component.filePath);
-    if (packageManager == "conan")
-    {
-        extractConanMetadata(component);
+    // Enhanced package manager detection and metadata extraction
+    bool packageManagerDetected = false;
+    
+    // Try RPM detection
+    if (heimdall::MetadataHelpers::detectRpmMetadata(component)) {
+        packageManagerDetected = true;
+        heimdall::Utils::debugPrint("Detected RPM package metadata");
     }
-    else if (packageManager == "vcpkg")
-    {
-        extractVcpkgMetadata(component);
+    
+    // Try Debian detection
+    if (!packageManagerDetected && heimdall::MetadataHelpers::detectDebMetadata(component)) {
+        packageManagerDetected = true;
+        heimdall::Utils::debugPrint("Detected Debian package metadata");
     }
-    else if (packageManager == "system")
-    {
-        extractSystemMetadata(component);
+    
+    // Try Conan detection
+    if (!packageManagerDetected && heimdall::MetadataHelpers::detectConanMetadata(component)) {
+        packageManagerDetected = true;
+        heimdall::Utils::debugPrint("Detected Conan package metadata");
+    }
+    
+    // Try vcpkg detection
+    if (!packageManagerDetected && heimdall::MetadataHelpers::detectVcpkgMetadata(component)) {
+        packageManagerDetected = true;
+        heimdall::Utils::debugPrint("Detected vcpkg package metadata");
+    }
+    
+    // Try Spack detection
+    if (!packageManagerDetected && heimdall::MetadataHelpers::detectSpackMetadata(component)) {
+        packageManagerDetected = true;
+        heimdall::Utils::debugPrint("Detected Spack package metadata");
+    }
+    
+    // Fallback to generic package manager detection
+    if (!packageManagerDetected) {
+        std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
+        if (packageManager == "conan") {
+            extractConanMetadata(component);
+        } else if (packageManager == "vcpkg") {
+            extractVcpkgMetadata(component);
+        } else if (packageManager == "system") {
+            extractSystemMetadata(component);
+        }
     }
     
     component.markAsProcessed();
@@ -157,7 +191,19 @@ bool MetadataExtractor::extractSymbolInfo(ComponentInfo& component)
     }
     else if (isArchive(component.filePath))
     {
-        return MetadataHelpers::extractArchiveSymbols(component.filePath, component.symbols);
+        // Extract archive symbols
+        bool symbolsExtracted = MetadataHelpers::extractArchiveSymbols(component.filePath, component.symbols);
+        
+        // Also extract archive members for additional metadata
+        std::vector<std::string> members;
+        if (MetadataHelpers::extractArchiveMembers(component.filePath, members)) {
+            for (const auto& member : members) {
+                component.addSourceFile(member); // Use source files to store member names
+            }
+            Utils::debugPrint("Extracted " + std::to_string(members.size()) + " archive members");
+        }
+        
+        return symbolsExtracted;
     }
     
     return false;
@@ -193,6 +239,7 @@ bool MetadataExtractor::extractDependencyInfo(ComponentInfo& component)
     {
         component.addDependency(dep);
     }
+    component.markAsProcessed();
     return !deps.empty();
 }
 
@@ -212,18 +259,20 @@ bool MetadataExtractor::isELF(const std::string& filePath)
 
 bool MetadataExtractor::isMachO(const std::string& filePath)
 {
+#ifdef __APPLE__
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open())
     {
         return false;
     }
-    
     uint32_t magic;
     file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
-    
     return (magic == MH_MAGIC || magic == MH_MAGIC_64 || 
             magic == MH_CIGAM || magic == MH_CIGAM_64 ||
             magic == FAT_MAGIC || magic == FAT_CIGAM);
+#else
+    return false;
+#endif
 }
 
 bool MetadataExtractor::isPE(const std::string& filePath)
@@ -234,39 +283,48 @@ bool MetadataExtractor::isPE(const std::string& filePath)
         return false;
     }
     
+    // Check for PE magic number (MZ)
     char magic[2];
     file.read(magic, 2);
+    if (file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z') {
+        return true;
+    }
     
-    return (magic[0] == 'M' && magic[1] == 'Z');
+    return false;
 }
 
 bool MetadataExtractor::isArchive(const std::string& filePath)
 {
     std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         return false;
     }
     
+    // Check for Unix archive magic number (!<arch>)
     char magic[8];
     file.read(magic, 8);
+    if (file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0) {
+        return true;
+    }
     
-    return (strncmp(magic, "!<arch>", 7) == 0);
+    return false;
 }
 
-bool MetadataExtractor::extractConanMetadata(ComponentInfo& component)
+
+
+bool MetadataExtractor::extractConanMetadata(heimdall::ComponentInfo& component)
 {
     component.setPackageManager("conan");
     
     // Extract version from path (conan typically includes version in path)
-    std::string version = Utils::extractVersionFromPath(component.filePath);
+    std::string version = heimdall::Utils::extractVersionFromPath(component.filePath);
     if (!version.empty())
     {
         component.setVersion(version);
     }
     
     // Extract package name
-    std::string packageName = Utils::extractPackageName(component.filePath);
+    std::string packageName = heimdall::Utils::extractPackageName(component.filePath);
     if (!packageName.empty())
     {
         component.setSupplier("conan-center");
@@ -276,19 +334,19 @@ bool MetadataExtractor::extractConanMetadata(ComponentInfo& component)
     return true;
 }
 
-bool MetadataExtractor::extractVcpkgMetadata(ComponentInfo& component)
+bool MetadataExtractor::extractVcpkgMetadata(heimdall::ComponentInfo& component)
 {
     component.setPackageManager("vcpkg");
     
     // Extract version from path
-    std::string version = Utils::extractVersionFromPath(component.filePath);
+    std::string version = heimdall::Utils::extractVersionFromPath(component.filePath);
     if (!version.empty())
     {
         component.setVersion(version);
     }
     
     // Extract package name
-    std::string packageName = Utils::extractPackageName(component.filePath);
+    std::string packageName = heimdall::Utils::extractPackageName(component.filePath);
     if (!packageName.empty())
     {
         component.setSupplier("vcpkg");
@@ -298,13 +356,26 @@ bool MetadataExtractor::extractVcpkgMetadata(ComponentInfo& component)
     return true;
 }
 
-bool MetadataExtractor::extractSystemMetadata(ComponentInfo& component)
+bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component)
 {
     component.setPackageManager("system");
     component.markAsSystemLibrary();
     
+    // Try Linux package managers first
+#ifdef __linux__
+    if (heimdall::MetadataHelpers::detectRpmMetadata(component)) {
+        return true;
+    }
+    if (heimdall::MetadataHelpers::detectDebMetadata(component)) {
+        return true;
+    }
+    if (heimdall::MetadataHelpers::detectPacmanMetadata(component)) {
+        return true;
+    }
+#endif
+    
     // Try to extract version from package manager
-    std::string packageName = Utils::extractPackageName(component.filePath);
+    std::string packageName = heimdall::Utils::extractPackageName(component.filePath);
     if (!packageName.empty())
     {
         component.setSupplier("system-package-manager");
@@ -330,10 +401,8 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath)
     {
         return false;
     }
-    
     char magic[16];
     file.read(magic, sizeof(magic));
-    
     if (magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F')
     {
         fileFormat = "ELF";
@@ -349,8 +418,7 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath)
         fileFormat = "Archive";
         return true;
     }
-    
-    // Check for Mach-O (multiple possible magic values)
+#ifdef __APPLE__
     uint32_t* magic32 = reinterpret_cast<uint32_t*>(magic);
     if (*magic32 == MH_MAGIC || *magic32 == MH_MAGIC_64 || 
         *magic32 == MH_CIGAM || *magic32 == MH_CIGAM_64 ||
@@ -359,7 +427,7 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath)
         fileFormat = "Mach-O";
         return true;
     }
-    
+#endif
     fileFormat = "Unknown";
     return false;
 }
@@ -367,42 +435,268 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath)
 // MetadataHelpers implementation
 namespace MetadataHelpers {
 
-bool isMachO(const std::string& filePath)
+bool isELF(const std::string& filePath)
 {
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         return false;
     }
     
+    char magic[4];
+    file.read(magic, 4);
+    
+    return (magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F');
+}
+
+bool isMachO(const std::string& filePath)
+{
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        return false;
+    }
     uint32_t magic;
     file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
-    
     return (magic == MH_MAGIC || magic == MH_MAGIC_64 || 
             magic == MH_CIGAM || magic == MH_CIGAM_64 ||
             magic == FAT_MAGIC || magic == FAT_CIGAM);
-}
-
-bool extractELFSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols)
-{
-#ifdef __linux__
-    // This is a simplified implementation
-    // In a real implementation, you would use libelf or similar
-    Utils::debugPrint("ELF symbol extraction not fully implemented");
-    return false;
 #else
-    Utils::debugPrint("ELF symbol extraction not supported on this platform");
     return false;
 #endif
 }
 
-bool extractELFSections(const std::string& filePath, std::vector<SectionInfo>& sections)
+bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols)
 {
 #ifdef __linux__
-    // This is a simplified implementation
-    Utils::debugPrint("ELF section extraction not fully implemented");
-    return false;
+    elf_version(EV_CURRENT);
+    std::cerr << "Starting ELF symbol extraction for: " << filePath << std::endl;
+    // Use libelf for comprehensive ELF parsing
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        std::cerr << "Failed to open ELF file: " << filePath << std::endl;
+        heimdall::Utils::debugPrint("Failed to open ELF file: " + filePath);
+        return false;
+    }
+    
+    Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
+    if (!elf) {
+        close(fd);
+        std::cerr << "Failed to open ELF file with libelf: " << filePath << std::endl;
+        heimdall::Utils::debugPrint("Failed to open ELF file with libelf: " + filePath);
+        return false;
+    }
+    
+    // Get ELF header
+    Elf64_Ehdr* ehdr = elf64_getehdr(elf);
+    if (!ehdr) {
+        elf_end(elf);
+        close(fd);
+        heimdall::Utils::debugPrint("Failed to get ELF header");
+        return false;
+    }
+    
+    std::cerr << "ELF file opened successfully, searching for symbol tables..." << std::endl;
+    heimdall::Utils::debugPrint("ELF file opened successfully, searching for symbol tables...");
+    
+    // Find symbol table sections (both .symtab and .dynsym)
+    Elf_Scn* scn = nullptr;
+    Elf64_Shdr* shdr = nullptr;
+    Elf_Data* data = nullptr;
+    int symbolTablesFound = 0;
+    int totalSections = 0;
+    
+    while ((scn = elf_nextscn(elf, scn)) != nullptr) {
+        shdr = elf64_getshdr(scn);
+        if (!shdr) continue;
+        
+        totalSections++;
+        std::cerr << "Section " << totalSections << ": type=" << shdr->sh_type << std::endl;
+        heimdall::Utils::debugPrint("Section " + std::to_string(totalSections) + ": type=" + std::to_string(shdr->sh_type));
+        
+        if (shdr->sh_type == SHT_SYMTAB || shdr->sh_type == SHT_DYNSYM) {
+            symbolTablesFound++;
+            heimdall::Utils::debugPrint("Found symbol table section, type: " + std::to_string(shdr->sh_type));
+            
+            data = elf_getdata(scn, nullptr);
+            if (!data) {
+                heimdall::Utils::debugPrint("Failed to get symbol table data");
+                continue;
+            }
+            
+            // Get string table
+            Elf_Scn* strscn = elf_getscn(elf, shdr->sh_link);
+            if (!strscn) {
+                heimdall::Utils::debugPrint("Failed to get string table section");
+                continue;
+            }
+            
+            Elf64_Shdr* strshdr = elf64_getshdr(strscn);
+            if (!strshdr) {
+                heimdall::Utils::debugPrint("Failed to get string table header");
+                continue;
+            }
+            
+            Elf_Data* strdata = elf_getdata(strscn, nullptr);
+            if (!strdata) {
+                heimdall::Utils::debugPrint("Failed to get string table data");
+                continue;
+            }
+            
+            char* strtab = static_cast<char*>(strdata->d_buf);
+            Elf64_Sym* symtab = static_cast<Elf64_Sym*>(data->d_buf);
+            size_t nsyms = data->d_size / sizeof(Elf64_Sym);
+            
+            heimdall::Utils::debugPrint("Processing " + std::to_string(nsyms) + " symbols");
+            
+            for (size_t i = 0; i < nsyms; ++i) {
+                Elf64_Sym& sym = symtab[i];
+                
+                // Skip null symbols
+                if (sym.st_name == 0) continue;
+                
+                // Skip local symbols unless verbose
+                if (ELF64_ST_BIND(sym.st_info) == STB_LOCAL) continue;
+                
+                // Skip debugging symbols unless requested
+                if (ELF64_ST_TYPE(sym.st_info) == STT_FILE) continue;
+                
+                heimdall::SymbolInfo symbol;
+                symbol.name = strtab + sym.st_name;
+                symbol.address = sym.st_value;
+                symbol.size = sym.st_size;
+                symbol.isDefined = (ELF64_ST_TYPE(sym.st_info) != STT_NOTYPE) && 
+                                  (sym.st_shndx != SHN_UNDEF);
+                symbol.isGlobal = (ELF64_ST_BIND(sym.st_info) == STB_GLOBAL);
+                symbol.isWeak = (ELF64_ST_BIND(sym.st_info) == STB_WEAK);
+                
+                // Get section name
+                if (sym.st_shndx < SHN_LORESERVE) {
+                    Elf_Scn* secscn = elf_getscn(elf, sym.st_shndx);
+                    if (secscn) {
+                        Elf64_Shdr* secshdr = elf64_getshdr(secscn);
+                        if (secshdr) {
+                            // Get section name from string table
+                            Elf_Scn* shstrscn = elf_getscn(elf, ehdr->e_shstrndx);
+                            if (shstrscn) {
+                                Elf64_Shdr* shstrshdr = elf64_getshdr(shstrscn);
+                                if (shstrshdr) {
+                                    Elf_Data* shstrdata = elf_getdata(shstrscn, nullptr);
+                                    if (shstrdata) {
+                                        char* shstrtab = static_cast<char*>(shstrdata->d_buf);
+                                        symbol.section = shstrtab + secshdr->sh_name;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (sym.st_shndx == SHN_UNDEF) {
+                    symbol.section = "UNDEF";
+                } else if (sym.st_shndx == SHN_ABS) {
+                    symbol.section = "ABS";
+                } else if (sym.st_shndx == SHN_COMMON) {
+                    symbol.section = "COMMON";
+                } else {
+                    symbol.section = "UNKNOWN";
+                }
+                
+                symbols.push_back(symbol);
+            }
+        }
+    }
+    
+    heimdall::Utils::debugPrint("Found " + std::to_string(symbolTablesFound) + " symbol tables");
+    heimdall::Utils::debugPrint("Extracted " + std::to_string(symbols.size()) + " symbols");
+    
+    elf_end(elf);
+    close(fd);
+    
+    return !symbols.empty();
 #else
-    Utils::debugPrint("ELF section extraction not supported on this platform");
+    heimdall::Utils::debugPrint("ELF symbol extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractELFSections(const std::string& filePath, std::vector<heimdall::SectionInfo>& sections)
+{
+#ifdef __linux__
+    elf_version(EV_CURRENT);
+    // Use libelf for comprehensive ELF section extraction
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        heimdall::Utils::debugPrint("Failed to open ELF file: " + filePath);
+        return false;
+    }
+    
+    Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
+    if (!elf) {
+        close(fd);
+        heimdall::Utils::debugPrint("Failed to open ELF file with libelf: " + filePath);
+        return false;
+    }
+    
+    // Get ELF header
+    Elf64_Ehdr* ehdr = elf64_getehdr(elf);
+    if (!ehdr) {
+        elf_end(elf);
+        close(fd);
+        return false;
+    }
+    
+    // Get section header string table
+    Elf_Scn* strscn = elf_getscn(elf, ehdr->e_shstrndx);
+    if (!strscn) {
+        elf_end(elf);
+        close(fd);
+        return false;
+    }
+    
+    Elf64_Shdr* strshdr = elf64_getshdr(strscn);
+    if (!strshdr) {
+        elf_end(elf);
+        close(fd);
+        return false;
+    }
+    
+    Elf_Data* strdata = elf_getdata(strscn, nullptr);
+    if (!strdata) {
+        elf_end(elf);
+        close(fd);
+        return false;
+    }
+    
+    char* strtab = static_cast<char*>(strdata->d_buf);
+    
+    // Iterate through all sections
+    Elf_Scn* scn = nullptr;
+    Elf64_Shdr* shdr = nullptr;
+    
+    while ((scn = elf_nextscn(elf, scn)) != nullptr) {
+        shdr = elf64_getshdr(scn);
+        if (!shdr) continue;
+        
+        // Skip null sections
+        if (shdr->sh_type == SHT_NULL) continue;
+        
+        heimdall::SectionInfo section;
+        section.name = strtab + shdr->sh_name;
+        section.address = shdr->sh_addr;
+        section.size = shdr->sh_size;
+        section.type = std::to_string(shdr->sh_type);
+        section.flags = shdr->sh_flags;
+        
+        // Only add meaningful sections
+        if (shdr->sh_size > 0 || shdr->sh_type == SHT_NOBITS) {
+            sections.push_back(section);
+        }
+    }
+    
+    elf_end(elf);
+    close(fd);
+    
+    return !sections.empty();
+#else
+    heimdall::Utils::debugPrint("ELF section extraction not supported on this platform");
     return false;
 #endif
 }
@@ -434,12 +728,191 @@ bool extractELFVersion(const std::string& filePath, std::string& version)
 
 bool extractELFBuildId(const std::string& filePath, std::string& buildId)
 {
-    // Implementation would use libelf to extract build ID
-    Utils::debugPrint("ELF build ID extraction not implemented");
+#ifdef __linux__
+    elf_version(EV_CURRENT);
+    
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        heimdall::Utils::debugPrint("Failed to open ELF file for build ID extraction: " + filePath);
+        return false;
+    }
+    
+    Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
+    if (!elf) {
+        close(fd);
+        heimdall::Utils::debugPrint("Failed to open ELF file with libelf for build ID: " + filePath);
+        return false;
+    }
+    
+    // Get ELF header
+    Elf64_Ehdr* ehdr = elf64_getehdr(elf);
+    if (!ehdr) {
+        elf_end(elf);
+        close(fd);
+        heimdall::Utils::debugPrint("Failed to get ELF header for build ID extraction");
+        return false;
+    }
+    
+    // Iterate through sections to find .note.gnu.build-id
+    Elf_Scn* scn = nullptr;
+    Elf64_Shdr* shdr = nullptr;
+    
+    while ((scn = elf_nextscn(elf, scn)) != nullptr) {
+        shdr = elf64_getshdr(scn);
+        if (!shdr) continue;
+        
+        if (shdr->sh_type == SHT_NOTE) {
+            Elf_Data* data = elf_getdata(scn, nullptr);
+            if (!data) continue;
+            
+            // Get section name to check if it's .note.gnu.build-id
+            Elf_Scn* shstrscn = elf_getscn(elf, ehdr->e_shstrndx);
+            if (!shstrscn) continue;
+            
+            Elf64_Shdr* shstrshdr = elf64_getshdr(shstrscn);
+            if (!shstrshdr) continue;
+            
+            Elf_Data* shstrdata = elf_getdata(shstrscn, nullptr);
+            if (!shstrdata) continue;
+            
+            char* shstrtab = static_cast<char*>(shstrdata->d_buf);
+            std::string sectionName = shstrtab + shdr->sh_name;
+            
+            if (sectionName == ".note.gnu.build-id") {
+                // Parse note section to extract build ID
+                char* noteData = static_cast<char*>(data->d_buf);
+                size_t noteSize = data->d_size;
+                size_t offset = 0;
+                
+                while (offset < noteSize) {
+                    if (offset + 12 > noteSize) break; // Need at least note header
+                    
+                    // Note header: namesz, descsz, type
+                    uint32_t namesz = *reinterpret_cast<uint32_t*>(noteData + offset);
+                    uint32_t descsz = *reinterpret_cast<uint32_t*>(noteData + offset + 4);
+                    uint32_t type = *reinterpret_cast<uint32_t*>(noteData + offset + 8);
+                    
+                    // Check if this is a GNU build ID note
+                    if (type == NT_GNU_BUILD_ID) {
+                        offset += 12; // Skip header
+                        
+                        // Skip name (should be "GNU")
+                        offset += (namesz + 3) & ~3; // Align to 4 bytes
+                        
+                        // Extract build ID
+                        if (offset + descsz <= noteSize) {
+                            buildId.reserve(descsz * 2); // Hex string is 2x size
+                            for (uint32_t i = 0; i < descsz; ++i) {
+                                char hex[3];
+                                snprintf(hex, sizeof(hex), "%02x", 
+                                        static_cast<unsigned char>(noteData[offset + i]));
+                                buildId += hex;
+                            }
+                            
+                            elf_end(elf);
+                            close(fd);
+                            heimdall::Utils::debugPrint("Extracted build ID: " + buildId);
+                            return true;
+                        }
+                    }
+                    
+                    // Move to next note
+                    offset += 12; // Header
+                    offset += (namesz + 3) & ~3; // Name (aligned)
+                    offset += (descsz + 3) & ~3; // Description (aligned)
+                }
+            }
+        }
+    }
+    
+    elf_end(elf);
+    close(fd);
+    heimdall::Utils::debugPrint("No build ID found in ELF file: " + filePath);
     return false;
+#else
+    heimdall::Utils::debugPrint("ELF build ID extraction not supported on this platform");
+    return false;
+#endif
 }
 
-bool extractMachOSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols)
+std::vector<std::string> extractELFDependencies(const std::string& filePath)
+{
+#ifdef __linux__
+    std::vector<std::string> dependencies;
+    
+    elf_version(EV_CURRENT);
+    
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        Utils::debugPrint("Failed to open ELF file for dependency extraction: " + filePath);
+        return dependencies;
+    }
+    
+    Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
+    if (!elf) {
+        close(fd);
+        Utils::debugPrint("Failed to open ELF file with libelf for dependencies: " + filePath);
+        return dependencies;
+    }
+    
+    // Get ELF header
+    Elf64_Ehdr* ehdr = elf64_getehdr(elf);
+    if (!ehdr) {
+        elf_end(elf);
+        close(fd);
+        Utils::debugPrint("Failed to get ELF header for dependency extraction");
+        return dependencies;
+    }
+    
+    // Find dynamic section
+    Elf_Scn* scn = nullptr;
+    Elf64_Shdr* shdr = nullptr;
+    
+    while ((scn = elf_nextscn(elf, scn)) != nullptr) {
+        shdr = elf64_getshdr(scn);
+        if (!shdr) continue;
+        
+        if (shdr->sh_type == SHT_DYNAMIC) {
+            Elf_Data* data = elf_getdata(scn, nullptr);
+            if (!data) continue;
+            
+            // Get string table for dynamic section
+            Elf_Scn* strscn = elf_getscn(elf, shdr->sh_link);
+            if (!strscn) continue;
+            
+            Elf64_Shdr* strshdr = elf64_getshdr(strscn);
+            if (!strshdr) continue;
+            
+            Elf_Data* strdata = elf_getdata(strscn, nullptr);
+            if (!strdata) continue;
+            
+            char* strtab = static_cast<char*>(strdata->d_buf);
+            Elf64_Dyn* dyn = static_cast<Elf64_Dyn*>(data->d_buf);
+            size_t ndyn = data->d_size / sizeof(Elf64_Dyn);
+            
+            for (size_t i = 0; i < ndyn; ++i) {
+                if (dyn[i].d_tag == DT_NEEDED) {
+                    std::string libName = strtab + dyn[i].d_un.d_val;
+                    dependencies.push_back(libName);
+                    Utils::debugPrint("Found dependency: " + libName);
+                }
+            }
+            break;
+        }
+    }
+    
+    elf_end(elf);
+    close(fd);
+    
+    Utils::debugPrint("Extracted " + std::to_string(dependencies.size()) + " dependencies from ELF file");
+    return dependencies;
+#else
+    Utils::debugPrint("ELF dependency extraction not supported on this platform");
+    return std::vector<std::string>();
+#endif
+}
+
+bool extractMachOSymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols)
 {
 #ifdef __APPLE__
     // Open file
@@ -550,7 +1023,7 @@ bool extractMachOSymbols(const std::string& filePath, std::vector<SymbolInfo>& s
 #endif
 }
 
-bool extractMachOSections(const std::string& filePath, std::vector<SectionInfo>& sections)
+bool extractMachOSections(const std::string& filePath, std::vector<heimdall::SectionInfo>& sections)
 {
 #ifdef __APPLE__
     std::ifstream file(filePath, std::ios::binary);
@@ -736,14 +1209,14 @@ bool extractMachOUUID(const std::string& filePath, std::string& uuid)
 #endif
 }
 
-bool extractPESymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols)
+bool extractPESymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols)
 {
     // Implementation would use PE parsing libraries
     Utils::debugPrint("PE symbol extraction not implemented");
     return false;
 }
 
-bool extractPESections(const std::string& filePath, std::vector<SectionInfo>& sections)
+bool extractPESections(const std::string& filePath, std::vector<heimdall::SectionInfo>& sections)
 {
     // Implementation would use PE parsing libraries
     Utils::debugPrint("PE section extraction not implemented");
@@ -766,27 +1239,200 @@ bool extractPECompanyName(const std::string& filePath, std::string& company)
 
 bool extractArchiveMembers(const std::string& filePath, std::vector<std::string>& members)
 {
-    // Implementation would parse archive format
-    Utils::debugPrint("Archive member extraction not implemented");
-    return false;
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open archive file: " + filePath);
+        return false;
+    }
+    
+    // Check for Unix archive magic number
+    char magic[8];
+    file.read(magic, 8);
+    if (file.gcount() != 8) {
+        Utils::debugPrint("Failed to read archive magic number");
+        return false;
+    }
+    
+    // Check for Unix archive format (!<arch>)
+    if (strncmp(magic, "!<arch>", 7) != 0) {
+        Utils::debugPrint("Not a valid Unix archive format");
+        return false;
+    }
+    
+    members.clear();
+    file.seekg(8); // Skip magic number
+    
+    while (file.good()) {
+        // Read archive member header (60 bytes)
+        char header[60];
+        file.read(header, 60);
+        if (file.gcount() != 60) break;
+        
+        // Parse member name (16 bytes, null-padded)
+        std::string memberName(header, 16);
+        size_t nullPos = memberName.find('\0');
+        if (nullPos != std::string::npos) {
+            memberName = memberName.substr(0, nullPos);
+        }
+        
+        // Remove trailing spaces
+        while (!memberName.empty() && memberName.back() == ' ') {
+            memberName.pop_back();
+        }
+        
+        if (!memberName.empty() && memberName != "/" && memberName != "//") {
+            members.push_back(memberName);
+        }
+        
+        // Parse file size (10 bytes, decimal)
+        std::string sizeStr(header + 48, 10);
+        size_t fileSize = std::stoul(sizeStr);
+        
+        // Skip to next member (file size + header size, aligned to 2 bytes)
+        file.seekg((fileSize + 1) & ~1, std::ios::cur);
+    }
+    
+    Utils::debugPrint("Extracted " + std::to_string(members.size()) + " archive members");
+    return !members.empty();
 }
 
-bool extractArchiveSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols)
+bool extractArchiveSymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols)
 {
-    // Implementation would parse archive symbol table
-    Utils::debugPrint("Archive symbol extraction not implemented");
-    return false;
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open archive file: " + filePath);
+        return false;
+    }
+    
+    // Check for Unix archive magic number
+    char magic[8];
+    file.read(magic, 8);
+    if (file.gcount() != 8 || strncmp(magic, "!<arch>", 7) != 0) {
+        Utils::debugPrint("Not a valid Unix archive format");
+        return false;
+    }
+    
+    symbols.clear();
+    file.seekg(8); // Skip magic number
+    
+    // Find symbol table (usually first member)
+    while (file.good()) {
+        char header[60];
+        file.read(header, 60);
+        if (file.gcount() != 60) break;
+        
+        std::string memberName(header, 16);
+        size_t nullPos = memberName.find('\0');
+        if (nullPos != std::string::npos) {
+            memberName = memberName.substr(0, nullPos);
+        }
+        
+        // Remove trailing spaces
+        while (!memberName.empty() && memberName.back() == ' ') {
+            memberName.pop_back();
+        }
+        
+        // Check if this is the symbol table
+        if (memberName == "/" || memberName == "__.SYMDEF") {
+            try {
+                // Parse symbol table size
+                std::string sizeStr(header + 48, 10);
+                size_t symbolTableSize = std::stoul(sizeStr);
+                
+                if (symbolTableSize == 0 || symbolTableSize > 1000000) { // Sanity check
+                    Utils::debugPrint("Invalid symbol table size: " + std::to_string(symbolTableSize));
+                    break;
+                }
+                
+                // Read symbol table
+                std::vector<char> symbolTable(symbolTableSize);
+                file.read(symbolTable.data(), symbolTableSize);
+                
+                if (file.gcount() == symbolTableSize) {
+                    // Parse BSD-style symbol table
+                    size_t offset = 0;
+                    if (symbolTableSize >= 8) {
+                        uint32_t numSymbols = *reinterpret_cast<uint32_t*>(symbolTable.data());
+                        uint32_t stringTableSize = *reinterpret_cast<uint32_t*>(symbolTable.data() + 4);
+                        offset = 8;
+                        
+                        // Sanity checks
+                        if (numSymbols > 100000 || stringTableSize > symbolTableSize) {
+                            Utils::debugPrint("Invalid symbol table header");
+                            break;
+                        }
+                        
+                        // Read symbol offsets
+                        for (uint32_t i = 0; i < numSymbols && offset + 4 <= symbolTableSize; ++i) {
+                            uint32_t symbolOffset = *reinterpret_cast<uint32_t*>(symbolTable.data() + offset);
+                            offset += 4;
+                            
+                            // Read symbol name from string table
+                            if (symbolOffset < stringTableSize) {
+                                const char* symbolName = symbolTable.data() + 8 + numSymbols * 4 + symbolOffset;
+                                if (symbolName && strlen(symbolName) > 0 && strlen(symbolName) < 1000) {
+                                    heimdall::SymbolInfo symbol;
+                                    symbol.name = symbolName;
+                                    symbol.address = symbolOffset;
+                                    symbol.size = 0; // Archive symbols don't have size info
+                                    symbol.isDefined = true;
+                                    symbol.isGlobal = true;
+                                    symbols.push_back(symbol);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (const std::exception& e) {
+                Utils::debugPrint("Exception parsing symbol table: " + std::string(e.what()));
+                break;
+            }
+            break;
+        }
+        
+        try {
+            // Skip to next member
+            std::string sizeStr(header + 48, 10);
+            size_t fileSize = std::stoul(sizeStr);
+            if (fileSize > 100000000) { // Sanity check
+                Utils::debugPrint("Invalid member size: " + std::to_string(fileSize));
+                break;
+            }
+            file.seekg((fileSize + 1) & ~1, std::ios::cur);
+        } catch (const std::exception& e) {
+            Utils::debugPrint("Exception parsing member size: " + std::string(e.what()));
+            break;
+        }
+    }
+    
+    Utils::debugPrint("Extracted " + std::to_string(symbols.size()) + " archive symbols");
+    return !symbols.empty();
 }
 
-bool extractDebugInfo(const std::string& filePath, ComponentInfo& component)
+bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& component)
 {
+    // Use the new robust DWARF extractor
+    heimdall::DWARFExtractor dwarfExtractor;
+    
     // Try to extract source files from debug info
     std::vector<std::string> sourceFiles;
-    if (extractSourceFiles(filePath, sourceFiles))
+    if (dwarfExtractor.extractSourceFiles(filePath, sourceFiles))
     {
         for (const auto& sourceFile : sourceFiles)
         {
             component.addSourceFile(sourceFile);
+        }
+        component.setContainsDebugInfo(true);
+        return true;
+    }
+    
+    // Try to extract compile units as well
+    std::vector<std::string> compileUnits;
+    if (dwarfExtractor.extractCompileUnits(filePath, compileUnits))
+    {
+        for (const auto& unit : compileUnits)
+        {
+            component.addSourceFile(unit); // Add compile units as source files too
         }
         component.setContainsDebugInfo(true);
         return true;
@@ -797,16 +1443,16 @@ bool extractDebugInfo(const std::string& filePath, ComponentInfo& component)
 
 bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles)
 {
-    // This would use DWARF parsing libraries or similar
-    Utils::debugPrint("Source file extraction not implemented");
-    return false;
+    // Use the new robust DWARF extractor
+    heimdall::DWARFExtractor dwarfExtractor;
+    return dwarfExtractor.extractSourceFiles(filePath, sourceFiles);
 }
 
 bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& units)
 {
-    // This would use DWARF parsing libraries
-    Utils::debugPrint("Compile unit extraction not implemented");
-    return false;
+    // Use the new robust DWARF extractor
+    heimdall::DWARFExtractor dwarfExtractor;
+    return dwarfExtractor.extractCompileUnits(filePath, units);
 }
 
 std::string detectLicenseFromFile(const std::string& filePath)
@@ -851,7 +1497,7 @@ std::string detectLicenseFromFile(const std::string& filePath)
 std::string detectLicenseFromPath(const std::string& filePath)
 {
     // Try to detect license from directory structure
-    std::string normalizedPath = Utils::normalizePath(filePath);
+    std::string normalizedPath = heimdall::Utils::normalizePath(filePath);
     
     if (normalizedPath.find("gpl") != std::string::npos)
     {
@@ -877,12 +1523,12 @@ std::string detectLicenseFromPath(const std::string& filePath)
     return "";
 }
 
-std::string detectLicenseFromSymbols(const std::vector<SymbolInfo>& symbols)
+std::string detectLicenseFromSymbols(const std::vector<heimdall::SymbolInfo>& symbols)
 {
     // Look for license-related symbols
     for (const auto& symbol : symbols)
     {
-        std::string lowerName = Utils::toLower(symbol.name);
+        std::string lowerName = heimdall::Utils::toLower(symbol.name);
         if (lowerName.find("gpl") != std::string::npos)
         {
             return "GPL";
@@ -910,29 +1556,36 @@ std::string detectLicenseFromSymbols(const std::vector<SymbolInfo>& symbols)
 
 std::string detectVersionFromFile(const std::string& filePath)
 {
-    // Try to extract version from file content
     std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         return "";
     }
     
     // Read file content and look for version patterns
     std::string content;
-    content.resize(4096);
+    content.resize(8192); // Increased buffer size for better coverage
     file.read(&content[0], content.size());
     content.resize(file.gcount());
     
     // Convert to string for regex search
     std::string textContent(content.begin(), content.end());
     
-    // Look for version patterns
-    std::regex versionRegex(R"((\d+\.\d+\.\d+))");
-    std::smatch match;
+    // Enhanced version patterns
+    std::vector<std::regex> versionPatterns = {
+        std::regex(R"((\d+\.\d+\.\d+))"),                    // 1.2.3
+        std::regex(R"((\d+\.\d+))"),                         // 1.2
+        std::regex(R"(version[:\s]*(\d+\.\d+\.\d+))", std::regex::icase),  // version: 1.2.3
+        std::regex(R"(v[:\s]*(\d+\.\d+\.\d+))", std::regex::icase),        // v: 1.2.3
+        std::regex(R"((\d+\.\d+\.\d+\.\d+))"),              // 1.2.3.4
+        std::regex(R"(release[:\s]*(\d+\.\d+\.\d+))", std::regex::icase),  // release: 1.2.3
+        std::regex(R"(build[:\s]*(\d+\.\d+\.\d+))", std::regex::icase),    // build: 1.2.3
+    };
     
-    if (std::regex_search(textContent, match, versionRegex))
-    {
-        return match[1].str();
+    for (const auto& pattern : versionPatterns) {
+        std::smatch match;
+        if (std::regex_search(textContent, match, pattern)) {
+            return match[1].str();
+        }
     }
     
     return "";
@@ -940,29 +1593,276 @@ std::string detectVersionFromFile(const std::string& filePath)
 
 std::string detectVersionFromPath(const std::string& filePath)
 {
-    return Utils::extractVersionFromPath(filePath);
+    return heimdall::Utils::extractVersionFromPath(filePath);
 }
 
-std::string detectVersionFromSymbols(const std::vector<SymbolInfo>& symbols)
+std::string detectVersionFromSymbols(const std::vector<heimdall::SymbolInfo>& symbols)
 {
     // Look for version-related symbols
     for (const auto& symbol : symbols)
     {
-        std::string lowerName = Utils::toLower(symbol.name);
-        if (lowerName.find("version") != std::string::npos)
-        {
-            // Try to extract version from symbol name
-            std::regex versionRegex(R"((\d+\.\d+\.\d+))");
+        std::string lowerName = heimdall::Utils::toLower(symbol.name);
+        
+        // Common version symbol patterns
+        std::vector<std::regex> versionPatterns = {
+            std::regex(R"((\d+\.\d+\.\d+))"),                    // 1.2.3
+            std::regex(R"((\d+\.\d+))"),                         // 1.2
+            std::regex(R"(version[_\s]*(\d+\.\d+\.\d+))", std::regex::icase),  // version_1.2.3
+            std::regex(R"(v[_\s]*(\d+\.\d+\.\d+))", std::regex::icase),        // v_1.2.3
+            std::regex(R"(ver[_\s]*(\d+\.\d+\.\d+))", std::regex::icase),      // ver_1.2.3
+            std::regex(R"(lib[_\s]*(\d+\.\d+\.\d+))", std::regex::icase),      // lib_1.2.3
+        };
+        
+        for (const auto& pattern : versionPatterns) {
             std::smatch match;
+            if (std::regex_search(lowerName, match, pattern)) {
+                return match[1].str();
+            }
+        }
+        
+        // Check for common version symbol names
+        if (lowerName.find("version") != std::string::npos ||
+            lowerName.find("_ver") != std::string::npos ||
+            lowerName.find("_v") != std::string::npos) {
             
-            if (std::regex_search(symbol.name, match, versionRegex))
-            {
+            // Extract version from the symbol name
+            std::regex versionExtract(R"((\d+\.\d+\.\d+))");
+            std::smatch match;
+            if (std::regex_search(lowerName, match, versionExtract)) {
                 return match[1].str();
             }
         }
     }
     
     return "";
+}
+
+// Package Manager Integration Functions
+bool detectRpmMetadata(heimdall::ComponentInfo& component)
+{
+    // Try to detect RPM package information
+    std::string filePath = component.filePath;
+    std::string fileName = heimdall::Utils::getFileName(filePath);
+    std::string dirName = heimdall::Utils::getDirectory(filePath);
+    
+    // Look for RPM database or package files
+    if (dirName.find("/var/lib/rpm") != std::string::npos ||
+        dirName.find("/usr/lib") != std::string::npos ||
+        dirName.find("/usr/lib64") != std::string::npos) {
+        
+        // Try to extract version from filename
+        std::string version = heimdall::Utils::extractVersionFromPath(fileName);
+        if (!version.empty()) {
+            component.setVersion(version);
+        }
+        
+        // Try to extract package name
+        std::regex rpmPattern(R"(([a-zA-Z0-9_-]+)-(\d+\.\d+\.\d+))");
+        std::smatch match;
+        if (std::regex_search(fileName, match, rpmPattern)) {
+            component.name = match[1].str();
+            if (version.empty()) {
+                component.setVersion(match[2].str());
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool detectDebMetadata(heimdall::ComponentInfo& component)
+{
+    // Try to detect Debian package information
+    std::string filePath = component.filePath;
+    std::string fileName = heimdall::Utils::getFileName(filePath);
+    std::string dirName = heimdall::Utils::getDirectory(filePath);
+    
+    // Look for Debian package locations
+    if (dirName.find("/usr/lib") != std::string::npos ||
+        dirName.find("/usr/lib/x86_64-linux-gnu") != std::string::npos ||
+        dirName.find("/usr/lib/aarch64-linux-gnu") != std::string::npos) {
+        
+        // Try to extract version from filename
+        std::string version = heimdall::Utils::extractVersionFromPath(fileName);
+        if (!version.empty()) {
+            component.setVersion(version);
+        }
+        
+        // Try to extract package name
+        std::regex debPattern(R"(([a-zA-Z0-9_-]+)-(\d+\.\d+\.\d+))");
+        std::smatch match;
+        if (std::regex_search(fileName, match, debPattern)) {
+            component.name = match[1].str();
+            if (version.empty()) {
+                component.setVersion(match[2].str());
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool detectPacmanMetadata(heimdall::ComponentInfo& component)
+{
+    // Try to detect Pacman package information
+    std::string filePath = component.filePath;
+    std::string fileName = heimdall::Utils::getFileName(filePath);
+    std::string dirName = heimdall::Utils::getDirectory(filePath);
+    
+    // Look for Pacman package locations
+    if (dirName.find("/usr/lib") != std::string::npos ||
+        dirName.find("/usr/lib64") != std::string::npos ||
+        dirName.find("/opt") != std::string::npos) {
+        
+        // Try to extract version from filename
+        std::string version = heimdall::Utils::extractVersionFromPath(fileName);
+        if (!version.empty()) {
+            component.setVersion(version);
+        }
+        
+        // Try to extract package name
+        std::regex pacmanPattern(R"(([a-zA-Z0-9_-]+)-(\d+\.\d+\.\d+))");
+        std::smatch match;
+        if (std::regex_search(fileName, match, pacmanPattern)) {
+            component.name = match[1].str();
+            if (version.empty()) {
+                component.setVersion(match[2].str());
+            }
+        }
+        
+        return true;
+    }
+    
+    return false;
+}
+
+bool detectConanMetadata(heimdall::ComponentInfo& component)
+{
+    // Try to detect Conan package information
+    std::string filePath = component.filePath;
+    std::string dirName = heimdall::Utils::getDirectory(filePath);
+    
+    // Look for Conan package directories
+    if (dirName.find("/.conan") != std::string::npos ||
+        dirName.find("conan") != std::string::npos) {
+        
+        // Parse Conan package path structure
+        std::vector<std::string> pathParts = heimdall::Utils::splitPath(dirName);
+        
+        for (size_t i = 0; i < pathParts.size(); ++i) {
+            if (pathParts[i] == "conan" && i + 2 < pathParts.size()) {
+                component.name = pathParts[i + 1];
+                component.setVersion(pathParts[i + 2]);
+                component.setPackageManager("conan");
+                component.setSupplier("conan-center");
+                return true;
+            }
+        }
+        
+        // For test cases or simpler conan paths, just detect the presence of "conan"
+        if (dirName.find("conan") != std::string::npos) {
+            component.setPackageManager("conan");
+            component.setSupplier("conan-center");
+            // Try to extract package name from filename
+            std::string fileName = heimdall::Utils::getFileName(filePath);
+            std::string packageName = heimdall::Utils::extractPackageName(filePath);
+            if (!packageName.empty()) {
+                component.name = packageName;
+            }
+            return true;
+        }
+    }
+ 
+    return false;
+}
+
+bool detectVcpkgMetadata(heimdall::ComponentInfo& component)
+{
+    // Try to detect vcpkg package information
+    std::string filePath = component.filePath;
+    std::string dirName = heimdall::Utils::getDirectory(filePath);
+    
+    // Look for vcpkg package directories
+    if (dirName.find("vcpkg") != std::string::npos ||
+        dirName.find("installed") != std::string::npos) {
+        
+        // Parse vcpkg package path structure
+        std::vector<std::string> pathParts = heimdall::Utils::splitPath(dirName);
+        
+        for (size_t i = 0; i < pathParts.size(); ++i) {
+            if (pathParts[i] == "installed" && i + 1 < pathParts.size()) {
+                std::string packageInfo = pathParts[i + 1];
+                
+                // Parse package name and version
+                size_t underscorePos = packageInfo.find('_');
+                if (underscorePos != std::string::npos) {
+                    component.name = packageInfo.substr(0, underscorePos);
+                    component.setVersion(packageInfo.substr(underscorePos + 1));
+                    component.setPackageManager("vcpkg");
+                    component.setSupplier("vcpkg");
+                    return true;
+                }
+            }
+        }
+        
+        // For test cases or simpler vcpkg paths, just detect the presence of "vcpkg"
+        if (dirName.find("vcpkg") != std::string::npos) {
+            component.setPackageManager("vcpkg");
+            component.setSupplier("vcpkg");
+            // Try to extract package name from filename
+            std::string packageName = heimdall::Utils::extractPackageName(filePath);
+            if (!packageName.empty()) {
+                component.name = packageName;
+            }
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool detectSpackMetadata(heimdall::ComponentInfo& component)
+{
+    // Try to detect Spack package information
+    std::string filePath = component.filePath;
+    std::string dirName = heimdall::Utils::getDirectory(filePath);
+    std::string fileName = heimdall::Utils::getFileName(filePath);
+    
+    // Look for Spack package directories
+    if (dirName.find("spack") != std::string::npos ||
+        dirName.find("opt/spack") != std::string::npos) {
+        
+        // Parse Spack package path structure
+        std::vector<std::string> pathParts = heimdall::Utils::splitPath(dirName);
+        
+        for (size_t i = 0; i < pathParts.size(); ++i) {
+            if (pathParts[i] == "spack" && i + 2 < pathParts.size()) {
+                component.name = pathParts[i + 1];
+                component.setVersion(pathParts[i + 2]);
+                component.setPackageManager("spack");
+                component.setSupplier("spack");
+                return true;
+            }
+        }
+        
+        // For test cases or simpler spack paths, just detect the presence of "spack"
+        if (dirName.find("spack") != std::string::npos) {
+            component.setPackageManager("spack");
+            component.setSupplier("spack");
+            // Try to extract package name from filename
+            std::string packageName = heimdall::Utils::extractPackageName(filePath);
+            if (!packageName.empty()) {
+                component.name = packageName;
+            }
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 std::vector<std::string> detectDependencies(const std::string& filePath)
@@ -985,8 +1885,14 @@ std::vector<std::string> extractDynamicDependencies(const std::string& filePath)
     std::vector<std::string> dependencies;
     
     // Use platform-specific extraction
+#ifdef __linux__
+    if (isELF(filePath)) {
+        dependencies = extractELFDependencies(filePath);
+    }
+#endif
+
 #ifdef __APPLE__
-    if (MetadataHelpers::isMachO(filePath)) {
+    if (isMachO(filePath)) {
         dependencies = extractMachOLinkedLibraries(filePath);
     }
 #endif
@@ -1000,7 +1906,7 @@ std::vector<std::string> extractStaticDependencies(const std::string& filePath)
     
     // This would parse static library dependencies
     // For now, return empty vector
-    Utils::debugPrint("Static dependency extraction not implemented");
+    heimdall::Utils::debugPrint("Static dependency extraction not implemented");
     
     return dependencies;
 }
@@ -1103,7 +2009,7 @@ std::vector<std::string> extractMachOLinkedLibraries(const std::string& filePath
         }
     }
 #else
-    Utils::debugPrint("Mach-O library extraction not supported on this platform");
+    heimdall::Utils::debugPrint("Mach-O library extraction not supported on this platform");
 #endif
 
     return libraries;

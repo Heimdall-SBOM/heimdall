@@ -1,3 +1,10 @@
+/**
+ * @file PluginInterface.hpp
+ * @brief Common plugin interface for linker plugins (LLD and Gold)
+ * @author Trevor Bakker
+ * @date 2025
+ */
+
 #pragma once
 
 #include "ComponentInfo.hpp"
@@ -5,108 +12,294 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 namespace heimdall {
 
-// Common plugin interface for both LLD and Gold
+/**
+ * @brief Common plugin interface for both LLD and Gold linkers
+ * 
+ * This abstract class defines the interface that all linker plugins
+ * must implement to integrate with the Heimdall SBOM generation system.
+ */
 class PluginInterface {
 public:
+    /**
+     * @brief Default constructor
+     */
     PluginInterface();
+    
+    /**
+     * @brief Virtual destructor
+     */
     virtual ~PluginInterface();
     
-    // Plugin lifecycle
+    /**
+     * @brief Initialize the plugin
+     * @return true if initialization was successful
+     */
     virtual bool initialize() = 0;
+    
+    /**
+     * @brief Clean up plugin resources
+     */
     virtual void cleanup() = 0;
     
-    // Component processing
+    /**
+     * @brief Process an input file
+     * @param filePath The path to the input file
+     */
     virtual void processInputFile(const std::string& filePath) = 0;
+    
+    /**
+     * @brief Process a library file
+     * @param libraryPath The path to the library file
+     */
     virtual void processLibrary(const std::string& libraryPath) = 0;
+    
+    /**
+     * @brief Process a symbol
+     * @param symbolName The name of the symbol
+     * @param address The symbol address
+     * @param size The symbol size
+     */
     virtual void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) = 0;
     
-    // SBOM generation
+    /**
+     * @brief Set the output path for the SBOM
+     * @param path The output file path
+     */
     virtual void setOutputPath(const std::string& path) = 0;
+    
+    /**
+     * @brief Set the output format for the SBOM
+     * @param format The format (e.g., "spdx", "cyclonedx")
+     */
     virtual void setFormat(const std::string& format) = 0;
+    
+    /**
+     * @brief Generate the SBOM
+     */
     virtual void generateSBOM() = 0;
     
-    // Configuration
+    /**
+     * @brief Set verbose output mode
+     * @param verbose true to enable verbose output
+     */
     virtual void setVerbose(bool verbose) = 0;
+    
+    /**
+     * @brief Set whether to extract debug information
+     * @param extract true to extract debug information
+     */
     virtual void setExtractDebugInfo(bool extract) = 0;
+    
+    /**
+     * @brief Set whether to include system libraries
+     * @param include true to include system libraries
+     */
     virtual void setIncludeSystemLibraries(bool include) = 0;
     
-    // Statistics and reporting
+    /**
+     * @brief Get the number of components processed
+     * @return Number of components
+     */
     virtual size_t getComponentCount() const = 0;
+    
+    /**
+     * @brief Print statistics about the plugin
+     */
     virtual void printStatistics() const = 0;
     
 protected:
-    std::unique_ptr<SBOMGenerator> sbomGenerator;
-    std::vector<ComponentInfo> processedComponents;
-    bool verbose = false;
-    bool extractDebugInfo = true;
-    bool includeSystemLibraries = false;
+    std::unique_ptr<SBOMGenerator> sbomGenerator;  ///< SBOM generator instance
+    std::vector<ComponentInfo> processedComponents; ///< List of processed components
+    bool verbose = false;                          ///< Verbose output flag
+    bool extractDebugInfo = true;                  ///< Debug info extraction flag
+    bool includeSystemLibraries = false;           ///< System library inclusion flag
     
-    // Helper methods
+    /**
+     * @brief Add a component to the processed list
+     * @param component The component to add
+     */
     void addComponent(const ComponentInfo& component);
+    
+    /**
+     * @brief Update an existing component with new information
+     * @param name The component name
+     * @param filePath The file path
+     * @param symbols The symbols to add
+     */
     void updateComponent(const std::string& name, const std::string& filePath, 
                         const std::vector<SymbolInfo>& symbols);
+    
+    /**
+     * @brief Check if a file should be processed
+     * @param filePath The file path to check
+     * @return true if the file should be processed
+     */
     bool shouldProcessFile(const std::string& filePath) const;
+    
+    /**
+     * @brief Extract component name from file path
+     * @param filePath The file path
+     * @return The extracted component name
+     */
     std::string extractComponentName(const std::string& filePath) const;
 };
 
-// Plugin configuration structure
+/**
+ * @brief Plugin configuration structure
+ */
 struct PluginConfig {
-    std::string outputPath = "heimdall-sbom.json";
-    std::string format = "spdx";
-    bool verbose = false;
-    bool extractDebugInfo = true;
-    bool includeSystemLibraries = false;
-    bool generateChecksums = true;
-    bool extractMetadata = true;
-    std::vector<std::string> excludePatterns;
-    std::vector<std::string> includePatterns;
+    std::string outputPath = "heimdall-sbom.json"; ///< Output file path
+    std::string format = "spdx";                   ///< Output format
+    bool verbose = false;                          ///< Verbose output flag
+    bool extractDebugInfo = true;                  ///< Debug info extraction flag
+    bool includeSystemLibraries = false;           ///< System library inclusion flag
+    bool generateChecksums = true;                 ///< Checksum generation flag
+    bool extractMetadata = true;                   ///< Metadata extraction flag
+    std::vector<std::string> excludePatterns;     ///< File exclusion patterns
+    std::vector<std::string> includePatterns;     ///< File inclusion patterns
 };
 
-// Plugin statistics structure
+/**
+ * @brief Plugin statistics structure
+ */
 struct PluginStatistics {
-    size_t totalFiles = 0;
-    size_t objectFiles = 0;
-    size_t staticLibraries = 0;
-    size_t sharedLibraries = 0;
-    size_t executables = 0;
-    size_t systemLibraries = 0;
-    size_t totalSymbols = 0;
-    size_t processedComponents = 0;
-    size_t skippedFiles = 0;
-    std::chrono::milliseconds processingTime{0};
+    size_t totalFiles = 0;                         ///< Total files processed
+    size_t objectFiles = 0;                        ///< Object files processed
+    size_t staticLibraries = 0;                    ///< Static libraries processed
+    size_t sharedLibraries = 0;                    ///< Shared libraries processed
+    size_t executables = 0;                        ///< Executables processed
+    size_t systemLibraries = 0;                    ///< System libraries processed
+    size_t totalSymbols = 0;                       ///< Total symbols extracted
+    size_t processedComponents = 0;                ///< Components processed
+    size_t skippedFiles = 0;                       ///< Files skipped
+    std::chrono::milliseconds processingTime{0};   ///< Total processing time
 };
 
-// Common plugin utilities
+/**
+ * @brief Namespace containing common plugin utilities
+ */
 namespace PluginUtils {
     
-    // File type detection
+    /**
+     * @brief Check if a file is an object file
+     * @param filePath The file path to check
+     * @return true if the file is an object file
+     */
     bool isObjectFile(const std::string& filePath);
+    
+    /**
+     * @brief Check if a file is a static library
+     * @param filePath The file path to check
+     * @return true if the file is a static library
+     */
     bool isStaticLibrary(const std::string& filePath);
+    
+    /**
+     * @brief Check if a file is a shared library
+     * @param filePath The file path to check
+     * @return true if the file is a shared library
+     */
     bool isSharedLibrary(const std::string& filePath);
+    
+    /**
+     * @brief Check if a file is an executable
+     * @param filePath The file path to check
+     * @return true if the file is an executable
+     */
     bool isExecutable(const std::string& filePath);
     
-    // Path utilities
+    /**
+     * @brief Normalize a library path
+     * @param libraryPath The library path to normalize
+     * @return The normalized path
+     */
     std::string normalizeLibraryPath(const std::string& libraryPath);
+    
+    /**
+     * @brief Resolve a library name to its full path
+     * @param libraryName The library name to resolve
+     * @return The resolved library path
+     */
     std::string resolveLibraryPath(const std::string& libraryName);
+    
+    /**
+     * @brief Get the list of library search paths
+     * @return Vector of library search paths
+     */
     std::vector<std::string> getLibrarySearchPaths();
     
-    // Symbol utilities
+    /**
+     * @brief Check if a symbol is a system symbol
+     * @param symbolName The symbol name to check
+     * @return true if the symbol is a system symbol
+     */
     bool isSystemSymbol(const std::string& symbolName);
+    
+    /**
+     * @brief Check if a symbol is a weak symbol
+     * @param symbolName The symbol name to check
+     * @return true if the symbol is a weak symbol
+     */
     bool isWeakSymbol(const std::string& symbolName);
+    
+    /**
+     * @brief Extract version information from a symbol name
+     * @param symbolName The symbol name
+     * @return The extracted version string
+     */
     std::string extractSymbolVersion(const std::string& symbolName);
     
-    // Configuration utilities
+    /**
+     * @brief Load configuration from a file
+     * @param configPath The path to the configuration file
+     * @param config The configuration structure to populate
+     * @return true if loading was successful
+     */
     bool loadConfigFromFile(const std::string& configPath, PluginConfig& config);
+    
+    /**
+     * @brief Save configuration to a file
+     * @param configPath The path to the configuration file
+     * @param config The configuration to save
+     * @return true if saving was successful
+     */
     bool saveConfigToFile(const std::string& configPath, const PluginConfig& config);
+    
+    /**
+     * @brief Parse command line options
+     * @param argc Number of arguments
+     * @param argv Array of argument strings
+     * @param config The configuration structure to populate
+     * @return true if parsing was successful
+     */
     bool parseCommandLineOptions(int argc, char* argv[], PluginConfig& config);
     
-    // Logging utilities
+    /**
+     * @brief Log an informational message
+     * @param message The message to log
+     */
     void logInfo(const std::string& message);
+    
+    /**
+     * @brief Log a warning message
+     * @param message The message to log
+     */
     void logWarning(const std::string& message);
+    
+    /**
+     * @brief Log an error message
+     * @param message The message to log
+     */
     void logError(const std::string& message);
+    
+    /**
+     * @brief Log a debug message
+     * @param message The message to log
+     */
     void logDebug(const std::string& message);
     
 } // namespace PluginUtils
