@@ -276,29 +276,96 @@ make clean
 
 ## Testing
 
-Heimdall includes a comprehensive test suite with 20 unit tests covering all major components:
+The project includes a comprehensive test suite using Google Test. To run the tests:
 
 ```bash
-# Run all tests
+# Build and run tests
 ./build.sh
-
-# Run tests only
-cd build && make test
-
-# Run specific test suites
-./build/tests/heimdall_tests --gtest_filter="UtilsTest.*"
-./build/tests/heimdall_tests --gtest_filter="MetadataExtractorTest.*"
+cd build
+ctest --output-on-failure
 ```
 
-### Test Coverage
+For more detailed test information, see [tests/README.md](tests/README.md).
 
-- **Utils**: File operations, path handling, JSON formatting
-- **ComponentInfo**: Component metadata management
-- **SBOMGenerator**: SBOM generation in multiple formats
-- **MetadataExtractor**: Binary file analysis with real shared libraries
-- **Plugin Integration**: LLD and Gold plugin functionality
+## Code Coverage
 
-The test suite uses real shared libraries compiled during testing to ensure accurate validation of metadata extraction capabilities.
+The project supports code coverage analysis using gcov and lcov. Coverage reports help identify untested code paths and ensure comprehensive testing.
+
+### Enabling Coverage
+
+To enable code coverage, build with the `ENABLE_COVERAGE` option:
+
+```bash
+# From project root
+mkdir -p build
+cd build
+cmake -DENABLE_COVERAGE=ON ..
+make -j$(nproc)
+```
+
+### Running Coverage Analysis
+
+#### Using the Coverage Script (Recommended)
+
+```bash
+# From project root
+./tests/coverage.sh
+```
+
+This script will:
+- Automatically enable coverage if not already enabled
+- Build the project with coverage instrumentation
+- Run all tests to generate coverage data
+- Generate both text and HTML coverage reports
+- Display a summary of coverage results
+
+#### Using the Simple Coverage Script
+
+For basic coverage information:
+
+```bash
+# From project root
+./tests/simple_coverage.sh
+```
+
+#### Using CMake Targets
+
+```bash
+# From build directory
+make coverage        # Run tests and generate coverage
+make coverage-clean  # Clean coverage data
+```
+
+### Coverage Reports
+
+Coverage reports are generated in the `build/coverage/` directory:
+
+- `coverage_summary.txt`: Text summary of coverage statistics
+- `basic_coverage_report.txt`: Basic coverage information
+- `coverage.info`: lcov coverage data file
+- `html/`: HTML coverage report (if lcov is available)
+
+### Current Coverage
+
+The current test suite provides:
+- **Line Coverage**: ~45.2%
+- **Function Coverage**: ~50.7%
+
+### Coverage Requirements
+
+- **GCC/G++**: Coverage instrumentation is built into GCC
+- **lcov** (optional): For HTML coverage reports
+  - Ubuntu/Debian: `sudo apt-get install lcov`
+  - CentOS/RHEL: `sudo yum install lcov`
+  - macOS: `brew install lcov`
+
+### Coverage Best Practices
+
+1. **Regular Coverage Runs**: Run coverage analysis regularly during development
+2. **Coverage Goals**: Aim for high coverage (>80%) on critical code paths
+3. **Coverage Gaps**: Use coverage reports to identify untested code
+4. **Coverage Cleanup**: Clean coverage data between runs for accurate results
+5. **CI Integration**: Include coverage analysis in continuous integration
 
 ## Configuration
 

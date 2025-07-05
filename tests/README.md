@@ -267,4 +267,84 @@ gdb --args ./heimdall_tests --gtest_filter="TestClass.FailingTest"
 - **Fast Execution**: Most tests complete in milliseconds
 - **Parallel Execution**: Tests can run in parallel (use `--gtest_parallel`)
 - **Memory Efficient**: Tests use minimal memory and clean up properly
-- **CI Friendly**: Optimized for continuous integration environments 
+- **CI Friendly**: Optimized for continuous integration environments
+
+## Code Coverage
+
+The test suite supports code coverage analysis using gcov. Coverage reports help identify untested code paths and ensure comprehensive testing.
+
+### Enabling Coverage
+
+To enable code coverage, build with the `ENABLE_COVERAGE` option:
+
+```bash
+# From project root
+mkdir -p build
+cd build
+cmake -DENABLE_COVERAGE=ON ..
+make -j$(nproc)
+```
+
+### Running Coverage Analysis
+
+#### Using the Coverage Script (Recommended)
+
+```bash
+# From project root
+./tests/coverage.sh
+```
+
+This script will:
+- Automatically enable coverage if not already enabled
+- Build the project with coverage instrumentation
+- Run all tests to generate coverage data
+- Generate both text and HTML coverage reports
+- Display a summary of coverage results
+
+#### Using CMake Targets
+
+```bash
+# From build directory
+make coverage        # Run tests and generate coverage
+make coverage-clean  # Clean coverage data
+```
+
+#### Manual Coverage Generation
+
+```bash
+# From build directory
+ctest --output-on-failure
+gcov -r -b -s $(pwd)/.. CMakeFiles/heimdall-core.dir/src/common/*.gcno
+gcov -r -b -s $(pwd)/.. CMakeFiles/heimdall_tests.dir/*.gcno
+```
+
+### Coverage Reports
+
+Coverage reports are generated in the `build/coverage/` directory:
+
+- `coverage_summary.txt`: Text summary of coverage statistics
+- `*.gcov`: Detailed coverage files for each source file
+- `html/` (if lcov is available): HTML coverage report
+
+### Coverage Targets
+
+The following coverage targets are available when `ENABLE_COVERAGE=ON`:
+
+- `coverage`: Run tests and generate coverage reports
+- `coverage-clean`: Clean all coverage data files
+
+### Coverage Requirements
+
+- **GCC/G++**: Coverage instrumentation is built into GCC
+- **lcov** (optional): For HTML coverage reports
+  - Ubuntu/Debian: `sudo apt-get install lcov`
+  - CentOS/RHEL: `sudo yum install lcov`
+  - macOS: `brew install lcov`
+
+### Coverage Best Practices
+
+1. **Regular Coverage Runs**: Run coverage analysis regularly during development
+2. **Coverage Goals**: Aim for high coverage (>80%) on critical code paths
+3. **Coverage Gaps**: Use coverage reports to identify untested code
+4. **Coverage Cleanup**: Clean coverage data between runs for accurate results
+5. **CI Integration**: Include coverage analysis in continuous integration 

@@ -171,3 +171,36 @@ add_custom_target(generate_test_archives ALL
         ${VCPKG_LIB_DIR}/libz.a
 )
 add_dependencies(heimdall_tests generate_test_archives)
+
+# Coverage targets
+if(ENABLE_COVERAGE)
+    # Find gcov
+    find_program(GCOV_PATH gcov)
+    if(NOT GCOV_PATH)
+        message(WARNING "gcov not found - coverage reports will not be generated")
+    endif()
+    
+    # Coverage target
+    add_custom_target(coverage
+        COMMAND ${CMAKE_COMMAND} -E echo "Running tests with coverage..."
+        COMMAND ${CMAKE_CTEST_COMMAND} --verbose
+        COMMAND ${CMAKE_COMMAND} -E echo "Generating coverage report..."
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
+        COMMAND ${GCOV_PATH} -r -b -s ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/CMakeFiles/heimdall-core.dir/src/common/*.gcno
+        COMMAND ${GCOV_PATH} -r -b -s ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/CMakeFiles/heimdall_tests.dir/*.gcno
+        COMMAND ${CMAKE_COMMAND} -E echo "Coverage data generated in ${CMAKE_BINARY_DIR}/coverage/"
+        DEPENDS heimdall_tests
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        COMMENT "Generating coverage report"
+    )
+    
+    # Clean coverage target
+    add_custom_target(coverage-clean
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/coverage
+        COMMAND find ${CMAKE_BINARY_DIR} -name "*.gcda" -delete
+        COMMAND find ${CMAKE_BINARY_DIR} -name "*.gcno" -delete
+        COMMENT "Cleaning coverage data"
+    )
+    
+    message(STATUS "Coverage targets available: coverage, coverage-clean")
+endif()
