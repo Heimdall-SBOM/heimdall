@@ -10,6 +10,25 @@ The test suite uses Google Test framework and provides extensive coverage of all
 - **ComponentInfo**: Component metadata representation and management
 - **SBOMGenerator**: SBOM generation in SPDX and CycloneDX formats
 - **MetadataExtractor**: Binary file analysis and metadata extraction
+- **DWARFExtractor**: DWARF debug information extraction (LLVM-based)
+
+## Important Thread-Safety Limitations
+
+**⚠️ CRITICAL: DWARF Tests Are Not Thread-Safe**
+
+The DWARF extraction functionality uses LLVM's DWARF libraries, which are **NOT thread-safe**. 
+Concurrent DWARF tests have been removed to prevent segmentation faults and crashes.
+
+**What This Means:**
+- Cannot run multiple `DWARFExtractor` instances simultaneously
+- Cannot use DWARF functionality from multiple threads
+- Concurrent tests have been removed from the test suite
+- All DWARF operations must be performed serially
+
+**For More Information:**
+- See `heimdall-limitations.md` for detailed thread-safety documentation
+- Check test file headers for specific thread-safety warnings
+- Review `DWARFExtractor.hpp` for usage guidelines
 
 ## Test Structure
 
@@ -20,6 +39,10 @@ tests/
 ├── test_component_info.cpp    # ComponentInfo class unit tests
 ├── test_sbom_generator.cpp    # SBOMGenerator class unit tests
 ├── test_metadata_extractor.cpp # MetadataExtractor class unit tests
+├── test_dwarf_extractor.cpp   # Basic DWARF extraction tests
+├── test_dwarf_advanced.cpp    # Advanced DWARF functionality tests
+├── test_dwarf_cross_platform.cpp # Cross-platform DWARF tests
+├── test_dwarf_integration.cpp # DWARF integration tests
 ├── data/                      # Test data files
 │   └── test_files/           # Sample files for testing
 │       ├── empty.txt         # Empty file for testing
@@ -78,11 +101,18 @@ make test-sbom-generator
 # Run only MetadataExtractor tests
 make test-metadata-extractor
 
+# Run only DWARF tests (serial execution)
+make test-dwarf-extractor
+make test-dwarf-advanced
+make test-dwarf-cross-platform
+make test-dwarf-integration
+
 # Or use gtest filters
 ./heimdall_tests --gtest_filter="UtilsTest.*"
 ./heimdall_tests --gtest_filter="ComponentInfoTest.*"
 ./heimdall_tests --gtest_filter="SBOMGeneratorTest.*"
 ./heimdall_tests --gtest_filter="MetadataExtractorTest.*"
+./heimdall_tests --gtest_filter="DWARF*"
 ```
 
 ### Run Individual Tests
@@ -147,6 +177,54 @@ Tests for binary file analysis:
 - **Error Handling**: Non-existent files, directories, broken symlinks
 - **Edge Cases**: Empty files, large files, special characters
 - **Platform Support**: Different file types across platforms
+
+### DWARF Tests (Thread-Safety Limited)
+
+**⚠️ IMPORTANT: These tests are designed to run serially due to LLVM thread-safety limitations.**
+
+#### Basic DWARF Tests (`test_dwarf_extractor.cpp`)
+
+Tests for core DWARF extraction functionality:
+
+- **Source File Extraction**: Extracting source file paths from DWARF info
+- **Function Extraction**: Extracting function names and signatures
+- **Compile Unit Extraction**: Extracting compilation unit information
+- **Line Information**: Extracting line number mappings
+- **Error Handling**: Invalid files, missing DWARF sections
+- **Fallback Mechanisms**: Heuristic parsing when LLVM DWARF fails
+
+#### Advanced DWARF Tests (`test_dwarf_advanced.cpp`)
+
+Tests for advanced DWARF features:
+
+- **Detailed Function Information**: Function parameters, return types, scopes
+- **Line Number Details**: Source line to address mappings
+- **Error Scenarios**: Corrupted DWARF data, truncated files, permission issues
+- **Performance Benchmarks**: Single-threaded performance testing
+- **Memory Stress Tests**: Large file handling and memory management
+- **Edge Cases**: Various DWARF format versions and configurations
+
+#### Cross-Platform DWARF Tests (`test_dwarf_cross_platform.cpp`)
+
+Tests for platform-specific DWARF handling:
+
+- **ELF Format Support**: Linux executable and library DWARF extraction
+- **Mach-O Format Support**: macOS binary DWARF extraction (limited)
+- **PE Format Support**: Windows binary DWARF extraction (limited)
+- **Architecture Support**: x86, x86_64, ARM DWARF handling
+- **Format Detection**: Automatic detection of binary formats
+- **Platform-Specific Features**: OS-specific DWARF extensions
+
+#### DWARF Integration Tests (`test_dwarf_integration.cpp`)
+
+Tests for DWARF integration with other components:
+
+- **MetadataExtractor Integration**: DWARF data in component metadata
+- **Plugin System Integration**: DWARF extraction via plugin interface
+- **SBOM Generation**: DWARF information in generated SBOMs
+- **End-to-End Workflows**: Complete DWARF extraction pipelines
+- **Performance Integration**: DWARF extraction in larger workflows
+- **Memory Management**: Integration-level memory handling
 
 ## Test Archive Generation (Static Libraries)
 

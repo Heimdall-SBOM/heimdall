@@ -1,7 +1,7 @@
 # LLD Integration Rationale for Heimdall SBOM Generation
 
 *Heimdall Project*  
-*Last updated: July 2024*
+*Last updated: July 2025*
 
 ## Introduction
 

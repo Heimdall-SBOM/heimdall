@@ -38,17 +38,22 @@ std::unique_ptr<llvm::object::ObjectFile> g_objectFile;
 std::unique_ptr<llvm::DWARFContext> g_context;
 #endif
 
+#ifdef LLVM_DWARF_AVAILABLE
+static std::once_flag llvm_init_flag;
+void DWARFExtractor::ensureLLVMInitialized() {
+    std::call_once(llvm_init_flag, []() {
+        llvm::InitializeAllTargetInfos();
+        llvm::InitializeAllTargets();
+    });
+}
+#endif
+
 DWARFExtractor::DWARFExtractor() {
     std::cout << "DEBUG: DWARFExtractor constructor called" << std::endl;
     std::cout << "DEBUG: About to check LLVM_DWARF_AVAILABLE" << std::endl;
 #ifdef LLVM_DWARF_AVAILABLE
     std::cout << "DEBUG: LLVM_DWARF_AVAILABLE is defined" << std::endl;
-    // Initialize LLVM subsystems directly (no static variables)
-    std::cout << "DEBUG: Initializing LLVM subsystems directly" << std::endl;
-    llvm::InitializeAllTargetInfos();
-    llvm::InitializeAllTargets();
-    std::cout << "DEBUG: LLVM subsystems initialized directly" << std::endl;
-    std::cout << "DWARFExtractor: Initialized with LLVM DWARF support" << std::endl;
+    // No per-instance LLVM initialization
 #else
     std::cout << "DEBUG: LLVM_DWARF_AVAILABLE is NOT defined" << std::endl;
 #endif
@@ -58,15 +63,14 @@ DWARFExtractor::DWARFExtractor() {
 DWARFExtractor::~DWARFExtractor() {
     std::cout << "DEBUG: DWARFExtractor destructor called" << std::endl;
 #ifdef LLVM_DWARF_AVAILABLE
-    std::cout << "DEBUG: About to cleanup LLVM subsystems" << std::endl;
-    // Note: LLVM doesn't provide explicit cleanup functions for these
-    // The global state will be cleaned up when the process exits
+    // No per-instance LLVM cleanup
 #endif
     std::cout << "DEBUG: DWARFExtractor destructor completed" << std::endl;
 }
 
 bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) {
 #ifdef LLVM_DWARF_AVAILABLE
+    ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
@@ -85,6 +89,7 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector
 
 bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) {
 #ifdef LLVM_DWARF_AVAILABLE
+    ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
@@ -105,6 +110,7 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vecto
 
 bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<std::string>& functions) {
 #ifdef LLVM_DWARF_AVAILABLE
+    ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
@@ -125,6 +131,7 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<s
 
 bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<std::string>& lineInfo) {
 #ifdef LLVM_DWARF_AVAILABLE
+    ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
@@ -150,6 +157,7 @@ bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<st
 
 bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) {
 #ifdef LLVM_DWARF_AVAILABLE
+    ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
         return context->getNumCompileUnits() > 0;

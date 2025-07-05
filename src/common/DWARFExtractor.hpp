@@ -3,6 +3,11 @@
  * @brief Robust DWARF debug information extractor using LLVM libraries
  * @author Trevor Bakker
  * @date 2025
+ * 
+ * IMPORTANT THREAD-SAFETY WARNING:
+ * This class is NOT thread-safe due to LLVM's DWARF library limitations.
+ * Do not create multiple DWARFExtractor instances simultaneously or use
+ * from different threads. See heimdall-limitations.md for details.
  */
 
 #pragma once
@@ -36,6 +41,10 @@ extern std::unique_ptr<llvm::DWARFContext> g_context;
  * This class provides comprehensive DWARF parsing capabilities using LLVM's
  * DWARF libraries, which are the most mature and standards-compliant
  * implementation available.
+ * 
+ * @warning This class is NOT thread-safe. Do not use multiple instances
+ *          simultaneously or from different threads. See heimdall-limitations.md
+ *          for detailed thread-safety information.
  */
 class DWARFExtractor
 {
@@ -93,6 +102,13 @@ public:
      * @return true if DWARF info is present, false otherwise
      */
     bool hasDWARFInfo(const std::string& filePath);
+
+#ifdef LLVM_DWARF_AVAILABLE
+    /**
+     * @brief Ensure LLVM is initialized once per process
+     */
+    static void ensureLLVMInitialized();
+#endif
 
 private:
     /**

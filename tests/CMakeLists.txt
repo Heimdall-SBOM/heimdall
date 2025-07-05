@@ -28,6 +28,9 @@ add_executable(heimdall_tests
     test_linux_support.cpp
     test_package_manager_and_archive.cpp
     test_dwarf_extractor.cpp
+    test_dwarf_advanced.cpp
+    test_dwarf_cross_platform.cpp
+    test_dwarf_integration.cpp
     test_plugin_interface.cpp
 )
 
@@ -113,6 +116,30 @@ add_custom_target(test-sbom-generator
 
 add_custom_target(test-metadata-extractor
     COMMAND heimdall_tests --gtest_filter="MetadataExtractorTest.*"
+    DEPENDS heimdall_tests
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_target(test-dwarf-advanced
+    COMMAND heimdall_tests --gtest_filter="DWARFAdvancedTest.*"
+    DEPENDS heimdall_tests
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_target(test-dwarf-cross-platform
+    COMMAND heimdall_tests --gtest_filter="DWARFCrossPlatformTest.*"
+    DEPENDS heimdall_tests
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_target(test-dwarf-integration
+    COMMAND heimdall_tests --gtest_filter="DWARFIntegrationTest.*"
+    DEPENDS heimdall_tests
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_target(test-dwarf-all
+    COMMAND heimdall_tests --gtest_filter="*DWARF*"
     DEPENDS heimdall_tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
