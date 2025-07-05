@@ -106,6 +106,18 @@ else()
     set(LLVM_DWARF_FOUND FALSE)
 endif()
 
+# Try to use LLVM 18.1 if available (might be more stable than 19.1)
+if(EXISTS "/usr/lib64/libLLVM.so.18.1")
+    message(STATUS "Found LLVM 18.1 library, trying to use it instead of 19.1")
+    set(LLVM_LIBRARY_PATH "/usr/lib64/libLLVM.so.18.1")
+    set(LLVM_VERSION "18.1.0")
+    set(LLVM_DWARF_FOUND TRUE)
+    # Override the llvm-config results with 18.1
+    set(LLVM_LIBS "/usr/lib64/libLLVM.so.18.1")
+    set(LLVM_CXXFLAGS "-I/usr/include -std=c++17 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+    set(LLVM_LDFLAGS "-L/usr/lib64")
+endif()
+
 # Find LLVM for LLD plugin
 if(BUILD_LLD_PLUGIN)
     # Try to find Homebrew LLVM first
@@ -236,15 +248,10 @@ if(BUILD_SHARED_CORE)
         # Parse LLVM libraries string into list
         string(REPLACE " " ";" LLVM_LIB_LIST "${LLVM_LIBS}")
         
-        # LLVM DWARF support temporarily disabled due to compatibility issues with LLVM 19.1.7
-        # The API changes and segfault issues require more extensive refactoring
-        # target_link_libraries(heimdall-core PRIVATE ${LLVM_LIB_LIST})
-        # target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE)
-        # target_compile_options(heimdall-core PRIVATE ${LLVM_CXXFLAGS})
-        # target_link_options(heimdall-core PRIVATE ${LLVM_LDFLAGS})
-        
-        # For now, only link LLVM for LLD plugin support, not for DWARF functionality
-        # The heuristic DWARF parser provides fallback functionality
+        target_link_libraries(heimdall-core PRIVATE ${LLVM_LIB_LIST})
+        target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE)
+        target_compile_options(heimdall-core PRIVATE ${LLVM_CXXFLAGS})
+        target_link_options(heimdall-core PRIVATE ${LLVM_LDFLAGS})
     endif()
     
     set_target_properties(heimdall-core PROPERTIES

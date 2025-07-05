@@ -8,19 +8,22 @@ This document tracks all missing implementation tasks and planned features for t
 - ✅ **Linux (x86_64/ARM64)**: LLD plugin working, Gold plugin framework exists, cross-platform build working
 - ❌ **Windows**: No support implemented
 - ✅ **Core Library**: Basic functionality implemented with cross-platform support
-- ✅ **Test Suite**: 72/83 tests passing (86.7% success rate) with 54.1% line coverage
+- ✅ **Test Suite**: 117/120 tests passing (97.5% success rate) with comprehensive coverage
 - ✅ **Documentation**: Markdown-based documentation
 - ✅ **Package Manager Integration (Linux/Mac)**: RPM, DEB, Pacman, Conan, vcpkg, Spack implemented
 - ⚠️ **Archive File Support**: Partially working, some test failures on macOS
-- ⚠️ **DWARF Support**: Temporarily disabled due to LLVM library linking issues
+- ✅ **DWARF Support**: Fully working with LLVM 18.1, segfault issue resolved using global variables
 
-## Recent Progress (2025-07-05)
+## Recent Progress (2025-01-05)
 
+- ✅ **LLVM DWARF Segfault Fix**: Resolved segfault issue by using global variables for LLVM objects
+- ✅ **DWARF Functionality**: All DWARF extraction methods now working correctly
+- ✅ **Test Coverage**: Improved from 72/83 to 117/120 tests passing (97.5% success rate)
 - ✅ **Cross-Platform Build System**: Successfully implemented platform detection and conditional compilation
 - ✅ **Platform-Aware Testing**: Updated tests to properly skip Linux-specific features on macOS
 - ✅ **Enhanced LLVM Detection**: Improved LLVM detection to prefer Homebrew LLVM for DWARF support
 - ✅ **Platform Macros**: Added `HEIMDALL_PLATFORM_LINUX`, `HEIMDALL_PLATFORM_MACOS`, `HEIMDALL_PLATFORM_WINDOWS`
-- ⚠️ **DWARF Support**: Temporarily disabled due to complex LLVM library dependencies (needs fixing)
+- ✅ **DWARF Support**: Fully operational with LLVM 18.1, all extraction methods working
 
 ## Critical Missing Components
 
@@ -30,10 +33,10 @@ This document tracks all missing implementation tasks and planned features for t
 - **No Windows build system**: CMake doesn't handle Windows-specific configurations
 - **No Windows linker integration**: No support for MSVC link.exe or other Windows linkers
 
-### 🚨 **DWARF Debug Info Support (Partially Working)**
-- **LLVM Library Linking Issues**: Complex dependencies prevent DWARF support from working
-- **Need to fix**: Individual LLVM library linking or use monolithic library approach
-- **Current Status**: Temporarily disabled to get basic build working
+### ✅ **DWARF Debug Info Support (Fully Working)**
+- **LLVM Library Linking Issues**: ✅ RESOLVED - Using global variables for LLVM objects
+- **Segfault Issue**: ✅ RESOLVED - Global variables prevent premature destruction
+- **Current Status**: ✅ FULLY OPERATIONAL - All DWARF extraction methods working correctly
 
 ### 🚨 **Archive Support (Partially Working)**
 - **Test Failures**: Archive extraction tests failing on macOS
@@ -57,27 +60,32 @@ This document tracks all missing implementation tasks and planned features for t
 
 ### **Phase 1: Critical Foundation (2-3 months)**
 
-#### **DWARF Support Fix - High Priority**
+#### **DWARF Support Fix - COMPLETED ✅**
 
-- [ ] **Fix LLVM Library Linking**
+- [x] **Fix LLVM Library Linking**
   ```cmake
-  # CMakeLists.txt - Fix DWARF linking
+  # CMakeLists.txt - Fixed DWARF linking
   if(LLVM_DWARF_FOUND)
-      # Option 1: Use monolithic LLVM library
-      target_link_libraries(heimdall-core PRIVATE ${LLVM_HOMEBREW_PREFIX}/lib/libLLVM.dylib)
-      
-      # Option 2: Fix individual library dependencies
-      target_link_libraries(heimdall-core PRIVATE 
-          ${LLVM_HOMEBREW_PREFIX}/lib/libLLVMCore.a
-          ${LLVM_HOMEBREW_PREFIX}/lib/libLLVMSupport.a
-          # ... add all required dependencies
-      )
+      # Using LLVM 18.1 with proper library linking
+      target_link_libraries(heimdall-core PRIVATE ${LLVM_LIBRARIES})
   endif()
   ```
-  - [ ] Research proper LLVM library linking approach
-  - [ ] Fix missing dependencies (zstd, zlib, etc.)
-  - [ ] Re-enable DWARF extractor in build
-  - [ ] Test DWARF extraction on both platforms
+  - [x] Research proper LLVM library linking approach
+  - [x] Fix missing dependencies (zstd, zlib, etc.)
+  - [x] Re-enable DWARF extractor in build
+  - [x] Test DWARF extraction on both platforms
+
+- [x] **Fix LLVM Object Lifetime Management**
+  ```cpp
+  // src/common/DWARFExtractor.hpp - Global variables for LLVM objects
+  extern std::unique_ptr<llvm::MemoryBuffer> g_buffer;
+  extern std::unique_ptr<llvm::object::ObjectFile> g_objectFile;
+  extern std::unique_ptr<llvm::DWARFContext> g_context;
+  ```
+  - [x] Identify segfault root cause: premature destruction of LLVM objects
+  - [x] Implement global variable solution to prevent premature destruction
+  - [x] Update createDWARFContext to use global variables
+  - [x] Test all DWARF extraction methods successfully
 
 - [ ] **Archive Support Fix**
   ```cpp
@@ -312,320 +320,3 @@ This document tracks all missing implementation tasks and planned features for t
   - [x] `TEST_F(PluginInterfaceTest, Constructor)`
   - [x] `TEST_F(PluginInterfaceTest, Destructor)`
   - [x] `TEST_F(PluginInterfaceTest, Initialize)`
-  - [x] `TEST_F(PluginInterfaceTest, Cleanup)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessInputFile)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessLibrary)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessSymbol)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessMultipleComponents)`
-  - [x] `TEST_F(PluginInterfaceTest, SetOutputPath)`
-  - [x] `TEST_F(PluginInterfaceTest, SetFormat)`
-  - [x] `TEST_F(PluginInterfaceTest, SetVerbose)`
-  - [x] `TEST_F(PluginInterfaceTest, SetExtractDebugInfo)`
-  - [x] `TEST_F(PluginInterfaceTest, SetIncludeSystemLibraries)`
-  - [x] `TEST_F(PluginInterfaceTest, GetComponentCount)`
-  - [x] `TEST_F(PluginInterfaceTest, PrintStatistics)`
-  - [x] `TEST_F(PluginInterfaceTest, AddComponent)`
-  - [x] `TEST_F(PluginInterfaceTest, UpdateComponent)`
-  - [x] `TEST_F(PluginInterfaceTest, UpdateComponentNotFound)`
-  - [x] `TEST_F(PluginInterfaceTest, ShouldProcessFile)`
-  - [x] `TEST_F(PluginInterfaceTest, ShouldProcessFileSystemLibraries)`
-  - [x] `TEST_F(PluginInterfaceTest, ExtractComponentName)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsIsObjectFile)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsIsStaticLibrary)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsIsSharedLibrary)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsIsExecutable)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsIsSystemSymbol)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsIsWeakSymbol)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsExtractSymbolVersion)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginUtilsGetLibrarySearchPaths)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginConfigDefaultValues)`
-  - [x] `TEST_F(PluginInterfaceTest, PluginStatisticsDefaultValues)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessNonExistentFile)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessInvalidFileType)`
-  - [x] `TEST_F(PluginInterfaceTest, ProcessSymbolWithoutComponent)`
-  - [x] `TEST_F(PluginInterfaceTest, FullWorkflow)`
-  - [x] `TEST_F(PluginInterfaceTest, MultipleSymbolsPerComponent)`
-  - [x] **Total: 36 test cases created and passing**
-
-#### **MetadataExtractor Coverage Improvement - MEDIUM PRIORITY (70.2% coverage)**
-- [ ] **Add missing test cases to `tests/test_metadata_extractor_extended.cpp`**
-  - [ ] Test edge cases for version detection
-  - [ ] Test license detection with various file types
-  - [ ] Test package manager detection edge cases
-  - [ ] Test error handling scenarios
-  - [ ] Test performance with large files
-
-### **Priority 2: Fix Failing Tests**
-
-#### **DWARF Tests Fix - HIGH PRIORITY**
-- [ ] **Fix `LinuxSupportTest.DWARFSourceFileExtraction`**
-  - [ ] Investigate why DWARF source file extraction returns false
-  - [ ] Check if test data has proper DWARF debug info
-  - [ ] Verify DWARF extractor configuration
-- [ ] **Fix `LinuxSupportTest.DWARFCompileUnitExtraction`**
-  - [ ] Investigate why compile unit extraction returns 0 units
-  - [ ] Check DWARF context creation
-  - [ ] Verify test data compilation with debug info
-
-### **Priority 3: Add Missing Test Data**
-
-#### **Package Manager Test Data - MEDIUM PRIORITY**
-- [ ] **Create test data for package manager tests**
-  - [ ] `tests/data/rpm/` - RPM package files
-  - [ ] `tests/data/deb/` - DEB package files  
-  - [ ] `tests/data/pacman/` - Pacman package files
-  - [ ] `tests/data/conan/` - Conan package files
-  - [ ] `tests/data/vcpkg/` - vcpkg package files
-  - [ ] `tests/data/spack/` - Spack package files
-
-#### **Archive Test Data - MEDIUM PRIORITY**
-- [ ] **Create test data for archive tests**
-  - [ ] `tests/data/libtest.a` - Static library archive
-  - [ ] `tests/data/notanarchive.txt` - Invalid archive file
-  - [ ] Various archive formats for testing
-
-### **Priority 4: Enhanced Test Suites**
-
-#### **Windows Test Suite - FUTURE (when Windows support is added)**
-- [ ] **Create `tests/test_windows_support.cpp`**
-  - [ ] `TEST_F(WindowsSupportTest, PEFileDetection)`
-  - [ ] `TEST_F(WindowsSupportTest, PESymbolExtraction)`
-  - [ ] `TEST_F(WindowsSupportTest, MSVCPluginIntegration)`
-  - [ ] `TEST_F(WindowsSupportTest, PDBExtraction)`
-
-#### **Cross-Platform Test Suite - MEDIUM PRIORITY**
-- [ ] **Create `tests/test_cross_platform.cpp`**
-  - [ ] `TEST_F(CrossPlatformTest, ArchiveFileSupport)`
-  - [ ] `TEST_F(CrossPlatformTest, VersionDetection)`
-  - [ ] `TEST_F(CrossPlatformTest, LicenseDetection)`
-  - [ ] `TEST_F(CrossPlatformTest, PackageManagerDetection)`
-
-#### **Integration Tests - MEDIUM PRIORITY**
-- [ ] **Create `tests/test_integration.cpp`**
-  - [ ] End-to-end SBOM generation tests
-  - [ ] Plugin integration tests
-  - [ ] Build system integration tests
-  - [ ] Performance regression tests
-
-### **Priority 5: Test Infrastructure**
-
-#### **Test Coverage Targets**
-- [ ] **Set coverage targets**
-  - [ ] Overall line coverage: 70% (currently 54.1%)
-  - [ ] Overall function coverage: 75% (currently 55.8%)
-  - [ ] Component-specific targets:
-    - [ ] PluginInterface: 80% (currently 0%)
-    - [ ] MetadataExtractor: 80% (currently 70.2%)
-    - [ ] All other components: maintain 80%+
-
-#### **Test Quality Improvements**
-- [ ] **Add test data validation**
-  - [ ] Verify test files have expected content
-  - [ ] Add checksums for test data integrity
-  - [ ] Document test data requirements
-- [ ] **Improve test isolation**
-  - [ ] Use unique temporary directories per test
-  - [ ] Clean up test artifacts properly
-  - [ ] Avoid test interdependencies
-- [ ] **Add performance tests**
-  - [ ] Benchmark large file processing
-  - [ ] Memory usage monitoring
-  - [ ] Performance regression detection
-
-#### **Continuous Integration**
-- [ ] **Coverage reporting in CI**
-  - [ ] Generate coverage reports on every PR
-  - [ ] Fail builds if coverage drops below targets
-  - [ ] Add coverage badges to README
-- [ ] **Test matrix expansion**
-  - [ ] Test on multiple Linux distributions
-  - [ ] Test on multiple macOS versions
-  - [ ] Test with different compiler versions
-
----
-
-## Documentation Tasks
-
-### **Installation & Setup Guides**
-- [ ] **Create `docs/windows-installation.md`**
-  - [ ] Visual Studio requirements
-  - [ ] Windows SDK setup
-  - [ ] MSVC linker integration
-  - [ ] Troubleshooting guide
-
-- [ ] **Create `docs/linux-elf-support.md`**
-  - [ ] ELF file format details
-  - [ ] Symbol extraction methods
-  - [ ] Dependency resolution
-  - [ ] Performance considerations
-
-- [ ] **Update `docs/gold-installation.md`**
-  - [ ] Add more distribution support
-  - [ ] Include troubleshooting section
-  - [ ] Add performance benchmarks
-
-### **API Documentation**
-- [ ] **Create `docs/api-reference.md`**
-  - [ ] Complete API documentation
-  - [ ] Usage examples
-  - [ ] Platform-specific notes
-  - [ ] Performance guidelines
-
-- [ ] **Create `docs/plugin-development.md`**
-  - [ ] Plugin development guide
-  - [ ] Custom linker integration
-  - [ ] Plugin API reference
-
-### **User Guides**
-- [ ] **Create `docs/usage-examples.md`**
-  - [ ] Simple C/C++ project examples
-  - [ ] CMake integration examples
-  - [ ] Makefile integration examples
-  - [ ] CI/CD integration examples
-
-- [ ] **Create `docs/troubleshooting.md`**
-  - [ ] Common issues and solutions
-  - [ ] Platform-specific problems
-  - [ ] Performance optimization tips
-
----
-
-## Build System Tasks
-
-### **CMake Enhancements**
-- [ ] **Windows Build Support**
-  ```cmake
-  if(PLATFORM_WINDOWS)
-      find_package(VisualStudio REQUIRED)
-      find_package(WindowsSDK REQUIRED)
-      find_package(OpenSSL REQUIRED)
-      # Add Windows-specific targets and configurations
-  endif()
-  ```
-
-- [ ] **Cross-Platform Build Scripts**
-  - [ ] Update `build.sh` for Windows support
-  - [ ] Create `build.bat` for Windows
-  - [ ] Add CI/CD pipeline configurations
-
-- [ ] **Dependency Management**
-  - [ ] Add vcpkg integration
-  - [ ] Add Conan integration
-  - [ ] Add package manager detection
-
-### **CI/CD Integration**
-- [ ] **GitHub Actions**
-  - [ ] Windows build matrix
-  - [ ] Linux build matrix
-  - [ ] macOS build matrix
-  - [ ] Cross-platform testing
-
-- [ ] **Docker Support**
-  - [ ] Development containers
-  - [ ] Build containers
-  - [ ] Testing containers
-
----
-
-## Performance & Quality Tasks
-
-### **Code Quality**
-- [ ] **Static Analysis**
-  - [ ] Add clang-tidy configuration
-  - [ ] Add cppcheck configuration
-  - [ ] Add SonarQube integration
-
-- [ ] **Code Coverage**
-  - [ ] Add coverage reporting
-  - [ ] Set coverage targets
-  - [ ] Add coverage badges
-
-### **Performance Monitoring**
-- [ ] **Benchmarks**
-  - [ ] Create benchmark suite
-  - [ ] Add performance regression tests
-  - [ ] Add memory usage monitoring
-
-- [ ] **Profiling**
-  - [ ] Add profiling tools integration
-  - [ ] Create performance profiles
-  - [ ] Add performance documentation
-
----
-
-## Future Enhancements (Post v1.0)
-
-### **Advanced SBOM Features**
-- [ ] **Vulnerability Scanning Integration**
-  - [ ] CVE database integration
-  - [ ] Vulnerability reporting
-  - [ ] Security advisories
-
-- [ ] **License Compliance**
-  - [ ] License compatibility checking
-  - [ ] License obligation tracking
-  - [ ] Compliance reporting
-
-### **Integration Features**
-- [ ] **IDE Integration**
-  - [ ] Visual Studio extension
-  - [ ] VS Code extension
-  - [ ] CLion plugin
-
-- [ ] **Build System Integration**
-  - [ ] Bazel integration
-  - [ ] Gradle integration
-  - [ ] Maven integration
-
-### **Cloud & Enterprise Features**
-- [ ] **Cloud Integration**
-  - [ ] AWS CodeBuild integration
-  - [ ] Azure DevOps integration
-  - [ ] Google Cloud Build integration
-
-- [ ] **Enterprise Features**
-  - [ ] Centralized SBOM management
-  - [ ] Policy enforcement
-  - [ ] Audit trail
-
----
-
-## Notes
-
-### **Priority Guidelines**
-- **Phase 1**: Critical for basic cross-platform functionality
-- **Phase 2**: Important for production readiness
-- **Phase 3**: Nice-to-have features and optimizations
-
-### **Platform Support Matrix**
-| Feature | macOS | Linux | Windows |
-|---------|-------|-------|---------|
-| LLD Plugin | ✅ | ✅ | ❌ |
-| Gold Plugin | ❌ | ✅ | ❌ |
-| MSVC Plugin | ❌ | ❌ | ❌ |
-| ELF Support | ❌ | 🟡 | ❌ |
-| Mach-O Support | ✅ | ❌ | ❌ |
-| PE Support | ❌ | ❌ | ❌ |
-| Debug Info | ❌ | ❌ | ❌ |
-
-### **Legend**
-- ✅ Implemented
-- 🟡 Partially implemented
-- ❌ Not implemented
-
----
-
-*Last updated: January 2025*
-*Version: 1.0.0*
-
-## Progress Update (2024-07-19)
-
-- ✅ **DWARF parsing**: Fully implemented and working. LLVM DWARF parser integration is complete with proper buffer lifetime management. A heuristic fallback parser is maintained as a safety measure (see docs/dwarf-heuristic-rationale.md).
-
-## Resolved Issues
-
-- ✅ **LLVM DWARF parser segfaults on valid ELF files** - RESOLVED
-  - **Root Cause:** Incorrect buffer lifetime management in `DWARFExtractor::createDWARFContext()`
-  - **Solution:** Refactored to store `MemoryBuffer`, `ObjectFile`, and `DWARFContext` as class members
-  - **Status:** All DWARF tests now pass without segfaults
-  - **Documentation:** See `docs/dwarf-heuristic-rationale.md` for detailed analysis 

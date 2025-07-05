@@ -23,6 +23,13 @@
 namespace heimdall
 {
 
+#ifdef LLVM_DWARF_AVAILABLE
+// Global LLVM objects to prevent premature destruction
+extern std::unique_ptr<llvm::MemoryBuffer> g_buffer;
+extern std::unique_ptr<llvm::object::ObjectFile> g_objectFile;
+extern std::unique_ptr<llvm::DWARFContext> g_context;
+#endif
+
 /**
  * @brief Robust DWARF debug information extractor using LLVM libraries
  * 
@@ -103,9 +110,9 @@ private:
      * @brief Initialize LLVM DWARF context for a file
      * 
      * @param filePath Path to the ELF file
-     * @return true if context creation succeeded, false otherwise
+     * @return raw pointer to DWARF context if creation succeeded, nullptr otherwise
      */
-    bool createDWARFContext(const std::string& filePath);
+    llvm::DWARFContext* createDWARFContext(const std::string& filePath);
 
     /**
      * @brief Extract source files from a DWARF compile unit
@@ -130,11 +137,6 @@ private:
      * @param functions Output vector for functions
      */
     void extractFunctionsFromDie(const llvm::DWARFDie& die, std::vector<std::string>& functions);
-
-    // Store these as members to ensure their lifetime matches the DWARFContext
-    std::unique_ptr<llvm::MemoryBuffer> buffer_;
-    std::unique_ptr<llvm::object::ObjectFile> objectFile_;
-    std::unique_ptr<llvm::DWARFContext> context_;
 #endif
 };
 
