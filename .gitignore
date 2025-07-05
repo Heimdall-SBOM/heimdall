@@ -1,0 +1,53 @@
+# Ignore build artifacts and CMake files
+build/
+install/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+*.ninja
+*.swp
+
+# Ignore binary/object/library files
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+*.bin
+
+# Ignore SBOM and test/demo outputs
+*.spdx
+*.cyclonedx.json
+*.json
+*.log
+examples/*/build/
+examples/*/*.spdx
+examples/*/*.cyclonedx.json
+examples/*/*.json
+examples/*/generate_sbom
+examples/*/generate_sbom.c
+examples/*/generate_cyclonedx_sbom
+examples/*/generate_cyclonedx_sbom.c
+examples/*/heimdall-lld.dylib
+examples/*/openssl_pthread_demo
+examples/*/test_plugin
+examples/*/test_plugin.c
+
+# Ignore test outputs
+tests/temp/
+tests/output/
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore backup and swap files
+*~
+*.bak
+*.tmp
+*.old 
