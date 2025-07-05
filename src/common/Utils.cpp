@@ -419,15 +419,9 @@ bool isSystemLibrary(const std::string& libraryPath)
         "/System/Library", "/usr/local/lib"
     };
     
-    for (const auto& sysPath : systemPaths)
-    {
-        if (startsWith(normalizedPath, sysPath))
-        {
-            return true;
-        }
-    }
-    
-    return false;
+    return std::any_of(systemPaths.begin(), systemPaths.end(), [&](const std::string& sysPath) {
+        return startsWith(normalizedPath, sysPath);
+    });
 }
 
 /**
@@ -597,29 +591,6 @@ std::string formatJsonValue(const std::string& value)
         return "null";
     }
     return "\"" + escapeJsonString(value) + "\"";
-}
-
-/**
- * @brief Format an array of strings for JSON output
- * @param array The array to format
- * @return The formatted JSON array string
- */
-std::string formatJsonArray(const std::vector<std::string>& array)
-{
-    if (array.empty())
-    {
-        return "[]";
-    }
-    
-    std::string result = "[";
-    for (size_t i = 0; i < array.size(); ++i)
-    {
-        if (i > 0) result += ", ";
-        result += formatJsonValue(array[i]);
-    }
-    result += "]";
-    
-    return result;
 }
 
 /**

@@ -414,3 +414,33 @@ message(STATUS "Documentation:")
 message(STATUS "  LLD Integration Rationale: ${CMAKE_SOURCE_DIR}/docs/lld-integration-rationale.md")
 message(STATUS "  Gold Installation Guide: ${CMAKE_SOURCE_DIR}/docs/gold-installation.md")
 message(STATUS "")
+
+# =====================
+# Static Analysis Tools
+# =====================
+find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+find_program(CPPCHECK_EXE NAMES cppcheck)
+
+if(CLANG_TIDY_EXE)
+    file(GLOB_RECURSE SOURCE_FILES 
+        "${CMAKE_SOURCE_DIR}/src/*.cpp"
+        "${CMAKE_SOURCE_DIR}/src/*.hpp"
+    )
+    add_custom_target(
+        clang-tidy
+        COMMAND ${CLANG_TIDY_EXE} -p ${CMAKE_BINARY_DIR} ${SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running clang-tidy on all source files"
+        VERBATIM
+    )
+endif()
+
+if(CPPCHECK_EXE)
+    add_custom_target(
+        cppcheck
+        COMMAND ${CPPCHECK_EXE} --enable=all --inconclusive --std=c++17 --force --quiet --project=${CMAKE_BINARY_DIR}/compile_commands.json src/
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running cppcheck on all source files"
+        VERBATIM
+    )
+endif()

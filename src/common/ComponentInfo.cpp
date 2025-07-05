@@ -87,13 +87,13 @@ ComponentInfo::ComponentInfo(const std::string& componentName, const std::string
     , filePath(path)
     , fileType(determineFileType(path))
     , fileSize(getFileSize(path))
-    , checksum(calculateSHA256(path))
     , wasProcessed(false)
     , detectedBy(LinkerType::Unknown)
     , isSystemLibrary(false)
     , containsDebugInfo(false)
     , isStripped(false)
 {
+    checksum = calculateSHA256(path);
 }
 
 /**

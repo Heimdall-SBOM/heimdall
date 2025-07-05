@@ -22,8 +22,8 @@ private:
     std::vector<std::string> processedFiles;
     bool initialized;
     
-    void extractBasicInfo(const std::string& filePath);
-    void logProcessing(const std::string& message);
+    static void extractBasicInfo(const std::string& filePath);
+    static void logProcessing(const std::string& message);
 };
 
 // LLDAdapter::Impl implementation
