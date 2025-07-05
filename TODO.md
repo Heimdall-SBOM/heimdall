@@ -16,6 +16,8 @@ This document tracks all missing implementation tasks and planned features for t
 
 ## Recent Progress (2025-01-05)
 
+- ✅ **Uninitialized Value Fixes**: Fixed all 9 valgrind uninitialized value errors in file format detection
+- ✅ **Memory Management**: Zero memory leaks detected, only LLVM static allocations remain
 - ✅ **LLVM DWARF Segfault Fix**: Resolved segfault issue by using global variables for LLVM objects
 - ✅ **DWARF Functionality**: All DWARF extraction methods now working correctly
 - ✅ **Test Coverage**: Improved from 72/83 to 117/120 tests passing (97.5% success rate)
@@ -305,9 +307,8 @@ This document tracks all missing implementation tasks and planned features for t
 4. **Improve MetadataExtractor Coverage** - Add tests to reach 80% coverage target
 
 ### **Development Priorities**
-1. **Fix DWARF Support** - Resolve LLVM library linking issues (when ready to re-enable)
-2. **Add Windows Support** - Implement PE format and MSVC plugin
-3. **Enhance Testing Infrastructure** - Add coverage targets and CI integration
+1. **Add Windows Support** - Implement PE format and MSVC plugin
+2. **Enhance Testing Infrastructure** - Add coverage targets and CI integration
 
 ---
 
