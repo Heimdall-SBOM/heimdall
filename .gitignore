@@ -82,4 +82,10 @@ __pycache__/
 *.gcov
 coverage.info
 *.prof
-coverage/ 
+coverage/
+
+# Ignore CTest generated files
+Testing/
+CTestTestfile.cmake
+CTestCostData.txt
+DartConfiguration.tcl 
