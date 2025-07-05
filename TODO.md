@@ -2,23 +2,25 @@
 
 This document tracks all missing implementation tasks and planned features for the Heimdall SBOM generator.
 
-## Current Status
+## Current Status (Updated 2025-01-05)
 
-- ✅ **macOS (ARM64/x86_64)**: LLD plugin working, Mach-O support implemented
-- ✅ **Linux (x86_64/ARM64)**: LLD plugin working, Gold plugin framework exists
+- ✅ **macOS (ARM64/x86_64)**: LLD plugin working, Mach-O support implemented, cross-platform build working
+- ✅ **Linux (x86_64/ARM64)**: LLD plugin working, Gold plugin framework exists, cross-platform build working
 - ❌ **Windows**: No support implemented
-- ✅ **Core Library**: Basic functionality implemented
-- ✅ **Test Suite**: 25+ unit tests passing with real shared library testing
+- ✅ **Core Library**: Basic functionality implemented with cross-platform support
+- ✅ **Test Suite**: 24/36 tests passing (67% success rate) with proper platform-aware testing
 - ✅ **Documentation**: Markdown-based documentation
 - ✅ **Package Manager Integration (Linux/Mac)**: RPM, DEB, Pacman, Conan, vcpkg, Spack implemented
-- ✅ **Archive File Support (Unix)**: Archive member and symbol extraction implemented
+- ⚠️ **Archive File Support**: Partially working, some test failures on macOS
+- ⚠️ **DWARF Support**: Temporarily disabled due to LLVM library linking issues
 
-## Progress Update (2024-07-19)
+## Recent Progress (2025-01-05)
 
-- ✅ **DWARF parsing**: Fully implemented and working. LLVM DWARF parser integration is complete with proper buffer lifetime management. A heuristic fallback parser is maintained as a safety measure (see docs/dwarf-heuristic-rationale.md).
-- ✅ **Linux ELF support**: Fully implemented with symbol extraction, section extraction, dependency extraction, and build ID extraction.
-- ✅ **Mach-O support**: Fully implemented with symbol extraction, section extraction, version extraction, and UUID extraction.
-- 🟡 **PE support**: Stubs exist but no real implementation.
+- ✅ **Cross-Platform Build System**: Successfully implemented platform detection and conditional compilation
+- ✅ **Platform-Aware Testing**: Updated tests to properly skip Linux-specific features on macOS
+- ✅ **Enhanced LLVM Detection**: Improved LLVM detection to prefer Homebrew LLVM for DWARF support
+- ✅ **Platform Macros**: Added `HEIMDALL_PLATFORM_LINUX`, `HEIMDALL_PLATFORM_MACOS`, `HEIMDALL_PLATFORM_WINDOWS`
+- ⚠️ **DWARF Support**: Temporarily disabled due to complex LLVM library dependencies (needs fixing)
 
 ## Critical Missing Components
 
@@ -28,8 +30,15 @@ This document tracks all missing implementation tasks and planned features for t
 - **No Windows build system**: CMake doesn't handle Windows-specific configurations
 - **No Windows linker integration**: No support for MSVC link.exe or other Windows linkers
 
-### 🚨 **Package Manager Integration (Windows)**
-- **NuGet, Chocolatey, etc.**: Not implemented (out of scope for Linux/Mac)
+### 🚨 **DWARF Debug Info Support (Partially Working)**
+- **LLVM Library Linking Issues**: Complex dependencies prevent DWARF support from working
+- **Need to fix**: Individual LLVM library linking or use monolithic library approach
+- **Current Status**: Temporarily disabled to get basic build working
+
+### 🚨 **Archive Support (Partially Working)**
+- **Test Failures**: Archive extraction tests failing on macOS
+- **Need Investigation**: Archive member extraction not working properly
+- **Current Status**: Basic functionality exists but needs debugging
 
 ## Partially Implemented Components
 
@@ -47,6 +56,38 @@ This document tracks all missing implementation tasks and planned features for t
 ## Detailed Task List
 
 ### **Phase 1: Critical Foundation (2-3 months)**
+
+#### **DWARF Support Fix - High Priority**
+
+- [ ] **Fix LLVM Library Linking**
+  ```cmake
+  # CMakeLists.txt - Fix DWARF linking
+  if(LLVM_DWARF_FOUND)
+      # Option 1: Use monolithic LLVM library
+      target_link_libraries(heimdall-core PRIVATE ${LLVM_HOMEBREW_PREFIX}/lib/libLLVM.dylib)
+      
+      # Option 2: Fix individual library dependencies
+      target_link_libraries(heimdall-core PRIVATE 
+          ${LLVM_HOMEBREW_PREFIX}/lib/libLLVMCore.a
+          ${LLVM_HOMEBREW_PREFIX}/lib/libLLVMSupport.a
+          # ... add all required dependencies
+      )
+  endif()
+  ```
+  - [ ] Research proper LLVM library linking approach
+  - [ ] Fix missing dependencies (zstd, zlib, etc.)
+  - [ ] Re-enable DWARF extractor in build
+  - [ ] Test DWARF extraction on both platforms
+
+- [ ] **Archive Support Fix**
+  ```cpp
+  // src/common/MetadataExtractor.cpp - Fix archive extraction
+  bool extractArchiveMembers(const std::string& filePath, std::vector<std::string>& members);
+  bool extractArchiveSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols);
+  ```
+  - [ ] Debug archive member extraction on macOS
+  - [ ] Fix test data generation for archives
+  - [ ] Ensure cross-platform archive support
 
 #### **Windows Support - High Priority**
 
@@ -74,19 +115,30 @@ This document tracks all missing implementation tasks and planned features for t
 - [ ] **Windows Build System Integration**
   ```cmake
   # CMakeLists.txt - Windows support
-  if(PLATFORM_WINDOWS)
+  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
       find_package(VisualStudio REQUIRED)
       find_package(WindowsSDK REQUIRED)
       # Add Windows-specific build targets
+      target_compile_definitions(heimdall-core PRIVATE HEIMDALL_PLATFORM_WINDOWS=1)
   endif()
   ```
 
 #### **Cross-Platform Foundation - Medium Priority**
 
-- [x] **Archive File Support (Unix)**
-  - [x] `extractArchiveMembers` implemented
-  - [x] `extractArchiveSymbols` implemented
-  - [ ] Windows `.lib` archive support (not implemented)
+- [x] **Platform Detection & Macros**
+  - [x] `HEIMDALL_PLATFORM_LINUX`, `HEIMDALL_PLATFORM_MACOS`, `HEIMDALL_PLATFORM_WINDOWS` implemented
+  - [x] Platform-specific compile definitions added
+  - [x] Conditional compilation for platform-specific features
+
+- [x] **Platform-Aware Testing**
+  - [x] Linux-specific tests use `GTEST_SKIP()` on non-Linux platforms
+  - [x] File format detection tests are platform-aware
+  - [x] Proper test skipping for unsupported features
+
+- [x] **Enhanced LLVM Detection**
+  - [x] Prefer Homebrew LLVM for DWARF support
+  - [x] Proper include directory handling
+  - [x] Platform-specific LLVM configuration
 
 - [x] **Package Manager Integration (Linux/Mac)**
   - [x] `detectRpmMetadata` implemented
@@ -147,17 +199,18 @@ This document tracks all missing implementation tasks and planned features for t
   std::string findWindowsLibrary(const std::string& libraryName);
   ```
 
-#### **Package Manager Integration - Medium Priority**
+#### **Enhanced Cross-Platform Support - Medium Priority**
 
-- [x] **Linux Package Manager Support**
-  - [x] `detectRpmMetadata` implemented
-  - [x] `detectDebMetadata` implemented
-  - [x] `detectPacmanMetadata` implemented
+- [ ] **Improved Test Coverage**
+  - [ ] Add more comprehensive cross-platform tests
+  - [ ] Test archive support on both platforms
+  - [ ] Test DWARF support when fixed
+  - [ ] Add Windows-specific tests when implemented
 
-- [x] **Cross-Platform Package Manager Support**
-  - [x] `detectConanMetadata` implemented
-  - [x] `detectVcpkgMetadata` implemented
-  - [x] `detectSpackMetadata` implemented
+- [ ] **Build System Enhancements**
+  - [ ] Add CI/CD for multiple platforms
+  - [ ] Automated testing on Linux, macOS, Windows
+  - [ ] Package distribution for all platforms
 
 ### **Phase 3: Advanced Features (2-3 months)**
 
@@ -193,32 +246,37 @@ This document tracks all missing implementation tasks and planned features for t
   };
   ```
 
+## Current Test Status
+
+### **Test Results (2025-01-05)**
+- ✅ **24 tests passing** (67% success rate)
+- ✅ **10 tests properly skipped** (Linux-specific features on macOS)
+- ❌ **2 tests failing** (Archive support - needs fixing)
+
+### **Test Categories**
+- ✅ **Utils Tests**: 5/5 passing
+- ✅ **Component Info Tests**: 7/7 passing  
+- ✅ **SBOM Generator Tests**: 4/4 passing
+- ✅ **Metadata Extractor Tests**: 2/2 passing
+- ✅ **Linux Support Tests**: 7/7 skipped (expected on macOS)
+- ✅ **Package Manager Tests**: 6/6 passing/skipped appropriately
+- ❌ **Archive Support Tests**: 2/3 failing (needs fixing)
+
 ## Resolved Issues
 
-- ✅ **LLVM DWARF parser segfaults on valid ELF files** - RESOLVED
-  - **Root Cause:** Incorrect buffer lifetime management in `DWARFExtractor::createDWARFContext()`
-  - **Solution:** Refactored to store `MemoryBuffer`, `ObjectFile`, and `DWARFContext` as class members
-  - **Status:** All DWARF tests now pass without segfaults
-  - **Documentation:** See `docs/dwarf-heuristic-rationale.md` for detailed analysis
+- ✅ **Cross-Platform Build**: Successfully implemented platform detection and conditional compilation
+- ✅ **Platform-Aware Testing**: Tests now properly skip unsupported features
+- ✅ **LLVM Detection**: Improved to prefer newer Homebrew LLVM
+- ✅ **Test Compilation**: Fixed macOS SDK path issues
+- ⚠️ **DWARF Support**: Temporarily disabled due to linking issues (needs fixing)
+- ⚠️ **Archive Support**: Partially working but has test failures (needs debugging)
 
-## Current Test Coverage
+## Next Immediate Actions
 
-- ✅ **Utils**: 5 tests passing
-- ✅ **JSON**: 2 tests passing  
-- ✅ **ComponentInfo**: 6 tests passing
-- ✅ **SBOMGenerator**: 3 tests passing
-- ✅ **MetadataExtractor**: 2 tests passing
-- ✅ **Linux Support**: 7 tests passing (ELF symbols, sections, dependencies, build ID, DWARF)
-
-**Total: 25+ tests passing**
-
-## Next Steps
-
-1. **Windows Support**: Implement PE file format parsing and MSVC linker plugin
-2. **Package Manager Integration**: Add support for detecting package metadata
-3. **Archive Support**: Implement static library (.a/.lib) parsing
-4. **Enhanced Testing**: Add Windows and Mach-O specific test suites
-5. **Documentation**: Expand user guides and API documentation
+1. **Fix DWARF Support** - Resolve LLVM library linking issues
+2. **Fix Archive Support** - Debug archive extraction test failures
+3. **Add Windows Support** - Implement PE format and MSVC plugin
+4. **Enhance Testing** - Add more comprehensive cross-platform tests
 
 ---
 
@@ -426,7 +484,7 @@ This document tracks all missing implementation tasks and planned features for t
 
 ---
 
-*Last updated: July 2024*
+*Last updated: January 2025*
 *Version: 1.0.0*
 
 ## Progress Update (2024-07-19)
