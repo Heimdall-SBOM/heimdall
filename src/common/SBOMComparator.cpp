@@ -53,6 +53,34 @@ std::vector<SBOMComponent> SPDXParser::parseContent(const std::string& content) 
     return {};
 }
 
+bool SPDXParser::processSPDXLine(const std::string& line, SBOMComponent& component) {
+    if (line.find("PackageVersion:") != std::string::npos) {
+        component.version = line.substr(line.find(":") + 1);
+        component.version.erase(0, component.version.find_first_not_of(" \t"));
+        component.version.erase(component.version.find_last_not_of(" \t") + 1);
+        return false;
+    } else if (line.find("PackageSPDXID:") != std::string::npos) {
+        component.id = line.substr(line.find(":") + 1);
+        component.id.erase(0, component.id.find_first_not_of(" \t"));
+        component.id.erase(component.id.find_last_not_of(" \t") + 1);
+        return false;
+    } else if (line.find("PackageLicenseConcluded:") != std::string::npos) {
+        component.license = line.substr(line.find(":") + 1);
+        component.license.erase(0, component.license.find_first_not_of(" \t"));
+        component.license.erase(component.license.find_last_not_of(" \t") + 1);
+        return false;
+    } else if (line.find("PackageDownloadLocation:") != std::string::npos) {
+        component.purl = line.substr(line.find(":") + 1);
+        component.purl.erase(0, component.purl.find_first_not_of(" \t"));
+        component.purl.erase(component.purl.find_last_not_of(" \t") + 1);
+        return false;
+    } else if (line.find("PackageName:") != std::string::npos) {
+        // Next package starts
+        return true;
+    }
+    return false;
+}
+
 std::vector<SBOMComponent> SPDXParser::parseSPDX2_3(const std::string& content) {
     std::vector<SBOMComponent> components;
     std::istringstream iss(content);
@@ -71,27 +99,13 @@ std::vector<SBOMComponent> SPDXParser::parseSPDX2_3(const std::string& content) 
             for (int i = 0; i < 10; ++i) {
                 std::string nextLine;
                 if (!std::getline(iss, nextLine)) break;
-                if (nextLine.find("PackageVersion:") != std::string::npos) {
-                    component.version = nextLine.substr(nextLine.find(":") + 1);
-                    component.version.erase(0, component.version.find_first_not_of(" \t"));
-                    component.version.erase(component.version.find_last_not_of(" \t") + 1);
-                } else if (nextLine.find("PackageSPDXID:") != std::string::npos) {
-                    component.id = nextLine.substr(nextLine.find(":") + 1);
-                    component.id.erase(0, component.id.find_first_not_of(" \t"));
-                    component.id.erase(component.id.find_last_not_of(" \t") + 1);
-                } else if (nextLine.find("PackageLicenseConcluded:") != std::string::npos) {
-                    component.license = nextLine.substr(nextLine.find(":") + 1);
-                    component.license.erase(0, component.license.find_first_not_of(" \t"));
-                    component.license.erase(component.license.find_last_not_of(" \t") + 1);
-                } else if (nextLine.find("PackageDownloadLocation:") != std::string::npos) {
-                    component.purl = nextLine.substr(nextLine.find(":") + 1);
-                    component.purl.erase(0, component.purl.find_first_not_of(" \t"));
-                    component.purl.erase(component.purl.find_last_not_of(" \t") + 1);
-                } else if (nextLine.find("PackageName:") != std::string::npos) {
-                    // Next package starts
+                
+                bool shouldBreak = processSPDXLine(nextLine, component);
+                if (shouldBreak) {
                     iss.seekg(pos);
                     break;
                 }
+                
                 pos = iss.tellg();
             }
             iss.seekg(pos);
@@ -138,25 +152,42 @@ std::vector<SBOMComponent> CycloneDXParser::parse(const std::string& filePath) {
     return parseContent(content);
 }
 
+std::string CycloneDXParser::extractVersion(const std::string& content) {
+    size_t pos = content.find("\"specVersion\"");
+    if (pos == std::string::npos) {
+        return "";
+    }
+    
+    size_t start = content.find("\"", pos + 13) + 1;
+    if (start == std::string::npos) {
+        return "";
+    }
+    
+    size_t end = content.find("\"", start);
+    if (end == std::string::npos) {
+        return "";
+    }
+    
+    return content.substr(start, end - start);
+}
+
 std::vector<SBOMComponent> CycloneDXParser::parseContent(const std::string& content) {
     // Detect CycloneDX version
-    if (content.find("\"specVersion\"") != std::string::npos) {
-        size_t pos = content.find("\"specVersion\"");
-        if (pos != std::string::npos) {
-            size_t start = content.find("\"", pos + 13) + 1;
-            size_t end = content.find("\"", start);
-            if (start != std::string::npos && end != std::string::npos) {
-                std::string version = content.substr(start, end - start);
-                
-                if (version == "1.4") {
-                    return parseCycloneDX1_4(content);
-                } else if (version == "1.5") {
-                    return parseCycloneDX1_5(content);
-                } else if (version == "1.6") {
-                    return parseCycloneDX1_6(content);
-                }
-            }
-        }
+    if (content.find("\"specVersion\"") == std::string::npos) {
+        return {};
+    }
+    
+    std::string version = extractVersion(content);
+    if (version.empty()) {
+        return {};
+    }
+    
+    if (version == "1.4") {
+        return parseCycloneDX1_4(content);
+    } else if (version == "1.5") {
+        return parseCycloneDX1_5(content);
+    } else if (version == "1.6") {
+        return parseCycloneDX1_6(content);
     }
     
     return {};
@@ -192,30 +223,36 @@ std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_6(const std::string&
 
 // SBOM Comparator Implementation
 
-std::vector<SBOMDifference> SBOMComparator::compare(const std::string& oldSBOM, const std::string& newSBOM) {
-    // Auto-detect format
-    std::string format = "";
+std::string SBOMComparator::detectFormatFromFile(const std::string& filePath) {
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return "";
+    }
     
-    std::ifstream oldFile(oldSBOM);
-    if (oldFile.is_open()) {
-        std::string firstLine;
-        std::getline(oldFile, firstLine);
-        if (firstLine.find("SPDXVersion:") != std::string::npos) {
-            format = "spdx";
-        } else if (firstLine.find("{") != std::string::npos) {
-            std::string content;
-            oldFile.seekg(0);
-            std::stringstream buffer;
-            buffer << oldFile.rdbuf();
-            content = buffer.str();
-            
-            if (content.find("\"spdxVersion\"") != std::string::npos) {
-                format = "spdx";
-            } else if (content.find("\"bomFormat\"") != std::string::npos) {
-                format = "cyclonedx";
-            }
+    std::string firstLine;
+    std::getline(file, firstLine);
+    if (firstLine.find("SPDXVersion:") != std::string::npos) {
+        return "spdx";
+    } else if (firstLine.find("{") != std::string::npos) {
+        std::string content;
+        file.seekg(0);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        content = buffer.str();
+        
+        if (content.find("\"spdxVersion\"") != std::string::npos) {
+            return "spdx";
+        } else if (content.find("\"bomFormat\"") != std::string::npos) {
+            return "cyclonedx";
         }
     }
+    
+    return "";
+}
+
+std::vector<SBOMDifference> SBOMComparator::compare(const std::string& oldSBOM, const std::string& newSBOM) {
+    // Auto-detect format
+    std::string format = detectFormatFromFile(oldSBOM);
     
     if (format.empty()) {
         return {};
@@ -252,28 +289,7 @@ std::string SBOMComparator::merge(const std::vector<std::string>& sbomFiles,
     std::vector<std::vector<SBOMComponent>> componentLists;
     
     for (const auto& file : sbomFiles) {
-        // Auto-detect format
-        std::string format = "";
-        std::ifstream sbomFile(file);
-        if (sbomFile.is_open()) {
-            std::string firstLine;
-            std::getline(sbomFile, firstLine);
-            if (firstLine.find("SPDXVersion:") != std::string::npos) {
-                format = "spdx";
-            } else if (firstLine.find("{") != std::string::npos) {
-                std::string content;
-                sbomFile.seekg(0);
-                std::stringstream buffer;
-                buffer << sbomFile.rdbuf();
-                content = buffer.str();
-                
-                if (content.find("\"spdxVersion\"") != std::string::npos) {
-                    format = "spdx";
-                } else if (content.find("\"bomFormat\"") != std::string::npos) {
-                    format = "cyclonedx";
-                }
-            }
-        }
+        std::string format = detectFormatFromFile(file);
         
         if (!format.empty()) {
             auto parser = createParser(format);

@@ -38,12 +38,13 @@ limitations under the License.
 
 namespace {
 std::unique_ptr<heimdall::LLDAdapter> globalAdapter;
-std::string outputPath = "heimdall-sbom.json";
-std::string format = "spdx";
-std::string spdxVersion = "3.0";
-bool verbose = false;
-bool extractDebugInfo = true;
-bool includeSystemLibraries = false;
+// Non-const global variables - these are modified at runtime by plugin configuration functions
+std::string outputPath = "heimdall-sbom.json";        // Modified by heimdall_set_output_path()
+std::string format = "spdx";                          // Modified by heimdall_set_format()
+std::string spdxVersion = "3.0";                      // Modified by heimdall_set_spdx_version()
+bool verbose = false;                                 // Modified by heimdall_set_verbose()
+bool extractDebugInfo = true;                         // Modified by heimdall_set_extract_debug_info()
+bool includeSystemLibraries = false;                  // Modified by heimdall_set_include_system_libraries()
 }  // namespace
 
 // Forward declarations for C functions

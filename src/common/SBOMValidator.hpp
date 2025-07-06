@@ -68,6 +68,9 @@ public:
     std::string getName() const override { return "SPDX Validator"; }
     
 private:
+    std::string trimWhitespace(const std::string& str);
+    void validateRequiredFields(ValidationResult& result, const std::map<std::string, bool>& fields);
+    void processSPDXLine(const std::string& line, ValidationResult& result, std::map<std::string, bool>& fields);
     ValidationResult validateSPDX2_3(const std::string& content);
     ValidationResult validateSPDX3_0(const std::string& content);
     bool isValidSPDXIdentifier(const std::string& identifier);
@@ -84,6 +87,7 @@ public:
     std::string getName() const override { return "CycloneDX Validator"; }
     
 private:
+    std::string extractVersion(const std::string& content);
     ValidationResult validateCycloneDX1_4(const std::string& content);
     ValidationResult validateCycloneDX1_5(const std::string& content);
     ValidationResult validateCycloneDX1_6(const std::string& content);

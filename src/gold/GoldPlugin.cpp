@@ -26,12 +26,13 @@ limitations under the License.
 
 namespace {
 std::unique_ptr<heimdall::GoldAdapter> globalAdapter;
-std::string outputPath = "heimdall-gold-sbom.json";
-std::string format = "spdx";
-std::string spdxVersion = "3.0";
-bool verbose = false;
-std::vector<std::string> processedFiles;
-std::vector<std::string> processedLibraries;
+// Non-const global variables - these are modified at runtime by plugin configuration functions
+std::string outputPath = "heimdall-gold-sbom.json";  // Modified by heimdall_set_output_path()
+std::string format = "spdx";                         // Modified by heimdall_set_format()
+std::string spdxVersion = "3.0";                     // Modified by heimdall_set_spdx_version()
+bool verbose = false;                                // Modified by heimdall_set_verbose()
+std::vector<std::string> processedFiles;             // Modified during file processing
+std::vector<std::string> processedLibraries;         // Modified during library processing
 
 // Simple utility functions to avoid heimdall-core dependencies
 std::string getFileName(const std::string& path) {

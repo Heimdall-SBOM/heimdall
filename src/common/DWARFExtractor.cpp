@@ -343,8 +343,14 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
         try {
             auto newContext = llvm::DWARFContext::create(
                 *g_objectFile, llvm::DWARFContext::ProcessDebugRelocations::Process, nullptr, "",
-                [](llvm::Error) {},  // RecoverableErrorHandler - ignore errors
-                [](llvm::Error) {},  // WarningHandler - ignore warnings
+                [](llvm::Error) {
+                    // Intentionally empty: Ignore recoverable DWARF parsing errors
+                    // to continue processing even with malformed debug information
+                },
+                [](llvm::Error) {
+                    // Intentionally empty: Ignore DWARF parsing warnings
+                    // to avoid cluttering output with non-critical debug info issues
+                },
                 false);              // ThreadSafe - single-threaded for now
 
             // Additional safety check - ensure the context is valid

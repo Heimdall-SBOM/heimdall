@@ -195,6 +195,9 @@ class SonarQubeIssuesExporter:
             issues: List of issue dictionaries
             output_file: Output Excel file path
         """
+        EXCEL_EXTENSION = '.xlsx'
+        CSV_EXTENSION = '.csv'
+        
         if not issues:
             print("No issues to export")
             return
@@ -213,7 +216,7 @@ class SonarQubeIssuesExporter:
         except Exception as e:
             print(f"Error writing Excel file: {e}")
             print("Falling back to CSV export...")
-            csv_file = output_file.replace('.xlsx', '.csv')
+            csv_file = output_file.replace(EXCEL_EXTENSION, CSV_EXTENSION)
             self.export_to_csv(issues, csv_file)
 
 

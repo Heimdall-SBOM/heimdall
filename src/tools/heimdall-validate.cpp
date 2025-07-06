@@ -125,6 +125,48 @@ int validateCommand(const std::vector<std::string>& args) {
     return result.isValid ? 0 : 1;
 }
 
+// Helper functions for difference reporting
+std::pair<std::string, std::string> getDifferenceInfo(const SBOMDifference& diff) {
+    std::string symbol;
+    std::string message;
+    
+    switch (diff.type) {
+        case SBOMDifference::Type::ADDED:
+            symbol = "➕";
+            message = "Added: " + diff.component.name + " (" + diff.component.id + ")";
+            break;
+        case SBOMDifference::Type::REMOVED:
+            symbol = "➖";
+            message = "Removed: " + diff.component.name + " (" + diff.component.id + ")";
+            break;
+        case SBOMDifference::Type::MODIFIED:
+            symbol = "🔄";
+            message = "Modified: " + diff.component.name + " (" + diff.component.id + ")";
+            if (diff.oldComponent.has_value()) {
+                message += ", previous: " + diff.oldComponent->name + " (" + diff.oldComponent->id + ")";
+            }
+            break;
+        case SBOMDifference::Type::UNCHANGED:
+            symbol = "✅";
+            message = "Unchanged: " + diff.component.name + " (" + diff.component.id + ")";
+            break;
+    }
+    
+    return {symbol, message};
+}
+
+void printDetailedDifferences(const std::vector<SBOMDifference>& differences) {
+    if (differences.empty()) {
+        return;
+    }
+    
+    std::cout << "Detailed Differences:\n";
+    for (const auto& diff : differences) {
+        auto [symbol, message] = getDifferenceInfo(diff);
+        std::cout << "  " << symbol << " " << message << "\n";
+    }
+}
+
 int compareCommand(const std::vector<std::string>& args) {
     if (args.size() < 3) {
         std::cerr << "Error: compare command requires two file paths\n";
@@ -169,38 +211,10 @@ int compareCommand(const std::vector<std::string>& args) {
     std::cout << "Total differences: " << differences.size() << "\n";
     std::cout << "Added: " << stats["added"] << "\n";
     std::cout << "Removed: " << stats["removed"] << "\n";
-    std::cout << "Modified: " << stats["modified"] << "\n";
+        std::cout << "Modified: " << stats["modified"] << "\n";
     std::cout << "Unchanged: " << stats["unchanged"] << "\n\n";
     
-    if (!differences.empty()) {
-        std::cout << "Detailed Differences:\n";
-        for (const auto& diff : differences) {
-            std::string symbol;
-            std::string message;
-            switch (diff.type) {
-                case SBOMDifference::Type::ADDED:
-                    symbol = "➕";
-                    message = "Added: " + diff.component.name + " (" + diff.component.id + ")";
-                    break;
-                case SBOMDifference::Type::REMOVED:
-                    symbol = "➖";
-                    message = "Removed: " + diff.component.name + " (" + diff.component.id + ")";
-                    break;
-                case SBOMDifference::Type::MODIFIED:
-                    symbol = "🔄";
-                    message = "Modified: " + diff.component.name + " (" + diff.component.id + ")";
-                    if (diff.oldComponent.has_value()) {
-                        message += ", previous: " + diff.oldComponent->name + " (" + diff.oldComponent->id + ")";
-                    }
-                    break;
-                case SBOMDifference::Type::UNCHANGED:
-                    symbol = "✅";
-                    message = "Unchanged: " + diff.component.name + " (" + diff.component.id + ")";
-                    break;
-            }
-            std::cout << "  " << symbol << " " << message << "\n";
-        }
-    }
+    printDetailedDifferences(differences);
     
     return 0;
 }

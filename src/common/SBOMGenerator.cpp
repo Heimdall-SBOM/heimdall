@@ -131,6 +131,20 @@ public:
      * @return The generated PURL string
      */
     std::string generatePURL(const ComponentInfo& component);
+
+    /**
+     * @brief Generate debug properties for CycloneDX component
+     * @param component The component to generate properties for
+     * @return The debug properties as a string
+     */
+    std::string generateDebugProperties(const ComponentInfo& component);
+
+    /**
+     * @brief Generate evidence field for CycloneDX 1.6+ component
+     * @param component The component to generate evidence for
+     * @return The evidence field as a string
+     */
+    std::string generateEvidenceField(const ComponentInfo& component);
 };
 
 /**
@@ -528,6 +542,80 @@ std::string SBOMGenerator::Impl::generateSPDXComponent(const ComponentInfo& comp
     return ss.str();
 }
 
+std::string SBOMGenerator::Impl::generateDebugProperties(const ComponentInfo& component) {
+    if (!component.containsDebugInfo) {
+        return "";
+    }
+    
+    std::stringstream properties;
+    properties << ",\n      \"properties\": [\n";
+    
+    bool hasPreviousProperty = false;
+    
+    // Add source files property
+    if (!component.sourceFiles.empty()) {
+        properties << "        {\n";
+        properties << "          \"name\": \"heimdall:source-files\",\n";
+        properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.sourceFiles, ",")) << "\n";
+        properties << "        }";
+        hasPreviousProperty = true;
+    }
+    
+    // Add functions property if available
+    if (!component.functions.empty()) {
+        if (hasPreviousProperty) {
+            properties << ",\n";
+        }
+        properties << "        {\n";
+        properties << "          \"name\": \"heimdall:functions\",\n";
+        properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.functions, ",")) << "\n";
+        properties << "        }";
+        hasPreviousProperty = true;
+    }
+    
+    // Add compile units property if available
+    if (!component.compileUnits.empty()) {
+        if (hasPreviousProperty) {
+            properties << ",\n";
+        }
+        properties << "        {\n";
+        properties << "          \"name\": \"heimdall:compile-units\",\n";
+        properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.compileUnits, ",")) << "\n";
+        properties << "        }";
+        hasPreviousProperty = true;
+    }
+    
+    // Add debug info flag
+    if (hasPreviousProperty) {
+        properties << ",\n";
+    }
+    properties << "        {\n";
+    properties << "          \"name\": \"heimdall:contains-debug-info\",\n";
+    properties << "          \"value\": \"true\"\n";
+    properties << "        }";
+    
+    properties << "\n      ]";
+    return properties.str();
+}
+
+std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& component) {
+    if (cyclonedxVersion < "1.6") {
+        return "";
+    }
+    
+    std::stringstream evidence;
+    evidence << "      \"evidence\": {\n";
+    evidence << "        \"licenses\": [\n";
+    evidence << "          {\n";
+    evidence << "            \"license\": {\n";
+    evidence << "              \"id\": " << Utils::formatJsonValue(component.license.empty() ? "NOASSERTION" : component.license) << "\n";
+    evidence << "            }\n";
+    evidence << "          }\n";
+    evidence << "        ]\n";
+    evidence << "      }";
+    return evidence.str();
+}
+
 std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo& component) {
     std::stringstream ss;
     ss << "    {\n";
@@ -562,80 +650,17 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "        }\n";
     ss << "      ]";
 
-    // Add DWARF debug information as properties
-    bool hasProperties = false;
-    std::stringstream properties;
-    
-    if (component.containsDebugInfo) {
-        properties << ",\n      \"properties\": [\n";
-        hasProperties = true;
-        
-        // Add source files property
-        if (!component.sourceFiles.empty()) {
-            properties << "        {\n";
-            properties << "          \"name\": \"heimdall:source-files\",\n";
-            properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.sourceFiles, ",")) << "\n";
-            properties << "        }";
-        }
-        
-        // Add functions property if available
-        if (!component.functions.empty()) {
-            if (!component.sourceFiles.empty()) {
-                properties << ",\n";
-            }
-            properties << "        {\n";
-            properties << "          \"name\": \"heimdall:functions\",\n";
-            properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.functions, ",")) << "\n";
-            properties << "        }";
-        }
-        
-        // Add compile units property if available
-        if (!component.compileUnits.empty()) {
-            if (!component.sourceFiles.empty() || !component.functions.empty()) {
-                properties << ",\n";
-            }
-            properties << "        {\n";
-            properties << "          \"name\": \"heimdall:compile-units\",\n";
-            properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.compileUnits, ",")) << "\n";
-            properties << "        }";
-        }
-        
-        // Add debug info flag
-        if (!component.sourceFiles.empty() || !component.functions.empty() || !component.compileUnits.empty()) {
-            properties << ",\n";
-        }
-        properties << "        {\n";
-        properties << "          \"name\": \"heimdall:contains-debug-info\",\n";
-        properties << "          \"value\": \"true\"\n";
-        properties << "        }";
-        
-        properties << "\n      ]";
-    }
-    
-    // Add CycloneDX 1.6+ specific component fields
-    bool hasEvidence = false;
-    std::stringstream evidence;
-    if (cyclonedxVersion >= "1.6") {
-        // Add evidence field for CycloneDX 1.6+
-        evidence << "      \"evidence\": {\n";
-        evidence << "        \"licenses\": [\n";
-        evidence << "          {\n";
-        evidence << "            \"license\": {\n";
-        evidence << "              \"id\": " << Utils::formatJsonValue(component.license.empty() ? "NOASSERTION" : component.license) << "\n";
-        evidence << "            }\n";
-        evidence << "          }\n";
-        evidence << "        ]\n";
-        evidence << "      }";
-        hasEvidence = true;
-    }
+    // Add debug properties and evidence
+    std::string debugProperties = generateDebugProperties(component);
+    std::string evidenceField = generateEvidenceField(component);
     
     // Output properties and evidence with correct comma placement
-    if (hasProperties && hasEvidence) {
-        ss << properties.str() << ",\n" << evidence.str();
-    } else if (hasProperties) {
-        ss << properties.str();
-    } else if (hasEvidence) {
-        ss << ",\n" << evidence.str();
+    if (!debugProperties.empty() && !evidenceField.empty()) {
+        ss << debugProperties << ",\n" << evidenceField;
+    } else if (!debugProperties.empty()) {
+        ss << debugProperties;
+    } else if (!evidenceField.empty()) {
+        ss << ",\n" << evidenceField;
     }
     
     ss << "\n    }";

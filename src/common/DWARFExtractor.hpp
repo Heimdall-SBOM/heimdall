@@ -69,6 +69,26 @@ public:
     DWARFExtractor();
 
     /**
+     * @brief Copy constructor - deleted due to non-copyable LLVM resources
+     */
+    DWARFExtractor(const DWARFExtractor&) = delete;
+
+    /**
+     * @brief Copy assignment operator - deleted due to non-copyable LLVM resources
+     */
+    DWARFExtractor& operator=(const DWARFExtractor&) = delete;
+
+    /**
+     * @brief Move constructor
+     */
+    DWARFExtractor(DWARFExtractor&&) noexcept = default;
+
+    /**
+     * @brief Move assignment operator
+     */
+    DWARFExtractor& operator=(DWARFExtractor&&) noexcept = default;
+
+    /**
      * @brief Destructor
      */
     ~DWARFExtractor();

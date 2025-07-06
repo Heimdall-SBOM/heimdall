@@ -42,68 +42,76 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
     }
 }
 
+std::string SPDXValidator::trimWhitespace(const std::string& str) {
+    std::string result = str;
+    result.erase(0, result.find_first_not_of(" \t"));
+    result.erase(result.find_last_not_of(" \t") + 1);
+    return result;
+}
+
+void SPDXValidator::validateRequiredFields(ValidationResult& result, 
+                                          const std::map<std::string, bool>& fields) {
+    if (!fields.at("SPDXVersion")) result.addError("Missing SPDXVersion field");
+    if (!fields.at("DataLicense")) result.addError("Missing DataLicense field");
+    if (!fields.at("SPDXID")) result.addError("Missing SPDXID field");
+    if (!fields.at("DocumentName")) result.addError("Missing DocumentName field");
+    if (!fields.at("DocumentNamespace")) result.addError("Missing DocumentNamespace field");
+    if (!fields.at("Creator")) result.addError("Missing Creator field");
+    if (!fields.at("Created")) result.addError("Missing Created field");
+}
+
+void SPDXValidator::processSPDXLine(const std::string& line, ValidationResult& result,
+                                   std::map<std::string, bool>& fields) {
+    if (line.find("SPDXVersion:") == 0) {
+        fields["SPDXVersion"] = true;
+        std::string version = trimWhitespace(line.substr(12));
+        if (version != "SPDX-2.3") {
+            result.addError("Invalid SPDX version: " + version);
+        }
+    } else if (line.find("DataLicense:") == 0) {
+        fields["DataLicense"] = true;
+        std::string license = trimWhitespace(line.substr(12));
+        if (!isValidSPDXLicenseExpression(license)) {
+            result.addError("Invalid data license: " + license);
+        }
+    } else if (line.find("SPDXID:") == 0) {
+        fields["SPDXID"] = true;
+        std::string id = trimWhitespace(line.substr(7));
+        if (!isValidSPDXIdentifier(id)) {
+            result.addError("Invalid SPDX ID: " + id);
+        }
+    } else if (line.find("DocumentName:") == 0) {
+        fields["DocumentName"] = true;
+    } else if (line.find("DocumentNamespace:") == 0) {
+        fields["DocumentNamespace"] = true;
+    } else if (line.find("Creator:") == 0) {
+        fields["Creator"] = true;
+    } else if (line.find("Created:") == 0) {
+        fields["Created"] = true;
+    }
+}
+
 ValidationResult SPDXValidator::validateSPDX2_3(const std::string& content) {
     ValidationResult result;
-    // Basic SPDX 2.3 validation
     std::istringstream iss(content);
     std::string line;
-    bool hasSPDXVersion = false;
-    bool hasDataLicense = false;
-    bool hasSPDXID = false;
-    bool hasDocumentName = false;
-    bool hasDocumentNamespace = false;
-    bool hasCreator = false;
-    bool hasCreated = false;
+    std::map<std::string, bool> fields = {
+        {"SPDXVersion", false},
+        {"DataLicense", false},
+        {"SPDXID", false},
+        {"DocumentName", false},
+        {"DocumentNamespace", false},
+        {"Creator", false},
+        {"Created", false}
+    };
+    
     while (std::getline(iss, line)) {
-        // Trim whitespace
-        line.erase(0, line.find_first_not_of(" \t\r\n"));
-        line.erase(line.find_last_not_of(" \t\r\n") + 1);
+        line = trimWhitespace(line);
         if (line.empty() || line[0] == '#') continue;
-        if (line.find("SPDXVersion:") == 0) {
-            hasSPDXVersion = true;
-            std::string version = line.substr(12);
-            // Trim whitespace
-            version.erase(0, version.find_first_not_of(" \t"));
-            version.erase(version.find_last_not_of(" \t") + 1);
-            if (version != "SPDX-2.3") {
-                result.addError("Invalid SPDX version: " + version);
-            }
-        } else if (line.find("DataLicense:") == 0) {
-            hasDataLicense = true;
-            std::string license = line.substr(12);
-            // Trim whitespace
-            license.erase(0, license.find_first_not_of(" \t"));
-            license.erase(license.find_last_not_of(" \t") + 1);
-            if (!isValidSPDXLicenseExpression(license)) {
-                result.addError("Invalid data license: " + license);
-            }
-        } else if (line.find("SPDXID:") == 0) {
-            hasSPDXID = true;
-            std::string id = line.substr(7);
-            // Trim whitespace
-            id.erase(0, id.find_first_not_of(" \t"));
-            id.erase(id.find_last_not_of(" \t") + 1);
-            if (!isValidSPDXIdentifier(id)) {
-                result.addError("Invalid SPDX ID: " + id);
-            }
-        } else if (line.find("DocumentName:") == 0) {
-            hasDocumentName = true;
-        } else if (line.find("DocumentNamespace:") == 0) {
-            hasDocumentNamespace = true;
-        } else if (line.find("Creator:") == 0) {
-            hasCreator = true;
-        } else if (line.find("Created:") == 0) {
-            hasCreated = true;
-        }
+        processSPDXLine(line, result, fields);
     }
-    // Check required fields
-    if (!hasSPDXVersion) result.addError("Missing SPDXVersion field");
-    if (!hasDataLicense) result.addError("Missing DataLicense field");
-    if (!hasSPDXID) result.addError("Missing SPDXID field");
-    if (!hasDocumentName) result.addError("Missing DocumentName field");
-    if (!hasDocumentNamespace) result.addError("Missing DocumentNamespace field");
-    if (!hasCreator) result.addError("Missing Creator field");
-    if (!hasCreated) result.addError("Missing Created field");
+    
+    validateRequiredFields(result, fields);
     result.addMetadata("format", "SPDX 2.3");
     result.addMetadata("version", "2.3");
     return result;
@@ -170,32 +178,49 @@ ValidationResult CycloneDXValidator::validate(const std::string& filePath) {
     return validateContent(content);
 }
 
+std::string CycloneDXValidator::extractVersion(const std::string& content) {
+    size_t pos = content.find("\"specVersion\"");
+    if (pos == std::string::npos) {
+        return "";
+    }
+    
+    size_t start = content.find("\"", pos + 13) + 1;
+    if (start == std::string::npos) {
+        return "";
+    }
+    
+    size_t end = content.find("\"", start);
+    if (end == std::string::npos) {
+        return "";
+    }
+    
+    return content.substr(start, end - start);
+}
+
 ValidationResult CycloneDXValidator::validateContent(const std::string& content) {
     ValidationResult result;
-    // Detect CycloneDX version
-    if (content.find("\"specVersion\"") != std::string::npos) {
-        // Extract version
-        size_t pos = content.find("\"specVersion\"");
-        if (pos != std::string::npos) {
-            size_t start = content.find("\"", pos + 13) + 1;
-            size_t end = content.find("\"", start);
-            if (start != std::string::npos && end != std::string::npos) {
-                std::string version = content.substr(start, end - start);
-                if (version == "1.4") {
-                    return validateCycloneDX1_4(content);
-                } else if (version == "1.5") {
-                    return validateCycloneDX1_5(content);
-                } else if (version == "1.6") {
-                    return validateCycloneDX1_6(content);
-                } else {
-                    result.addError("Unsupported CycloneDX version: " + version);
-                    return result;
-                }
-            }
-        }
+    
+    if (content.find("\"specVersion\"") == std::string::npos) {
+        result.addError("Cannot determine CycloneDX version");
+        return result;
     }
-    result.addError("Cannot determine CycloneDX version");
-    return result;
+    
+    std::string version = extractVersion(content);
+    if (version.empty()) {
+        result.addError("Cannot determine CycloneDX version");
+        return result;
+    }
+    
+    if (version == "1.4") {
+        return validateCycloneDX1_4(content);
+    } else if (version == "1.5") {
+        return validateCycloneDX1_5(content);
+    } else if (version == "1.6") {
+        return validateCycloneDX1_6(content);
+    } else {
+        result.addError("Unsupported CycloneDX version: " + version);
+        return result;
+    }
 }
 
 ValidationResult CycloneDXValidator::validateCycloneDX1_4(const std::string& content) {

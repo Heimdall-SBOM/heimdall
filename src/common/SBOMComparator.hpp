@@ -89,6 +89,7 @@ public:
     std::string getName() const override { return "SPDX Parser"; }
     
 private:
+    bool processSPDXLine(const std::string& line, SBOMComponent& component);
     std::vector<SBOMComponent> parseSPDX2_3(const std::string& content);
     std::vector<SBOMComponent> parseSPDX3_0(const std::string& content);
 };
@@ -103,6 +104,7 @@ public:
     std::string getName() const override { return "CycloneDX Parser"; }
     
 private:
+    std::string extractVersion(const std::string& content);
     std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content);
     std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content);
     std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content);
@@ -160,6 +162,7 @@ public:
     std::map<std::string, int> getDiffStatistics(const std::vector<SBOMDifference>& differences);
     
 private:
+    std::string detectFormatFromFile(const std::string& filePath);
     std::unique_ptr<SBOMParser> createParser(const std::string& format);
     std::vector<SBOMDifference> compareComponents(const std::vector<SBOMComponent>& oldComponents,
                                                  const std::vector<SBOMComponent>& newComponents);
