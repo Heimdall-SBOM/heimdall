@@ -39,10 +39,6 @@ std::string getFileName(const std::string& path) {
     return std::filesystem::path(path).filename().string();
 }
 
-bool fileExists(const std::string& path) {
-    return std::filesystem::exists(path);
-}
-
 std::string calculateSimpleHash(const std::string& path) {
     // Simple hash calculation without OpenSSL dependency
     std::ifstream file(path, std::ios::binary);

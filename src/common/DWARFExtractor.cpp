@@ -390,8 +390,6 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #endif
         return nullptr;
     }
-
-    return nullptr;
 }
 
 /**
