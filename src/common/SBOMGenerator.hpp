@@ -23,20 +23,19 @@ limitations under the License.
 
 #pragma once
 
-#include "ComponentInfo.hpp"
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
+#include "ComponentInfo.hpp"
 
 namespace heimdall {
 
 /**
  * @brief Software Bill of Materials (SBOM) generator
- * 
+ *
  * This class is responsible for collecting component information
  * and generating SBOMs in various formats (SPDX, CycloneDX, etc.).
  */
-class SBOMGenerator
-{
+class SBOMGenerator {
 public:
     /**
      * @brief Default constructor
@@ -46,7 +45,7 @@ public:
      * @brief Destructor
      */
     ~SBOMGenerator();
-    
+
     /**
      * @brief Process a component and add it to the SBOM
      * @param component The component to process
@@ -66,7 +65,7 @@ public:
      * @param format The format (e.g., "spdx", "cyclonedx")
      */
     void setFormat(const std::string& format);
-    
+
     /**
      * @brief Get the number of components in the SBOM
      * @return Number of components
@@ -82,10 +81,10 @@ public:
      * @brief Print statistics about the SBOM
      */
     void printStatistics() const;
-    
+
 private:
     class Impl;
     std::unique_ptr<Impl> pImpl;
 };
 
-} // namespace heimdall
+}  // namespace heimdall

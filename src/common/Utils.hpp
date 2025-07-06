@@ -23,14 +23,14 @@ limitations under the License.
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <filesystem>
+#include <fstream>
 #include <regex>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace heimdall::Utils {
 
@@ -294,8 +294,4 @@ std::string detectLicenseFromName(const std::string& componentName);
  */
 std::string detectLicenseFromPath(const std::string& filePath);
 
-
-
-} // namespace Utils
-
-
+}  // namespace heimdall::Utils
