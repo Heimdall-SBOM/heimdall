@@ -48,6 +48,13 @@ BUILD_DIR="${1:-build}"
 SBOM_DIR="${BUILD_DIR}/sboms"
 TEST_BINARY="${BUILD_DIR}/examples/openssl_pthread_demo/openssl_pthread_demo"
 
+# Shared libraries to generate SBOMs for
+SHARED_LIBS=(
+    "${BUILD_DIR}/heimdall-gold.so"
+    "${BUILD_DIR}/heimdall-lld.so"
+    "${BUILD_DIR}/libheimdall-core.so.1.0.0"
+)
+
 # Create SBOM output directory
 mkdir -p "${SBOM_DIR}"
 
@@ -55,6 +62,7 @@ print_status "Generating build SBOMs using Heimdall plugins"
 print_status "Build directory: ${BUILD_DIR}"
 print_status "SBOM output directory: ${SBOM_DIR}"
 print_status "Test binary: ${TEST_BINARY}"
+print_status "Shared libraries: ${#SHARED_LIBS[@]} libraries"
 
 # Check if test binary exists
 if [[ ! -f "${TEST_BINARY}" ]]; then
@@ -62,6 +70,15 @@ if [[ ! -f "${TEST_BINARY}" ]]; then
     print_error "Please ensure the build completed successfully"
     exit 1
 fi
+
+# Check if shared libraries exist
+for lib in "${SHARED_LIBS[@]}"; do
+    if [[ ! -f "${lib}" ]]; then
+        print_warning "Shared library not found: ${lib}"
+    else
+        print_success "Found shared library: ${lib}"
+    fi
+done
 
 # Check if plugins exist
 LLD_PLUGIN="${BUILD_DIR}/heimdall-lld.so"
@@ -221,11 +238,43 @@ else
     print_warning "Skipping Gold SBOM generation (plugin not available)"
 fi
 
+# Generate SBOMs for shared libraries
+print_status ""
+print_status "Generating SBOMs for shared libraries..."
+
+for lib in "${SHARED_LIBS[@]}"; do
+    if [[ ! -f "${lib}" ]]; then
+        print_warning "Skipping SBOM generation for missing library: ${lib}"
+        continue
+    fi
+    
+    # Extract library name for file naming
+    lib_name=$(basename "${lib}" | sed 's/\.so.*$//')
+    print_status "Processing shared library: ${lib_name}"
+    
+    # LLD Plugin SBOMs for shared library
+    if [[ "${LLD_AVAILABLE}" == "true" ]]; then
+        generate_sbom_with_plugin "${LLD_PLUGIN}" "spdx" "${SBOM_DIR}/${lib_name}-lld.spdx" "${lib}" "LLD"
+        generate_sbom_with_plugin "${LLD_PLUGIN}" "cyclonedx" "${SBOM_DIR}/${lib_name}-lld.cyclonedx.json" "${lib}" "LLD"
+    else
+        print_warning "Skipping LLD SBOM generation for ${lib_name} (plugin not available)"
+    fi
+    
+    # Gold Plugin SBOMs for shared library
+    if [[ "${GOLD_AVAILABLE}" == "true" ]]; then
+        generate_sbom_with_plugin "${GOLD_PLUGIN}" "spdx" "${SBOM_DIR}/${lib_name}-gold.spdx" "${lib}" "Gold"
+        generate_sbom_with_plugin "${GOLD_PLUGIN}" "cyclonedx" "${SBOM_DIR}/${lib_name}-gold.cyclonedx.json" "${lib}" "Gold"
+    else
+        print_warning "Skipping Gold SBOM generation for ${lib_name} (plugin not available)"
+    fi
+done
+
 # Summary
 print_status ""
 print_status "=== SBOM Generation Summary ==="
 print_status "SBOM files generated in: ${SBOM_DIR}"
 
+# Main binary SBOMs
 if [[ -f "${SBOM_DIR}/heimdall-build-lld.spdx" ]]; then
     print_success "✓ LLD SPDX SBOM: ${SBOM_DIR}/heimdall-build-lld.spdx"
 else
@@ -249,6 +298,44 @@ if [[ -f "${SBOM_DIR}/heimdall-build-gold.cyclonedx.json" ]]; then
 else
     print_warning "✗ Gold CycloneDX SBOM: Not generated"
 fi
+
+# Shared library SBOMs
+print_status ""
+print_status "=== Shared Library SBOMs ==="
+
+for lib in "${SHARED_LIBS[@]}"; do
+    if [[ ! -f "${lib}" ]]; then
+        continue
+    fi
+    
+    lib_name=$(basename "${lib}" | sed 's/\.so.*$//')
+    
+    # LLD SBOMs for this library
+    if [[ -f "${SBOM_DIR}/${lib_name}-lld.spdx" ]]; then
+        print_success "✓ ${lib_name} LLD SPDX SBOM: ${SBOM_DIR}/${lib_name}-lld.spdx"
+    else
+        print_warning "✗ ${lib_name} LLD SPDX SBOM: Not generated"
+    fi
+    
+    if [[ -f "${SBOM_DIR}/${lib_name}-lld.cyclonedx.json" ]]; then
+        print_success "✓ ${lib_name} LLD CycloneDX SBOM: ${SBOM_DIR}/${lib_name}-lld.cyclonedx.json"
+    else
+        print_warning "✗ ${lib_name} LLD CycloneDX SBOM: Not generated"
+    fi
+    
+    # Gold SBOMs for this library
+    if [[ -f "${SBOM_DIR}/${lib_name}-gold.spdx" ]]; then
+        print_success "✓ ${lib_name} Gold SPDX SBOM: ${SBOM_DIR}/${lib_name}-gold.spdx"
+    else
+        print_warning "✗ ${lib_name} Gold SPDX SBOM: Not generated"
+    fi
+    
+    if [[ -f "${SBOM_DIR}/${lib_name}-gold.cyclonedx.json" ]]; then
+        print_success "✓ ${lib_name} Gold CycloneDX SBOM: ${SBOM_DIR}/${lib_name}-gold.cyclonedx.json"
+    else
+        print_warning "✗ ${lib_name} Gold CycloneDX SBOM: Not generated"
+    fi
+done
 
 print_status ""
 print_success "SBOM generation completed!"
