@@ -138,6 +138,16 @@ jobs:
         echo "=== LLD headers in LLVM include dir ==="
         find /usr/lib/llvm-19/include -name "*lld*" 2>/dev/null || echo "No LLD headers found"
         echo "=== End LLD Packages Debug ==="
+
+    - name: Extract elf-bfd.h for BFD support
+      run: |
+        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
+        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
+        if [ -z "$ELF_BFD_H" ]; then
+          echo "elf-bfd.h not found in binutils source!"; exit 1;
+        fi
+        sudo cp "$ELF_BFD_H" /usr/include/
+        echo "Copied $ELF_BFD_H to /usr/include/"
     
     - name: Set up compiler
       run: |
@@ -225,16 +235,6 @@ jobs:
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
-
-    - name: Extract elf-bfd.h for BFD support
-      run: |
-        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
-        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
-        if [ -z "$ELF_BFD_H" ]; then
-          echo "elf-bfd.h not found in binutils source!"; exit 1;
-        fi
-        sudo cp "$ELF_BFD_H" /usr/include/
-        echo "Copied $ELF_BFD_H to /usr/include/"
 
   # Linux Clang builds
   linux-clang:
@@ -335,6 +335,16 @@ jobs:
         echo "=== LLD headers in LLVM include dir ==="
         find /usr/lib/llvm-19/include -name "*lld*" 2>/dev/null || echo "No LLD headers found"
         echo "=== End LLD Packages Debug ==="
+
+    - name: Extract elf-bfd.h for BFD support
+      run: |
+        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
+        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
+        if [ -z "$ELF_BFD_H" ]; then
+          echo "elf-bfd.h not found in binutils source!"; exit 1;
+        fi
+        sudo cp "$ELF_BFD_H" /usr/include/
+        echo "Copied $ELF_BFD_H to /usr/include/"
     
     - name: Set up compiler
       run: |
@@ -373,16 +383,6 @@ jobs:
         timeout 300 ctest --output-on-failure --verbose
       env:
         HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
-
-    - name: Extract elf-bfd.h for BFD support
-      run: |
-        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
-        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
-        if [ -z "$ELF_BFD_H" ]; then
-          echo "elf-bfd.h not found in binutils source!"; exit 1;
-        fi
-        sudo cp "$ELF_BFD_H" /usr/include/
-        echo "Copied $ELF_BFD_H to /usr/include/"
 
   # macOS builds - DISABLED
   # macos:
