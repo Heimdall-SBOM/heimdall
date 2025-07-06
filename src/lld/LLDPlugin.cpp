@@ -38,250 +38,19 @@ limitations under the License.
 
 namespace {
 std::unique_ptr<heimdall::LLDAdapter> globalAdapter;
-std::unique_ptr<heimdall::SBOMGenerator> globalSBOMGenerator;
 std::string outputPath = "heimdall-sbom.json";
 std::string format = "spdx";
 bool verbose = false;
-std::vector<std::string> processedFiles;
-std::vector<std::string> processedLibraries;
+bool extractDebugInfo = true;
+bool includeSystemLibraries = false;
 }  // namespace
 
+// Forward declarations for C functions
 extern "C" {
-
-// Plugin initialization
-int onload(void* /*tv*/) {
-    std::cout << "Heimdall LLD Plugin activated\n";
-
-    // Initialize the adapter
-    globalAdapter = std::make_unique<heimdall::LLDAdapter>();
-    globalAdapter->initialize();
-
-    // Initialize the SBOM generator
-    globalSBOMGenerator = std::make_unique<heimdall::SBOMGenerator>();
-    globalSBOMGenerator->setOutputPath(outputPath);
-    globalSBOMGenerator->setFormat(format);
-
-    if (verbose) {
-        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << "\n";
-    }
-
-    return 0;
+int heimdall_process_input_file(const char* filePath);
+int heimdall_process_library(const char* libraryPath);
 }
 
-// Plugin cleanup
-void onunload() {
-    if (globalAdapter) {
-        globalAdapter->finalize();
-    }
-
-    if (globalSBOMGenerator) {
-        globalSBOMGenerator->generateSBOM();
-    }
-
-    std::cout << "Heimdall LLD Plugin deactivated\n";
-}
-
-// Plugin metadata
-const char* heimdall_lld_version() {
-    return "1.0.0";
-}
-
-const char* heimdall_lld_description() {
-    return "Heimdall SBOM Generator Plugin for LLVM LLD Linker";
-}
-
-// Configuration functions
-int heimdall_set_output_path(const char* path) {
-    if (path) {
-        outputPath = std::string(path);
-        if (globalSBOMGenerator) {
-            globalSBOMGenerator->setOutputPath(outputPath);
-        }
-        if (verbose) {
-            std::cout << "Heimdall: Output path set to " << outputPath << "\n";
-        }
-        return 0;
-    }
-    return -1;
-}
-
-int heimdall_set_format(const char* fmt) {
-    if (fmt) {
-        format = std::string(fmt);
-        if (globalSBOMGenerator) {
-            globalSBOMGenerator->setFormat(format);
-        }
-        if (verbose) {
-            std::cout << "Heimdall: Format set to " << format << "\n";
-        }
-        return 0;
-    }
-    return -1;
-}
-
-void heimdall_set_verbose(bool v) {
-    verbose = v;
-}
-
-// File processing functions
-int heimdall_process_input_file(const char* filePath) {
-    if (!globalAdapter || !filePath)
-        return -1;
-
-    std::string path(filePath);
-
-    // Check if already processed
-    if (std::find(processedFiles.begin(), processedFiles.end(), path) != processedFiles.end()) {
-        return 0;  // Already processed, not an error
-    }
-
-    processedFiles.push_back(path);
-
-    if (verbose) {
-        std::cout << "Heimdall: Processing input file: " << path << "\n";
-    }
-
-    // Process the file through the adapter
-    globalAdapter->processInputFile(path);
-
-    // Extract component info and add to SBOM
-    heimdall::ComponentInfo component(heimdall::Utils::getFileName(path), path);
-    component.setDetectedBy(heimdall::LinkerType::LLD);
-
-    // Determine file type
-    if (heimdall::Utils::isObjectFile(path)) {
-        component.fileType = heimdall::FileType::Object;
-    } else if (heimdall::Utils::isStaticLibrary(path)) {
-        component.fileType = heimdall::FileType::StaticLibrary;
-    } else if (heimdall::Utils::isSharedLibrary(path)) {
-        component.fileType = heimdall::FileType::SharedLibrary;
-    } else if (heimdall::Utils::isExecutable(path)) {
-        component.fileType = heimdall::FileType::Executable;
-    }
-
-    // Calculate checksum
-    component.checksum = heimdall::Utils::calculateSHA256(path);
-    component.fileSize = heimdall::Utils::getFileSize(path);
-
-    // Add to SBOM generator
-    if (globalSBOMGenerator) {
-        // Set minimum SBOM fields for main binary
-        if (component.supplier.empty())
-            component.supplier = "Organization: UNKNOWN";
-        if (component.downloadLocation.empty())
-            component.downloadLocation = "NOASSERTION";
-        if (component.homepage.empty())
-            component.homepage = "N/A";
-        if (component.version.empty())
-            component.version = "UNKNOWN";
-        if (component.license.empty()) {
-            // Try to detect license from name and path
-            std::string detectedLicense = heimdall::Utils::detectLicenseFromName(component.name);
-            if (detectedLicense == "NOASSERTION") {
-                detectedLicense = heimdall::Utils::detectLicenseFromPath(component.filePath);
-            }
-            component.license = detectedLicense;
-        }
-        // SPDX requires copyright
-        // (We don't extract, so use NOASSERTION)
-        // component.copyright = "NOASSERTION"; // Not in struct, handled in SBOMGenerator
-        globalSBOMGenerator->processComponent(component);
-    }
-
-    // Also process linked libraries as components
-    std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(path);
-    for (const auto& dep : deps) {
-        // Try to resolve the library path using the improved resolver
-        std::string depPath = heimdall::Utils::resolveLibraryPath(dep);
-        if (!depPath.empty() && heimdall::Utils::fileExists(depPath)) {
-            heimdall::ComponentInfo libComponent(heimdall::Utils::getFileName(depPath), depPath);
-            libComponent.setDetectedBy(heimdall::LinkerType::LLD);
-            libComponent.fileType = heimdall::FileType::SharedLibrary;
-            libComponent.checksum = heimdall::Utils::calculateSHA256(depPath);
-            libComponent.fileSize = heimdall::Utils::getFileSize(depPath);
-            // Set minimum SBOM fields for library
-            libComponent.supplier = "Organization: UNKNOWN";
-            libComponent.downloadLocation = "NOASSERTION";
-            libComponent.homepage = "N/A";
-            libComponent.version = "UNKNOWN";
-            // Detect license for library
-            std::string detectedLicense = heimdall::Utils::detectLicenseFromName(libComponent.name);
-            if (detectedLicense == "NOASSERTION") {
-                detectedLicense = heimdall::Utils::detectLicenseFromPath(depPath);
-            }
-            libComponent.license = detectedLicense;
-            // libComponent.copyright = "NOASSERTION"; // Not in struct
-            if (globalSBOMGenerator) {
-                globalSBOMGenerator->processComponent(libComponent);
-            }
-        }
-    }
-
-    return 0;  // Success
-}
-
-void heimdall_process_library(const char* libraryPath) {
-    if (!globalAdapter || !libraryPath)
-        return;
-
-    std::string path(libraryPath);
-
-    // Check if already processed
-    if (std::find(processedLibraries.begin(), processedLibraries.end(), path) !=
-        processedLibraries.end()) {
-        return;
-    }
-
-    processedLibraries.push_back(path);
-
-    if (verbose) {
-        std::cout << "Heimdall: Processing library: " << path << "\n";
-    }
-
-    // Process the library through the adapter
-    globalAdapter->processInputFile(path);
-
-    // Extract component info and add to SBOM
-    heimdall::ComponentInfo component(heimdall::Utils::getFileName(path), path);
-    component.setDetectedBy(heimdall::LinkerType::LLD);
-
-    // Determine file type
-    if (heimdall::Utils::isStaticLibrary(path)) {
-        component.fileType = heimdall::FileType::StaticLibrary;
-    } else if (heimdall::Utils::isSharedLibrary(path)) {
-        component.fileType = heimdall::FileType::SharedLibrary;
-    }
-
-    // Calculate checksum
-    component.checksum = heimdall::Utils::calculateSHA256(path);
-    component.fileSize = heimdall::Utils::getFileSize(path);
-
-    // Add to SBOM generator
-    if (globalSBOMGenerator) {
-        globalSBOMGenerator->processComponent(component);
-    }
-}
-
-// Finalization
-void heimdall_finalize() {
-    if (verbose) {
-        std::cout << "Heimdall: Finalizing SBOM generation\n";
-    }
-
-    if (globalSBOMGenerator) {
-        globalSBOMGenerator->generateSBOM();
-
-        if (verbose) {
-            std::cout << "Heimdall: SBOM generated with "
-                      << globalSBOMGenerator->getComponentCount() << " components\n";
-            globalSBOMGenerator->printStatistics();
-        }
-    }
-}
-
-}  // extern "C"
-
-// LLVM Pass Plugin Interface (Legacy Pass Manager)
 #ifdef LLVM_AVAILABLE
 namespace {
 class HeimdallPass : public llvm::ModulePass {
@@ -327,9 +96,9 @@ public:
         return "Heimdall SBOM Generator";
     }
 };
-}  // namespace
 
 char HeimdallPass::ID = 0;
+}  // namespace
 
 // Simple pass registration
 extern "C" {
@@ -340,38 +109,164 @@ void heimdall_register_pass() {
 }
 #endif
 
-// LLD Plugin Interface - Working Implementation
 extern "C" {
-// LLD Plugin entry point - called when plugin is loaded
-void heimdall_lld_plugin_init() {
-    std::cout << "Heimdall: LLD Plugin loaded and initialized\n";
 
-    // Initialize our plugin
+// Plugin initialization
+int onload(void* /*tv*/) {
+    std::cout << "Heimdall LLD Plugin activated\n";
+
+    // Initialize the enhanced adapter
+    globalAdapter = std::make_unique<heimdall::LLDAdapter>();
+    globalAdapter->initialize();
+    globalAdapter->setOutputPath(outputPath);
+    globalAdapter->setFormat(format);
+    globalAdapter->setVerbose(verbose);
+    globalAdapter->setExtractDebugInfo(extractDebugInfo);
+    globalAdapter->setIncludeSystemLibraries(includeSystemLibraries);
+
+    if (verbose) {
+        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << "\n";
+        std::cout << "Heimdall LLD Plugin: DWARF extraction " << (extractDebugInfo ? "enabled" : "disabled") << "\n";
+    }
+
+    return 0;
+}
+
+// Plugin cleanup
+void onunload() {
+    if (globalAdapter) {
+        globalAdapter->finalize();
+    }
+
+    std::cout << "Heimdall LLD Plugin deactivated\n";
+}
+
+// Plugin metadata
+const char* heimdall_lld_version() {
+    return "1.0.0";
+}
+
+const char* heimdall_lld_description() {
+    return "Heimdall SBOM Generator Plugin for LLVM LLD Linker";
+}
+
+// Configuration functions
+int heimdall_set_output_path(const char* path) {
+    if (path) {
+        outputPath = std::string(path);
+        if (globalAdapter) {
+            globalAdapter->setOutputPath(outputPath);
+        }
+        if (verbose) {
+            std::cout << "Heimdall: Output path set to " << outputPath << "\n";
+        }
+        return 0;
+    }
+    return -1;
+}
+
+int heimdall_set_format(const char* fmt) {
+    if (fmt) {
+        format = std::string(fmt);
+        if (globalAdapter) {
+            globalAdapter->setFormat(format);
+        }
+        if (verbose) {
+            std::cout << "Heimdall: Format set to " << format << "\n";
+        }
+        return 0;
+    }
+    return -1;
+}
+
+void heimdall_set_verbose(bool v) {
+    verbose = v;
+    if (globalAdapter) {
+        globalAdapter->setVerbose(v);
+    }
+}
+
+void heimdall_set_extract_debug_info(bool extract) {
+    extractDebugInfo = extract;
+    if (globalAdapter) {
+        globalAdapter->setExtractDebugInfo(extract);
+    }
+}
+
+void heimdall_set_include_system_libraries(bool include) {
+    includeSystemLibraries = include;
+    if (globalAdapter) {
+        globalAdapter->setIncludeSystemLibraries(include);
+    }
+}
+
+// File processing functions
+int heimdall_process_input_file(const char* filePath) {
+    if (!globalAdapter || !filePath)
+        return -1;
+
+    std::string path(filePath);
+
+    if (verbose) {
+        std::cout << "Heimdall: Processing input file: " << path << "\n";
+    }
+
+    // Process the file through the enhanced adapter
+    globalAdapter->processInputFile(path);
+
+    return 0;
+}
+
+int heimdall_process_library(const char* libraryPath) {
+    if (!globalAdapter || !libraryPath)
+        return -1;
+
+    std::string path(libraryPath);
+
+    if (verbose) {
+        std::cout << "Heimdall: Processing library: " << path << "\n";
+    }
+
+    // Process the library through the enhanced adapter
+    globalAdapter->processLibrary(path);
+
+    return 0;
+}
+
+void heimdall_finalize() {
+    if (globalAdapter) {
+        globalAdapter->finalize();
+    }
+}
+
+size_t heimdall_get_component_count() {
+    if (globalAdapter) {
+        return globalAdapter->getComponentCount();
+    }
+    return 0;
+}
+
+void heimdall_print_statistics() {
+    if (globalAdapter) {
+        globalAdapter->printStatistics();
+    }
+}
+
+// LLD Plugin Interface - Working Implementation
+void heimdall_lld_plugin_init() {
     onload(nullptr);
 }
 
-// LLD Plugin cleanup - called when plugin is unloaded
 void heimdall_lld_plugin_cleanup() {
-    std::cout << "Heimdall: LLD Plugin cleanup\n";
-
-    // Finalize SBOM generation
-    heimdall_finalize();
-
-    // Cleanup plugin
     onunload();
 }
 
-// LLD Plugin hook for file processing
 void heimdall_lld_process_file(const char* filePath) {
-    if (filePath) {
-        heimdall_process_input_file(filePath);
-    }
+    heimdall_process_input_file(filePath);
 }
 
-// LLD Plugin hook for library processing
 void heimdall_lld_process_library(const char* libraryPath) {
-    if (libraryPath) {
-        heimdall_process_library(libraryPath);
-    }
+    heimdall_process_library(libraryPath);
 }
-}
+
+}  // extern "C"

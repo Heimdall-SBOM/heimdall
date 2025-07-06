@@ -16,7 +16,7 @@ limitations under the License.
 
 /**
  * @file LLDAdapter.hpp
- * @brief LLVM LLD linker adapter
+ * @brief LLVM LLD linker adapter with full metadata extraction support
  * @author Trevor Bakker
  * @date 2025
  */
@@ -29,10 +29,12 @@ limitations under the License.
 namespace heimdall {
 
 /**
- * @brief LLVM LLD linker adapter
+ * @brief LLVM LLD linker adapter with full metadata extraction support
  *
  * This class provides an adapter for the LLVM LLD linker,
- * enabling SBOM generation during the linking process.
+ * enabling comprehensive SBOM generation during the linking process.
+ * It includes full metadata extraction capabilities including DWARF debug
+ * information, matching the functionality of the Gold adapter.
  */
 class LLDAdapter {
 public:
@@ -52,15 +54,62 @@ public:
     void initialize();
 
     /**
-     * @brief Process an input file
+     * @brief Process an input file with full metadata extraction
      * @param filePath The path to the input file
      */
     void processInputFile(const std::string& filePath);
 
     /**
-     * @brief Finalize the LLD adapter
+     * @brief Process a library with full metadata extraction
+     * @param libraryPath The path to the library file
+     */
+    void processLibrary(const std::string& libraryPath);
+
+    /**
+     * @brief Finalize the LLD adapter and generate SBOM
      */
     void finalize();
+
+    /**
+     * @brief Set the output path for the generated SBOM
+     * @param path The output file path
+     */
+    void setOutputPath(const std::string& path);
+
+    /**
+     * @brief Set the output format for the generated SBOM
+     * @param format The output format (spdx, cyclonedx)
+     */
+    void setFormat(const std::string& format);
+
+    /**
+     * @brief Set verbose output mode
+     * @param verbose Whether to enable verbose output
+     */
+    void setVerbose(bool verbose);
+
+    /**
+     * @brief Set whether to extract debug information
+     * @param extract Whether to extract DWARF debug information
+     */
+    void setExtractDebugInfo(bool extract);
+
+    /**
+     * @brief Set whether to include system libraries
+     * @param include Whether to include system libraries in SBOM
+     */
+    void setIncludeSystemLibraries(bool include);
+
+    /**
+     * @brief Get the number of components processed
+     * @return The number of components in the SBOM
+     */
+    size_t getComponentCount() const;
+
+    /**
+     * @brief Print statistics about the processed components
+     */
+    void printStatistics() const;
 
 private:
     /**

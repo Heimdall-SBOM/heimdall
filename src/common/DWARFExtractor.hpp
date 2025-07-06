@@ -135,6 +135,16 @@ private:
     bool extractSourceFilesHeuristic(const std::string& filePath,
                                      std::vector<std::string>& sourceFiles);
 
+    /**
+     * @brief Fallback function extraction using symbol table
+     *
+     * @param filePath Path to the ELF file
+     * @param functions Output vector for function names
+     * @return true if any functions were found, false otherwise
+     */
+    bool extractFunctionsFromSymbolTable(const std::string& filePath,
+                                         std::vector<std::string>& functions);
+
 private:
 #ifdef LLVM_DWARF_AVAILABLE
     /**
