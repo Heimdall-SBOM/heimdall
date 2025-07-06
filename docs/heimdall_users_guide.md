@@ -294,36 +294,76 @@ myapp: main.o
 ```
 
 ### Command-Line Usage
-You can use Heimdall as a linker plugin with both LLD and Gold linkers.
+You can use Heimdall as a linker plugin with both LLD and Gold linkers. Here's a complete example using a C++ file named `myapp.cpp`.
+
+#### Complete Example: Compile and Link with SBOM Generation
+
+First, create a simple C++ application:
+```cpp
+// myapp.cpp
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string message = "Hello from Heimdall SBOM!";
+    std::cout << message << std::endl;
+    return 0;
+}
+```
 
 #### LLD Plugin Example
 ```bash
-# Basic usage
-ld.lld --plugin-opt=load:./heimdall-lld.so \
-      --plugin-opt=sbom-output:myapp.json \
-      main.o -o myapp
+# Step 1: Compile the C++ file to object code
+clang++ -c myapp.cpp -o myapp.o
 
-# With specific format and verbose output
+# Step 2: Link with LLD and generate SPDX SBOM
 ld.lld --plugin-opt=load:./heimdall-lld.so \
       --plugin-opt=sbom-output:myapp.spdx.json \
       --plugin-opt=sbom-format=spdx \
       --plugin-opt=verbose=1 \
-      main.o -o myapp
+      myapp.o -o myapp
+
+# Step 3: Link with LLD and generate CycloneDX SBOM
+ld.lld --plugin-opt=load:./heimdall-lld.so \
+      --plugin-opt=sbom-output:myapp.cyclonedx.json \
+      --plugin-opt=sbom-format=cyclonedx \
+      --plugin-opt=verbose=1 \
+      myapp.o -o myapp
 ```
 
-#### Gold Plugin Example
+#### Gold Plugin Example (Linux only)
 ```bash
-# Basic usage
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.json \
-        main.o -o myapp
+# Step 1: Compile the C++ file to object code
+g++ -c myapp.cpp -o myapp.o
 
-# With specific format and verbose output
+# Step 2: Link with Gold and generate SPDX SBOM
+ld.gold --plugin ./heimdall-gold.so \
+        --plugin-opt sbom-output=myapp.spdx.json \
+        --plugin-opt sbom-format=spdx \
+        --plugin-opt verbose=1 \
+        myapp.o -o myapp
+
+# Step 3: Link with Gold and generate CycloneDX SBOM
 ld.gold --plugin ./heimdall-gold.so \
         --plugin-opt sbom-output=myapp.cyclonedx.json \
         --plugin-opt sbom-format=cyclonedx \
         --plugin-opt verbose=1 \
-        main.o -o myapp
+        myapp.o -o myapp
+```
+
+#### One-Line Compilation with SBOM Generation
+```bash
+# LLD: Compile and link in one step with SPDX SBOM
+clang++ myapp.cpp -o myapp \
+    -Wl,--plugin-opt=load:./heimdall-lld.so \
+    -Wl,--plugin-opt=sbom-output:myapp.spdx.json \
+    -Wl,--plugin-opt=sbom-format=spdx
+
+# Gold: Compile and link in one step with CycloneDX SBOM
+g++ myapp.cpp -o myapp \
+    -Wl,--plugin=./heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=myapp.cyclonedx.json \
+    -Wl,--plugin-opt=sbom-format=cyclonedx
 ```
 
 #### Plugin Options
