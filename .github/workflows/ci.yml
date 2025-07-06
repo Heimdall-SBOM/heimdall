@@ -141,13 +141,49 @@ jobs:
 
     - name: Extract elf-bfd.h for BFD support
       run: |
-        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
-        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
-        if [ -z "$ELF_BFD_H" ]; then
-          echo "elf-bfd.h not found in binutils source!"; exit 1;
+        # Check if elf-bfd.h already exists
+        if [ -f "/usr/include/elf-bfd.h" ]; then
+          echo "elf-bfd.h already exists in /usr/include/"
+          exit 0
         fi
-        sudo cp "$ELF_BFD_H" /usr/include/
-        echo "Copied $ELF_BFD_H to /usr/include/"
+        
+        # Try to find binutils source in multiple locations
+        BINUTILS_SRC=""
+        for src_dir in /usr/src /usr/local/src /opt/src; do
+          if [ -d "$src_dir" ]; then
+            BINUTILS_SRC=$(find "$src_dir" -maxdepth 2 -type d -name 'binutils*' | head -n1)
+            if [ -n "$BINUTILS_SRC" ]; then
+              echo "Found binutils source in: $BINUTILS_SRC"
+              break
+            fi
+          fi
+        done
+        
+        if [ -n "$BINUTILS_SRC" ]; then
+          ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
+          if [ -n "$ELF_BFD_H" ]; then
+            sudo cp "$ELF_BFD_H" /usr/include/
+            echo "Copied $ELF_BFD_H to /usr/include/"
+          else
+            echo "elf-bfd.h not found in binutils source at $BINUTILS_SRC"
+            # Fallback: create symlink to bfd.h
+            if [ -f "/usr/include/bfd.h" ]; then
+              sudo ln -sf /usr/include/bfd.h /usr/include/elf-bfd.h
+              echo "Created symlink /usr/include/elf-bfd.h -> /usr/include/bfd.h"
+            else
+              echo "bfd.h not found either!"; exit 1;
+            fi
+          fi
+        else
+          echo "No binutils source found, trying symlink fallback"
+          # Fallback: create symlink to bfd.h
+          if [ -f "/usr/include/bfd.h" ]; then
+            sudo ln -sf /usr/include/bfd.h /usr/include/elf-bfd.h
+            echo "Created symlink /usr/include/elf-bfd.h -> /usr/include/bfd.h"
+          else
+            echo "bfd.h not found!"; exit 1;
+          fi
+        fi
     
     - name: Set up compiler
       run: |
@@ -338,13 +374,49 @@ jobs:
 
     - name: Extract elf-bfd.h for BFD support
       run: |
-        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
-        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
-        if [ -z "$ELF_BFD_H" ]; then
-          echo "elf-bfd.h not found in binutils source!"; exit 1;
+        # Check if elf-bfd.h already exists
+        if [ -f "/usr/include/elf-bfd.h" ]; then
+          echo "elf-bfd.h already exists in /usr/include/"
+          exit 0
         fi
-        sudo cp "$ELF_BFD_H" /usr/include/
-        echo "Copied $ELF_BFD_H to /usr/include/"
+        
+        # Try to find binutils source in multiple locations
+        BINUTILS_SRC=""
+        for src_dir in /usr/src /usr/local/src /opt/src; do
+          if [ -d "$src_dir" ]; then
+            BINUTILS_SRC=$(find "$src_dir" -maxdepth 2 -type d -name 'binutils*' | head -n1)
+            if [ -n "$BINUTILS_SRC" ]; then
+              echo "Found binutils source in: $BINUTILS_SRC"
+              break
+            fi
+          fi
+        done
+        
+        if [ -n "$BINUTILS_SRC" ]; then
+          ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
+          if [ -n "$ELF_BFD_H" ]; then
+            sudo cp "$ELF_BFD_H" /usr/include/
+            echo "Copied $ELF_BFD_H to /usr/include/"
+          else
+            echo "elf-bfd.h not found in binutils source at $BINUTILS_SRC"
+            # Fallback: create symlink to bfd.h
+            if [ -f "/usr/include/bfd.h" ]; then
+              sudo ln -sf /usr/include/bfd.h /usr/include/elf-bfd.h
+              echo "Created symlink /usr/include/elf-bfd.h -> /usr/include/bfd.h"
+            else
+              echo "bfd.h not found either!"; exit 1;
+            fi
+          fi
+        else
+          echo "No binutils source found, trying symlink fallback"
+          # Fallback: create symlink to bfd.h
+          if [ -f "/usr/include/bfd.h" ]; then
+            sudo ln -sf /usr/include/bfd.h /usr/include/elf-bfd.h
+            echo "Created symlink /usr/include/elf-bfd.h -> /usr/include/bfd.h"
+          else
+            echo "bfd.h not found!"; exit 1;
+          fi
+        fi
     
     - name: Set up compiler
       run: |
