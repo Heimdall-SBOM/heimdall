@@ -71,7 +71,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev llvm-19-tools
         # Debug: Check what LLVM libraries are available
         echo "=== LLVM Installation Debug ==="
         ls -la /usr/lib/llvm-19/lib/ | grep -E "(lld|LLVM)" | head -10
@@ -98,6 +98,16 @@ jobs:
         echo "=== LLD Headers Debug ==="
         ls -la /usr/local/include/lld/Common/ | head -10
         echo "=== End LLD Headers Debug ==="
+    
+    - name: Download LLVM source headers
+      run: |
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/llvm-19.1.7.src.tar.xz
+        tar -xf llvm-19.1.7.src.tar.xz
+        sudo cp -r llvm-19.1.7.src/include/* /usr/local/include/
+        # Debug: Check DWARF headers
+        echo "=== LLVM DWARF Headers Debug ==="
+        ls -la /usr/local/include/llvm/DebugInfo/DWARF/ | head -10
+        echo "=== End LLVM DWARF Headers Debug ==="
     
     - name: Set up compiler
       run: |
@@ -217,7 +227,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev llvm-19-tools
     
     - name: Setup llvm-config
       run: |
@@ -236,6 +246,16 @@ jobs:
         echo "=== LLD Headers Debug ==="
         ls -la /usr/local/include/lld/Common/ | head -10
         echo "=== End LLD Headers Debug ==="
+    
+    - name: Download LLVM source headers
+      run: |
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/llvm-19.1.7.src.tar.xz
+        tar -xf llvm-19.1.7.src.tar.xz
+        sudo cp -r llvm-19.1.7.src/include/* /usr/local/include/
+        # Debug: Check DWARF headers
+        echo "=== LLVM DWARF Headers Debug ==="
+        ls -la /usr/local/include/llvm/DebugInfo/DWARF/ | head -10
+        echo "=== End LLVM DWARF Headers Debug ==="
     
     - name: Set up compiler
       run: |
