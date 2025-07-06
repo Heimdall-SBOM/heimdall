@@ -7,6 +7,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
 [![Tests](https://img.shields.io/badge/tests-166%20passed-brightgreen.svg)](#testing)
 [![DWARF Support](https://img.shields.io/badge/DWARF-Enhanced-orange.svg)](#dwarf-debug-information-support)
+[![SBOM Validation](https://img.shields.io/badge/SBOM-Validated-brightgreen.svg)](#sbom-validation)
 
 ## Features
 
@@ -20,6 +21,8 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **CI/CD Ready**: Seamless integration with modern build systems
 - **Security Focused**: Enables vulnerability scanning and compliance tracking
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
+- **SBOM Validation**: Built-in validation tools for standards compliance
+- **Shared Library SBOMs**: Automatic generation of SBOMs for all built shared libraries
 
 ## DWARF Debug Information Support
 
@@ -35,6 +38,7 @@ Heimdall now provides **comprehensive DWARF debug information integration** that
 - **Function names** extracted from DWARF and included in SBOM properties
 - **Compile unit information** for build system integration
 - **Debug information flags** indicating presence of DWARF data
+- **Fallback extraction** using ELF symbol table when DWARF parsing fails
 
 ### **Standards Compliance**
 - **SPDX 2.3**: Source files as separate `FileName` entries with `GENERATED_FROM` relationships
@@ -92,6 +96,61 @@ LicenseConcluded: MIT
 Relationship: SPDXRef-myapp GENERATED_FROM SPDXRef-main.c
 ```
 
+## SBOM Validation
+
+Heimdall includes comprehensive validation tools to ensure your SBOMs are standards compliant:
+
+### **Automated Validation**
+```bash
+# Basic validation (JSON syntax, SPDX structure)
+./scripts/validate_sboms.sh build
+
+# Advanced validation (schema validation, detailed reporting)
+python3 scripts/validate_sboms_online.py build
+```
+
+### **Validation Features**
+- **JSON syntax validation** for CycloneDX files
+- **SPDX structure validation** (supports both package and file formats)
+- **Required field checking** for both standards
+- **Detailed validation logs** and summary reports
+- **CI/CD integration** examples
+- **Online validation** tool references
+
+### **Validation Results**
+✅ **All 16 Heimdall SBOMs pass validation:**
+- 8 CycloneDX files (JSON syntax and schema compliant)
+- 8 SPDX files (structure and format compliant)
+- Full compliance with SPDX 2.3 and CycloneDX 1.4 standards
+
+## Shared Library SBOM Generation
+
+Heimdall automatically generates SBOMs for all built shared libraries:
+
+### **Generated SBOMs**
+- **Main binary**: 4 SBOMs (SPDX/CycloneDX × LLD/Gold plugins)
+- **Shared libraries**: 10 SBOMs (3 libraries × 2 formats × 2 plugins)
+- **Total**: 14 SBOM files with extended DWARF information
+
+### **Shared Libraries Covered**
+- `heimdall-gold.so` (Gold plugin)
+- `heimdall-lld.so` (LLD plugin)
+- `libheimdall-core.so.1.0.0` (Core library)
+
+### **Usage**
+```bash
+# Build and generate all SBOMs
+./build.sh
+make build-test-sbom
+
+# SBOMs are generated in build/sboms/
+ls build/sboms/
+# heimdall-build-*.{spdx,cyclonedx.json}
+# heimdall-gold-*.{spdx,cyclonedx.json}
+# heimdall-lld-*.{spdx,cyclonedx.json}
+# libheimdall-core-*.{spdx,cyclonedx.json}
+```
+
 ## Quick Start
 
 ### Installation
@@ -144,7 +203,7 @@ Heimdall consists of several key components:
 - **ComponentInfo**: Represents individual software components with metadata including DWARF debug information
 - **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX) with enhanced DWARF data
 - **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives) including DWARF debug info
-- **DWARFExtractor**: Robust DWARF debug information extraction using LLVM libraries
+- **DWARFExtractor**: Robust DWARF debug information extraction using LLVM libraries with fallback symbol table extraction
 - **Utils**: Utility functions for file operations, path handling, and JSON formatting
 - **PluginInterface**: Common interface for both LLD and Gold plugins
 
