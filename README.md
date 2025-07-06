@@ -5,14 +5,16 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 [![Build Status](https://github.com/heimdall-sbom/heimdall/actions/workflows/ci.yml/badge.svg)](https://github.com/heimdall-sbom/heimdall/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
-[![Tests](https://img.shields.io/badge/tests-166%20passed-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-169%20passed-brightgreen.svg)](#testing)
 [![DWARF Support](https://img.shields.io/badge/DWARF-Enhanced-orange.svg)](#dwarf-debug-information-support)
 [![SBOM Validation](https://img.shields.io/badge/SBOM-Validated-brightgreen.svg)](#sbom-validation)
+[![SPDX 3.0](https://img.shields.io/badge/SPDX-3.0%20Ready-blue.svg)](#sbom-formats)
+[![CycloneDX 1.6](https://img.shields.io/badge/CycloneDX-1.6%20Ready-green.svg)](#sbom-formats)
 
 ## Features
 
 - **Dual Linker Support**: Works seamlessly with both LLVM LLD and GNU Gold linkers
-- **Multiple SBOM Formats**: Generates SPDX 2.3 and CycloneDX 1.6 compliant reports (1.6 is default, 1.4/1.5 can be selected)
+- **Multiple SBOM Formats**: Generates SPDX 2.3/3.0 and CycloneDX 1.4-1.6 compliant reports (1.6/3.0 are defaults, older versions can be selected)
 - **Enhanced DWARF Integration**: Extracts and includes source files, functions, and compile units in SBOMs
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
@@ -23,6 +25,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
 - **SBOM Validation**: Built-in validation tools for standards compliance
 - **Shared Library SBOMs**: Automatic generation of SBOMs for all built shared libraries
+- **Version Selection**: Configurable SBOM format versions for maximum compatibility
 
 ## DWARF Debug Information Support
 
@@ -42,6 +45,7 @@ Heimdall now provides **comprehensive DWARF debug information integration** that
 
 ### **Standards Compliance**
 - **SPDX 2.3**: Source files as separate `FileName` entries with `GENERATED_FROM` relationships
+- **SPDX 3.0**: Enhanced JSON format with extended relationships and metadata
 - **CycloneDX 1.6+**: DWARF data as component properties with `heimdall:` namespace (default is 1.6, can specify 1.4/1.5)
 - **Full interoperability** with existing SBOM tools and workflows
 
@@ -57,11 +61,17 @@ ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=format:cyclonedx \
        main.o -o myapp
 
-# LLD with CycloneDX 1.4 explicitly
+# LLD with SPDX 3.0 JSON (default)
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.cyclonedx.json \
-       --plugin-opt=format:cyclonedx \
-       --plugin-opt=cyclonedx-version:1.4 \
+       --plugin-opt=sbom-output:myapp.spdx.json \
+       --plugin-opt=format:spdx \
+       main.o -o myapp
+
+# LLD with SPDX 2.3 tag-value explicitly
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:myapp.spdx \
+       --plugin-opt=format:spdx \
+       --plugin-opt=spdx-version:2.3 \
        main.o -o myapp
 
 # Gold with CycloneDX 1.5 explicitly
@@ -115,21 +125,27 @@ Heimdall includes comprehensive validation tools to ensure your SBOMs are standa
 
 # Advanced validation (schema validation, detailed reporting)
 python3 scripts/validate_sboms_online.py build
+
+# Command-line validation tool
+./build/bin/heimdall-validate --validate build/sboms/myapp.cyclonedx.json
+./build/bin/heimdall-validate --validate build/sboms/myapp.spdx.json
 ```
 
 ### **Validation Features**
-- **JSON syntax validation** for CycloneDX files
-- **SPDX structure validation** (supports both package and file formats)
+- **JSON syntax validation** for CycloneDX and SPDX 3.0 files
+- **SPDX structure validation** (supports both 2.3 tag-value and 3.0 JSON formats)
 - **Required field checking** for both standards
 - **Detailed validation logs** and summary reports
 - **CI/CD integration** examples
 - **Online validation** tool references
+- **SBOM comparison** and diff generation
+- **SBOM merging** capabilities
 
 ### **Validation Results**
 ✅ **All 16 Heimdall SBOMs pass validation:**
 - 8 CycloneDX files (JSON syntax and schema compliant)
 - 8 SPDX files (structure and format compliant)
-- Full compliance with SPDX 2.3 and CycloneDX 1.6 standards
+- Full compliance with SPDX 2.3/3.0 and CycloneDX 1.4-1.6 standards
 
 ## Shared Library SBOM Generation
 
@@ -172,9 +188,15 @@ cd heimdall
 ### Usage
 
 ```bash
-# Using LLD (macOS/Linux) with DWARF support
+# Using LLD (macOS/Linux) with DWARF support and CycloneDX 1.6 (default)
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:myapp.json \
+       main.o -o myapp
+
+# Using LLD with SPDX 3.0 JSON (default)
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:myapp.spdx.json \
+       --plugin-opt=format:spdx \
        main.o -o myapp
 
 # Using Gold (Linux only) with DWARF support
@@ -209,11 +231,13 @@ Heimdall consists of several key components:
 ### Core Components
 
 - **ComponentInfo**: Represents individual software components with metadata including DWARF debug information
-- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX) with enhanced DWARF data
+- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX 2.3/3.0, CycloneDX 1.4-1.6) with enhanced DWARF data
 - **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives) including DWARF debug info
 - **DWARFExtractor**: Robust DWARF debug information extraction using LLVM libraries with fallback symbol table extraction
 - **Utils**: Utility functions for file operations, path handling, and JSON formatting
 - **PluginInterface**: Common interface for both LLD and Gold plugins
+- **SBOMValidator**: Comprehensive validation tools for SBOM standards compliance
+- **SBOMComparator**: Tools for comparing, merging, and diffing SBOMs
 
 ### Plugin Adapters
 
@@ -584,19 +608,18 @@ include_system_libraries=false
 
 ## SBOM Formats
 
-### SPDX 2.3
+### SPDX 2.3 and 3.0
 
-Heimdall generates SPDX 2.3 compliant documents with:
+Heimdall generates SPDX 2.3 and 3.0 compliant documents with:
 
-- Package information
-- File-level details including source files
-- License information
-- Checksums (SHA256)
-- Relationships between components including `GENERATED_FROM` for source files
+- **SPDX 2.3**: Tag-value format with package information, file-level details, license information, checksums (SHA256), and relationships including `GENERATED_FROM` for source files
+- **SPDX 3.0**: JSON format with enhanced relationships, extended metadata, and improved structure for modern tooling
+- **Version Selection**: Default to SPDX 3.0, can specify 2.3 for legacy compatibility
+- **Full Standards Compliance**: Complete compliance with SPDX 2.3 and 3.0 specifications
 
-### CycloneDX 1.6
+### CycloneDX 1.4-1.6
 
-Heimdall generates CycloneDX 1.6 compliant documents with:
+Heimdall generates CycloneDX 1.4-1.6 compliant documents with:
 
 - Component metadata
 - Dependencies
@@ -613,10 +636,16 @@ Heimdall generates CycloneDX 1.6 compliant documents with:
 # Compile with debug information
 gcc -g -c main.c -o main.o
 
-# Using LLD (macOS/Linux) with enhanced DWARF support
+# Using LLD (macOS/Linux) with enhanced DWARF support and CycloneDX 1.6 (default)
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:main-sbom.json \
        --plugin-opt=format:cyclonedx \
+       main.o -o main
+
+# Using LLD with SPDX 3.0 JSON (default)
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:main-sbom.spdx.json \
+       --plugin-opt=format:spdx \
        main.o -o main
 
 # Using Gold (Linux only) with enhanced DWARF support
@@ -635,11 +664,18 @@ cat main-sbom.json
 # Find Heimdall
 find_library(HEIMDALL_LLD heimdall-lld REQUIRED)
 
-# Add SBOM generation to target with DWARF support
+# Add SBOM generation to target with DWARF support and CycloneDX 1.6 (default)
 target_link_options(myapp PRIVATE
     "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
     "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp-sbom.json"
     "LINKER:--plugin-opt=format:cyclonedx"
+)
+
+# Or with SPDX 3.0 JSON (default)
+target_link_options(myapp PRIVATE
+    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
+    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp-sbom.spdx.json"
+    "LINKER:--plugin-opt=format:spdx"
 )
 
 # Enable debug information for DWARF extraction
@@ -649,10 +685,17 @@ target_compile_options(myapp PRIVATE -g)
 ### Complex Project with Dependencies and DWARF
 
 ```bash
-# Build with multiple libraries using LLD and DWARF support
+# Build with multiple libraries using LLD and DWARF support with CycloneDX 1.6 (default)
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:complex-app-sbom.json \
        --plugin-opt=format:cyclonedx \
+       --plugin-opt=verbose \
+       main.o libmath.a libutils.so -o complex-app
+
+# Build with multiple libraries using LLD and SPDX 3.0 JSON (default)
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:complex-app-sbom.spdx.json \
+       --plugin-opt=format:spdx \
        --plugin-opt=verbose \
        main.o libmath.a libutils.so -o complex-app
 
@@ -695,6 +738,8 @@ public:
     void generateSBOM();
     void setOutputPath(const std::string& path);
     void setFormat(const std::string& format);
+    void setCycloneDXVersion(const std::string& version);  // 1.4, 1.5, 1.6
+    void setSPDXVersion(const std::string& version);       // 2.3, 3.0
     size_t getComponentCount() const;
     void printStatistics() const;
 };
@@ -724,6 +769,28 @@ public:
     bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
     bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
     bool hasDWARFInfo(const std::string& filePath);
+};
+```
+
+### SBOMValidator
+
+```cpp
+class SBOMValidator {
+public:
+    bool validateCycloneDX(const std::string& filePath);
+    bool validateSPDX(const std::string& filePath);
+    std::string getValidationErrors() const;
+};
+```
+
+### SBOMComparator
+
+```cpp
+class SBOMComparator {
+public:
+    bool compareSBOMs(const std::string& sbom1, const std::string& sbom2);
+    bool mergeSBOMs(const std::vector<std::string>& sboms, const std::string& output);
+    std::string generateDiffReport(const std::string& sbom1, const std::string& sbom2);
 };
 ```
 

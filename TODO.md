@@ -16,6 +16,7 @@
 - [x] **SPDX 3.0**: JSON format support with extended DWARF information and relationships
 - [x] **CycloneDX 1.4-1.6**: Full support with version selection and extended properties
 - [x] **Standards Compliance**: Full compliance with SPDX 2.3, SPDX 3.0, and CycloneDX 1.4+ specifications
+- [x] **Version Selection**: Configurable SBOM format versions for maximum compatibility
 
 ### Advanced Features
 - [x] **DWARF Debug Information**: Extract source files, functions, compile units, and line information
@@ -32,23 +33,20 @@
 - [x] **DWARF Integration Tests**: Test debug information extraction and integration
 - [x] **Cross-Platform Testing**: Linux-specific tests with platform detection
 
+### SBOM Validation and Tools
+- [x] **SBOMValidator**: Comprehensive validation tools for SBOM standards compliance
+- [x] **SBOMComparator**: Tools for comparing, merging, and diffing SBOMs
+- [x] **Command-line Tools**: `heimdall-validate` for validation, comparison, and diff operations
+- [x] **Validation Scripts**: Automated validation scripts for CI/CD integration
+- [x] **Standards Compliance**: Full validation against SPDX 2.3/3.0 and CycloneDX 1.4-1.6 schemas
+
 ### Documentation
 - [x] **User Guide**: Comprehensive guide covering installation, usage, and integration
 - [x] **Integration Examples**: CMake, Makefile, and command-line integration examples
+- [x] **API Documentation**: Complete documentation for all public APIs
+- [x] **Plugin Documentation**: Detailed documentation for LLD and Gold plugins
 
 ## Future Enhancements 🚀
-
-### Documentation
-- [ ] **API Documentation**: Complete documentation for all public APIs
-- [ ] **Plugin Documentation**: Detailed documentation for LLD and Gold plugins
-
-
-### SBOM Standards and Validation
-- [ ] **SPDX Validation**: Add SPDX validation tools and integration
-- [ ] **CycloneDX Validation**: Add CycloneDX validation tools and integration
-- [ ] **SBOM Comparison**: Tools to compare SBOMs across builds and versions
-- [ ] **SBOM Merging**: Merge multiple SBOMs into a single comprehensive SBOM
-- [ ] **SBOM Diff**: Generate diffs between SBOMs to track changes
 
 ### Enhanced Metadata Extraction
 - [ ] **Package Manager Integration**: Enhanced support for RPM, DEB, and other package formats
@@ -128,7 +126,10 @@
 ## Recent Achievements
 
 - ✅ **SPDX 3.0 Support**: Complete implementation of SPDX 3.0 JSON format
-- ✅ **Version Selection**: Configurable SBOM format versions
+- ✅ **CycloneDX 1.6 Support**: Complete implementation of CycloneDX 1.6 with version selection
+- ✅ **Version Selection**: Configurable SBOM format versions for maximum compatibility
+- ✅ **SBOM Validation Tools**: Comprehensive validation, comparison, and diff tools
 - ✅ **Extended DWARF**: Comprehensive DWARF debug information integration
 - ✅ **Build Integration**: Seamless integration with build systems
 - ✅ **Documentation**: Complete user guide and API documentation
+- ✅ **Command-line Tools**: `heimdall-validate` for SBOM operations

@@ -1,0 +1,337 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <filesystem>
+#include <memory>
+#include <fstream>
+#include <sstream>
+#include "../common/SBOMValidator.hpp"
+#include "../common/SBOMComparator.hpp"
+
+using namespace heimdall;
+
+void printUsage(const char* programName) {
+    std::cout << "Heimdall SBOM Validation and Comparison Tool\n\n";
+    std::cout << "Usage: " << programName << " <command> [options]\n\n";
+    std::cout << "Commands:\n";
+    std::cout << "  validate <file> [--format <format>]     Validate an SBOM file\n";
+    std::cout << "  compare <old> <new> [--format <format>] Compare two SBOM files\n";
+    std::cout << "  merge <files...> --output <file>        Merge multiple SBOMs\n";
+    std::cout << "  diff <old> <new> [--format <format>]    Generate diff report\n\n";
+    std::cout << "Options:\n";
+    std::cout << "  --format <format>    SBOM format (spdx, cyclonedx) [auto-detect]\n";
+    std::cout << "  --output <file>      Output file for merge command\n";
+    std::cout << "  --report-format <f>  Diff report format (text, json, csv) [text]\n";
+    std::cout << "  --verbose            Verbose output\n";
+    std::cout << "  --help               Show this help message\n\n";
+    std::cout << "Examples:\n";
+    std::cout << "  " << programName << " validate sbom.spdx\n";
+    std::cout << "  " << programName << " compare old.spdx new.spdx\n";
+    std::cout << "  " << programName << " merge sbom1.json sbom2.json --output merged.json\n";
+    std::cout << "  " << programName << " diff old.spdx new.spdx --report-format json\n";
+}
+
+std::string detectFormat(const std::string& filePath) {
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        return "";
+    }
+    
+    std::string firstLine;
+    std::getline(file, firstLine);
+    
+    if (firstLine.find("SPDXVersion:") != std::string::npos) {
+        return "spdx";
+    } else if (firstLine.find("{") != std::string::npos) {
+        // Read more to determine if it's SPDX 3.0 or CycloneDX
+        std::string content;
+        file.seekg(0);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        content = buffer.str();
+        
+        if (content.find("\"spdxVersion\"") != std::string::npos) {
+            return "spdx";
+        } else if (content.find("\"bomFormat\"") != std::string::npos) {
+            return "cyclonedx";
+        }
+    }
+    
+    return "";
+}
+
+int validateCommand(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        std::cerr << "Error: validate command requires a file path\n";
+        return 1;
+    }
+    
+    std::string filePath = args[1];
+    std::string format = "";
+    
+    // Parse options
+    for (size_t i = 2; i < args.size(); ++i) {
+        if (args[i] == "--format" && i + 1 < args.size()) {
+            format = args[++i];
+        } else if (args[i] == "--help") {
+            printUsage("heimdall-validate");
+            return 0;
+        }
+    }
+    
+    // Auto-detect format if not specified
+    if (format.empty()) {
+        format = detectFormat(filePath);
+        if (format.empty()) {
+            std::cerr << "Error: Cannot auto-detect SBOM format. Please specify with --format\n";
+            return 1;
+        }
+    }
+    
+    // Create validator
+    auto validator = SBOMValidatorFactory::createValidator(format);
+    if (!validator) {
+        std::cerr << "Error: Unsupported format: " << format << "\n";
+        return 1;
+    }
+    
+    // Validate
+    std::cout << "Validating " << filePath << " (" << format << " format)...\n";
+    auto result = validator->validate(filePath);
+    
+    // Print results
+    std::cout << "\nValidation Results:\n";
+    std::cout << "==================\n";
+    std::cout << "Valid: " << (result.isValid ? "Yes" : "No") << "\n";
+    std::cout << "Format: " << result.metadata["format"] << "\n";
+    std::cout << "Version: " << result.metadata["version"] << "\n\n";
+    
+    if (!result.errors.empty()) {
+        std::cout << "Errors:\n";
+        for (const auto& error : result.errors) {
+            std::cout << "  ❌ " << error << "\n";
+        }
+        std::cout << "\n";
+    }
+    
+    if (!result.warnings.empty()) {
+        std::cout << "Warnings:\n";
+        for (const auto& warning : result.warnings) {
+            std::cout << "  ⚠️  " << warning << "\n";
+        }
+        std::cout << "\n";
+    }
+    
+    return result.isValid ? 0 : 1;
+}
+
+int compareCommand(const std::vector<std::string>& args) {
+    if (args.size() < 3) {
+        std::cerr << "Error: compare command requires two file paths\n";
+        return 1;
+    }
+    
+    std::string oldFile = args[1];
+    std::string newFile = args[2];
+    std::string format = "";
+    
+    // Parse options
+    for (size_t i = 3; i < args.size(); ++i) {
+        if (args[i] == "--format" && i + 1 < args.size()) {
+            format = args[++i];
+        } else if (args[i] == "--help") {
+            printUsage("heimdall-validate");
+            return 0;
+        }
+    }
+    
+    // Auto-detect format if not specified
+    if (format.empty()) {
+        format = detectFormat(oldFile);
+        if (format.empty()) {
+            std::cerr << "Error: Cannot auto-detect SBOM format. Please specify with --format\n";
+            return 1;
+        }
+    }
+    
+    // Create comparator
+    SBOMComparator comparator;
+    
+    // Compare
+    std::cout << "Comparing " << oldFile << " and " << newFile << " (" << format << " format)...\n";
+    auto differences = comparator.compare(oldFile, newFile);
+    
+    // Print results
+    std::cout << "\nComparison Results:\n";
+    std::cout << "==================\n";
+    
+    auto stats = comparator.getDiffStatistics(differences);
+    std::cout << "Total differences: " << differences.size() << "\n";
+    std::cout << "Added: " << stats["added"] << "\n";
+    std::cout << "Removed: " << stats["removed"] << "\n";
+    std::cout << "Modified: " << stats["modified"] << "\n";
+    std::cout << "Unchanged: " << stats["unchanged"] << "\n\n";
+    
+    if (!differences.empty()) {
+        std::cout << "Detailed Differences:\n";
+        for (const auto& diff : differences) {
+            std::string symbol;
+            std::string message;
+            switch (diff.type) {
+                case SBOMDifference::Type::ADDED:
+                    symbol = "➕";
+                    message = "Added: " + diff.component.name + " (" + diff.component.id + ")";
+                    break;
+                case SBOMDifference::Type::REMOVED:
+                    symbol = "➖";
+                    message = "Removed: " + diff.component.name + " (" + diff.component.id + ")";
+                    break;
+                case SBOMDifference::Type::MODIFIED:
+                    symbol = "🔄";
+                    message = "Modified: " + diff.component.name + " (" + diff.component.id + ")";
+                    if (diff.oldComponent.has_value()) {
+                        message += ", previous: " + diff.oldComponent->name + " (" + diff.oldComponent->id + ")";
+                    }
+                    break;
+                case SBOMDifference::Type::UNCHANGED:
+                    symbol = "✅";
+                    message = "Unchanged: " + diff.component.name + " (" + diff.component.id + ")";
+                    break;
+            }
+            std::cout << "  " << symbol << " " << message << "\n";
+        }
+    }
+    
+    return 0;
+}
+
+int diffCommand(const std::vector<std::string>& args) {
+    if (args.size() < 3) {
+        std::cerr << "Error: diff command requires two file paths\n";
+        return 1;
+    }
+    
+    std::string oldFile = args[1];
+    std::string newFile = args[2];
+    std::string format = "";
+    std::string reportFormat = "text";
+    
+    // Parse options
+    for (size_t i = 3; i < args.size(); ++i) {
+        if (args[i] == "--format" && i + 1 < args.size()) {
+            format = args[++i];
+        } else if (args[i] == "--report-format" && i + 1 < args.size()) {
+            reportFormat = args[++i];
+        } else if (args[i] == "--help") {
+            printUsage("heimdall-validate");
+            return 0;
+        }
+    }
+    
+    // Auto-detect format if not specified
+    if (format.empty()) {
+        format = detectFormat(oldFile);
+        if (format.empty()) {
+            std::cerr << "Error: Cannot auto-detect SBOM format. Please specify with --format\n";
+            return 1;
+        }
+    }
+    
+    // Create comparator
+    SBOMComparator comparator;
+    
+    // Compare
+    std::cout << "Generating diff report for " << oldFile << " and " << newFile << "...\n";
+    auto differences = comparator.compare(oldFile, newFile);
+    
+    // Generate report
+    std::string report = comparator.generateDiffReport(differences, reportFormat);
+    std::cout << report;
+    
+    return 0;
+}
+
+int mergeCommand(const std::vector<std::string>& args) {
+    if (args.size() < 2) {
+        std::cerr << "Error: merge command requires at least one input file\n";
+        return 1;
+    }
+    
+    std::vector<std::string> inputFiles;
+    std::string outputFile = "";
+    std::string format = "cyclonedx";
+    std::string version = "1.6";
+    
+    // Parse arguments
+    for (size_t i = 1; i < args.size(); ++i) {
+        if (args[i] == "--output" && i + 1 < args.size()) {
+            outputFile = args[++i];
+        } else if (args[i] == "--format" && i + 1 < args.size()) {
+            format = args[++i];
+        } else if (args[i] == "--version" && i + 1 < args.size()) {
+            version = args[++i];
+        } else if (args[i] == "--help") {
+            printUsage("heimdall-validate");
+            return 0;
+        } else if (args[i][0] != '-') {
+            inputFiles.push_back(args[i]);
+        }
+    }
+    
+    if (inputFiles.empty()) {
+        std::cerr << "Error: No input files specified\n";
+        return 1;
+    }
+    
+    if (outputFile.empty()) {
+        std::cerr << "Error: Output file not specified (use --output)\n";
+        return 1;
+    }
+    
+    // Create comparator
+    SBOMComparator comparator;
+    
+    // Merge
+    std::cout << "Merging " << inputFiles.size() << " SBOM files...\n";
+    std::string mergedContent = comparator.merge(inputFiles, format, version);
+    
+    // Write output
+    std::ofstream output(outputFile);
+    if (!output.is_open()) {
+        std::cerr << "Error: Cannot write to output file: " << outputFile << "\n";
+        return 1;
+    }
+    
+    output << mergedContent;
+    output.close();
+    
+    std::cout << "Merged SBOM written to: " << outputFile << "\n";
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        printUsage(argv[0]);
+        return 1;
+    }
+    
+    std::string command = argv[1];
+    std::vector<std::string> args(argv + 1, argv + argc);
+    
+    if (command == "--help" || command == "-h") {
+        printUsage(argv[0]);
+        return 0;
+    } else if (command == "validate") {
+        return validateCommand(args);
+    } else if (command == "compare") {
+        return compareCommand(args);
+    } else if (command == "diff") {
+        return diffCommand(args);
+    } else if (command == "merge") {
+        return mergeCommand(args);
+    } else {
+        std::cerr << "Error: Unknown command: " << command << "\n";
+        printUsage(argv[0]);
+        return 1;
+    }
+} 

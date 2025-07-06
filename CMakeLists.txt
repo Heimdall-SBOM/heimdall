@@ -399,6 +399,8 @@ if(BUILD_SHARED_CORE)
         src/common/DWARFExtractor.cpp
         src/common/Utils.cpp
         src/common/PluginInterface.cpp
+        src/common/SBOMValidator.cpp
+        src/common/SBOMComparator.cpp
     )
     
     target_include_directories(heimdall-core PUBLIC
@@ -585,6 +587,29 @@ endif()
 # Examples
 if(BUILD_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+# Tools
+if(BUILD_TESTS)
+    # SBOM Validation and Comparison Tool
+    add_executable(heimdall-validate
+        src/tools/heimdall-validate.cpp
+    )
+    
+    target_include_directories(heimdall-validate PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+    )
+    
+    if(BUILD_SHARED_CORE)
+        target_link_libraries(heimdall-validate PRIVATE heimdall-core)
+    endif()
+    
+    # Install validation tool
+    install(TARGETS heimdall-validate
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+    
+    message(STATUS "✓ SBOM Validation Tool (heimdall-validate)")
 endif()
 
 # Installation
