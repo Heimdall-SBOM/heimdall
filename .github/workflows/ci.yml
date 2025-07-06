@@ -65,7 +65,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
     
     - name: Set up compiler
       run: |
@@ -177,24 +177,24 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
     
     - name: Set up compiler
       run: |
         if [ "${{ matrix.compiler }}" = "clang-15" ]; then
-          sudo apt-get install -y clang-15 lld-15 libllvm15-dev
+          sudo apt-get install -y clang-15 lld-15 llvm-15-dev
           echo "CC=clang-15" >> $GITHUB_ENV
           echo "CXX=clang++-15" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "clang-16" ]; then
-          sudo apt-get install -y clang-16 lld-16 libllvm16-dev
+          sudo apt-get install -y clang-16 lld-16 llvm-16-dev
           echo "CC=clang-16" >> $GITHUB_ENV
           echo "CXX=clang++-16" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "clang-17" ]; then
-          sudo apt-get install -y clang-17 lld-17 libllvm17-dev
+          sudo apt-get install -y clang-17 lld-17 llvm-17-dev
           echo "CC=clang-17" >> $GITHUB_ENV
           echo "CXX=clang++-17" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "clang-18" ]; then
-          sudo apt-get install -y clang-18 lld-18 libllvm18-dev
+          sudo apt-get install -y clang-18 lld-18 llvm-18-dev
           echo "CC=clang-18" >> $GITHUB_ENV
           echo "CXX=clang++-18" >> $GITHUB_ENV
         fi
@@ -358,7 +358,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
     
     - name: Check code formatting
       run: |

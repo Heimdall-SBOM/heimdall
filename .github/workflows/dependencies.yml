@@ -33,7 +33,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
     
     - name: Check for outdated packages
       run: |
@@ -210,7 +210,7 @@ jobs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         sudo ./llvm.sh 19
-        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+        sudo apt-get install -y clang-19 lld-19 llvm-19-dev
     
     - name: Build with timing
       run: |
