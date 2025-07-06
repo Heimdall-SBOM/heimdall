@@ -66,8 +66,7 @@ jobs:
           cppcheck \
           valgrind \
           binutils-multiarch-dev \
-          llvm-19-dev \
-          lld-19-dev
+          llvm-19-dev
     
     - name: Install LLVM/Clang
       run: |
@@ -214,8 +213,7 @@ jobs:
           clang-tidy \
           cppcheck \
           binutils-multiarch-dev \
-          llvm-19-dev \
-          lld-19-dev
+          llvm-19-dev
     
     - name: Install LLVM/Clang
       run: |
