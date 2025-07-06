@@ -64,13 +64,13 @@ target_include_directories(heimdall_tests PRIVATE
     ${OPENSSL_INCLUDE_DIR}
 )
 
-# Add test
-add_test(NAME heimdall_unit_tests COMMAND heimdall_tests)
-
-# Set test properties
-set_tests_properties(heimdall_unit_tests PROPERTIES
-    TIMEOUT 300
-    ENVIRONMENT "HEIMDALL_TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/data"
+# Add test with GoogleTest discovery
+include(GoogleTest)
+gtest_discover_tests(heimdall_tests
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    PROPERTIES
+        TIMEOUT 300
+        ENVIRONMENT "HEIMDALL_TEST_DATA_DIR=${CMAKE_CURRENT_SOURCE_DIR}/data"
 )
 
 # Create test data directory if it doesn't exist
@@ -80,10 +80,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data/test_files)
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data/test_files
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/data)
 
-# Set working directory for tests
-set_tests_properties(heimdall_unit_tests PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-)
+# Working directory is now set in gtest_discover_tests above
 
 # Enable CTest integration
 include(CTest)
