@@ -51,6 +51,10 @@ const char* test_license = "MIT";
 };
 
 TEST_F(LinuxSupportTest, ELFSymbolExtraction) {
+    #ifndef __linux__
+        GTEST_SKIP() << "ELF symbol extraction is Linux-specific";
+    #endif
+    
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
     
@@ -78,6 +82,10 @@ TEST_F(LinuxSupportTest, ELFSymbolExtraction) {
 }
 
 TEST_F(LinuxSupportTest, ELFSectionExtraction) {
+    #ifndef __linux__
+        GTEST_SKIP() << "ELF section extraction is Linux-specific";
+    #endif
+    
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
     
@@ -104,6 +112,10 @@ TEST_F(LinuxSupportTest, ELFSectionExtraction) {
 }
 
 TEST_F(LinuxSupportTest, ELFDependencyExtraction) {
+    #ifndef __linux__
+        GTEST_SKIP() << "ELF dependency extraction is Linux-specific";
+    #endif
+    
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
     
@@ -115,6 +127,10 @@ TEST_F(LinuxSupportTest, ELFDependencyExtraction) {
 }
 
 TEST_F(LinuxSupportTest, ELFBuildIdExtraction) {
+    #ifndef __linux__
+        GTEST_SKIP() << "ELF build ID extraction is Linux-specific";
+    #endif
+    
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
     
@@ -132,6 +148,10 @@ TEST_F(LinuxSupportTest, ELFBuildIdExtraction) {
 }
 
 TEST_F(LinuxSupportTest, FileFormatDetection) {
+    #ifndef __linux__
+        GTEST_SKIP() << "ELF format detection is Linux-specific";
+    #endif
+    
     MetadataExtractor extractor;
     
     // Test ELF detection
@@ -146,6 +166,10 @@ TEST_F(LinuxSupportTest, FileFormatDetection) {
 }
 
 TEST_F(LinuxSupportTest, DWARFSourceFileExtraction) {
+    #ifndef __linux__
+        GTEST_SKIP() << "DWARF source file extraction is Linux-specific";
+    #endif
+    
     std::vector<std::string> sourceFiles;
     bool result = heimdall::MetadataHelpers::extractSourceFiles(test_lib.string(), sourceFiles);
     // Should find at least one .c file (the test source)
@@ -158,6 +182,10 @@ TEST_F(LinuxSupportTest, DWARFSourceFileExtraction) {
 }
 
 TEST_F(LinuxSupportTest, DWARFCompileUnitExtraction) {
+    #ifndef __linux__
+        GTEST_SKIP() << "DWARF compile unit extraction is Linux-specific";
+    #endif
+    
     std::vector<std::string> units;
     bool result = heimdall::MetadataHelpers::extractCompileUnits(test_lib.string(), units);
     // We expect at least one compile unit (may be a stub string)

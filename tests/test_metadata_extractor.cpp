@@ -101,7 +101,19 @@ TEST_F(MetadataExtractorTest, FileFormatDetection) {
     
     // Test with the actual library
     if (std::filesystem::file_size(test_lib) > 100) {
-        // On Linux, should detect ELF format for real library
-        EXPECT_TRUE(extractor.isELF(test_lib.string()));
+        // Platform-specific format detection
+        #ifdef __linux__
+            // On Linux, should detect ELF format for real library
+            EXPECT_TRUE(extractor.isELF(test_lib.string()));
+        #elif defined(__APPLE__)
+            // On macOS, should detect Mach-O format for real library
+            EXPECT_TRUE(extractor.isMachO(test_lib.string()));
+        #else
+            // On other platforms, just check that some format is detected
+            bool hasFormat = extractor.isELF(test_lib.string()) || 
+                           extractor.isMachO(test_lib.string()) || 
+                           extractor.isPE(test_lib.string());
+            EXPECT_TRUE(hasFormat);
+        #endif
     }
 } 

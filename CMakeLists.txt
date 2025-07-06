@@ -73,37 +73,58 @@ else()
 endif()
 
 # Find LLVM for DWARF debug info extraction
-find_program(LLVM_CONFIG llvm-config)
-if(LLVM_CONFIG)
-    execute_process(
-        COMMAND ${LLVM_CONFIG} --version
-        OUTPUT_VARIABLE LLVM_VERSION
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    execute_process(
-        COMMAND ${LLVM_CONFIG} --libs --system-libs
-        OUTPUT_VARIABLE LLVM_LIBS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    execute_process(
-        COMMAND ${LLVM_CONFIG} --cxxflags
-        OUTPUT_VARIABLE LLVM_CXXFLAGS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    execute_process(
-        COMMAND ${LLVM_CONFIG} --ldflags
-        OUTPUT_VARIABLE LLVM_LDFLAGS
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    
-    message(STATUS "Found LLVM ${LLVM_VERSION}")
-    message(STATUS "LLVM libraries: ${LLVM_LIBS}")
-    message(STATUS "LLVM CXX flags: ${LLVM_CXXFLAGS}")
-    message(STATUS "LLVM LD flags: ${LLVM_LDFLAGS}")
-    set(LLVM_DWARF_FOUND TRUE)
-else()
-    message(WARNING "llvm-config not found - debug info extraction will be limited")
-    set(LLVM_DWARF_FOUND FALSE)
+# Try to find Homebrew LLVM first (macOS)
+set(LLVM_DWARF_FOUND FALSE)
+if(APPLE)
+    set(LLVM_HOMEBREW_PREFIX "/opt/homebrew/opt/llvm")
+    if(EXISTS "${LLVM_HOMEBREW_PREFIX}")
+        message(STATUS "Using Homebrew LLVM for DWARF support")
+        set(LLVM_VERSION "20.1.7")
+        set(LLVM_LIBS "LLVM")
+        set(LLVM_CXXFLAGS "-I${LLVM_HOMEBREW_PREFIX}/include -std=c++17 -stdlib=libc++ -fno-exceptions -funwind-tables -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+        set(LLVM_LDFLAGS "-L${LLVM_HOMEBREW_PREFIX}/lib")
+        set(LLVM_DWARF_FOUND TRUE)
+        message(STATUS "Found Homebrew LLVM ${LLVM_VERSION}")
+        message(STATUS "LLVM libraries: ${LLVM_LIBS}")
+        message(STATUS "LLVM CXX flags: ${LLVM_CXXFLAGS}")
+        message(STATUS "LLVM LD flags: ${LLVM_LDFLAGS}")
+    endif()
+endif()
+
+# Fallback to llvm-config if Homebrew LLVM not found
+if(NOT LLVM_DWARF_FOUND)
+    find_program(LLVM_CONFIG llvm-config)
+    if(LLVM_CONFIG)
+        execute_process(
+            COMMAND ${LLVM_CONFIG} --version
+            OUTPUT_VARIABLE LLVM_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG} --libs --system-libs
+            OUTPUT_VARIABLE LLVM_LIBS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG} --cxxflags
+            OUTPUT_VARIABLE LLVM_CXXFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG} --ldflags
+            OUTPUT_VARIABLE LLVM_LDFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        
+        message(STATUS "Found LLVM ${LLVM_VERSION}")
+        message(STATUS "LLVM libraries: ${LLVM_LIBS}")
+        message(STATUS "LLVM CXX flags: ${LLVM_CXXFLAGS}")
+        message(STATUS "LLVM LD flags: ${LLVM_LDFLAGS}")
+        set(LLVM_DWARF_FOUND TRUE)
+    else()
+        message(WARNING "llvm-config not found - debug info extraction will be limited")
+        set(LLVM_DWARF_FOUND FALSE)
+    endif()
 endif()
 
 # Use LLVM 19.1 (most recent version) to avoid conflicts
@@ -233,8 +254,14 @@ if(BUILD_SHARED_CORE)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
         $<INSTALL_INTERFACE:include>
         ${OPENSSL_INCLUDE_DIR}
-        /usr/include/llvm
     )
+    
+    # Add LLVM include directories if DWARF support is enabled
+    if(LLVM_DWARF_FOUND)
+        if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
+            target_include_directories(heimdall-core PRIVATE /opt/homebrew/opt/llvm/include)
+        endif()
+    endif()
     
     target_compile_definitions(heimdall-core PRIVATE
         HEIMDALL_CORE_BUILDING
@@ -285,18 +312,29 @@ if(BUILD_LLD_PLUGIN AND LLD_AVAILABLE)
         LLVM_AVAILABLE
     )
     
-    # Explicitly link to LLVM 19.1 to avoid conflicts with 18.1
-    target_link_libraries(heimdall-lld PRIVATE
-        /usr/lib64/libLLVM.so.19.1
-        ${LLD_ELF_LIB}
-        ${LLD_COMMON_LIB}
-    )
+    # Link to the appropriate LLVM library based on platform
+    if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
+        target_link_libraries(heimdall-lld PRIVATE
+            /opt/homebrew/opt/llvm/lib/libLLVM.dylib
+            ${LLD_ELF_LIB}
+            ${LLD_COMMON_LIB}
+        )
+    else()
+        # Fallback to detected LLVM library
+        target_link_libraries(heimdall-lld PRIVATE
+            ${LLVM_LIBS}
+            ${LLD_ELF_LIB}
+            ${LLD_COMMON_LIB}
+        )
+    endif()
     
-    # Add linker flags to ensure only needed symbols are linked
-    target_link_options(heimdall-lld PRIVATE
-        -Wl,--as-needed
-        -Wl,--no-undefined
-    )
+    # Add platform-specific linker flags
+    if(PLATFORM_LINUX)
+        target_link_options(heimdall-lld PRIVATE
+            -Wl,--as-needed
+            -Wl,--no-undefined
+        )
+    endif()
     
     if(BUILD_SHARED_CORE)
         target_link_libraries(heimdall-lld PRIVATE heimdall-core)

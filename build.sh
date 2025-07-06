@@ -194,6 +194,22 @@ CMAKE_ARGS=(
 if [[ "$OSTYPE" == "darwin"* ]]; then
     print_status "Detected macOS"
     CMAKE_ARGS+=("-DPLATFORM_MACOS=TRUE")
+    # Homebrew LLVM detection (Apple Silicon and Intel)
+    if [[ -d "/opt/homebrew/opt/llvm" ]]; then
+        print_status "Using Homebrew LLVM from /opt/homebrew/opt/llvm"
+        CMAKE_ARGS+=(
+            "-DCMAKE_PREFIX_PATH=/opt/homebrew/opt/llvm"
+            "-DCMAKE_INCLUDE_PATH=/opt/homebrew/opt/llvm/include"
+            "-DCMAKE_LIBRARY_PATH=/opt/homebrew/opt/llvm/lib"
+        )
+    elif [[ -d "/usr/local/opt/llvm" ]]; then
+        print_status "Using Homebrew LLVM from /usr/local/opt/llvm"
+        CMAKE_ARGS+=(
+            "-DCMAKE_PREFIX_PATH=/usr/local/opt/llvm"
+            "-DCMAKE_INCLUDE_PATH=/usr/local/opt/llvm/include"
+            "-DCMAKE_LIBRARY_PATH=/usr/local/opt/llvm/lib"
+        )
+    fi
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     print_status "Detected Linux"
     CMAKE_ARGS+=("-DPLATFORM_LINUX=TRUE")

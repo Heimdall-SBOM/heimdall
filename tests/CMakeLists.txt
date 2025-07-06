@@ -161,9 +161,16 @@ file(MAKE_DIRECTORY ${CONAN_LIB_DIR})
 file(MAKE_DIRECTORY ${SPACK_LIB_DIR})
 file(MAKE_DIRECTORY ${VCPKG_LIB_DIR})
 
+# Detect Apple platform for SDK path
+if(APPLE)
+    set(HEIMDALL_TEST_SYSROOT_FLAG -isysroot ${CMAKE_OSX_SYSROOT})
+else()
+    set(HEIMDALL_TEST_SYSROOT_FLAG "")
+endif()
+
 add_custom_command(
     OUTPUT ${TESTDATA_DIR}/test_lib.o
-    COMMAND ${CMAKE_C_COMPILER} -c ${TESTDATA_DIR}/test_lib.c -o ${TESTDATA_DIR}/test_lib.o
+    COMMAND ${CMAKE_C_COMPILER} -c ${TESTDATA_DIR}/test_lib.c -o ${TESTDATA_DIR}/test_lib.o ${HEIMDALL_TEST_SYSROOT_FLAG}
     DEPENDS ${TESTDATA_DIR}/test_lib.c
     COMMENT "Compiling test_lib.o for test archives"
 )
