@@ -1646,6 +1646,7 @@ bool extractArchiveSymbols(const std::string& filePath,
 bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& component) {
     // Use the new robust DWARF extractor
     heimdall::DWARFExtractor dwarfExtractor;
+    bool hasDebugInfo = false;
 
     // Try to extract source files from debug info
     std::vector<std::string> sourceFiles;
@@ -1653,16 +1654,28 @@ bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& comp
         for (const auto& sourceFile : sourceFiles) {
             component.addSourceFile(sourceFile);
         }
-        component.setContainsDebugInfo(true);
-        return true;
+        hasDebugInfo = true;
     }
 
-    // Try to extract compile units as well
+    // Try to extract compile units
     std::vector<std::string> compileUnits;
     if (dwarfExtractor.extractCompileUnits(filePath, compileUnits)) {
         for (const auto& unit : compileUnits) {
-            component.addSourceFile(unit);  // Add compile units as source files too
+            component.compileUnits.push_back(unit);
         }
+        hasDebugInfo = true;
+    }
+
+    // Try to extract function names
+    std::vector<std::string> functions;
+    if (dwarfExtractor.extractFunctions(filePath, functions)) {
+        for (const auto& function : functions) {
+            component.functions.push_back(function);
+        }
+        hasDebugInfo = true;
+    }
+
+    if (hasDebugInfo) {
         component.setContainsDebugInfo(true);
         return true;
     }

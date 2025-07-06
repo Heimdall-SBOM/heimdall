@@ -140,6 +140,33 @@ void SBOMGenerator::processComponent(const ComponentInfo& component) {
 
         pImpl->components[key] = processedComponent;
         Utils::debugPrint("Processed component: " + component.name);
+
+        // Add source files as separate components if DWARF info is available
+        if (processedComponent.containsDebugInfo && !processedComponent.sourceFiles.empty()) {
+            for (const auto& sourceFile : processedComponent.sourceFiles) {
+                // Create a unique key for source file component
+                std::string sourceKey = "source:" + sourceFile;
+                
+                if (pImpl->components.find(sourceKey) == pImpl->components.end()) {
+                    ComponentInfo sourceComponent(Utils::getFileName(sourceFile), sourceFile);
+                    sourceComponent.fileType = FileType::Source;
+                    sourceComponent.license = Utils::detectLicenseFromPath(sourceFile);
+                    sourceComponent.supplier = "Organization: UNKNOWN";
+                    sourceComponent.downloadLocation = "NOASSERTION";
+                    sourceComponent.homepage = "N/A";
+                    sourceComponent.version = "UNKNOWN";
+                    
+                    // Calculate checksum for source file if it exists
+                    if (std::filesystem::exists(sourceFile)) {
+                        sourceComponent.checksum = Utils::calculateSHA256(sourceFile);
+                        sourceComponent.fileSize = std::filesystem::file_size(sourceFile);
+                    }
+                    
+                    pImpl->components[sourceKey] = sourceComponent;
+                    Utils::debugPrint("Added source file component: " + sourceFile);
+                }
+            }
+        }
     } else {
         // Update existing component
         ComponentInfo& existing = pImpl->components[key];
@@ -356,6 +383,28 @@ std::string SBOMGenerator::Impl::generateSPDXDocument() {
     }
     ss << "\n";
 
+    // Add relationships between binaries and their source files
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        
+        // Skip source file components themselves
+        if (component.fileType == FileType::Source) {
+            continue;
+        }
+        
+        // Add relationships to source files if this component has debug info
+        if (component.containsDebugInfo && !component.sourceFiles.empty()) {
+            for (const auto& sourceFile : component.sourceFiles) {
+                std::string sourceKey = "source:" + sourceFile;
+                auto sourceIt = components.find(sourceKey);
+                if (sourceIt != components.end()) {
+                    ss << "Relationship: " << generateSPDXId(component.name) 
+                       << " GENERATED_FROM " << generateSPDXId(sourceIt->second.name) << "\n";
+                }
+            }
+        }
+    }
+
     return ss.str();
 }
 
@@ -455,8 +504,63 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
                                                                     : component.downloadLocation)
        << "\n";
     ss << "        }\n";
-    ss << "      ]\n";
-    ss << "    }";
+    ss << "      ]";
+
+    // Add DWARF debug information as properties
+    bool hasProperties = false;
+    std::stringstream properties;
+    
+    if (component.containsDebugInfo) {
+        properties << ",\n      \"properties\": [\n";
+        hasProperties = true;
+        
+        // Add source files property
+        if (!component.sourceFiles.empty()) {
+            properties << "        {\n";
+            properties << "          \"name\": \"heimdall:source-files\",\n";
+            properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.sourceFiles, ",")) << "\n";
+            properties << "        }";
+        }
+        
+        // Add functions property if available
+        if (!component.functions.empty()) {
+            if (!component.sourceFiles.empty()) {
+                properties << ",\n";
+            }
+            properties << "        {\n";
+            properties << "          \"name\": \"heimdall:functions\",\n";
+            properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.functions, ",")) << "\n";
+            properties << "        }";
+        }
+        
+        // Add compile units property if available
+        if (!component.compileUnits.empty()) {
+            if (!component.sourceFiles.empty() || !component.functions.empty()) {
+                properties << ",\n";
+            }
+            properties << "        {\n";
+            properties << "          \"name\": \"heimdall:compile-units\",\n";
+            properties << "          \"value\": " << Utils::formatJsonValue(Utils::join(component.compileUnits, ",")) << "\n";
+            properties << "        }";
+        }
+        
+        // Add debug info flag
+        if (!component.sourceFiles.empty() || !component.functions.empty() || !component.compileUnits.empty()) {
+            properties << ",\n";
+        }
+        properties << "        {\n";
+        properties << "          \"name\": \"heimdall:contains-debug-info\",\n";
+        properties << "          \"value\": \"true\"\n";
+        properties << "        }";
+        
+        properties << "\n      ]";
+    }
+    
+    if (hasProperties) {
+        ss << properties.str();
+    }
+    
+    ss << "\n    }";
     return ss.str();
 }
 
