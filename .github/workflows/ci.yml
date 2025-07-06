@@ -90,6 +90,26 @@ jobs:
         echo "llvm-config version: $(llvm-config --version)"
         echo "llvm-config location: $(which llvm-config)"
     
+    - name: Debug BFD headers
+      run: |
+        echo "=== BFD Headers Debug ==="
+        find /usr -name "elf-bfd.h" 2>/dev/null || echo "elf-bfd.h not found"
+        find /usr -name "bfd.h" 2>/dev/null || echo "bfd.h not found"
+        echo "=== Binutils packages ==="
+        dpkg -l | grep binutils
+        echo "=== End BFD Headers Debug ==="
+
+    - name: Debug LLD libraries
+      run: |
+        echo "=== LLD Libraries Debug ==="
+        echo "=== LLVM 19 lib directory ==="
+        ls -la /usr/lib/llvm-19/lib/ | grep -E "(lld|LLVM)" || echo "No LLD/LLVM libraries found"
+        echo "=== System lib directory ==="
+        ls -la /usr/lib/x86_64-linux-gnu/ | grep -E "(lld|LLVM)" || echo "No LLD/LLVM libraries found"
+        echo "=== LLVM config libraries ==="
+        /usr/lib/llvm-19/bin/llvm-config --libs || echo "llvm-config failed"
+        echo "=== End LLD Libraries Debug ==="
+    
     - name: Set up compiler
       run: |
         if [ "${{ matrix.compiler }}" = "gcc-9" ]; then
@@ -177,15 +197,6 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
-    - name: Debug BFD headers
-      run: |
-        echo "=== BFD Headers Debug ==="
-        find /usr -name "elf-bfd.h" 2>/dev/null || echo "elf-bfd.h not found"
-        find /usr -name "bfd.h" 2>/dev/null || echo "bfd.h not found"
-        echo "=== Binutils packages ==="
-        dpkg -l | grep binutils
-        echo "=== End BFD Headers Debug ==="
-
   # Linux Clang builds
   linux-clang:
     name: Linux Clang
@@ -213,7 +224,8 @@ jobs:
           clang-tidy \
           cppcheck \
           binutils-multiarch-dev \
-          llvm-19-dev
+          llvm-19-dev \
+          binutils-source
     
     - name: Install LLVM/Clang
       run: |
@@ -228,6 +240,26 @@ jobs:
         sudo ln -sf /usr/lib/llvm-19/bin/llvm-config /usr/local/bin/llvm-config
         echo "llvm-config version: $(llvm-config --version)"
         echo "llvm-config location: $(which llvm-config)"
+    
+    - name: Debug BFD headers
+      run: |
+        echo "=== BFD Headers Debug ==="
+        find /usr -name "elf-bfd.h" 2>/dev/null || echo "elf-bfd.h not found"
+        find /usr -name "bfd.h" 2>/dev/null || echo "bfd.h not found"
+        echo "=== Binutils packages ==="
+        dpkg -l | grep binutils
+        echo "=== End BFD Headers Debug ==="
+
+    - name: Debug LLD libraries
+      run: |
+        echo "=== LLD Libraries Debug ==="
+        echo "=== LLVM 19 lib directory ==="
+        ls -la /usr/lib/llvm-19/lib/ | grep -E "(lld|LLVM)" || echo "No LLD/LLVM libraries found"
+        echo "=== System lib directory ==="
+        ls -la /usr/lib/x86_64-linux-gnu/ | grep -E "(lld|LLVM)" || echo "No LLD/LLVM libraries found"
+        echo "=== LLVM config libraries ==="
+        /usr/lib/llvm-19/bin/llvm-config --libs || echo "llvm-config failed"
+        echo "=== End LLD Libraries Debug ==="
     
     - name: Set up compiler
       run: |
@@ -266,15 +298,6 @@ jobs:
         timeout 300 ctest --output-on-failure --verbose
       env:
         HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
-
-    - name: Debug BFD headers
-      run: |
-        echo "=== BFD Headers Debug ==="
-        find /usr -name "elf-bfd.h" 2>/dev/null || echo "elf-bfd.h not found"
-        find /usr -name "bfd.h" 2>/dev/null || echo "bfd.h not found"
-        echo "=== Binutils packages ==="
-        dpkg -l | grep binutils
-        echo "=== End BFD Headers Debug ==="
 
   # macOS builds - DISABLED
   # macos:
