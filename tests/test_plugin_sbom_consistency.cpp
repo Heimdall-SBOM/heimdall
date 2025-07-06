@@ -152,6 +152,24 @@ void* thread_func(void* arg) {
 }
 
 int main() {
+    // Use OpenSSL SSL functions (from libssl)
+    SSL_library_init();
+    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    if (ctx) {
+        SSL_CTX_free(ctx);
+    }
+    
+    // Use OpenSSL crypto functions (from libcrypto) to force linkage
+    unsigned long version = OpenSSL_version_num();
+    const char* version_str = OpenSSL_version(OPENSSL_VERSION);
+    printf("OpenSSL version: %s (0x%lx)\n", version_str, version);
+    
+    // Use crypto memory allocation to ensure libcrypto symbols are used
+    void* mem = CRYPTO_malloc(1024, __FILE__, __LINE__);
+    if (mem) {
+        CRYPTO_free(mem, __FILE__, __LINE__);
+    }
+    
     // Use pthreads
     pthread_t thread;
     pthread_create(&thread, NULL, thread_func, NULL);
