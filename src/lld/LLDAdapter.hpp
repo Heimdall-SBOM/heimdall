@@ -83,6 +83,20 @@ public:
     void setFormat(const std::string& format);
 
     /**
+     * @brief Set the CycloneDX specification version
+     * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
+     * @note Only applies when format is "cyclonedx"
+     */
+    void setCycloneDXVersion(const std::string& version);
+
+    /**
+     * @brief Set the SPDX specification version
+     * @param version The SPDX version (e.g., "2.3", "3.0")
+     * @note Only applies when format is "spdx"
+     */
+    void setSPDXVersion(const std::string& version);
+
+    /**
      * @brief Set verbose output mode
      * @param verbose Whether to enable verbose output
      */

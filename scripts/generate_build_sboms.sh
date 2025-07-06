@@ -110,12 +110,14 @@ create_sbom_generator() {
 
 typedef int (*init_func_t)(void*);
 typedef int (*set_format_func_t)(const char*);
+typedef int (*set_cyclonedx_version_func_t)(const char*);
+typedef int (*set_spdx_version_func_t)(const char*);
 typedef int (*set_output_path_func_t)(const char*);
 typedef int (*process_input_file_func_t)(const char*);
 typedef void (*finalize_func_t)(void);
 
 int generate_sbom(const char* plugin_path, const char* format, 
-                  const char* output_path, const char* binary_path) {
+                  const char* output_path, const char* binary_path, const char* cyclonedx_version, const char* spdx_version) {
     void* handle = dlopen(plugin_path, RTLD_LAZY);
     if (!handle) {
         fprintf(stderr, "Failed to load plugin %s: %s\n", plugin_path, dlerror());
@@ -125,6 +127,8 @@ int generate_sbom(const char* plugin_path, const char* format,
     // Get function pointers
     init_func_t onload = (init_func_t)dlsym(handle, "onload");
     set_format_func_t set_format = (set_format_func_t)dlsym(handle, "heimdall_set_format");
+    set_cyclonedx_version_func_t set_cyclonedx_version = (set_cyclonedx_version_func_t)dlsym(handle, "heimdall_set_cyclonedx_version");
+    set_spdx_version_func_t set_spdx_version = (set_spdx_version_func_t)dlsym(handle, "heimdall_set_spdx_version");
     set_output_path_func_t set_output_path = (set_output_path_func_t)dlsym(handle, "heimdall_set_output_path");
     process_input_file_func_t process_input_file = (process_input_file_func_t)dlsym(handle, "heimdall_process_input_file");
     finalize_func_t finalize = (finalize_func_t)dlsym(handle, "heimdall_finalize");
@@ -149,6 +153,24 @@ int generate_sbom(const char* plugin_path, const char* format,
         return 1;
     }
 
+    // Set CycloneDX version if format is cyclonedx and function is available
+    if (strcmp(format, "cyclonedx") == 0 && set_cyclonedx_version) {
+        if (set_cyclonedx_version(cyclonedx_version) != 0) {
+            fprintf(stderr, "Failed to set CycloneDX version\n");
+            dlclose(handle);
+            return 1;
+        }
+    }
+
+    // Set SPDX version if format is spdx and function is available
+    if (strcmp(format, "spdx") == 0 && set_spdx_version) {
+        if (set_spdx_version(spdx_version) != 0) {
+            fprintf(stderr, "Failed to set SPDX version\n");
+            dlclose(handle);
+            return 1;
+        }
+    }
+
     // Set output path
     if (set_output_path(output_path) != 0) {
         fprintf(stderr, "Failed to set output path\n");
@@ -171,12 +193,12 @@ int generate_sbom(const char* plugin_path, const char* format,
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        fprintf(stderr, "Usage: %s <plugin_path> <format> <output_path> <binary_path>\n", argv[0]);
+    if (argc != 7) {
+        fprintf(stderr, "Usage: %s <plugin_path> <format> <output_path> <binary_path> <cyclonedx_version> <spdx_version>\n", argv[0]);
         return 1;
     }
 
-    return generate_sbom(argv[1], argv[2], argv[3], argv[4]);
+    return generate_sbom(argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 }
 EOF
 }
@@ -200,11 +222,13 @@ generate_sbom_with_plugin() {
     local output_file="$3"
     local binary_path="$4"
     local plugin_name="$5"
+    local cyclonedx_version="${6:-1.6}"
+    local spdx_version="${7:-3.0}"
     
     print_status "Generating ${plugin_name} ${format} SBOM: ${output_file}"
     
     # Use the compiled SBOM generator
-    "${BUILD_DIR}/generate_sbom" "${plugin_path}" "${format}" "${output_file}" "${binary_path}"
+    "${BUILD_DIR}/generate_sbom" "${plugin_path}" "${format}" "${output_file}" "${binary_path}" "${cyclonedx_version}" "${spdx_version}"
     
     if [[ $? -eq 0 ]] && [[ -f "${output_file}" ]]; then
         print_success "Generated ${plugin_name} ${format} SBOM: ${output_file}"

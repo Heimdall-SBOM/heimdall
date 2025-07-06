@@ -41,6 +41,7 @@ limitations under the License.
 // Plugin function typedefs
 typedef int (*init_func_t)(void*);
 typedef int (*set_format_func_t)(const char*);
+typedef int (*set_spdx_version_func_t)(const char*);
 typedef int (*set_output_path_func_t)(const char*);
 typedef int (*process_input_file_func_t)(const char*);
 typedef void (*finalize_func_t)(void);
@@ -268,6 +269,7 @@ int main() {
         // Get function pointers
         init_func_t onload = (init_func_t)dlsym(handle, "onload");
         set_format_func_t set_format = (set_format_func_t)dlsym(handle, "heimdall_set_format");
+        set_spdx_version_func_t set_spdx_version = (set_spdx_version_func_t)dlsym(handle, "heimdall_set_spdx_version");
         set_output_path_func_t set_output_path =
             (set_output_path_func_t)dlsym(handle, "heimdall_set_output_path");
         process_input_file_func_t process_input_file =
@@ -292,6 +294,15 @@ int main() {
             std::cerr << "Failed to set format" << std::endl;
             dlclose(handle);
             return false;
+        }
+
+        // Set SPDX version to 2.3 for tag-value format compatibility
+        if (format == "spdx" && set_spdx_version) {
+            if (set_spdx_version("2.3") != 0) {
+                std::cerr << "Failed to set SPDX version" << std::endl;
+                dlclose(handle);
+                return false;
+            }
         }
 
         // Set output path

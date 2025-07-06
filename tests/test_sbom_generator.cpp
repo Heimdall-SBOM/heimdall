@@ -57,6 +57,7 @@ TEST_F(SBOMGeneratorTest, GenerateSBOMSPDX) {
     SBOMGenerator generator;
     generator.setOutputPath((test_dir / "sbom.spdx").string());
     generator.setFormat("spdx");
+    generator.setSPDXVersion("2.3");  // Use tag-value format for compatibility
     ComponentInfo component("foo", test_file.string());
     generator.processComponent(component);
     generator.generateSBOM();
@@ -65,6 +66,23 @@ TEST_F(SBOMGeneratorTest, GenerateSBOMSPDX) {
     buffer << f.rdbuf();
     std::string content = buffer.str();
     EXPECT_NE(content.find("SPDXVersion"), std::string::npos);
+    EXPECT_NE(content.find("foo"), std::string::npos);
+}
+
+TEST_F(SBOMGeneratorTest, GenerateSBOMSPDX3JSON) {
+    SBOMGenerator generator;
+    generator.setOutputPath((test_dir / "sbom3.json").string());
+    generator.setFormat("spdx");
+    generator.setSPDXVersion("3.0");  // Use JSON format
+    ComponentInfo component("foo", test_file.string());
+    generator.processComponent(component);
+    generator.generateSBOM();
+    std::ifstream f(test_dir / "sbom3.json");
+    std::stringstream buffer;
+    buffer << f.rdbuf();
+    std::string content = buffer.str();
+    EXPECT_NE(content.find("spdxVersion"), std::string::npos);
+    EXPECT_NE(content.find("SPDX-3.0"), std::string::npos);
     EXPECT_NE(content.find("foo"), std::string::npos);
 }
 

@@ -459,5 +459,39 @@ adapter.setCycloneDXVersion("1.5"); // Use 1.5 instead of default 1.6
 
 ### SPDX Generation
 
+Heimdall supports both SPDX 2.3 and 3.0 specifications:
+
+#### SPDX 2.3 (Tag-Value Format)
+- **Format**: Traditional tag-value format for maximum compatibility
+- **Usage**: `--format spdx --spdx-version 2.3`
+- **Best for**: Legacy tools and maximum compatibility
+
+```bash
+# Generate SPDX 2.3 SBOM
+heimdall-lld.so --format spdx --spdx-version 2.3 --output sbom.spdx your_binary
+```
+
+#### SPDX 3.0 (JSON Format)
+- **Format**: Modern JSON format with enhanced features
+- **Usage**: `--format spdx --spdx-version 3.0` (default)
+- **Features**: Extended DWARF information, enhanced relationships, annotations
+- **Best for**: Modern tools and advanced features
+
+```bash
+# Generate SPDX 3.0 SBOM (default)
+heimdall-lld.so --format spdx --output sbom.json your_binary
+```
+
+#### Version Selection
+Choose the appropriate SPDX version based on your needs:
+
+```bash
+# For maximum compatibility with existing tools
+heimdall-lld.so --format spdx --spdx-version 2.3 --output sbom.spdx your_binary
+
+# For modern features and extended DWARF information (default)
+heimdall-lld.so --format spdx --spdx-version 3.0 --output sbom.json your_binary
+```
+
 **LLD Plugin:**
 ```

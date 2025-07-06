@@ -38,6 +38,8 @@ public:
     void finalize();
     void setOutputPath(const std::string& path);
     void setFormat(const std::string& format);
+    void setCycloneDXVersion(const std::string& version);
+    void setSPDXVersion(const std::string& version);
     void setVerbose(bool verbose);
     void setExtractDebugInfo(bool extract);
     void setIncludeSystemLibraries(bool include);
@@ -53,6 +55,7 @@ private:
     bool includeSystemLibraries{false};
     std::string outputPath{"heimdall-lld-sbom.json"};
     std::string format{"spdx"};
+    std::string cycloneDXVersion{"1.4"};
     std::unique_ptr<SBOMGenerator> sbomGenerator;
 
     static void logProcessing(const std::string& message);
@@ -70,6 +73,7 @@ void LLDAdapter::Impl::initialize() {
         includeSystemLibraries = false;
         outputPath = "heimdall-lld-sbom.json";
         format = "spdx";
+        cycloneDXVersion = "1.4";
         logProcessing("LLDAdapter initialized");
         initialized = true;
     }
@@ -170,6 +174,15 @@ void LLDAdapter::Impl::setFormat(const std::string& fmt) {
     sbomGenerator->setFormat(fmt);
 }
 
+void LLDAdapter::Impl::setCycloneDXVersion(const std::string& version) {
+    cycloneDXVersion = version;
+    sbomGenerator->setCycloneDXVersion(version);
+}
+
+void LLDAdapter::Impl::setSPDXVersion(const std::string& version) {
+    sbomGenerator->setSPDXVersion(version);
+}
+
 void LLDAdapter::Impl::setVerbose(bool v) {
     verbose = v;
 }
@@ -221,6 +234,14 @@ void LLDAdapter::setOutputPath(const std::string& path) {
 
 void LLDAdapter::setFormat(const std::string& format) {
     pImpl->setFormat(format);
+}
+
+void LLDAdapter::setCycloneDXVersion(const std::string& version) {
+    pImpl->setCycloneDXVersion(version);
+}
+
+void LLDAdapter::setSPDXVersion(const std::string& version) {
+    pImpl->setSPDXVersion(version);
 }
 
 void LLDAdapter::setVerbose(bool verbose) {

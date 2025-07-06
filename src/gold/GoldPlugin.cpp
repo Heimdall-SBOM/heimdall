@@ -28,6 +28,7 @@ namespace {
 std::unique_ptr<heimdall::GoldAdapter> globalAdapter;
 std::string outputPath = "heimdall-gold-sbom.json";
 std::string format = "spdx";
+std::string spdxVersion = "3.0";
 bool verbose = false;
 std::vector<std::string> processedFiles;
 std::vector<std::string> processedLibraries;
@@ -133,6 +134,33 @@ int heimdall_set_format(const char* fmt) {
             globalAdapter->setFormat(format);
         if (verbose) {
             std::cout << "Heimdall: Format set to " << format << "\n";
+        }
+        return 0;
+    }
+    return -1;
+}
+
+int heimdall_set_cyclonedx_version(const char* version) {
+    if (version) {
+        if (globalAdapter) {
+            globalAdapter->setCycloneDXVersion(version);
+        }
+        if (verbose) {
+            std::cout << "Heimdall: CycloneDX version set to " << version << "\n";
+        }
+        return 0;
+    }
+    return -1;
+}
+
+int heimdall_set_spdx_version(const char* version) {
+    if (version) {
+        spdxVersion = std::string(version);
+        if (globalAdapter) {
+            globalAdapter->setSPDXVersion(version);
+        }
+        if (verbose) {
+            std::cout << "Heimdall: SPDX version set to " << version << "\n";
         }
         return 0;
     }

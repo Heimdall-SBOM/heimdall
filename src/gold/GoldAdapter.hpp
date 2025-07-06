@@ -95,6 +95,20 @@ public:
     void setFormat(const std::string& format);
 
     /**
+     * @brief Set the CycloneDX specification version
+     * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
+     * @note Only applies when format is "cyclonedx"
+     */
+    void setCycloneDXVersion(const std::string& version);
+
+    /**
+     * @brief Set the SPDX specification version
+     * @param version The SPDX version (e.g., "2.3", "3.0")
+     * @note Only applies when format is "spdx"
+     */
+    void setSPDXVersion(const std::string& version);
+
+    /**
      * @brief Generate the SBOM
      */
     void generateSBOM();
@@ -140,6 +154,8 @@ private:
         void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size);
         void setOutputPath(const std::string& path);
         void setFormat(const std::string& fmt);
+        void setCycloneDXVersion(const std::string& version);
+        void setSPDXVersion(const std::string& version);
         void generateSBOM();
         void setVerbose(bool verbose);
         void setExtractDebugInfo(bool extract);
@@ -153,6 +169,7 @@ private:
         std::vector<std::string> processedLibraries;
         std::string outputPath;
         std::string format;
+        std::string cyclonedxVersion;
         bool verbose = false;
         bool extractDebugInfo = true;
         bool includeSystemLibraries = false;
