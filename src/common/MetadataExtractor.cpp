@@ -547,9 +547,7 @@ bool openFileSafely(const std::string& filePath, std::ifstream& file) {
  * @return Empty string if file cannot be opened, otherwise empty string (caller should check file.is_open())
  */
 std::string openFileOrReturnEmpty(const std::string& filePath, std::ifstream& file) {
-    if (!openFileSafely(filePath, file)) {
-        return "";
-    }
+    openFileSafely(filePath, file);
     return "";
 }
 
