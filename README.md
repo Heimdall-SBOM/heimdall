@@ -147,6 +147,7 @@ sudo apt-get install -y llvm-19-dev liblld-19-dev
 - LLVM 19 is recommended for full DWARF debug info support. The build system will automatically detect and use LLVM 19 if available.
 - `binutils` provides the Gold linker (`ld.gold`), while `binutils-dev` provides the BFD development files needed for the Gold plugin.
 - `libgtest-dev` provides GoogleTest for unit testing. If not available, the build system will download it automatically.
+- The build system now includes Ubuntu-specific library paths (`/usr/lib/x86_64-linux-gnu`) for proper system library detection.
 
 **Troubleshooting BFD headers**: If you encounter "bfd.h not found" errors, try installing additional packages:
 ```bash
@@ -164,6 +165,12 @@ sudo apt-get install -y llvm-15-dev liblld-15-dev
 # For LLVM 16
 sudo apt-get install -y llvm-16-dev liblld-16-dev
 ```
+
+**Library Detection**: Heimdall now properly detects system libraries on Ubuntu including:
+- OpenSSL libraries (`libssl.so.3`, `libcrypto.so.3`)
+- System C library (`libc.so.6`)
+- Pthread library (`libpthread.so.0`)
+- Other system libraries in `/usr/lib/x86_64-linux-gnu/`
 
 #### Fedora/RHEL/CentOS
 ```bash
@@ -595,6 +602,13 @@ public:
    Warning: Gold linker not found
    ```
    Solution: The core library will still build successfully. Install LLVM/LLD or Gold linker development packages if you need the respective plugins.
+
+8. **SBOM consistency tests failing on Ubuntu**
+   ```
+   Error: OpenSSL libraries not found in SBOM
+   Error: System C library not found in SBOM
+   ```
+   Solution: This issue has been fixed in the latest version. The plugins now properly detect Ubuntu-specific library paths (`/usr/lib/x86_64-linux-gnu`). Ensure you're using the latest version of Heimdall.
 
 ### Platform-Specific Issues
 
