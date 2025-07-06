@@ -584,7 +584,7 @@ bool isSharedLibrary(const std::string& filePath) {
  */
 bool isExecutable(const std::string& filePath) {
     std::string ext = toLower(getFileExtension(filePath));
-            return ext == ".exe" || ext.empty() || filePath.find("bin/") != std::string::npos;
+    return ext == ".exe" || ext.empty() || filePath.find("bin/") != std::string::npos;
 }
 
 /**
@@ -679,7 +679,5 @@ std::string detectLicenseFromPath(const std::string& filePath) {
 
     return "NOASSERTION";
 }
-
-
 
 }  // namespace heimdall::Utils

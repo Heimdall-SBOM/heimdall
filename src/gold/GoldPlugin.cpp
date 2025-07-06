@@ -194,7 +194,8 @@ int heimdall_process_input_file(const char* filePath) {
                 processedLibraries.end()) {
                 processedLibraries.push_back(depPath);
                 if (verbose) {
-                    std::cout << "Heimdall: Auto-processing dependency library: " << depPath << "\n";
+                    std::cout << "Heimdall: Auto-processing dependency library: " << depPath
+                              << "\n";
                 }
                 globalAdapter->processLibrary(depPath);
             }
@@ -210,7 +211,8 @@ int heimdall_process_input_file(const char* filePath) {
     std::string fileSize = getFileSize(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processed file: " << fileName << " (checksum: " << checksum << ", size: " << fileSize << ")\n";
+        std::cout << "Heimdall: Processed file: " << fileName << " (checksum: " << checksum
+                  << ", size: " << fileSize << ")\n";
     }
 
     return 0;
@@ -243,7 +245,8 @@ int heimdall_process_library(const char* libraryPath) {
     std::string fileSize = getFileSize(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processed library: " << fileName << " (checksum: " << checksum << ", size: " << fileSize << ")\n";
+        std::cout << "Heimdall: Processed library: " << fileName << " (checksum: " << checksum
+                  << ", size: " << fileSize << ")\n";
     }
 
     return 0;
@@ -258,7 +261,8 @@ void heimdall_finalize() {
 
     // Validate format
     if (format != "spdx" && format != "cyclonedx") {
-        std::cerr << "Heimdall Gold Plugin: Invalid format '" << format << "', defaulting to SPDX\n";
+        std::cerr << "Heimdall Gold Plugin: Invalid format '" << format
+                  << "', defaulting to SPDX\n";
         format = "spdx";
     }
 

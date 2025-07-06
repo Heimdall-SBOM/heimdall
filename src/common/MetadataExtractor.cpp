@@ -544,7 +544,8 @@ bool openFileSafely(const std::string& filePath, std::ifstream& file) {
  * @brief Utility function to safely open a file and return empty string on failure
  * @param filePath Path to the file to open
  * @param file Reference to ifstream to open
- * @return Empty string if file cannot be opened, otherwise empty string (caller should check file.is_open())
+ * @return Empty string if file cannot be opened, otherwise empty string (caller should check
+ * file.is_open())
  */
 std::string openFileOrReturnEmpty(const std::string& filePath, std::ifstream& file) {
     openFileSafely(filePath, file);
@@ -1483,7 +1484,7 @@ bool isSymbolTableMember(const std::string& memberName) {
  * @return true if header is valid, false otherwise
  */
 bool parseSymbolTableHeader(const std::vector<char>& symbolTable, size_t symbolTableSize,
-                           uint32_t& numSymbols, uint32_t& stringTableSize) {
+                            uint32_t& numSymbols, uint32_t& stringTableSize) {
     if (symbolTableSize < 8) {
         return false;
     }
@@ -1509,7 +1510,7 @@ bool parseSymbolTableHeader(const std::vector<char>& symbolTable, size_t symbolT
  * @return The symbol name, or empty string if invalid
  */
 std::string extractSymbolName(const std::vector<char>& symbolTable, uint32_t symbolOffset,
-                             uint32_t stringTableSize, uint32_t numSymbols) {
+                              uint32_t stringTableSize, uint32_t numSymbols) {
     if (symbolOffset >= stringTableSize) {
         return "";
     }
@@ -1522,7 +1523,7 @@ std::string extractSymbolName(const std::vector<char>& symbolTable, uint32_t sym
     // Safe string length calculation with bounds checking
     size_t maxLength = stringTableSize - symbolOffset;
     size_t nameLength = 0;
-    
+
     // Find string length safely
     for (size_t i = 0; i < maxLength && i < 1000; ++i) {
         if (symbolName[i] == '\0') {
@@ -1530,7 +1531,7 @@ std::string extractSymbolName(const std::vector<char>& symbolTable, uint32_t sym
             break;
         }
     }
-    
+
     // Check if we found a valid null-terminated string
     if (nameLength > 0 && nameLength < 1000) {
         return std::string(symbolName, nameLength);
@@ -1547,7 +1548,7 @@ std::string extractSymbolName(const std::vector<char>& symbolTable, uint32_t sym
  * @return true if symbols were extracted successfully, false otherwise
  */
 bool parseSymbolTable(const std::vector<char>& symbolTable, size_t symbolTableSize,
-                     std::vector<heimdall::SymbolInfo>& symbols) {
+                      std::vector<heimdall::SymbolInfo>& symbols) {
     uint32_t numSymbols, stringTableSize;
     if (!parseSymbolTableHeader(symbolTable, symbolTableSize, numSymbols, stringTableSize)) {
         return false;
@@ -1560,8 +1561,8 @@ bool parseSymbolTable(const std::vector<char>& symbolTable, size_t symbolTableSi
         uint32_t symbolOffset = *reinterpret_cast<const uint32_t*>(symbolTable.data() + offset);
         offset += 4;
 
-        std::string symbolName = extractSymbolName(symbolTable, symbolOffset, 
-                                                  stringTableSize, numSymbols);
+        std::string symbolName =
+            extractSymbolName(symbolTable, symbolOffset, stringTableSize, numSymbols);
         if (!symbolName.empty()) {
             heimdall::SymbolInfo symbol;
             symbol.name = symbolName;

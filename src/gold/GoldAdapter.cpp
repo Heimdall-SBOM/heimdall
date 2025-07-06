@@ -76,8 +76,7 @@ void GoldAdapter::Impl::processLibrary(const std::string& libraryPath) {
 void GoldAdapter::Impl::processSymbol(const std::string& symbolName, uint64_t address,
                                       uint64_t /*size*/) {
     if (verbose)
-        std::cout << "[GoldAdapter] Processed symbol: " << symbolName << " at " << address
-                  << '\n';
+        std::cout << "[GoldAdapter] Processed symbol: " << symbolName << " at " << address << '\n';
 }
 
 void GoldAdapter::Impl::setOutputPath(const std::string& path) {
