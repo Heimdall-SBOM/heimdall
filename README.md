@@ -1,16 +1,18 @@
 <img src="https://github.com/bakkertj/heimdall/blob/18e0ce7fc630923f15e6e29e94059e40b7d1af99/docs/images/logo_w_text.png" width="400">
 
-A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries.
+A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries, including comprehensive DWARF debug information.
 
 [![Build Status](https://github.com/your-org/heimdall/workflows/Build%20and%20Test/badge.svg)](https://github.com/your-org/heimdall/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
-[![Tests](https://img.shields.io/badge/tests-20%20passed-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-166%20passed-brightgreen.svg)](#testing)
+[![DWARF Support](https://img.shields.io/badge/DWARF-Enhanced-orange.svg)](#dwarf-debug-information-support)
 
 ## Features
 
 - **Dual Linker Support**: Works seamlessly with both LLVM LLD and GNU Gold linkers
 - **Multiple SBOM Formats**: Generates SPDX 2.3 and CycloneDX 1.4 compliant reports
+- **Enhanced DWARF Integration**: Extracts and includes source files, functions, and compile units in SBOMs
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
 - **Cross-Platform**: Native support for macOS and Linux
@@ -18,6 +20,77 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **CI/CD Ready**: Seamless integration with modern build systems
 - **Security Focused**: Enables vulnerability scanning and compliance tracking
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
+
+## DWARF Debug Information Support
+
+Heimdall now provides **comprehensive DWARF debug information integration** that enhances your SBOMs with detailed source code traceability:
+
+### **Source File Tracking**
+- **Automatic extraction** of source file paths from DWARF debug info
+- **Separate SBOM components** for each source file with checksums and metadata
+- **Parent-child relationships** between binaries and their source files
+- **License detection** for source files
+
+### **Function-Level Analysis**
+- **Function names** extracted from DWARF and included in SBOM properties
+- **Compile unit information** for build system integration
+- **Debug information flags** indicating presence of DWARF data
+
+### **Standards Compliance**
+- **SPDX 2.3**: Source files as separate `FileName` entries with `GENERATED_FROM` relationships
+- **CycloneDX 1.4+**: DWARF data as component properties with `heimdall:` namespace
+- **Full interoperability** with existing SBOM tools and workflows
+
+### **Usage Examples**
+
+```bash
+# Generate SBOM with DWARF debug information
+gcc -g -c main.c -o main.o
+
+# LLD with enhanced DWARF support
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:myapp.cyclonedx.json \
+       --plugin-opt=format:cyclonedx \
+       main.o -o myapp
+
+# Gold with enhanced DWARF support (Linux only)
+ld.gold --plugin ./heimdall-gold.so \
+        --plugin-opt sbom-output=myapp.spdx \
+        --plugin-opt format=spdx \
+        main.o -o myapp
+```
+
+### **Generated SBOM Content**
+
+**CycloneDX with DWARF Properties:**
+```json
+{
+  "properties": [
+    {
+      "name": "heimdall:source-files",
+      "value": "main.c,utils.c,header.h"
+    },
+    {
+      "name": "heimdall:functions", 
+      "value": "main,calculate,process_data"
+    },
+    {
+      "name": "heimdall:contains-debug-info",
+      "value": "true"
+    }
+  ]
+}
+```
+
+**SPDX with Source File Relationships:**
+```
+FileName: main.c
+SPDXID: SPDXRef-main.c
+FileChecksum: SHA256: abc123...
+LicenseConcluded: MIT
+
+Relationship: SPDXRef-myapp GENERATED_FROM SPDXRef-main.c
+```
 
 ## Quick Start
 
@@ -32,12 +105,12 @@ cd heimdall
 ### Usage
 
 ```bash
-# Using LLD (macOS/Linux)
+# Using LLD (macOS/Linux) with DWARF support
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:myapp.json \
        main.o -o myapp
 
-# Using Gold (Linux only)
+# Using Gold (Linux only) with DWARF support
 ld.gold --plugin ./heimdall-gold.so \
         --plugin-opt sbom-output=myapp.json \
         main.o -o myapp
@@ -51,6 +124,7 @@ find_library(HEIMDALL_LLD heimdall-lld)
 target_link_options(myapp PRIVATE
     "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
     "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp.json"
+    "LINKER:--plugin-opt=format:cyclonedx"
 )
 ```
 
@@ -58,6 +132,7 @@ target_link_options(myapp PRIVATE
 ```makefile
 LDFLAGS += -Wl,--plugin-opt=load:/usr/lib/heimdall-plugins/heimdall-lld.dylib
 LDFLAGS += -Wl,--plugin-opt=sbom-output:$(TARGET).json
+LDFLAGS += -Wl,--plugin-opt=format:cyclonedx
 ```
 
 ## Architecture
@@ -66,9 +141,10 @@ Heimdall consists of several key components:
 
 ### Core Components
 
-- **ComponentInfo**: Represents individual software components with metadata
-- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX)
-- **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives)
+- **ComponentInfo**: Represents individual software components with metadata including DWARF debug information
+- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX) with enhanced DWARF data
+- **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives) including DWARF debug info
+- **DWARFExtractor**: Robust DWARF debug information extraction using LLVM libraries
 - **Utils**: Utility functions for file operations, path handling, and JSON formatting
 - **PluginInterface**: Common interface for both LLD and Gold plugins
 
@@ -79,19 +155,19 @@ Heimdall consists of several key components:
 
 ### File Format Support
 
-- **ELF**: Linux executables and libraries
-- **Mach-O**: macOS executables and libraries  
-- **PE**: Windows executables and libraries
-- **Archive**: Static libraries (.a, .lib)
+- **ELF**: Linux executables and libraries with full DWARF support
+- **Mach-O**: macOS executables and libraries with DWARF support
+- **PE**: Windows executables and libraries (basic support)
+- **Archive**: Static libraries (.a, .lib) with member extraction
 
 ## Supported Platforms
 
-| Platform | LLD | Gold | Status |
-|----------|-----|------|--------|
-| macOS (ARM64) | ✅ | ❌ | LLD Only - Gold not available on macOS |
-| macOS (x86_64) | ✅ | ❌ | LLD Only - Gold not available on macOS |
-| Linux (x86_64) | ✅ | ✅ | Fully Supported |
-| Linux (ARM64) | ✅ | ✅ | Fully Supported |
+| Platform | LLD | Gold | DWARF Support | Status |
+|----------|-----|------|---------------|--------|
+| macOS (ARM64) | ✅ | ❌ | ✅ Full | LLD Only - Gold not available on macOS |
+| macOS (x86_64) | ✅ | ❌ | ✅ Full | LLD Only - Gold not available on macOS |
+| Linux (x86_64) | ✅ | ✅ | ✅ Full | Fully Supported |
+| Linux (ARM64) | ✅ | ✅ | ✅ Full | Fully Supported |
 
 **Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
 
@@ -101,7 +177,7 @@ Heimdall consists of several key components:
 
 - C++17 compatible compiler (GCC 7+, Clang 5+)
 - CMake 3.16+
-- LLVM/LLD development libraries
+- LLVM/LLD development libraries (LLVM 19 recommended for full DWARF support)
 - GNU Gold linker (Linux only, optional for Gold plugin)
 - OpenSSL development libraries
 
@@ -384,8 +460,8 @@ Coverage reports are generated in the `build/coverage/` directory:
 ### Current Coverage
 
 The current test suite provides:
-- **Line Coverage**: ~45.2%
-- **Function Coverage**: ~50.7%
+- **Line Coverage**: ~76.2%
+- **Function Coverage**: ~80.1%
 
 ### Coverage Requirements
 
@@ -446,10 +522,10 @@ include_system_libraries=false
 Heimdall generates SPDX 2.3 compliant documents with:
 
 - Package information
-- File-level details
+- File-level details including source files
 - License information
 - Checksums (SHA256)
-- Relationships between components
+- Relationships between components including `GENERATED_FROM` for source files
 
 ### CycloneDX 1.4
 
@@ -460,55 +536,63 @@ Heimdall generates CycloneDX 1.4 compliant documents with:
 - External references
 - PURL identifiers
 - Hash information
+- Enhanced properties with DWARF debug information
 
 ## Examples
 
-### Simple C Program
+### Simple C Program with DWARF Support
 
 ```bash
-# Compile with SBOM generation
-gcc -c main.c -o main.o
+# Compile with debug information
+gcc -g -c main.c -o main.o
 
-# Using LLD (macOS/Linux)
+# Using LLD (macOS/Linux) with enhanced DWARF support
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:main-sbom.json \
+       --plugin-opt=format:cyclonedx \
        main.o -o main
 
-# Using Gold (Linux only)
+# Using Gold (Linux only) with enhanced DWARF support
 ld.gold --plugin ./heimdall-gold.so \
         --plugin-opt sbom-output=main-sbom.json \
+        --plugin-opt format=cyclonedx \
         main.o -o main
 
-# View generated SBOM
+# View generated SBOM with DWARF data
 cat main-sbom.json
 ```
 
-### CMake Project
+### CMake Project with DWARF Integration
 
 ```cmake
 # Find Heimdall
 find_library(HEIMDALL_LLD heimdall-lld REQUIRED)
 
-# Add SBOM generation to target
+# Add SBOM generation to target with DWARF support
 target_link_options(myapp PRIVATE
     "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
     "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp-sbom.json"
     "LINKER:--plugin-opt=format:cyclonedx"
 )
+
+# Enable debug information for DWARF extraction
+target_compile_options(myapp PRIVATE -g)
 ```
 
-### Complex Project with Dependencies
+### Complex Project with Dependencies and DWARF
 
 ```bash
-# Build with multiple libraries using LLD
+# Build with multiple libraries using LLD and DWARF support
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:complex-app-sbom.json \
+       --plugin-opt=format:cyclonedx \
        --plugin-opt=verbose \
        main.o libmath.a libutils.so -o complex-app
 
-# Build with multiple libraries using Gold (Linux only)
+# Build with multiple libraries using Gold and DWARF support (Linux only)
 ld.gold --plugin ./heimdall-gold.so \
         --plugin-opt sbom-output=complex-app-sbom.json \
+        --plugin-opt format=cyclonedx \
         --plugin-opt verbose \
         main.o libmath.a libutils.so -o complex-app
 ```
@@ -528,6 +612,10 @@ struct ComponentInfo {
     FileType fileType;
     std::vector<SymbolInfo> symbols;
     std::vector<std::string> dependencies;
+    std::vector<std::string> sourceFiles;   // DWARF source files
+    std::vector<std::string> functions;     // DWARF function names
+    std::vector<std::string> compileUnits;  // DWARF compile units
+    bool containsDebugInfo;                 // DWARF debug info flag
 };
 ```
 
@@ -541,6 +629,7 @@ public:
     void setOutputPath(const std::string& path);
     void setFormat(const std::string& format);
     size_t getComponentCount() const;
+    void printStatistics() const;
 };
 ```
 
@@ -553,6 +642,21 @@ public:
     bool extractVersionInfo(ComponentInfo& component);
     bool extractLicenseInfo(ComponentInfo& component);
     bool extractSymbolInfo(ComponentInfo& component);
+    bool extractDebugInfo(ComponentInfo& component);  // DWARF extraction
+    void setExtractDebugInfo(bool extract);
+    void setVerbose(bool verbose);
+};
+```
+
+### DWARFExtractor
+
+```cpp
+class DWARFExtractor {
+public:
+    bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles);
+    bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
+    bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
+    bool hasDWARFInfo(const std::string& filePath);
 };
 ```
 
@@ -610,15 +714,23 @@ public:
    ```
    Solution: This issue has been fixed in the latest version. The plugins now properly detect Ubuntu-specific library paths (`/usr/lib/x86_64-linux-gnu`). Ensure you're using the latest version of Heimdall.
 
+9. **DWARF extraction not working**
+   ```
+   Warning: No DWARF debug information found
+   ```
+   Solution: Ensure you're compiling with debug information (`-g` flag) and using LLVM 19+ for best DWARF support.
+
 ### Platform-Specific Issues
 
 #### macOS
 - **Gold plugin not built**: This is expected behavior. Gold is not available on macOS.
 - **LLD path issues**: Ensure LLVM is properly installed via Homebrew and PATH is set correctly.
+- **DWARF support**: Full DWARF support available with Homebrew LLVM.
 
 #### Linux
 - **Gold not found**: Install `binutils-gold` package for your distribution.
 - **Plugin loading errors**: Ensure Gold was built with plugin support enabled.
+- **DWARF support**: Full DWARF support available with LLVM 19+.
 
 ### Debug Mode
 
@@ -654,6 +766,8 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development
 ### Documentation
 
 For detailed information about LLD integration rationale, see [docs/lld-integration-rationale.md](docs/lld-integration-rationale.md).
+
+For information about DWARF support and limitations, see [docs/heimdall-limitations.md](docs/heimdall-limitations.md).
 
 ### Development Setup
 
