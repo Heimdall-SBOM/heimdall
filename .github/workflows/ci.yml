@@ -81,6 +81,13 @@ jobs:
         /usr/lib/llvm-19/bin/llvm-config --version
         /usr/lib/llvm-19/bin/llvm-config --libs
     
+    - name: Setup llvm-config
+      run: |
+        # Ensure llvm-config is available in PATH
+        sudo ln -sf /usr/lib/llvm-19/bin/llvm-config /usr/local/bin/llvm-config
+        echo "llvm-config version: $(llvm-config --version)"
+        echo "llvm-config location: $(which llvm-config)"
+    
     - name: Download LLD source headers
       run: |
         wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/lld-19.1.7.src.tar.xz
@@ -211,6 +218,13 @@ jobs:
         chmod +x llvm.sh
         sudo ./llvm.sh 19
         sudo apt-get install -y clang-19 lld-19 llvm-19-dev
+    
+    - name: Setup llvm-config
+      run: |
+        # Ensure llvm-config is available in PATH
+        sudo ln -sf /usr/lib/llvm-19/bin/llvm-config /usr/local/bin/llvm-config
+        echo "llvm-config version: $(llvm-config --version)"
+        echo "llvm-config location: $(which llvm-config)"
     
     - name: Download LLD source headers
       run: |
