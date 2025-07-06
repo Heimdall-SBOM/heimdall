@@ -1427,10 +1427,161 @@ bool extractArchiveMembers(const std::string& filePath, std::vector<std::string>
     return !members.empty();
 }
 
+/**
+ * @brief Parse archive member header and extract member name
+ * @param header The 60-byte archive header
+ * @return The parsed member name
+ */
+std::string parseArchiveMemberName(const char* header) {
+    std::string memberName(header, 16);
+    size_t nullPos = memberName.find('\0');
+    if (nullPos != std::string::npos) {
+        memberName = memberName.substr(0, nullPos);
+    }
+
+    // Remove trailing spaces
+    while (!memberName.empty() && memberName.back() == ' ') {
+        memberName.pop_back();
+    }
+
+    return memberName;
+}
+
+/**
+ * @brief Parse archive member size from header
+ * @param header The 60-byte archive header
+ * @return The member size, or 0 if invalid
+ */
+size_t parseArchiveMemberSize(const char* header) {
+    try {
+        std::string sizeStr(header + 48, 10);
+        size_t fileSize = std::stoul(sizeStr);
+        if (fileSize > 100000000) {  // Sanity check
+            Utils::debugPrint("Invalid member size: " + std::to_string(fileSize));
+            return 0;
+        }
+        return fileSize;
+    } catch (const std::exception& e) {
+        Utils::debugPrint("Exception parsing member size: " + std::string(e.what()));
+        return 0;
+    }
+}
+
+/**
+ * @brief Check if archive member is a symbol table
+ * @param memberName The member name to check
+ * @return true if it's a symbol table, false otherwise
+ */
+bool isSymbolTableMember(const std::string& memberName) {
+    return memberName == "/" || memberName == "__.SYMDEF";
+}
+
+/**
+ * @brief Parse symbol table header and validate
+ * @param symbolTable The symbol table data
+ * @param symbolTableSize Size of the symbol table
+ * @param numSymbols Output parameter for number of symbols
+ * @param stringTableSize Output parameter for string table size
+ * @return true if header is valid, false otherwise
+ */
+bool parseSymbolTableHeader(const std::vector<char>& symbolTable, size_t symbolTableSize,
+                           uint32_t& numSymbols, uint32_t& stringTableSize) {
+    if (symbolTableSize < 8) {
+        return false;
+    }
+
+    numSymbols = *reinterpret_cast<const uint32_t*>(symbolTable.data());
+    stringTableSize = *reinterpret_cast<const uint32_t*>(symbolTable.data() + 4);
+
+    // Sanity checks
+    if (numSymbols > 100000 || stringTableSize > symbolTableSize) {
+        Utils::debugPrint("Invalid symbol table header");
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * @brief Safely extract symbol name from string table
+ * @param symbolTable The symbol table data
+ * @param symbolOffset Offset of the symbol name
+ * @param stringTableSize Size of the string table
+ * @param numSymbols Number of symbols
+ * @return The symbol name, or empty string if invalid
+ */
+std::string extractSymbolName(const std::vector<char>& symbolTable, uint32_t symbolOffset,
+                             uint32_t stringTableSize, uint32_t numSymbols) {
+    if (symbolOffset >= stringTableSize) {
+        return "";
+    }
+
+    const char* symbolName = symbolTable.data() + 8 + numSymbols * 4 + symbolOffset;
+    if (!symbolName) {
+        return "";
+    }
+
+    // Safe string length calculation with bounds checking
+    size_t maxLength = stringTableSize - symbolOffset;
+    size_t nameLength = 0;
+    
+    // Find string length safely
+    for (size_t i = 0; i < maxLength && i < 1000; ++i) {
+        if (symbolName[i] == '\0') {
+            nameLength = i;
+            break;
+        }
+    }
+    
+    // Check if we found a valid null-terminated string
+    if (nameLength > 0 && nameLength < 1000) {
+        return std::string(symbolName, nameLength);
+    }
+
+    return "";
+}
+
+/**
+ * @brief Parse symbol table and extract symbols
+ * @param symbolTable The symbol table data
+ * @param symbolTableSize Size of the symbol table
+ * @param symbols Output vector to store extracted symbols
+ * @return true if symbols were extracted successfully, false otherwise
+ */
+bool parseSymbolTable(const std::vector<char>& symbolTable, size_t symbolTableSize,
+                     std::vector<heimdall::SymbolInfo>& symbols) {
+    uint32_t numSymbols, stringTableSize;
+    if (!parseSymbolTableHeader(symbolTable, symbolTableSize, numSymbols, stringTableSize)) {
+        return false;
+    }
+
+    size_t offset = 8;  // Skip header
+
+    // Read symbol offsets
+    for (uint32_t i = 0; i < numSymbols && offset + 4 <= symbolTableSize; ++i) {
+        uint32_t symbolOffset = *reinterpret_cast<const uint32_t*>(symbolTable.data() + offset);
+        offset += 4;
+
+        std::string symbolName = extractSymbolName(symbolTable, symbolOffset, 
+                                                  stringTableSize, numSymbols);
+        if (!symbolName.empty()) {
+            heimdall::SymbolInfo symbol;
+            symbol.name = symbolName;
+            symbol.address = symbolOffset;
+            symbol.size = 0;  // Archive symbols don't have size info
+            symbol.isDefined = true;
+            symbol.isGlobal = true;
+            symbols.push_back(symbol);
+        }
+    }
+
+    return true;
+}
+
 bool extractArchiveSymbols(const std::string& filePath,
                            std::vector<heimdall::SymbolInfo>& symbols) {
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open()) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
         Utils::debugPrint("Failed to open archive file: " + filePath);
         return false;
     }
@@ -1450,22 +1601,14 @@ bool extractArchiveSymbols(const std::string& filePath,
     while (file.good()) {
         char header[60];
         file.read(header, 60);
-        if (file.gcount() != 60)
+        if (file.gcount() != 60) {
             break;
-
-        std::string memberName(header, 16);
-        size_t nullPos = memberName.find('\0');
-        if (nullPos != std::string::npos) {
-            memberName = memberName.substr(0, nullPos);
         }
 
-        // Remove trailing spaces
-        while (!memberName.empty() && memberName.back() == ' ') {
-            memberName.pop_back();
-        }
+        std::string memberName = parseArchiveMemberName(header);
 
         // Check if this is the symbol table
-        if (memberName == "/" || memberName == "__.SYMDEF") {
+        if (isSymbolTableMember(memberName)) {
             try {
                 // Parse symbol table size
                 std::string sizeStr(header + 48, 10);
@@ -1482,58 +1625,7 @@ bool extractArchiveSymbols(const std::string& filePath,
                 file.read(symbolTable.data(), symbolTableSize);
 
                 if (file.gcount() == symbolTableSize) {
-                    // Parse BSD-style symbol table
-                    size_t offset = 0;
-                    if (symbolTableSize >= 8) {
-                        uint32_t numSymbols = *reinterpret_cast<uint32_t*>(symbolTable.data());
-                        uint32_t stringTableSize =
-                            *reinterpret_cast<uint32_t*>(symbolTable.data() + 4);
-                        offset = 8;
-
-                        // Sanity checks
-                        if (numSymbols > 100000 || stringTableSize > symbolTableSize) {
-                            Utils::debugPrint("Invalid symbol table header");
-                            break;
-                        }
-
-                        // Read symbol offsets
-                        for (uint32_t i = 0; i < numSymbols && offset + 4 <= symbolTableSize; ++i) {
-                            uint32_t symbolOffset =
-                                *reinterpret_cast<uint32_t*>(symbolTable.data() + offset);
-                            offset += 4;
-
-                            // Read symbol name from string table
-                            if (symbolOffset < stringTableSize) {
-                                const char* symbolName =
-                                    symbolTable.data() + 8 + numSymbols * 4 + symbolOffset;
-                                if (symbolName) {
-                                    // Safe string length calculation with bounds checking
-                                    size_t maxLength = stringTableSize - symbolOffset;
-                                    size_t nameLength = 0;
-                                    bool validString = true;
-                                    
-                                    // Find string length safely
-                                    for (size_t i = 0; i < maxLength && i < 1000; ++i) {
-                                        if (symbolName[i] == '\0') {
-                                            nameLength = i;
-                                            break;
-                                        }
-                                    }
-                                    
-                                    // Check if we found a valid null-terminated string
-                                    if (nameLength > 0 && nameLength < 1000) {
-                                        heimdall::SymbolInfo symbol;
-                                        symbol.name = std::string(symbolName, nameLength);
-                                        symbol.address = symbolOffset;
-                                        symbol.size = 0;  // Archive symbols don't have size info
-                                        symbol.isDefined = true;
-                                        symbol.isGlobal = true;
-                                        symbols.push_back(symbol);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    parseSymbolTable(symbolTable, symbolTableSize, symbols);
                 }
             } catch (const std::exception& e) {
                 Utils::debugPrint("Exception parsing symbol table: " + std::string(e.what()));
@@ -1542,19 +1634,12 @@ bool extractArchiveSymbols(const std::string& filePath,
             break;
         }
 
-        try {
-            // Skip to next member
-            std::string sizeStr(header + 48, 10);
-            size_t fileSize = std::stoul(sizeStr);
-            if (fileSize > 100000000) {  // Sanity check
-                Utils::debugPrint("Invalid member size: " + std::to_string(fileSize));
-                break;
-            }
-            file.seekg((fileSize + 1) & ~1, std::ios::cur);
-        } catch (const std::exception& e) {
-            Utils::debugPrint("Exception parsing member size: " + std::string(e.what()));
+        // Skip to next member
+        size_t fileSize = parseArchiveMemberSize(header);
+        if (fileSize == 0) {
             break;
         }
+        file.seekg((fileSize + 1) & ~1, std::ios::cur);
     }
 
     Utils::debugPrint("Extracted " + std::to_string(symbols.size()) + " archive symbols");
