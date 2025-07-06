@@ -677,3 +677,47 @@ if(CPPCHECK_EXE)
         VERBATIM
     )
 endif()
+
+# =====================
+# Post-Build SBOM Generation
+# =====================
+if(BUILD_TESTS)
+    # Create SBOM generation target that runs after tests
+    add_custom_target(
+        generate-build-sboms
+        COMMAND ${CMAKE_SOURCE_DIR}/scripts/generate_build_sboms.sh ${CMAKE_BINARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Generating build SBOMs using Heimdall plugins"
+        VERBATIM
+    )
+    
+    # Make SBOM generation depend on test completion
+    add_dependencies(generate-build-sboms heimdall_tests)
+    
+    # Add a target that runs everything: build, test, and generate SBOMs
+    add_custom_target(
+        build-test-sbom
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target heimdall_tests
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target generate-build-sboms
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Building, testing, and generating SBOMs"
+        VERBATIM
+    )
+    
+    # Make the default target also generate SBOMs
+    add_custom_target(
+        all-with-sboms
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target heimdall_tests
+        COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target generate-build-sboms
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Building, testing, and generating SBOMs"
+        VERBATIM
+    )
+    
+    message(STATUS "✓ Post-build SBOM generation enabled")
+    message(STATUS "  Use 'make generate-build-sboms' to generate SBOMs after tests")
+    message(STATUS "  Use 'make build-test-sbom' to build, test, and generate SBOMs")
+    message(STATUS "  Use 'make all-with-sboms' for complete build with SBOMs")
+else()
+    message(STATUS "⚠ Post-build SBOM generation disabled (tests not enabled)")
+endif()
