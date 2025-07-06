@@ -82,6 +82,9 @@ jobs:
         sudo apt-get install -y binutils-dev binutils-multiarch-dev
         # Install additional LLVM development packages
         sudo apt-get install -y libclang-common-19-dev libclang-rt-19-dev || echo "Additional LLVM dev packages not available"
+        # Install additional LLVM development packages that might contain DWARF headers
+        sudo apt-get install -y libllvm-19-dev || echo "libllvm-19-dev not available"
+        sudo apt-get install -y llvm-19-dev-all || echo "llvm-19-dev-all not available"
     
     - name: Setup llvm-config
       run: |
@@ -276,6 +279,9 @@ jobs:
         sudo apt-get install -y binutils-dev binutils-multiarch-dev
         # Install additional LLVM development packages
         sudo apt-get install -y libclang-common-19-dev libclang-rt-19-dev || echo "Additional LLVM dev packages not available"
+        # Install additional LLVM development packages that might contain DWARF headers
+        sudo apt-get install -y libllvm-19-dev || echo "libllvm-19-dev not available"
+        sudo apt-get install -y llvm-19-dev-all || echo "llvm-19-dev-all not available"
     
     - name: Setup llvm-config
       run: |
