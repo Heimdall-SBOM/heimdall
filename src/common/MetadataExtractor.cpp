@@ -593,7 +593,6 @@ bool isMachO(const std::string& filePath) {
 bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols) {
 #ifdef __linux__
     elf_version(EV_CURRENT);
-    std::cerr << "Starting ELF symbol extraction for: " << filePath << std::endl;
     // Use libelf for comprehensive ELF parsing
     int fd = open(filePath.c_str(), O_RDONLY);
     if (fd < 0) {
@@ -619,7 +618,6 @@ bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::Symbol
         return false;
     }
 
-    std::cerr << "ELF file opened successfully, searching for symbol tables..." << std::endl;
     heimdall::Utils::debugPrint("ELF file opened successfully, searching for symbol tables...");
 
     // Find symbol table sections (both .symtab and .dynsym)
