@@ -118,7 +118,7 @@ struct ComponentInfo
      * @param componentName The name of the component
      * @param path The file path
      */
-    ComponentInfo(const std::string& componentName, const std::string& path);
+    ComponentInfo(std::string componentName, const std::string& path);
     
     /**
      * @brief Add a symbol to the component

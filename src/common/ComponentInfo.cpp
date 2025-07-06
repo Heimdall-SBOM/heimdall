@@ -89,8 +89,8 @@ FileType determineFileType(const std::string& filePath) {
  * @param componentName The name of the component
  * @param path The file path
  */
-ComponentInfo::ComponentInfo(const std::string& componentName, const std::string& path)
-    : name(componentName),
+ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
+    : name(std::move(componentName)),
       filePath(path),
       fileType(determineFileType(path)),
       fileSize(getFileSize(path)),
