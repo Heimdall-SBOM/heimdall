@@ -85,6 +85,19 @@ jobs:
         # Install additional LLVM development packages that might contain DWARF headers
         sudo apt-get install -y libllvm-19-dev || echo "libllvm-19-dev not available"
         sudo apt-get install -y llvm-19-dev-all || echo "llvm-19-dev-all not available"
+        # Install system-wide LLVM headers (like on local system)
+        sudo apt-get install -y llvm-19-dev || echo "llvm-19-dev already installed"
+        # Try to install additional packages that might provide DWARF headers
+        sudo apt-get install -y libllvm-19-dev-all || echo "libllvm-19-dev-all not available"
+        
+        # Copy DWARF headers from system location to LLVM-19 location if they exist
+        if [ -d "/usr/include/llvm/DebugInfo/DWARF" ]; then
+          sudo mkdir -p /usr/lib/llvm-19/include/llvm/DebugInfo/
+          sudo cp -r /usr/include/llvm/DebugInfo/DWARF /usr/lib/llvm-19/include/llvm/DebugInfo/
+          echo "Copied DWARF headers from system location to LLVM-19 location"
+        else
+          echo "System DWARF headers not found, will rely on LLVM-19 headers"
+        fi
     
     - name: Setup llvm-config
       run: |
@@ -318,6 +331,19 @@ jobs:
         # Install additional LLVM development packages that might contain DWARF headers
         sudo apt-get install -y libllvm-19-dev || echo "libllvm-19-dev not available"
         sudo apt-get install -y llvm-19-dev-all || echo "llvm-19-dev-all not available"
+        # Install system-wide LLVM headers (like on local system)
+        sudo apt-get install -y llvm-19-dev || echo "llvm-19-dev already installed"
+        # Try to install additional packages that might provide DWARF headers
+        sudo apt-get install -y libllvm-19-dev-all || echo "libllvm-19-dev-all not available"
+        
+        # Copy DWARF headers from system location to LLVM-19 location if they exist
+        if [ -d "/usr/include/llvm/DebugInfo/DWARF" ]; then
+          sudo mkdir -p /usr/lib/llvm-19/include/llvm/DebugInfo/
+          sudo cp -r /usr/include/llvm/DebugInfo/DWARF /usr/lib/llvm-19/include/llvm/DebugInfo/
+          echo "Copied DWARF headers from system location to LLVM-19 location"
+        else
+          echo "System DWARF headers not found, will rely on LLVM-19 headers"
+        fi
     
     - name: Setup llvm-config
       run: |
