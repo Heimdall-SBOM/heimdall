@@ -34,11 +34,14 @@
 
 ### Documentation
 - [x] **User Guide**: Comprehensive guide covering installation, usage, and integration
-- [x] **API Documentation**: Complete documentation for all public APIs
 - [x] **Integration Examples**: CMake, Makefile, and command-line integration examples
-- [x] **Plugin Documentation**: Detailed documentation for LLD and Gold plugins
 
 ## Future Enhancements 🚀
+
+### Documentation
+- [ ] **API Documentation**: Complete documentation for all public APIs
+- [ ] **Plugin Documentation**: Detailed documentation for LLD and Gold plugins
+
 
 ### SBOM Standards and Validation
 - [ ] **SPDX Validation**: Add SPDX validation tools and integration
