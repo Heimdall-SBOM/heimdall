@@ -331,6 +331,9 @@ if(BUILD_SHARED_CORE)
     if(LLVM_DWARF_FOUND)
         if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
             target_include_directories(heimdall-core PRIVATE /opt/homebrew/opt/llvm/include)
+        else()
+            # For Linux systems, add system-wide LLVM headers where DWARF headers are located
+            target_include_directories(heimdall-core PRIVATE /usr/include)
         endif()
     endif()
     
