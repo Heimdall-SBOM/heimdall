@@ -309,8 +309,7 @@ public:
 
     bool runOnModule(llvm::Module& M) override {
         if (verbose) {
-            llvm::errs() << "Heimdall: Processing module: " << M.getModuleIdentifier() << "'
-'";
+            llvm::errs() << "Heimdall: Processing module: " << M.getModuleIdentifier() << "\n";
         }
 
         // Process the module file
@@ -324,8 +323,7 @@ public:
             if (!F.isDeclaration()) {
                 std::string funcName = F.getName().str();
                 if (verbose) {
-                    llvm::errs() << "Heimdall: Processing function: " << funcName << "'
-'";
+                    llvm::errs() << "Heimdall: Processing function: " << funcName << "\n";
                 }
             }
         }
@@ -335,8 +333,7 @@ public:
             if (!GV.isDeclaration()) {
                 std::string varName = GV.getName().str();
                 if (verbose) {
-                    llvm::errs() << "Heimdall: Processing global: " << varName << "'
-'";
+                    llvm::errs() << "Heimdall: Processing global: " << varName << "\n";
                 }
             }
         }
