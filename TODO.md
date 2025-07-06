@@ -43,6 +43,121 @@ This document tracks all missing implementation tasks and planned features for t
 
 ## Critical Missing Components
 
+### 🚨 **DWARF Data Utilization in SBOM Formats (HIGH PRIORITY)**
+**Current Issue**: DWARF extractor collects source file information but data is NOT used in SBOM output
+
+- [ ] **Enhance SPDX Generation with DWARF Data**
+  ```cpp
+  // src/common/SBOMGenerator.cpp - generateSPDXComponent()
+  if (!component.sourceFiles.empty()) {
+      ss << "FileType: SOURCE\n";
+      ss << "FileComment: Contains " << component.sourceFiles.size() << " source files\n";
+      
+      // Add source file relationships
+      for (const auto& sourceFile : component.sourceFiles) {
+          ss << "Relationship: " << generateSPDXId(component.name) << " GENERATED_FROM " 
+             << generateSPDXId(Utils::getFileName(sourceFile)) << "\n";
+      }
+  }
+  ```
+  - [ ] Add source file relationships using SPDX Relationship tags
+  - [ ] Include source file metadata in FileType and FileComment fields
+  - [ ] Add source file contributors and copyright information
+  - [ ] Include function and compile unit information in annotations
+
+- [ ] **Enhance CycloneDX Generation with DWARF Data**
+  ```cpp
+  // src/common/SBOMGenerator.cpp - generateCycloneDXComponent()
+  if (!component.sourceFiles.empty()) {
+      ss << "      \"properties\": [\n";
+      ss << "        {\n";
+      ss << "          \"name\": \"source-files\",\n";
+      ss << "          \"value\": \"" << Utils::join(component.sourceFiles, \",\") << "\"\n";
+      ss << "        },\n";
+      ss << "        {\n";
+      ss << "          \"name\": \"functions\",\n";
+      ss << "          \"value\": \"" << Utils::join(component.functions, \",\") << "\"\n";
+      ss << "        }\n";
+      ss << "      ],\n";
+  }
+  ```
+  - [ ] Add source files to component properties
+  - [ ] Include function names and compile units in properties
+  - [ ] Add source file external references
+  - [ ] Create source file sub-components for detailed tracking
+
+- [ ] **Add Source File Components**
+  ```cpp
+  // src/common/SBOMGenerator.cpp - processComponent()
+  // Create separate components for source files
+  for (const auto& sourceFile : component.sourceFiles) {
+      ComponentInfo sourceComponent(Utils::getFileName(sourceFile), sourceFile);
+      sourceComponent.fileType = FileType::Source;
+      sourceComponent.license = detectSourceFileLicense(sourceFile);
+      pImpl->components[sourceFile] = sourceComponent;
+  }
+  ```
+  - [ ] Create separate SBOM entries for each source file
+  - [ ] Extract source file metadata (license, copyright, etc.)
+  - [ ] Establish parent-child relationships between binaries and sources
+  - [ ] Include source file checksums and version information
+
+### 🚨 **Latest SBOM Standards Support (HIGH PRIORITY)**
+**Current Issue**: Using outdated SPDX 2.3 and CycloneDX 1.4, missing latest features
+
+- [ ] **Upgrade to SPDX 3.0**
+  ```cpp
+  // src/common/SBOMGenerator.cpp - generateSPDXDocument()
+  ss << "SPDXVersion: SPDX-3.0\n";
+  ss << "DataLicense: CC0-1.0\n";
+  ss << "SPDXID: SPDXRef-DOCUMENT\n";
+  ss << "DocumentName: Heimdall Generated SBOM\n";
+  ss << "DocumentNamespace: https://spdx.org/spdxdocs/heimdall-" << getCurrentTimestamp() << "\n";
+  ss << "Creator: Tool: Heimdall-2.0.0\n";
+  ss << "Created: " << getCurrentTimestamp() << "\n";
+  ```
+  - [ ] Implement SPDX 3.0 document structure
+  - [ ] Add support for SPDX 3.0 relationships (DEPENDS_ON, GENERATED_FROM, etc.)
+  - [ ] Include SPDX 3.0 annotations and external references
+  - [ ] Support SPDX 3.0 snippet and evidence features
+  - [ ] Add SPDX 3.0 security and vulnerability information
+
+- [ ] **Upgrade to CycloneDX 1.6**
+  ```cpp
+  // src/common/SBOMGenerator.cpp - generateCycloneDXDocument()
+  ss << "  \"bomFormat\": \"CycloneDX\",\n";
+  ss << "  \"specVersion\": \"1.6\",\n";
+  ss << "  \"version\": 1,\n";
+  ss << "  \"metadata\": {\n";
+  ss << "    \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
+  ss << "    \"tools\": [\n";
+  ss << "      {\n";
+  ss << "        \"vendor\": \"Heimdall\",\n";
+  ss << "        \"name\": \"SBOM Generator\",\n";
+  ss << "        \"version\": \"2.0.0\"\n";
+  ss << "      }\n";
+  ss << "    ]\n";
+  ```
+  - [ ] Implement CycloneDX 1.6 document structure
+  - [ ] Add support for CycloneDX 1.6 evidence and pedigree
+  - [ ] Include CycloneDX 1.6 vulnerability and security features
+  - [ ] Support CycloneDX 1.6 service and composition features
+  - [ ] Add CycloneDX 1.6 metadata extensions
+
+- [ ] **Add SBOM Format Validation**
+  ```cpp
+  // src/common/SBOMValidator.hpp
+  class SBOMValidator {
+      bool validateSPDX(const std::string& content);
+      bool validateCycloneDX(const std::string& content);
+      std::vector<std::string> getValidationErrors();
+  };
+  ```
+  - [ ] Implement SPDX 3.0 schema validation
+  - [ ] Implement CycloneDX 1.6 schema validation
+  - [ ] Add format-specific validation rules
+  - [ ] Provide detailed error reporting for invalid SBOMs
+
 ### 🚨 **Windows Support (Complete)**
 - **No Windows linker plugins**: Only LLD and Gold plugins exist
 - **No PE file format implementation**: PE symbol/section extraction is stubbed out
