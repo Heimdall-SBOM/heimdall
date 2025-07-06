@@ -78,6 +78,8 @@ jobs:
         sudo apt-get install -y lld-19-dev || echo "lld-19-dev not available"
         # Install additional BFD packages
         sudo apt-get install -y binutils-dev binutils-multiarch-dev
+        # Install additional LLVM development packages
+        sudo apt-get install -y libclang-common-19-dev libclang-rt-19-dev || echo "Additional LLVM dev packages not available"
     
     - name: Setup llvm-config
       run: |
@@ -105,6 +107,19 @@ jobs:
         echo "=== LLVM config libraries ==="
         /usr/lib/llvm-19/bin/llvm-config --libs || echo "llvm-config failed"
         echo "=== End LLD Libraries Debug ==="
+
+    - name: Debug LLVM headers
+      run: |
+        echo "=== LLVM Headers Debug ==="
+        echo "=== LLVM 19 include directory ==="
+        ls -la /usr/lib/llvm-19/include/ | head -20 || echo "LLVM 19 include not found"
+        echo "=== LLVM 19 include/llvm directory ==="
+        ls -la /usr/lib/llvm-19/include/llvm/ | head -20 || echo "LLVM 19 include/llvm not found"
+        echo "=== LLVM 19 include/llvm/DebugInfo ==="
+        ls -la /usr/lib/llvm-19/include/llvm/DebugInfo/ 2>/dev/null || echo "LLVM 19 DebugInfo not found"
+        echo "=== LLVM config include dir ==="
+        /usr/lib/llvm-19/bin/llvm-config --includedir || echo "llvm-config --includedir failed"
+        echo "=== End LLVM Headers Debug ==="
     
     - name: Set up compiler
       run: |
@@ -233,6 +248,8 @@ jobs:
         sudo apt-get install -y lld-19-dev || echo "lld-19-dev not available"
         # Install additional BFD packages
         sudo apt-get install -y binutils-dev binutils-multiarch-dev
+        # Install additional LLVM development packages
+        sudo apt-get install -y libclang-common-19-dev libclang-rt-19-dev || echo "Additional LLVM dev packages not available"
     
     - name: Setup llvm-config
       run: |
@@ -260,6 +277,19 @@ jobs:
         echo "=== LLVM config libraries ==="
         /usr/lib/llvm-19/bin/llvm-config --libs || echo "llvm-config failed"
         echo "=== End LLD Libraries Debug ==="
+
+    - name: Debug LLVM headers
+      run: |
+        echo "=== LLVM Headers Debug ==="
+        echo "=== LLVM 19 include directory ==="
+        ls -la /usr/lib/llvm-19/include/ | head -20 || echo "LLVM 19 include not found"
+        echo "=== LLVM 19 include/llvm directory ==="
+        ls -la /usr/lib/llvm-19/include/llvm/ | head -20 || echo "LLVM 19 include/llvm not found"
+        echo "=== LLVM 19 include/llvm/DebugInfo ==="
+        ls -la /usr/lib/llvm-19/include/llvm/DebugInfo/ 2>/dev/null || echo "LLVM 19 DebugInfo not found"
+        echo "=== LLVM config include dir ==="
+        /usr/lib/llvm-19/bin/llvm-config --includedir || echo "llvm-config --includedir failed"
+        echo "=== End LLVM Headers Debug ==="
     
     - name: Set up compiler
       run: |
