@@ -246,9 +246,21 @@ if(BUILD_GOLD_PLUGIN)
         
         # Check for BFD headers
         include(CheckIncludeFile)
+        
+        # Add BFD include directories
+        find_path(BFD_INCLUDE_DIR bfd.h
+            PATHS /usr/include /usr/local/include /usr/include/x86_64-linux-gnu
+            PATH_SUFFIXES binutils bfd
+        )
+        
+        if(BFD_INCLUDE_DIR)
+            list(APPEND CMAKE_REQUIRED_INCLUDES ${BFD_INCLUDE_DIR})
+        endif()
+        
         check_include_file(bfd.h BFD_HEADER_FOUND)
         check_include_file(elf-bfd.h ELF_BFD_HEADER_FOUND)
         
+        message(STATUS "BFD_INCLUDE_DIR: ${BFD_INCLUDE_DIR}")
         message(STATUS "BFD_HEADER_FOUND: ${BFD_HEADER_FOUND}")
         message(STATUS "ELF_BFD_HEADER_FOUND: ${ELF_BFD_HEADER_FOUND}")
         message(STATUS "BFD_FOUND: ${BFD_FOUND}")

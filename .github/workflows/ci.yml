@@ -64,7 +64,8 @@ jobs:
           gcovr \
           clang-tidy \
           cppcheck \
-          valgrind
+          valgrind \
+          binutils-multiarch-dev
     
     - name: Install LLVM/Clang
       run: |
@@ -142,7 +143,8 @@ jobs:
           -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
           -DENABLE_SANITIZERS=${{ matrix.enable_sanitizers }} \
           -DENABLE_COVERAGE=${{ matrix.enable_coverage }} \
-          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
+          -DCMAKE_POLICY_DEFAULT_CMP0135=NEW
     
     - name: Build
       run: |
@@ -195,13 +197,22 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
+    - name: Debug BFD headers
+      run: |
+        echo "=== BFD Headers Debug ==="
+        find /usr -name "elf-bfd.h" 2>/dev/null || echo "elf-bfd.h not found"
+        find /usr -name "bfd.h" 2>/dev/null || echo "bfd.h not found"
+        echo "=== Binutils packages ==="
+        dpkg -l | grep binutils
+        echo "=== End BFD Headers Debug ==="
+
   # Linux Clang builds
   linux-clang:
     name: Linux Clang
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [clang-15, clang-16, clang-17, clang-18]
+        compiler: [clang-19]
         build_type: [Debug, Release]
     
     steps:
@@ -220,7 +231,8 @@ jobs:
           libbfd-dev \
           pkg-config \
           clang-tidy \
-          cppcheck
+          cppcheck \
+          binutils-multiarch-dev
     
     - name: Install LLVM/Clang
       run: |
@@ -259,23 +271,8 @@ jobs:
     
     - name: Set up compiler
       run: |
-        if [ "${{ matrix.compiler }}" = "clang-15" ]; then
-          sudo apt-get install -y clang-15 lld-15 llvm-15-dev
-          echo "CC=clang-15" >> $GITHUB_ENV
-          echo "CXX=clang++-15" >> $GITHUB_ENV
-        elif [ "${{ matrix.compiler }}" = "clang-16" ]; then
-          sudo apt-get install -y clang-16 lld-16 llvm-16-dev
-          echo "CC=clang-16" >> $GITHUB_ENV
-          echo "CXX=clang++-16" >> $GITHUB_ENV
-        elif [ "${{ matrix.compiler }}" = "clang-17" ]; then
-          sudo apt-get install -y clang-17 lld-17 llvm-17-dev
-          echo "CC=clang-17" >> $GITHUB_ENV
-          echo "CXX=clang++-17" >> $GITHUB_ENV
-        elif [ "${{ matrix.compiler }}" = "clang-18" ]; then
-          sudo apt-get install -y clang-18 lld-18 llvm-18-dev
-          echo "CC=clang-18" >> $GITHUB_ENV
-          echo "CXX=clang++-18" >> $GITHUB_ENV
-        fi
+        echo "CC=clang-19" >> $GITHUB_ENV
+        echo "CXX=clang++-19" >> $GITHUB_ENV
     
     - name: Configure CMake
       run: |
@@ -288,7 +285,8 @@ jobs:
           -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
           -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
           -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
-          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
+          -DCMAKE_POLICY_DEFAULT_CMP0135=NEW
     
     - name: Build
       run: |
@@ -308,6 +306,15 @@ jobs:
         timeout 300 ctest --output-on-failure --verbose
       env:
         HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+
+    - name: Debug BFD headers
+      run: |
+        echo "=== BFD Headers Debug ==="
+        find /usr -name "elf-bfd.h" 2>/dev/null || echo "elf-bfd.h not found"
+        find /usr -name "bfd.h" 2>/dev/null || echo "bfd.h not found"
+        echo "=== Binutils packages ==="
+        dpkg -l | grep binutils
+        echo "=== End BFD Headers Debug ==="
 
   # macOS builds - DISABLED
   # macos:
