@@ -126,14 +126,43 @@ sudo apt-get install -y \
     build-essential \
     cmake \
     ninja-build \
-    llvm-dev \
-    liblld-dev \
-    binutils-gold \
+    binutils \
+    binutils-dev \
     libssl-dev \
+    libelf-dev \
+    libgtest-dev \
     pkg-config
+
+# Install LLVM 19 (recommended for full DWARF support)
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+sudo apt-get update
+sudo apt-get install -y llvm-19-dev liblld-19-dev
 
 # Build Heimdall with both LLD and Gold plugins
 ./build.sh
+```
+
+**Note**: 
+- LLVM 19 is recommended for full DWARF debug info support. The build system will automatically detect and use LLVM 19 if available.
+- `binutils` provides the Gold linker (`ld.gold`), while `binutils-dev` provides the BFD development files needed for the Gold plugin.
+- `libgtest-dev` provides GoogleTest for unit testing. If not available, the build system will download it automatically.
+
+**Troubleshooting BFD headers**: If you encounter "bfd.h not found" errors, try installing additional packages:
+```bash
+sudo apt-get install -y binutils-dev libbfd-dev
+```
+
+**Alternative LLVM versions**: If you prefer to use a different LLVM version, you can install it instead:
+```bash
+# For LLVM 14 (Ubuntu default)
+sudo apt-get install -y llvm-dev liblld-14-dev
+
+# For LLVM 15
+sudo apt-get install -y llvm-15-dev liblld-15-dev
+
+# For LLVM 16
+sudo apt-get install -y llvm-16-dev liblld-16-dev
 ```
 
 #### Fedora/RHEL/CentOS

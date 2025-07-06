@@ -11,8 +11,8 @@ if(NOT GTest_FOUND)
     message(STATUS "GoogleTest not found, downloading with FetchContent...")
     FetchContent_Declare(
         googletest
-        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.14.0
     )
     FetchContent_MakeAvailable(googletest)
 endif()

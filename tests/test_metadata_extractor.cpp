@@ -50,7 +50,8 @@ const char* test_license = "MIT";
         test_lib = test_dir / "libtest.so";
         std::string compile_cmd = "gcc -shared -fPIC -g -o " + test_lib.string() + " " +
                                   test_source.string() + " 2>/dev/null";
-        system(compile_cmd.c_str());
+        int compile_result = system(compile_cmd.c_str());
+        (void)compile_result; // Suppress unused variable warning
 
         // Fallback to dummy file if compilation fails
         if (!std::filesystem::exists(test_lib)) {

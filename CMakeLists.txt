@@ -73,8 +73,44 @@ else()
 endif()
 
 # Find LLVM for DWARF debug info extraction
-# Try to find Homebrew LLVM first (macOS)
+# Try to find LLVM 19 first (preferred for DWARF support)
 set(LLVM_DWARF_FOUND FALSE)
+
+# Check for LLVM 19 first (Linux)
+if(NOT APPLE)
+    find_program(LLVM_CONFIG_19 llvm-config-19)
+    if(LLVM_CONFIG_19)
+        message(STATUS "Found LLVM 19, using for DWARF support")
+        set(LLVM_CONFIG ${LLVM_CONFIG_19})
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --version
+            OUTPUT_VARIABLE LLVM_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --libs --system-libs
+            OUTPUT_VARIABLE LLVM_LIBS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --cxxflags
+            OUTPUT_VARIABLE LLVM_CXXFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --ldflags
+            OUTPUT_VARIABLE LLVM_LDFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        set(LLVM_DWARF_FOUND TRUE)
+        message(STATUS "Found LLVM 19 ${LLVM_VERSION}")
+        message(STATUS "LLVM libraries: ${LLVM_LIBS}")
+        message(STATUS "LLVM CXX flags: ${LLVM_CXXFLAGS}")
+        message(STATUS "LLVM LD flags: ${LLVM_LDFLAGS}")
+    endif()
+endif()
+
+# Try to find Homebrew LLVM first (macOS)
 if(APPLE)
     set(LLVM_HOMEBREW_PREFIX "/opt/homebrew/opt/llvm")
     if(EXISTS "${LLVM_HOMEBREW_PREFIX}")
@@ -146,23 +182,72 @@ endif()
 if(BUILD_LLD_PLUGIN)
     message(STATUS "=== LLD Plugin Configuration ===")
     
-    # Try to find Homebrew LLVM first
-    set(LLVM_HOMEBREW_PREFIX "/opt/homebrew/opt/llvm")
-    if(EXISTS "${LLVM_HOMEBREW_PREFIX}")
-        set(LLVM_DIR "${LLVM_HOMEBREW_PREFIX}/lib/cmake/llvm")
-        find_package(LLVM CONFIG)
-        if(LLVM_FOUND)
-            message(STATUS "Found Homebrew LLVM ${LLVM_PACKAGE_VERSION}")
-            set(LLVM_INCLUDE_DIRS "${LLVM_HOMEBREW_PREFIX}/include")
-            set(LLVM_LIBRARY_DIR "${LLVM_HOMEBREW_PREFIX}/lib")
+    # Try to find LLVM 19 first (preferred)
+    find_program(LLVM_CONFIG_19 llvm-config-19)
+    if(LLVM_CONFIG_19)
+        message(STATUS "Found LLVM 19 config: ${LLVM_CONFIG_19}")
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --version
+            OUTPUT_VARIABLE LLVM_19_VERSION
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --includedir
+            OUTPUT_VARIABLE LLVM_19_INCLUDE_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --libdir
+            OUTPUT_VARIABLE LLVM_19_LIB_DIR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --libs
+            OUTPUT_VARIABLE LLVM_19_LIBS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --cxxflags
+            OUTPUT_VARIABLE LLVM_19_CXXFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(
+            COMMAND ${LLVM_CONFIG_19} --ldflags
+            OUTPUT_VARIABLE LLVM_19_LDFLAGS
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        
+        set(LLVM_FOUND TRUE)
+        set(LLVM_PACKAGE_VERSION ${LLVM_19_VERSION})
+        set(LLVM_INCLUDE_DIRS ${LLVM_19_INCLUDE_DIR})
+        set(LLVM_LIBRARY_DIR ${LLVM_19_LIB_DIR})
+        set(LLVM_LIBS ${LLVM_19_LIBS})
+        set(LLVM_CXXFLAGS ${LLVM_19_CXXFLAGS})
+        set(LLVM_LDFLAGS ${LLVM_19_LDFLAGS})
+        set(LLVM_CONFIG ${LLVM_CONFIG_19})
+        
+        message(STATUS "Found LLVM 19 ${LLVM_19_VERSION}")
+        message(STATUS "LLVM 19 include dir: ${LLVM_19_INCLUDE_DIR}")
+        message(STATUS "LLVM 19 lib dir: ${LLVM_19_LIB_DIR}")
+    else()
+        # Try to find Homebrew LLVM first
+        set(LLVM_HOMEBREW_PREFIX "/opt/homebrew/opt/llvm")
+        if(EXISTS "${LLVM_HOMEBREW_PREFIX}")
+            set(LLVM_DIR "${LLVM_HOMEBREW_PREFIX}/lib/cmake/llvm")
+            find_package(LLVM CONFIG)
+            if(LLVM_FOUND)
+                message(STATUS "Found Homebrew LLVM ${LLVM_PACKAGE_VERSION}")
+                set(LLVM_INCLUDE_DIRS "${LLVM_HOMEBREW_PREFIX}/include")
+                set(LLVM_LIBRARY_DIR "${LLVM_HOMEBREW_PREFIX}/lib")
+            endif()
         endif()
-    endif()
-    
-    # Fallback to system LLVM
-    if(NOT LLVM_FOUND)
-        find_package(LLVM QUIET CONFIG)
-        if(LLVM_FOUND)
-            message(STATUS "Found system LLVM ${LLVM_PACKAGE_VERSION}")
+        
+        # Fallback to system LLVM
+        if(NOT LLVM_FOUND)
+            find_package(LLVM QUIET CONFIG)
+            if(LLVM_FOUND)
+                message(STATUS "Found system LLVM ${LLVM_PACKAGE_VERSION}")
+            endif()
         endif()
     endif()
     
@@ -266,7 +351,7 @@ if(BUILD_GOLD_PLUGIN)
         
         # Add BFD include directories
         find_path(BFD_INCLUDE_DIR bfd.h
-            PATHS /usr/include /usr/local/include /usr/include/x86_64-linux-gnu
+            PATHS /usr/include /usr/local/include /usr/include/x86_64-linux-gnu /usr/include/binutils
             PATH_SUFFIXES binutils bfd
         )
         
@@ -275,14 +360,12 @@ if(BUILD_GOLD_PLUGIN)
         endif()
         
         check_include_file(bfd.h BFD_HEADER_FOUND)
-        check_include_file(elf-bfd.h ELF_BFD_HEADER_FOUND)
         
         message(STATUS "BFD_INCLUDE_DIR: ${BFD_INCLUDE_DIR}")
         message(STATUS "BFD_HEADER_FOUND: ${BFD_HEADER_FOUND}")
-        message(STATUS "ELF_BFD_HEADER_FOUND: ${ELF_BFD_HEADER_FOUND}")
         message(STATUS "BFD_FOUND: ${BFD_FOUND}")
         
-        if(BFD_HEADER_FOUND AND ELF_BFD_HEADER_FOUND AND BFD_FOUND)
+        if(BFD_HEADER_FOUND AND BFD_FOUND)
             set(GOLD_BFD_AVAILABLE TRUE)
             message(STATUS "✓ BFD support available for Gold plugin")
         else()
@@ -290,9 +373,6 @@ if(BUILD_GOLD_PLUGIN)
             message(WARNING "✗ BFD support not available for Gold plugin")
             if(NOT BFD_HEADER_FOUND)
                 message(STATUS "  - bfd.h not found")
-            endif()
-            if(NOT ELF_BFD_HEADER_FOUND)
-                message(STATUS "  - elf-bfd.h not found")
             endif()
             if(NOT BFD_FOUND)
                 message(STATUS "  - BFD library not found")
@@ -332,8 +412,13 @@ if(BUILD_SHARED_CORE)
         if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
             target_include_directories(heimdall-core PRIVATE /opt/homebrew/opt/llvm/include)
         else()
-            # For Linux systems, add system-wide LLVM headers where DWARF headers are located
-            target_include_directories(heimdall-core PRIVATE /usr/include)
+            # For Linux systems, use the detected LLVM include directory
+            if(LLVM_CONFIG_19)
+                target_include_directories(heimdall-core PRIVATE ${LLVM_19_INCLUDE_DIR})
+            else()
+                # Fallback to system-wide LLVM headers
+                target_include_directories(heimdall-core PRIVATE /usr/include)
+            endif()
         endif()
     endif()
     

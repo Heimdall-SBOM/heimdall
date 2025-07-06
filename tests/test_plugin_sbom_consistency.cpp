@@ -121,7 +121,8 @@ protected:
         
         // Try to run cmake build if we're in a build directory
         if (std::filesystem::exists("CMakeCache.txt")) {
-            system("cmake --build . --target heimdall-lld heimdall-gold");
+            int build_result = system("cmake --build . --target heimdall-lld heimdall-gold");
+            (void)build_result; // Suppress unused variable warning
             
             // Check again after build attempt
             for (const auto& path : searchPaths) {

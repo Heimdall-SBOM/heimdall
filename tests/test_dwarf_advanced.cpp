@@ -142,21 +142,24 @@ static int internal_helper() {
         std::string compile_cmd = "gcc -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                   test_executable.string() + " " + test_source.string() +
                                   " 2>/dev/null";
-        system(compile_cmd.c_str());
+        int compile_result = system(compile_cmd.c_str());
+        (void)compile_result; // Suppress unused variable warning
 
         // Create object file with debug info
         test_object = test_dir / "complex_test.o";
         std::string obj_compile_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                       test_object.string() + " " + test_source.string() +
                                       " 2>/dev/null";
-        system(obj_compile_cmd.c_str());
+        int obj_compile_result = system(obj_compile_cmd.c_str());
+        (void)obj_compile_result; // Suppress unused variable warning
 
         // Create shared library with debug info
         test_library = test_dir / "libcomplex.so";
         std::string lib_compile_cmd =
             "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
             test_library.string() + " " + test_source.string() + " 2>/dev/null";
-        system(lib_compile_cmd.c_str());
+        int lib_compile_result = system(lib_compile_cmd.c_str());
+        (void)lib_compile_result; // Suppress unused variable warning
 
         // Fallback to dummy files if compilation fails
         if (!std::filesystem::exists(test_executable)) {

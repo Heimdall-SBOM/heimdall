@@ -191,26 +191,8 @@ int heimdall_process_input_file(const char* filePath) {
     // Also process linked libraries as components
     std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(path);
     for (const auto& dep : deps) {
-        // Try to resolve the library path
-        std::string depPath;
-        // Absolute path? Use as is
-        if (!dep.empty() && dep[0] == '/') {
-            depPath = dep;
-        } else {
-            // Search standard library paths
-            std::vector<std::string> libPaths = {
-                "/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib",
-                "/lib",     "/lib64",         "/usr/lib64"};
-            for (const auto& libDir : libPaths) {
-                std::string candidate = libDir;
-                candidate += "/";
-                candidate += dep;
-                if (heimdall::Utils::fileExists(candidate)) {
-                    depPath = candidate;
-                    break;
-                }
-            }
-        }
+        // Try to resolve the library path using the improved resolver
+        std::string depPath = heimdall::Utils::resolveLibraryPath(dep);
         if (!depPath.empty() && heimdall::Utils::fileExists(depPath)) {
             heimdall::ComponentInfo libComponent(heimdall::Utils::getFileName(depPath), depPath);
             libComponent.setDetectedBy(heimdall::LinkerType::LLD);

@@ -680,4 +680,57 @@ std::string detectLicenseFromPath(const std::string& filePath) {
     return "NOASSERTION";
 }
 
+/**
+ * @brief Resolve a library name to its full path
+ * @param libraryName The library name (e.g., "libssl.so.3")
+ * @return The full path to the library, or empty string if not found
+ */
+std::string resolveLibraryPath(const std::string& libraryName) {
+    // If it's already an absolute path, check if it exists
+    if (!libraryName.empty() && libraryName[0] == '/') {
+        if (fileExists(libraryName)) {
+            return libraryName;
+        }
+        return "";
+    }
+
+    // Search in standard library paths
+    std::vector<std::string> libPaths = {
+        "/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib",
+        "/lib", "/lib64", "/usr/lib64", "/usr/lib/x86_64-linux-gnu"
+    };
+
+    // First try the exact name
+    for (const auto& libDir : libPaths) {
+        std::string candidate = libDir + "/" + libraryName;
+        if (fileExists(candidate)) {
+            return candidate;
+        }
+    }
+
+    // If not found and it's a versioned library, try without version
+    if (libraryName.find(".so.") != std::string::npos) {
+        std::string baseName = libraryName.substr(0, libraryName.find(".so.")) + ".so";
+        for (const auto& libDir : libPaths) {
+            std::string candidate = libDir + "/" + baseName;
+            if (fileExists(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    // If still not found, try with .so extension
+    if (libraryName.find(".so") == std::string::npos) {
+        std::string withExt = libraryName + ".so";
+        for (const auto& libDir : libPaths) {
+            std::string candidate = libDir + "/" + withExt;
+            if (fileExists(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    return "";
+}
+
 }  // namespace heimdall::Utils
