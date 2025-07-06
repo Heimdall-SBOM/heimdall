@@ -427,67 +427,37 @@ g++ myapp.cpp -o myapp \
 
 ## Generating SBOMs
 
-Heimdall can generate SBOMs in both **CycloneDX** and **SPDX** formats. The output format is controlled by the `--plugin-opt` or `--plugin-opt` flag.
+Heimdall supports both SPDX 2.3 and CycloneDX 1.6 (default) formats. You can select a lower CycloneDX version (1.4 or 1.5) if needed.
 
 ### CycloneDX Generation
 
-**LLD Plugin:**
+By default, Heimdall generates CycloneDX 1.6 SBOMs. To specify a lower version, use the `cyclonedx-version` option:
+
+#### Command-Line Example
 ```bash
-ld.lld --plugin-opt=load:./heimdall-lld.so \
-      --plugin-opt=sbom-output:myapp.cyclonedx.json \
-      --plugin-opt=sbom-format=cyclonedx \
-      main.o -o myapp
+# CycloneDX 1.6 (default)
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:myapp.cyclonedx.json \
+       --plugin-opt=format:cyclonedx \
+       main.o -o myapp
+
+# CycloneDX 1.4 explicitly
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:myapp.cyclonedx.json \
+       --plugin-opt=format:cyclonedx \
+       --plugin-opt=cyclonedx-version:1.4 \
+       main.o -o myapp
 ```
 
-**Gold Plugin:**
-```bash
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.cyclonedx.json \
-        --plugin-opt sbom-format=cyclonedx \
-        main.o -o myapp
+#### Plugin API Example
+```cpp
+adapter.setFormat("cyclonedx");
+adapter.setCycloneDXVersion("1.5"); // Use 1.5 instead of default 1.6
 ```
+
+> **Note:** All CycloneDX SBOMs are 1.6 by default. Use the version option to generate 1.4 or 1.5 for compatibility with older tools.
 
 ### SPDX Generation
 
 **LLD Plugin:**
-```bash
-ld.lld --plugin-opt=load:./heimdall-lld.so \
-      --plugin-opt=sbom-output:myapp.spdx.json \
-      --plugin-opt=sbom-format=spdx \
-      main.o -o myapp
 ```
-
-**Gold Plugin:**
-```bash
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.spdx.json \
-        --plugin-opt sbom-format=spdx \
-        main.o -o myapp
-```
-
----
-
-## Troubleshooting & FAQ
-
-**Q: I get linker errors about missing Heimdall libraries.**
-- Make sure you have installed Heimdall (`make install` or `./build.sh` with install step).
-- Check your `LD_LIBRARY_PATH` or system library path includes the Heimdall install location.
-
-**Q: The plugin is not generating an SBOM.**
-- Ensure you are passing the correct `--plugin-opt` flags.
-- Check that the plugin `.so` file is in the path you specify.
-- Run with `--plugin-opt=verbose=1` for more debug output (if supported).
-
-**Q: How do I generate both SPDX and CycloneDX?**
-- Run the linker twice with different `sbom-format` options and output files.
-
-**Q: Can I use Heimdall with other build systems?**
-- Yes! As long as you can link to the core library or load the plugin, you can use Heimdall.
-
----
-
-## Further Reading
-- [Heimdall GitHub Repository](https://github.com/Heimdall-SBOM/heimdall)
-- [SPDX Specification](https://spdx.dev/specifications/)
-- [CycloneDX Specification](https://cyclonedx.org/specification/)
-- [OpenSSF SBOM Resources](https://openssf.org/sbom/) 

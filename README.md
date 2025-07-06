@@ -12,7 +12,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 ## Features
 
 - **Dual Linker Support**: Works seamlessly with both LLVM LLD and GNU Gold linkers
-- **Multiple SBOM Formats**: Generates SPDX 2.3 and CycloneDX 1.4 compliant reports
+- **Multiple SBOM Formats**: Generates SPDX 2.3 and CycloneDX 1.6 compliant reports (1.6 is default, 1.4/1.5 can be selected)
 - **Enhanced DWARF Integration**: Extracts and includes source files, functions, and compile units in SBOMs
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
@@ -42,7 +42,7 @@ Heimdall now provides **comprehensive DWARF debug information integration** that
 
 ### **Standards Compliance**
 - **SPDX 2.3**: Source files as separate `FileName` entries with `GENERATED_FROM` relationships
-- **CycloneDX 1.4+**: DWARF data as component properties with `heimdall:` namespace
+- **CycloneDX 1.6+**: DWARF data as component properties with `heimdall:` namespace (default is 1.6, can specify 1.4/1.5)
 - **Full interoperability** with existing SBOM tools and workflows
 
 ### **Usage Examples**
@@ -51,16 +51,24 @@ Heimdall now provides **comprehensive DWARF debug information integration** that
 # Generate SBOM with DWARF debug information
 gcc -g -c main.c -o main.o
 
-# LLD with enhanced DWARF support
+# LLD with enhanced DWARF support and CycloneDX 1.6 (default)
 ld.lld --plugin-opt=load:./heimdall-lld.dylib \
        --plugin-opt=sbom-output:myapp.cyclonedx.json \
        --plugin-opt=format:cyclonedx \
        main.o -o myapp
 
-# Gold with enhanced DWARF support (Linux only)
+# LLD with CycloneDX 1.4 explicitly
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:myapp.cyclonedx.json \
+       --plugin-opt=format:cyclonedx \
+       --plugin-opt=cyclonedx-version:1.4 \
+       main.o -o myapp
+
+# Gold with CycloneDX 1.5 explicitly
 ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.spdx \
-        --plugin-opt format=spdx \
+        --plugin-opt sbom-output=myapp.cyclonedx.json \
+        --plugin-opt format=cyclonedx \
+        --plugin-opt cyclonedx-version=1.5 \
         main.o -o myapp
 ```
 
@@ -121,7 +129,7 @@ python3 scripts/validate_sboms_online.py build
 ✅ **All 16 Heimdall SBOMs pass validation:**
 - 8 CycloneDX files (JSON syntax and schema compliant)
 - 8 SPDX files (structure and format compliant)
-- Full compliance with SPDX 2.3 and CycloneDX 1.4 standards
+- Full compliance with SPDX 2.3 and CycloneDX 1.6 standards
 
 ## Shared Library SBOM Generation
 
@@ -586,9 +594,9 @@ Heimdall generates SPDX 2.3 compliant documents with:
 - Checksums (SHA256)
 - Relationships between components including `GENERATED_FROM` for source files
 
-### CycloneDX 1.4
+### CycloneDX 1.6
 
-Heimdall generates CycloneDX 1.4 compliant documents with:
+Heimdall generates CycloneDX 1.6 compliant documents with:
 
 - Component metadata
 - Dependencies
@@ -855,4 +863,5 @@ cd build && make test
 ## License
 
 Licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
+
 
