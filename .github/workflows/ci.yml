@@ -111,7 +111,15 @@ jobs:
     - name: Build
       run: |
         cmake --build build --parallel $(nproc)
-    
+
+    - name: Build plugins
+      run: |
+        cmake --build build --target heimdall-lld heimdall-gold
+
+    - name: List plugin files
+      run: |
+        find build/ -name "*.so" -o -name "*.dylib" | head -10
+
     - name: Run tests
       run: |
         cd build
@@ -221,7 +229,15 @@ jobs:
     - name: Build
       run: |
         cmake --build build --parallel $(nproc)
-    
+
+    - name: Build plugins
+      run: |
+        cmake --build build --target heimdall-lld heimdall-gold
+
+    - name: List plugin files
+      run: |
+        find build/ -name "*.so" -o -name "*.dylib" | head -10
+
     - name: Run tests
       run: |
         cd build
