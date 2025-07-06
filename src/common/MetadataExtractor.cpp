@@ -1479,15 +1479,30 @@ bool extractArchiveSymbols(const std::string& filePath,
                             if (symbolOffset < stringTableSize) {
                                 const char* symbolName =
                                     symbolTable.data() + 8 + numSymbols * 4 + symbolOffset;
-                                if (symbolName && strlen(symbolName) > 0 &&
-                                    strlen(symbolName) < 1000) {
-                                    heimdall::SymbolInfo symbol;
-                                    symbol.name = symbolName;
-                                    symbol.address = symbolOffset;
-                                    symbol.size = 0;  // Archive symbols don't have size info
-                                    symbol.isDefined = true;
-                                    symbol.isGlobal = true;
-                                    symbols.push_back(symbol);
+                                if (symbolName) {
+                                    // Safe string length calculation with bounds checking
+                                    size_t maxLength = stringTableSize - symbolOffset;
+                                    size_t nameLength = 0;
+                                    bool validString = true;
+                                    
+                                    // Find string length safely
+                                    for (size_t i = 0; i < maxLength && i < 1000; ++i) {
+                                        if (symbolName[i] == '\0') {
+                                            nameLength = i;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    // Check if we found a valid null-terminated string
+                                    if (nameLength > 0 && nameLength < 1000) {
+                                        heimdall::SymbolInfo symbol;
+                                        symbol.name = std::string(symbolName, nameLength);
+                                        symbol.address = symbolOffset;
+                                        symbol.size = 0;  // Archive symbols don't have size info
+                                        symbol.isDefined = true;
+                                        symbol.isGlobal = true;
+                                        symbols.push_back(symbol);
+                                    }
                                 }
                             }
                         }
