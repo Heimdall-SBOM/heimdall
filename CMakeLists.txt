@@ -345,6 +345,7 @@ if(BUILD_LLD_PLUGIN AND LLVM_FOUND)
         /opt/homebrew/opt/llvm/include
         /opt/homebrew/opt/lld/include
         /usr/local/opt/lld/include
+        /usr/local/include
         ${CMAKE_SOURCE_DIR}/src
     )
     

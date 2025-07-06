@@ -81,6 +81,13 @@ jobs:
         /usr/lib/llvm-19/bin/llvm-config --version
         /usr/lib/llvm-19/bin/llvm-config --libs
     
+    - name: Download LLD source headers
+      run: |
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.0.0/lld-19.0.0.src.tar.xz
+        tar -xf lld-19.0.0.src.tar.xz
+        sudo mkdir -p /usr/local/include/lld
+        sudo cp -r lld-19.0.0.src/include/* /usr/local/include/lld/
+    
     - name: Set up compiler
       run: |
         if [ "${{ matrix.compiler }}" = "gcc-9" ]; then
