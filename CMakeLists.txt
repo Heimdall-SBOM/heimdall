@@ -208,8 +208,8 @@ if(BUILD_LLD_PLUGIN)
                 set(LLD_AVAILABLE TRUE)
                 message(STATUS "✓ LLD libraries found via LLVM config - will build LLD plugin")
             else()
-                set(LLD_AVAILABLE FALSE)
-                message(WARNING "✗ LLD libraries not found")
+                # Try to build LLD plugin with limited functionality using only LLVM libraries
+                message(WARNING "✗ LLD libraries not found - will build LLD plugin with limited functionality")
                 message(STATUS "Searched for lldELF and lldCommon in:")
                 message(STATUS "  - ${LLVM_LIBRARY_DIR}")
                 message(STATUS "  - /opt/homebrew/opt/lld/lib")
@@ -218,6 +218,8 @@ if(BUILD_LLD_PLUGIN)
                 message(STATUS "  - /usr/lib/x86_64-linux-gnu")
                 message(STATUS "  - /usr/lib64")
                 message(STATUS "  - /usr/lib")
+                message(STATUS "⚠ LLD plugin will be built without LLD libraries (limited functionality)")
+                set(LLD_AVAILABLE TRUE)
             endif()
         endif()
     else()
@@ -383,7 +385,7 @@ if(BUILD_LLD_PLUGIN AND LLVM_FOUND)
     )
     
     # Link to the appropriate LLVM library based on platform
-    if(LLD_AVAILABLE)
+    if(LLD_ELF_LIB AND LLD_COMMON_LIB)
         if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
             target_link_libraries(heimdall-lld PRIVATE
                 /opt/homebrew/opt/llvm/lib/libLLVM.dylib

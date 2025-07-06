@@ -120,6 +120,19 @@ jobs:
         echo "=== LLVM config include dir ==="
         /usr/lib/llvm-19/bin/llvm-config --includedir || echo "llvm-config --includedir failed"
         echo "=== End LLVM Headers Debug ==="
+
+    - name: Debug LLD packages
+      run: |
+        echo "=== LLD Packages Debug ==="
+        echo "=== Available LLD packages ==="
+        apt-cache search lld-19 | grep -E "(dev|lib)" || echo "No LLD dev packages found"
+        echo "=== Installed LLD packages ==="
+        dpkg -l | grep lld || echo "No LLD packages installed"
+        echo "=== LLD libraries in LLVM lib dir ==="
+        find /usr/lib/llvm-19/lib -name "*lld*" 2>/dev/null || echo "No LLD libraries found"
+        echo "=== LLD headers in LLVM include dir ==="
+        find /usr/lib/llvm-19/include -name "*lld*" 2>/dev/null || echo "No LLD headers found"
+        echo "=== End LLD Packages Debug ==="
     
     - name: Set up compiler
       run: |
@@ -290,6 +303,19 @@ jobs:
         echo "=== LLVM config include dir ==="
         /usr/lib/llvm-19/bin/llvm-config --includedir || echo "llvm-config --includedir failed"
         echo "=== End LLVM Headers Debug ==="
+
+    - name: Debug LLD packages
+      run: |
+        echo "=== LLD Packages Debug ==="
+        echo "=== Available LLD packages ==="
+        apt-cache search lld-19 | grep -E "(dev|lib)" || echo "No LLD dev packages found"
+        echo "=== Installed LLD packages ==="
+        dpkg -l | grep lld || echo "No LLD packages installed"
+        echo "=== LLD libraries in LLVM lib dir ==="
+        find /usr/lib/llvm-19/lib -name "*lld*" 2>/dev/null || echo "No LLD libraries found"
+        echo "=== LLD headers in LLVM include dir ==="
+        find /usr/lib/llvm-19/include -name "*lld*" 2>/dev/null || echo "No LLD headers found"
+        echo "=== End LLD Packages Debug ==="
     
     - name: Set up compiler
       run: |
