@@ -186,7 +186,7 @@ int heimdall_process_input_file(const char* filePath)
             depPath = dep;
         } else {
             // Search standard library paths
-            std::vector<std::string> libPaths = {"/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib"};
+            std::vector<std::string> libPaths = {"/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib", "/lib", "/lib64", "/usr/lib64"};
             for (const auto& libDir : libPaths) {
                 std::string candidate = libDir + "/" + dep;
                 if (heimdall::Utils::fileExists(candidate)) {

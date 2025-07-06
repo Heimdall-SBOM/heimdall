@@ -34,7 +34,9 @@ The demo generates SBOMs in:
 
 - `main.c`: The demo program using OpenSSL and pthreads
 - `CMakeLists.txt`: Build configuration with proper linking
-- `demo.sh`: Automated demo script that builds and generates SBOMs
+- `demo.sh`: Original demo script (updated to use both LLD and Gold plugins)
+- `demo_simple.sh`: Simple demo showing LLD + Gold with SPDX + CycloneDX
+- `demo_comprehensive.sh`: Comprehensive demo with multiple compiler/linker combinations
 - `README.md`: This documentation
 
 ## Prerequisites
@@ -54,10 +56,24 @@ The demo generates SBOMs in:
    make
    ```
 
-2. **Run the demo**:
+2. **Choose your demo**:
+   
+   **Simple Demo** (recommended for first-time users):
+   ```bash
+   cd examples/openssl_pthread_demo
+   ./demo_simple.sh
+   ```
+   
+   **Original Demo** (updated to use both plugins):
    ```bash
    cd examples/openssl_pthread_demo
    ./demo.sh
+   ```
+   
+   **Comprehensive Demo** (advanced users - multiple compiler/linker combinations):
+   ```bash
+   cd examples/openssl_pthread_demo
+   ./demo_comprehensive.sh
    ```
 
 ## Manual Build
@@ -77,9 +93,13 @@ make
 The demo will:
 1. Build the OpenSSL pthread demo program
 2. Run the program showing OpenSSL version and thread operations
-3. Generate SPDX SBOM (`openssl_pthread_demo.spdx`)
-4. Generate CycloneDX SBOM (`openssl_pthread_demo.cyclonedx.json`)
-5. Show previews of both SBOMs highlighting OpenSSL and pthread components
+3. Generate SBOMs using both LLD and Gold plugins:
+   - `openssl_pthread_demo_lld.spdx` (SPDX format, LLD plugin)
+   - `openssl_pthread_demo_lld.cyclonedx.json` (CycloneDX format, LLD plugin)
+   - `openssl_pthread_demo_gold.spdx` (SPDX format, Gold plugin)
+   - `openssl_pthread_demo_gold.cyclonedx.json` (CycloneDX format, Gold plugin)
+4. Show previews of the SBOMs highlighting OpenSSL and pthread components
+5. Allow comparison between different plugins and formats
 
 ## SBOM Contents
 

@@ -106,16 +106,19 @@ else()
     set(LLVM_DWARF_FOUND FALSE)
 endif()
 
-# Try to use LLVM 18.1 if available (might be more stable than 19.1)
-if(EXISTS "/usr/lib64/libLLVM.so.18.1")
-    message(STATUS "Found LLVM 18.1 library, trying to use it instead of 19.1")
-    set(LLVM_LIBRARY_PATH "/usr/lib64/libLLVM.so.18.1")
-    set(LLVM_VERSION "18.1.0")
+# Use LLVM 19.1 (most recent version) to avoid conflicts
+if(EXISTS "/usr/lib64/libLLVM.so.19.1")
+    message(STATUS "Using LLVM 19.1 library (most recent version)")
+    set(LLVM_LIBRARY_PATH "/usr/lib64/libLLVM.so.19.1")
+    set(LLVM_VERSION "19.1.0")
     set(LLVM_DWARF_FOUND TRUE)
-    # Override the llvm-config results with 18.1
-    set(LLVM_LIBS "/usr/lib64/libLLVM.so.18.1")
+    # Use LLVM 19.1 explicitly to avoid conflicts with 18.1
+    set(LLVM_LIBS "/usr/lib64/libLLVM.so.19.1")
     set(LLVM_CXXFLAGS "-I/usr/include -std=c++17 -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
     set(LLVM_LDFLAGS "-L/usr/lib64")
+    # Ensure we only link to 19.1, not 18.1
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--as-needed")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--as-needed")
 endif()
 
 # Find LLVM for LLD plugin
@@ -282,12 +285,17 @@ if(BUILD_LLD_PLUGIN AND LLD_AVAILABLE)
         LLVM_AVAILABLE
     )
     
-    llvm_map_components_to_libnames(llvm_libs support core object)
-    
+    # Explicitly link to LLVM 19.1 to avoid conflicts with 18.1
     target_link_libraries(heimdall-lld PRIVATE
-        ${llvm_libs}
+        /usr/lib64/libLLVM.so.19.1
         ${LLD_ELF_LIB}
         ${LLD_COMMON_LIB}
+    )
+    
+    # Add linker flags to ensure only needed symbols are linked
+    target_link_options(heimdall-lld PRIVATE
+        -Wl,--as-needed
+        -Wl,--no-undefined
     )
     
     if(BUILD_SHARED_CORE)
@@ -323,6 +331,8 @@ if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND GOLD_BFD_AVAILABLE)
     target_compile_definitions(heimdall-gold PRIVATE
         HEIMDALL_GOLD_PLUGIN
         BFD_AVAILABLE=1
+        # Disable LLVM DWARF for Gold plugin to avoid conflicts
+        # LLVM_DWARF_AVAILABLE=0
     )
     
     target_link_libraries(heimdall-gold PRIVATE dl)
@@ -331,6 +341,7 @@ if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND GOLD_BFD_AVAILABLE)
         target_link_libraries(heimdall-gold PRIVATE ${BFD_LIBRARY})
     endif()
     
+    # ENABLE heimdall-core linkage for Gold plugin
     if(BUILD_SHARED_CORE)
         target_link_libraries(heimdall-gold PRIVATE heimdall-core)
     endif()

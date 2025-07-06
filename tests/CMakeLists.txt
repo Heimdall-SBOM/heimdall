@@ -32,6 +32,7 @@ add_executable(heimdall_tests
     test_dwarf_cross_platform.cpp
     test_dwarf_integration.cpp
     test_plugin_interface.cpp
+    test_plugin_sbom_consistency.cpp
 )
 
 # Link GoogleTest and other dependencies
@@ -140,6 +141,12 @@ add_custom_target(test-dwarf-integration
 
 add_custom_target(test-dwarf-all
     COMMAND heimdall_tests --gtest_filter="*DWARF*"
+    DEPENDS heimdall_tests
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_custom_target(test-plugin-consistency
+    COMMAND heimdall_tests --gtest_filter="PluginSBOMConsistencyTest.*"
     DEPENDS heimdall_tests
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
