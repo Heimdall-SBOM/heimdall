@@ -35,21 +35,22 @@ Common SBOM formats include **SPDX** and **CycloneDX**.
 **Heimdall** is an open-source SBOM generator designed for C/C++ projects. It can extract metadata from binaries, libraries, and source code, and generate SBOMs in both SPDX and CycloneDX formats. Heimdall supports integration as a linker plugin (LLD/Gold), as a library, or as a standalone tool.
 
 ### LLD Plugin
-The **LLD Plugin** integrates with LLVM's LLD linker to generate SBOMs during the linking process.
+The **LLD Plugin** integrates with LLVM's LLD linker to generate SBOMs, but uses a different approach than traditional linker plugins.
 
 **Benefits:**
 - **Cross-platform support**: Works on Linux, macOS, and Windows
 - **Fast linking**: LLD is significantly faster than traditional linkers
 - **Modern toolchain**: Part of the LLVM ecosystem with active development
 - **DWARF support**: Excellent debug information extraction capabilities
-- **Plugin architecture**: Clean integration with LLD's plugin system
+- **LLVM pass integration**: Can be used as an LLVM pass plugin
 
 **Limitations:**
 - **LLVM dependency**: Requires LLVM/LLD to be installed
-- **Learning curve**: Different command-line syntax from traditional linkers
-- **Ecosystem integration**: May require adjustments to existing build systems
+- **No native plugin API**: LLD doesn't support traditional linker plugins like Gold
+- **Wrapper required**: Typically requires a wrapper script or LLVM pass integration
+- **Limited automatic callbacks**: Doesn't automatically call hooks during linking like Gold
 
-**Best for:** Modern C++ projects, cross-platform development, projects already using LLVM toolchain.
+**Best for:** Modern C++ projects, cross-platform development, projects already using LLVM toolchain, when using wrapper scripts or LLVM pass integration.
 
 ### Gold Plugin
 The **Gold Plugin** integrates with GNU Gold linker to generate SBOMs during the linking process.
@@ -369,19 +370,16 @@ int main() {
 # Step 1: Compile the C++ file to object code
 clang++ -c myapp.cpp -o myapp.o
 
-# Step 2: Link with LLD and generate SPDX SBOM
-ld.lld --plugin-opt=load:./heimdall-lld.so \
-      --plugin-opt=sbom-output:myapp.spdx.json \
-      --plugin-opt=sbom-format=spdx \
-      --plugin-opt=verbose=1 \
+# Step 2: Link with LLD using LLVM pass plugin
+clang++ -fuse-ld=lld -Wl,--load-pass-plugin=./heimdall-lld.so \
+      -Wl,--pass-plugin-arg=heimdall-sbom \
       myapp.o -o myapp
 
-# Step 3: Link with LLD and generate CycloneDX SBOM
-ld.lld --plugin-opt=load:./heimdall-lld.so \
-      --plugin-opt=sbom-output:myapp.cyclonedx.json \
-      --plugin-opt=sbom-format=cyclonedx \
-      --plugin-opt=verbose=1 \
-      myapp.o -o myapp
+# Alternative: Use wrapper script approach
+./scripts/lld-with-sbom.sh myapp.o myapp
+
+# Step 3: Generate SBOM separately (if using wrapper)
+./heimdall-sbom-generator --input myapp --output myapp.spdx.json --format spdx
 ```
 
 #### Gold Plugin Example (Linux only)
@@ -406,11 +404,10 @@ ld.gold --plugin ./heimdall-gold.so \
 
 #### One-Line Compilation with SBOM Generation
 ```bash
-# LLD: Compile and link in one step with SPDX SBOM
-clang++ myapp.cpp -o myapp \
-    -Wl,--plugin-opt=load:./heimdall-lld.so \
-    -Wl,--plugin-opt=sbom-output:myapp.spdx.json \
-    -Wl,--plugin-opt=sbom-format=spdx
+# LLD: Compile and link in one step with LLVM pass plugin
+clang++ -fuse-ld=lld myapp.cpp -o myapp \
+    -Wl,--load-pass-plugin=./heimdall-lld.so \
+    -Wl,--pass-plugin-arg=heimdall-sbom
 
 # Gold: Compile and link in one step with CycloneDX SBOM
 g++ myapp.cpp -o myapp \
