@@ -85,8 +85,12 @@ jobs:
       run: |
         wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/lld-19.1.7.src.tar.xz
         tar -xf lld-19.1.7.src.tar.xz
-        sudo mkdir -p /usr/local/include/lld
-        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/lld/
+        sudo mkdir -p /usr/local/include
+        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/
+        # Debug: Check what was copied
+        echo "=== LLD Headers Debug ==="
+        ls -la /usr/local/include/lld/Common/ | head -10
+        echo "=== End LLD Headers Debug ==="
     
     - name: Set up compiler
       run: |
@@ -212,8 +216,12 @@ jobs:
       run: |
         wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/lld-19.1.7.src.tar.xz
         tar -xf lld-19.1.7.src.tar.xz
-        sudo mkdir -p /usr/local/include/lld
-        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/lld/
+        sudo mkdir -p /usr/local/include
+        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/
+        # Debug: Check what was copied
+        echo "=== LLD Headers Debug ==="
+        ls -la /usr/local/include/lld/Common/ | head -10
+        echo "=== End LLD Headers Debug ==="
     
     - name: Set up compiler
       run: |
