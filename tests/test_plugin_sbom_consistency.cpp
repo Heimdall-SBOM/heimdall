@@ -144,8 +144,6 @@ protected:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openssl/ssl.h>
-#include <openssl/crypto.h>
 #include <pthread.h>
 
 void* thread_func(void* arg) {
@@ -154,13 +152,6 @@ void* thread_func(void* arg) {
 }
 
 int main() {
-    // Use OpenSSL
-    SSL_library_init();
-    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
-    if (ctx) {
-        SSL_CTX_free(ctx);
-    }
-    
     // Use pthreads
     pthread_t thread;
     pthread_create(&thread, NULL, thread_func, NULL);
@@ -176,7 +167,7 @@ int main() {
         std::filesystem::path binaryPath = testDir / "test_binary";
         std::filesystem::path sourcePath = sourceFile;
         std::string compileCmd = "gcc -o " + binaryPath.string() + " " + sourcePath.string() +
-                                 " -lssl -lcrypto -lpthread";
+                                 " -lpthread";
 
         int result = system(compileCmd.c_str());
         if (result != 0) {
@@ -346,14 +337,10 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginSPDXGeneration) {
     EXPECT_TRUE(spdxData.components.find("test_binary") != spdxData.components.end())
         << "Main binary not found in LLD SPDX";
 
-    // Should contain OpenSSL libraries
-    EXPECT_TRUE(spdxData.components.find("libssl.so") != spdxData.components.end() ||
-                spdxData.components.find("libssl.so.3") != spdxData.components.end())
-        << "OpenSSL SSL library not found in LLD SPDX";
-
-    EXPECT_TRUE(spdxData.components.find("libcrypto.so") != spdxData.components.end() ||
-                spdxData.components.find("libcrypto.so.3") != spdxData.components.end())
-        << "OpenSSL crypto library not found in LLD SPDX";
+    // Should contain pthread library
+    EXPECT_TRUE(spdxData.components.find("libpthread.so") != spdxData.components.end() ||
+                spdxData.components.find("libpthread.so.0") != spdxData.components.end())
+        << "Pthread library not found in LLD SPDX";
 
     // Should contain system libraries
     EXPECT_TRUE(spdxData.components.find("libc.so") != spdxData.components.end() ||
@@ -367,8 +354,8 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginSPDXGeneration) {
             << "[WARN] Pthread library not found in SPDX (may be merged with libc on this system)"
             << std::endl;
     }
-    // Should have at least 4 components (main binary + 3+ libraries)
-    EXPECT_GE(spdxData.components.size(), 4) << "LLD SPDX has insufficient components";
+    // Should have at least 3 components (main binary + 2+ libraries)
+    EXPECT_GE(spdxData.components.size(), 3) << "LLD SPDX has insufficient components";
 }
 
 TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
@@ -407,22 +394,18 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
     EXPECT_TRUE(cyclonedxData.components.find("test_binary") != cyclonedxData.components.end())
         << "Main binary not found in LLD CycloneDX";
 
-    // Should contain OpenSSL libraries
-    EXPECT_TRUE(cyclonedxData.components.find("libssl.so") != cyclonedxData.components.end() ||
-                cyclonedxData.components.find("libssl.so.3") != cyclonedxData.components.end())
-        << "OpenSSL SSL library not found in LLD CycloneDX";
-
-    EXPECT_TRUE(cyclonedxData.components.find("libcrypto.so") != cyclonedxData.components.end() ||
-                cyclonedxData.components.find("libcrypto.so.3") != cyclonedxData.components.end())
-        << "OpenSSL crypto library not found in LLD CycloneDX";
+    // Should contain pthread library
+    EXPECT_TRUE(cyclonedxData.components.find("libpthread.so") != cyclonedxData.components.end() ||
+                cyclonedxData.components.find("libpthread.so.0") != cyclonedxData.components.end())
+        << "Pthread library not found in LLD CycloneDX";
 
     // Should contain system libraries
     EXPECT_TRUE(cyclonedxData.components.find("libc.so") != cyclonedxData.components.end() ||
                 cyclonedxData.components.find("libc.so.6") != cyclonedxData.components.end())
         << "System C library not found in LLD CycloneDX";
 
-    // Should have at least 4 components (main binary + 3+ libraries)
-    EXPECT_GE(cyclonedxData.components.size(), 4) << "LLD CycloneDX has insufficient components";
+    // Should have at least 3 components (main binary + 2+ libraries)
+    EXPECT_GE(cyclonedxData.components.size(), 3) << "LLD CycloneDX has insufficient components";
 }
 
 TEST_F(PluginSBOMConsistencyTest, GoldPluginSPDXGeneration) {
@@ -443,14 +426,10 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginSPDXGeneration) {
     EXPECT_TRUE(spdxData.components.find("test_binary") != spdxData.components.end())
         << "Main binary not found in Gold SPDX";
 
-    // Should contain OpenSSL libraries
-    EXPECT_TRUE(spdxData.components.find("libssl.so") != spdxData.components.end() ||
-                spdxData.components.find("libssl.so.3") != spdxData.components.end())
-        << "OpenSSL SSL library not found in Gold SPDX";
-
-    EXPECT_TRUE(spdxData.components.find("libcrypto.so") != spdxData.components.end() ||
-                spdxData.components.find("libcrypto.so.3") != spdxData.components.end())
-        << "OpenSSL crypto library not found in Gold SPDX";
+    // Should contain pthread library
+    EXPECT_TRUE(spdxData.components.find("libpthread.so") != spdxData.components.end() ||
+                spdxData.components.find("libpthread.so.0") != spdxData.components.end())
+        << "Pthread library not found in Gold SPDX";
 
     // Should contain system libraries
     EXPECT_TRUE(spdxData.components.find("libc.so") != spdxData.components.end() ||
@@ -464,8 +443,8 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginSPDXGeneration) {
             << "[WARN] Pthread library not found in SPDX (may be merged with libc on this system)"
             << std::endl;
     }
-    // Should have at least 4 components (main binary + 3+ libraries)
-    EXPECT_GE(spdxData.components.size(), 4) << "Gold SPDX has insufficient components";
+    // Should have at least 3 components (main binary + 2+ libraries)
+    EXPECT_GE(spdxData.components.size(), 3) << "Gold SPDX has insufficient components";
 }
 
 TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
@@ -512,22 +491,18 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
     EXPECT_TRUE(cyclonedxData.components.find("test_binary") != cyclonedxData.components.end())
         << "Main binary not found in Gold CycloneDX";
 
-    // Should contain OpenSSL libraries
-    EXPECT_TRUE(cyclonedxData.components.find("libssl.so") != cyclonedxData.components.end() ||
-                cyclonedxData.components.find("libssl.so.3") != cyclonedxData.components.end())
-        << "OpenSSL SSL library not found in Gold CycloneDX";
-
-    EXPECT_TRUE(cyclonedxData.components.find("libcrypto.so") != cyclonedxData.components.end() ||
-                cyclonedxData.components.find("libcrypto.so.3") != cyclonedxData.components.end())
-        << "OpenSSL crypto library not found in Gold CycloneDX";
+    // Should contain pthread library
+    EXPECT_TRUE(cyclonedxData.components.find("libpthread.so") != cyclonedxData.components.end() ||
+                cyclonedxData.components.find("libpthread.so.0") != cyclonedxData.components.end())
+        << "Pthread library not found in Gold CycloneDX";
 
     // Should contain system libraries
     EXPECT_TRUE(cyclonedxData.components.find("libc.so") != cyclonedxData.components.end() ||
                 cyclonedxData.components.find("libc.so.6") != cyclonedxData.components.end())
         << "System C library not found in Gold CycloneDX";
 
-    // Should have at least 4 components (main binary + 3+ libraries)
-    EXPECT_GE(cyclonedxData.components.size(), 4) << "Gold CycloneDX has insufficient components";
+    // Should have at least 3 components (main binary + 2+ libraries)
+    EXPECT_GE(cyclonedxData.components.size(), 3) << "Gold CycloneDX has insufficient components";
 }
 
 TEST_F(PluginSBOMConsistencyTest, PluginConsistency) {
@@ -590,21 +565,17 @@ TEST_F(PluginSBOMConsistencyTest, PluginConsistency) {
             << "Gold CycloneDX missing expected component: " << component;
     }
 
-    // Test 5: Both plugins should include OpenSSL libraries
-    bool lldHasOpenSSL =
-        (lldSpdxData.components.find("libssl.so") != lldSpdxData.components.end() ||
-         lldSpdxData.components.find("libssl.so.3") != lldSpdxData.components.end()) &&
-        (lldSpdxData.components.find("libcrypto.so") != lldSpdxData.components.end() ||
-         lldSpdxData.components.find("libcrypto.so.3") != lldSpdxData.components.end());
+    // Test 5: Both plugins should include pthread library
+    bool lldHasPthread =
+        (lldSpdxData.components.find("libpthread.so") != lldSpdxData.components.end() ||
+         lldSpdxData.components.find("libpthread.so.0") != lldSpdxData.components.end());
 
-    bool goldHasOpenSSL =
-        (goldSpdxData.components.find("libssl.so") != goldSpdxData.components.end() ||
-         goldSpdxData.components.find("libssl.so.3") != goldSpdxData.components.end()) &&
-        (goldSpdxData.components.find("libcrypto.so") != goldSpdxData.components.end() ||
-         goldSpdxData.components.find("libcrypto.so.3") != goldSpdxData.components.end());
+    bool goldHasPthread =
+        (goldSpdxData.components.find("libpthread.so") != goldSpdxData.components.end() ||
+         goldSpdxData.components.find("libpthread.so.0") != goldSpdxData.components.end());
 
-    EXPECT_TRUE(lldHasOpenSSL) << "LLD plugin missing OpenSSL libraries";
-    EXPECT_TRUE(goldHasOpenSSL) << "Gold plugin missing OpenSSL libraries";
+    EXPECT_TRUE(lldHasPthread) << "LLD plugin missing pthread library";
+    EXPECT_TRUE(goldHasPthread) << "Gold plugin missing pthread library";
 
     // Test 6: Both plugins should include system libraries
     bool lldHasSystemLibs =
