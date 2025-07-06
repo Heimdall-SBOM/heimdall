@@ -50,7 +50,7 @@ void GoldAdapter::Impl::processInputFile(const std::string& filePath) {
         return;
     processedFiles.push_back(filePath);
     if (verbose)
-        std::cout << "[GoldAdapter] Processing input file: " << filePath << std::endl;
+        std::cout << "[GoldAdapter] Processing input file: " << filePath << '\n';
     ComponentInfo component(Utils::getFileName(filePath), filePath);
     component.setDetectedBy(LinkerType::Gold);
     MetadataExtractor extractor;
@@ -64,7 +64,7 @@ void GoldAdapter::Impl::processLibrary(const std::string& libraryPath) {
         return;
     processedLibraries.push_back(libraryPath);
     if (verbose)
-        std::cout << "[GoldAdapter] Processing library: " << libraryPath << std::endl;
+        std::cout << "[GoldAdapter] Processing library: " << libraryPath << '\n';
     ComponentInfo component(Utils::getFileName(libraryPath), libraryPath);
     component.setDetectedBy(LinkerType::Gold);
     component.fileType = FileType::SharedLibrary;
@@ -74,10 +74,10 @@ void GoldAdapter::Impl::processLibrary(const std::string& libraryPath) {
 }
 
 void GoldAdapter::Impl::processSymbol(const std::string& symbolName, uint64_t address,
-                                      uint64_t size) {
+                                      uint64_t /*size*/) {
     if (verbose)
         std::cout << "[GoldAdapter] Processed symbol: " << symbolName << " at " << address
-                  << std::endl;
+                  << '\n';
 }
 
 void GoldAdapter::Impl::setOutputPath(const std::string& path) {
@@ -95,7 +95,7 @@ void GoldAdapter::Impl::generateSBOM() {
     sbomGenerator->setFormat(format);
     sbomGenerator->generateSBOM();
     if (verbose)
-        std::cout << "[GoldAdapter] SBOM generated at " << outputPath << std::endl;
+        std::cout << "[GoldAdapter] SBOM generated at " << outputPath << '\n';
 }
 
 void GoldAdapter::Impl::setVerbose(bool v) {

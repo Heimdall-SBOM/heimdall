@@ -120,7 +120,7 @@ public:
      * @brief Get the number of components processed
      * @return Number of components
      */
-    virtual size_t getComponentCount() const = 0;
+    [[nodiscard]] virtual size_t getComponentCount() const = 0;
     
     /**
      * @brief Print statistics about the plugin
@@ -154,14 +154,14 @@ protected:
      * @param filePath The file path to check
      * @return true if the file should be processed
      */
-    bool shouldProcessFile(const std::string& filePath) const;
+    [[nodiscard]] bool shouldProcessFile(const std::string& filePath) const;
     
     /**
      * @brief Extract component name from file path
      * @param filePath The file path
      * @return The extracted component name
      */
-    std::string extractComponentName(const std::string& filePath) const;
+    [[nodiscard]] std::string extractComponentName(const std::string& filePath) const;
 };
 
 /**

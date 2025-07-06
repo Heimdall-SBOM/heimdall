@@ -609,12 +609,6 @@ bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::Symbol
             continue;
 
         totalSections++;
-<<<<<<< HEAD
-        
-=======
-        std::cerr << "Section " << totalSections << ": type=" << shdr->sh_type << std::endl;
-        heimdall::Utils::debugPrint("Section " + std::to_string(totalSections) +
-                                    ": type=" + std::to_string(shdr->sh_type));
 
         if (shdr->sh_type == SHT_SYMTAB || shdr->sh_type == SHT_DYNSYM) {
             symbolTablesFound++;

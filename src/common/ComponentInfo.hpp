@@ -32,7 +32,7 @@ namespace heimdall {
 /**
  * @brief Enumeration of supported file types
  */
-enum class FileType
+enum class FileType : std::uint8_t
 {
     Unknown,        ///< Unknown file type
     Object,         ///< Object file (.o, .obj)
@@ -44,7 +44,7 @@ enum class FileType
 /**
  * @brief Enumeration of supported linker types
  */
-enum class LinkerType
+enum class LinkerType : std::uint8_t
 {
     LLD,    ///< LLVM LLD linker
     Gold,   ///< GNU Gold linker
@@ -225,38 +225,38 @@ struct ComponentInfo
      * @param symbolName The symbol name to look for
      * @return true if the symbol is found
      */
-    bool hasSymbol(const std::string& symbolName) const;
+    [[nodiscard]] bool hasSymbol(const std::string& symbolName) const;
     
     /**
      * @brief Check if the component has a specific section
      * @param sectionName The section name to look for
      * @return true if the section is found
      */
-    bool hasSection(const std::string& sectionName) const;
+    [[nodiscard]] bool hasSection(const std::string& sectionName) const;
     
     /**
      * @brief Get the file type as a string
      * @return String representation of the file type
      */
-    std::string getFileTypeString() const;
+    [[nodiscard]] std::string getFileTypeString() const;
     
     /**
      * @brief Get the linker type as a string
      * @return String representation of the linker type
      */
-    std::string getLinkerTypeString() const;
+    [[nodiscard]] std::string getLinkerTypeString() const;
     
     /**
      * @brief Get the number of symbols
      * @return Number of symbols
      */
-    size_t getSymbolCount() const { return symbols.size(); }
+    [[nodiscard]] size_t getSymbolCount() const { return symbols.size(); }
     
     /**
      * @brief Get the number of sections
      * @return Number of sections
      */
-    size_t getSectionCount() const { return sections.size(); }
+    [[nodiscard]] size_t getSectionCount() const { return sections.size(); }
 };
 
 /**

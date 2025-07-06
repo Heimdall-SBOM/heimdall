@@ -35,14 +35,14 @@ public:
 
 private:
     std::vector<std::string> processedFiles;
-    bool initialized;
+    bool initialized{false};
 
     static void extractBasicInfo(const std::string& filePath);
     static void logProcessing(const std::string& message);
 };
 
 // LLDAdapter::Impl implementation
-LLDAdapter::Impl::Impl() : initialized(false) {}
+LLDAdapter::Impl::Impl() = default;
 
 void LLDAdapter::Impl::initialize() {
     if (!initialized) {
@@ -93,7 +93,7 @@ void LLDAdapter::Impl::extractBasicInfo(const std::string& filePath) {
 }
 
 void LLDAdapter::Impl::logProcessing(const std::string& message) {
-    std::cout << "[Heimdall LLD] " << message << std::endl;
+    std::cout << "[Heimdall LLD] " << message << '\n';
 }
 
 // LLDAdapter implementation

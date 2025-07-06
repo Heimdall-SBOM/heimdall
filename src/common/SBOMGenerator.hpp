@@ -71,13 +71,13 @@ public:
      * @brief Get the number of components in the SBOM
      * @return Number of components
      */
-    size_t getComponentCount() const;
+    [[nodiscard]] size_t getComponentCount() const;
     /**
      * @brief Check if a component exists in the SBOM
      * @param name The component name to check
      * @return true if the component exists
      */
-    bool hasComponent(const std::string& name) const;
+    [[nodiscard]] bool hasComponent(const std::string& name) const;
     /**
      * @brief Print statistics about the SBOM
      */

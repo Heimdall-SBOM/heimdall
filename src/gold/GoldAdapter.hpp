@@ -121,7 +121,7 @@ public:
      * @brief Get the number of components processed
      * @return Number of components
      */
-    size_t getComponentCount() const;
+    [[nodiscard]] size_t getComponentCount() const;
     
     /**
      * @brief Print statistics about the Gold adapter
@@ -139,12 +139,12 @@ private:
         void processLibrary(const std::string& libraryPath);
         void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size);
         void setOutputPath(const std::string& path);
-        void setFormat(const std::string& format);
+        void setFormat(const std::string& fmt);
         void generateSBOM();
         void setVerbose(bool verbose);
         void setExtractDebugInfo(bool extract);
         void setIncludeSystemLibraries(bool include);
-        size_t getComponentCount() const;
+        [[nodiscard]] size_t getComponentCount() const;
         void printStatistics() const;
     private:
         std::unique_ptr<SBOMGenerator> sbomGenerator;

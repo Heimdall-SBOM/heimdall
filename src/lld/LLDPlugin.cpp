@@ -37,20 +37,21 @@ limitations under the License.
 #include "lld/Common/Driver.h"
 
 namespace {
-static std::unique_ptr<heimdall::LLDAdapter> globalAdapter;
-static std::unique_ptr<heimdall::SBOMGenerator> globalSBOMGenerator;
-static std::string outputPath = "heimdall-sbom.json";
-static std::string format = "spdx";
-static bool verbose = false;
-static std::vector<std::string> processedFiles;
-static std::vector<std::string> processedLibraries;
+std::unique_ptr<heimdall::LLDAdapter> globalAdapter;
+std::unique_ptr<heimdall::SBOMGenerator> globalSBOMGenerator;
+std::string outputPath = "heimdall-sbom.json";
+std::string format = "spdx";
+bool verbose = false;
+std::vector<std::string> processedFiles;
+std::vector<std::string> processedLibraries;
 }  // namespace
 
 extern "C" {
 
 // Plugin initialization
-int onload(void* tv) {
-    std::cout << "Heimdall LLD Plugin activated" << std::endl;
+int onload(void* /*tv*/) {
+    std::cout << "Heimdall LLD Plugin activated" << '
+';
 
     // Initialize the adapter
     globalAdapter = std::make_unique<heimdall::LLDAdapter>();
@@ -62,7 +63,8 @@ int onload(void* tv) {
     globalSBOMGenerator->setFormat(format);
 
     if (verbose) {
-        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << std::endl;
+        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << '
+';
     }
 
     return 0;
@@ -78,7 +80,8 @@ void onunload() {
         globalSBOMGenerator->generateSBOM();
     }
 
-    std::cout << "Heimdall LLD Plugin deactivated" << std::endl;
+    std::cout << "Heimdall LLD Plugin deactivated" << '
+';
 }
 
 // Plugin metadata
@@ -98,7 +101,8 @@ int heimdall_set_output_path(const char* path) {
             globalSBOMGenerator->setOutputPath(outputPath);
         }
         if (verbose) {
-            std::cout << "Heimdall: Output path set to " << outputPath << std::endl;
+            std::cout << "Heimdall: Output path set to " << outputPath << '
+';
         }
         return 0;
     }
@@ -112,7 +116,8 @@ int heimdall_set_format(const char* fmt) {
             globalSBOMGenerator->setFormat(format);
         }
         if (verbose) {
-            std::cout << "Heimdall: Format set to " << format << std::endl;
+            std::cout << "Heimdall: Format set to " << format << '
+';
         }
         return 0;
     }
@@ -138,7 +143,8 @@ int heimdall_process_input_file(const char* filePath) {
     processedFiles.push_back(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processing input file: " << path << std::endl;
+        std::cout << "Heimdall: Processing input file: " << path << '
+';
     }
 
     // Process the file through the adapter
@@ -202,7 +208,9 @@ int heimdall_process_input_file(const char* filePath) {
                 "/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib",
                 "/lib",     "/lib64",         "/usr/lib64"};
             for (const auto& libDir : libPaths) {
-                std::string candidate = libDir + "/" + dep;
+                std::string candidate = libDir;
+                candidate += "/";
+                candidate += dep;
                 if (heimdall::Utils::fileExists(candidate)) {
                     depPath = candidate;
                     break;
@@ -251,7 +259,8 @@ void heimdall_process_library(const char* libraryPath) {
     processedLibraries.push_back(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processing library: " << path << std::endl;
+        std::cout << "Heimdall: Processing library: " << path << '
+';
     }
 
     // Process the library through the adapter
@@ -281,7 +290,8 @@ void heimdall_process_library(const char* libraryPath) {
 // Finalization
 void heimdall_finalize() {
     if (verbose) {
-        std::cout << "Heimdall: Finalizing SBOM generation" << std::endl;
+        std::cout << "Heimdall: Finalizing SBOM generation" << '
+';
     }
 
     if (globalSBOMGenerator) {
@@ -289,7 +299,8 @@ void heimdall_finalize() {
 
         if (verbose) {
             std::cout << "Heimdall: SBOM generated with "
-                      << globalSBOMGenerator->getComponentCount() << " components" << std::endl;
+                      << globalSBOMGenerator->getComponentCount() << " components" << '
+';
             globalSBOMGenerator->printStatistics();
         }
     }
@@ -307,7 +318,8 @@ public:
 
     bool runOnModule(llvm::Module& M) override {
         if (verbose) {
-            llvm::errs() << "Heimdall: Processing module: " << M.getModuleIdentifier() << "\n";
+            llvm::errs() << "Heimdall: Processing module: " << M.getModuleIdentifier() << "'
+'";
         }
 
         // Process the module file
@@ -321,7 +333,8 @@ public:
             if (!F.isDeclaration()) {
                 std::string funcName = F.getName().str();
                 if (verbose) {
-                    llvm::errs() << "Heimdall: Processing function: " << funcName << "\n";
+                    llvm::errs() << "Heimdall: Processing function: " << funcName << "'
+'";
                 }
             }
         }
@@ -331,7 +344,8 @@ public:
             if (!GV.isDeclaration()) {
                 std::string varName = GV.getName().str();
                 if (verbose) {
-                    llvm::errs() << "Heimdall: Processing global: " << varName << "\n";
+                    llvm::errs() << "Heimdall: Processing global: " << varName << "'
+'";
                 }
             }
         }
@@ -351,7 +365,8 @@ char HeimdallPass::ID = 0;
 extern "C" {
 void heimdall_register_pass() {
     // This will be called when the plugin is loaded
-    std::cout << "Heimdall: LLVM Pass registered" << std::endl;
+    std::cout << "Heimdall: LLVM Pass registered" << '
+';
 }
 }
 #endif
@@ -360,7 +375,8 @@ void heimdall_register_pass() {
 extern "C" {
 // LLD Plugin entry point - called when plugin is loaded
 void heimdall_lld_plugin_init() {
-    std::cout << "Heimdall: LLD Plugin loaded and initialized" << std::endl;
+    std::cout << "Heimdall: LLD Plugin loaded and initialized" << '
+';
 
     // Initialize our plugin
     onload(nullptr);
@@ -368,7 +384,8 @@ void heimdall_lld_plugin_init() {
 
 // LLD Plugin cleanup - called when plugin is unloaded
 void heimdall_lld_plugin_cleanup() {
-    std::cout << "Heimdall: LLD Plugin cleanup" << std::endl;
+    std::cout << "Heimdall: LLD Plugin cleanup" << '
+';
 
     // Finalize SBOM generation
     heimdall_finalize();

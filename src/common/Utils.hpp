@@ -32,12 +32,7 @@ limitations under the License.
 #include <cctype>
 #include <regex>
 
-namespace heimdall {
-
-/**
- * @brief Namespace containing utility functions for common operations
- */
-namespace Utils {
+namespace heimdall::Utils {
 
 /**
  * @brief Extract the filename from a file path
@@ -301,4 +296,4 @@ std::string detectLicenseFromPath(const std::string& filePath);
 
 } // namespace Utils
 
-} // namespace heimdall
+

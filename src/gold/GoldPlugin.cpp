@@ -25,12 +25,12 @@ limitations under the License.
 #include "GoldAdapter.hpp"
 
 namespace {
-static std::unique_ptr<heimdall::GoldAdapter> globalAdapter;
-static std::string outputPath = "heimdall-gold-sbom.json";
-static std::string format = "spdx";
-static bool verbose = false;
-static std::vector<std::string> processedFiles;
-static std::vector<std::string> processedLibraries;
+std::unique_ptr<heimdall::GoldAdapter> globalAdapter;
+std::string outputPath = "heimdall-gold-sbom.json";
+std::string format = "spdx";
+bool verbose = false;
+std::vector<std::string> processedFiles;
+std::vector<std::string> processedLibraries;
 
 // Simple utility functions to avoid heimdall-core dependencies
 std::string getFileName(const std::string& path) {
@@ -75,28 +75,32 @@ std::string getFileType(const std::string& path) {
 
     if (extension == ".o" || extension == ".obj") {
         return "OBJECT";
-    } else if (extension == ".a") {
-        return "ARCHIVE";
-    } else if (extension == ".so" || extension == ".dylib" || extension == ".dll") {
-        return "SHARED_LIBRARY";
-    } else if (extension == ".exe") {
-        return "EXECUTABLE";
-    } else {
-        return "OTHER";
     }
+    if (extension == ".a") {
+        return "ARCHIVE";
+    }
+    if (extension == ".so" || extension == ".dylib" || extension == ".dll") {
+        return "SHARED_LIBRARY";
+    }
+    if (extension == ".exe") {
+        return "EXECUTABLE";
+    }
+    return "OTHER";
 }
 }  // namespace
 
 extern "C" {
-int onload(void* tv) {
-    std::cout << "Heimdall Gold Plugin activated" << std::endl;
+int onload(void* /*tv*/) {
+    std::cout << "Heimdall Gold Plugin activated" << '
+';
 
     // Initialize the adapter
     globalAdapter = std::make_unique<heimdall::GoldAdapter>();
     globalAdapter->initialize();
 
     if (verbose) {
-        std::cout << "Heimdall Gold Plugin initialized with output: " << outputPath << std::endl;
+        std::cout << "Heimdall Gold Plugin initialized with output: " << outputPath << '
+';
     }
 
     return 0;
@@ -117,7 +121,8 @@ int heimdall_set_output_path(const char* path) {
         if (globalAdapter)
             globalAdapter->setOutputPath(outputPath);
         if (verbose) {
-            std::cout << "Heimdall: Output path set to " << outputPath << std::endl;
+            std::cout << "Heimdall: Output path set to " << outputPath << '
+';
         }
         return 0;
     }
@@ -130,7 +135,8 @@ int heimdall_set_format(const char* fmt) {
         if (globalAdapter)
             globalAdapter->setFormat(format);
         if (verbose) {
-            std::cout << "Heimdall: Format set to " << format << std::endl;
+            std::cout << "Heimdall: Format set to " << format << '
+';
         }
         return 0;
     }
@@ -158,7 +164,8 @@ int heimdall_process_input_file(const char* filePath) {
     processedFiles.push_back(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processing input file: " << path << std::endl;
+        std::cout << "Heimdall: Processing input file: " << path << '
+';
     }
 
     // Process the file through the adapter
@@ -177,7 +184,9 @@ int heimdall_process_input_file(const char* filePath) {
                 "/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib",
                 "/lib",     "/lib64",         "/usr/lib64"};
             for (const auto& libDir : libPaths) {
-                std::string candidate = libDir + "/" + dep;
+                std::string candidate = libDir;
+                candidate += "/";
+                candidate += dep;
                 if (std::filesystem::exists(candidate)) {
                     depPath = candidate;
                     break;
@@ -191,12 +200,14 @@ int heimdall_process_input_file(const char* filePath) {
                 processedLibraries.push_back(depPath);
                 if (verbose) {
                     std::cout << "Heimdall: Auto-processing dependency library: " << depPath
-                              << std::endl;
+                              << '
+';
                 }
                 globalAdapter->processLibrary(depPath);
             }
         } else if (verbose) {
-            std::cout << "Heimdall: Could not resolve dependency: " << dep << std::endl;
+            std::cout << "Heimdall: Could not resolve dependency: " << dep << '
+';
         }
     }
     // --- END NEW ---
@@ -208,7 +219,8 @@ int heimdall_process_input_file(const char* filePath) {
 
     if (verbose) {
         std::cout << "Heimdall: Processed file: " << fileName << " (checksum: " << checksum
-                  << ", size: " << fileSize << ")" << std::endl;
+                  << ", size: " << fileSize << ")" << '
+';
     }
 
     return 0;
@@ -229,7 +241,8 @@ int heimdall_process_library(const char* libraryPath) {
     processedLibraries.push_back(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processing library: " << path << std::endl;
+        std::cout << "Heimdall: Processing library: " << path << '
+';
     }
 
     // Process the library through the adapter
@@ -242,7 +255,8 @@ int heimdall_process_library(const char* libraryPath) {
 
     if (verbose) {
         std::cout << "Heimdall: Processed library: " << fileName << " (checksum: " << checksum
-                  << ", size: " << fileSize << ")" << std::endl;
+                  << ", size: " << fileSize << ")" << '
+';
     }
 
     return 0;
@@ -258,7 +272,8 @@ void heimdall_finalize() {
     // Validate format
     if (format != "spdx" && format != "cyclonedx") {
         std::cerr << "Heimdall Gold Plugin: Invalid format '" << format << "', defaulting to SPDX"
-                  << std::endl;
+                  << '
+';
         format = "spdx";
     }
 
@@ -267,13 +282,21 @@ void heimdall_finalize() {
     if (sbomFile.is_open()) {
         if (format == "spdx") {
             // Generate SPDX format
-            sbomFile << "SPDXVersion: SPDX-2.3\n";
-            sbomFile << "DataLicense: CC0-1.0\n";
-            sbomFile << "SPDXID: SPDXRef-DOCUMENT\n";
-            sbomFile << "DocumentName: Heimdall Gold Plugin SBOM\n";
-            sbomFile << "DocumentNamespace: https://spdx.org/spdxdocs/heimdall-gold\n";
-            sbomFile << "Creator: Tool: Heimdall Gold Plugin\n";
-            sbomFile << "Created: " << __DATE__ << " " << __TIME__ << "\n\n";
+            sbomFile << "SPDXVersion: SPDX-2.3'
+'";
+            sbomFile << "DataLicense: CC0-1.0'
+'";
+            sbomFile << "SPDXID: SPDXRef-DOCUMENT'
+'";
+            sbomFile << "DocumentName: Heimdall Gold Plugin SBOM'
+'";
+            sbomFile << "DocumentNamespace: https://spdx.org/spdxdocs/heimdall-gold'
+'";
+            sbomFile << "Creator: Tool: Heimdall Gold Plugin'
+'";
+            sbomFile << "Created: " << __DATE__ << " " << __TIME__ << "'
+''
+'";
 
             // Process input files
             for (const auto& file : processedFiles) {
@@ -282,14 +305,23 @@ void heimdall_finalize() {
                 std::string fileSize = getFileSize(file);
                 std::string fileType = getFileType(file);
 
-                sbomFile << "FileName: " << fileName << "\n";
-                sbomFile << "SPDXID: SPDXRef-" << fileName << "\n";
-                sbomFile << "FileChecksum: SHA256: " << checksum << "\n";
-                sbomFile << "FileSize: " << fileSize << "\n";
-                sbomFile << "FileType: " << fileType << "\n";
-                sbomFile << "LicenseConcluded: NOASSERTION\n";
-                sbomFile << "LicenseInfoInFile: NOASSERTION\n";
-                sbomFile << "FileCopyrightText: NOASSERTION\n\n";
+                sbomFile << "FileName: " << fileName << "'
+'";
+                sbomFile << "SPDXID: SPDXRef-" << fileName << "'
+'";
+                sbomFile << "FileChecksum: SHA256: " << checksum << "'
+'";
+                sbomFile << "FileSize: " << fileSize << "'
+'";
+                sbomFile << "FileType: " << fileType << "'
+'";
+                sbomFile << "LicenseConcluded: NOASSERTION'
+'";
+                sbomFile << "LicenseInfoInFile: NOASSERTION'
+'";
+                sbomFile << "FileCopyrightText: NOASSERTION'
+''
+'";
             }
 
             // Process libraries
@@ -299,72 +331,121 @@ void heimdall_finalize() {
                 std::string fileSize = getFileSize(library);
                 std::string fileType = getFileType(library);
 
-                sbomFile << "FileName: " << fileName << "\n";
-                sbomFile << "SPDXID: SPDXRef-" << fileName << "\n";
-                sbomFile << "FileChecksum: SHA256: " << checksum << "\n";
-                sbomFile << "FileSize: " << fileSize << "\n";
-                sbomFile << "FileType: " << fileType << "\n";
-                sbomFile << "LicenseConcluded: NOASSERTION\n";
-                sbomFile << "LicenseInfoInFile: NOASSERTION\n";
-                sbomFile << "FileCopyrightText: NOASSERTION\n\n";
+                sbomFile << "FileName: " << fileName << "'
+'";
+                sbomFile << "SPDXID: SPDXRef-" << fileName << "'
+'";
+                sbomFile << "FileChecksum: SHA256: " << checksum << "'
+'";
+                sbomFile << "FileSize: " << fileSize << "'
+'";
+                sbomFile << "FileType: " << fileType << "'
+'";
+                sbomFile << "LicenseConcluded: NOASSERTION'
+'";
+                sbomFile << "LicenseInfoInFile: NOASSERTION'
+'";
+                sbomFile << "FileCopyrightText: NOASSERTION'
+''
+'";
             }
         } else {
             // Generate CycloneDX format
-            sbomFile << "{\n";
-            sbomFile << "  \"bomFormat\": \"CycloneDX\",\n";
-            sbomFile << "  \"specVersion\": \"1.5\",\n";
-            sbomFile << "  \"version\": 1,\n";
-            sbomFile << "  \"metadata\": {\n";
-            sbomFile << "    \"timestamp\": \"" << __DATE__ << " " << __TIME__ << "\",\n";
-            sbomFile << "    \"tools\": [\n";
-            sbomFile << "      {\n";
-            sbomFile << "        \"vendor\": \"Heimdall\",\n";
-            sbomFile << "        \"name\": \"Gold Plugin\",\n";
-            sbomFile << "        \"version\": \"1.0.0\"\n";
-            sbomFile << "      }\n";
-            sbomFile << "    ]\n";
-            sbomFile << "  },\n";
-            sbomFile << "  \"components\": [\n";
+            sbomFile << "{'
+'";
+            sbomFile << "  \"bomFormat\": \"CycloneDX\",'
+'";
+            sbomFile << "  \"specVersion\": \"1.5\",'
+'";
+            sbomFile << "  \"version\": 1,'
+'";
+            sbomFile << "  \"metadata\": {'
+'";
+            sbomFile << "    \"timestamp\": \"" << __DATE__ << " " << __TIME__ << "\",'
+'";
+            sbomFile << "    \"tools\": ['
+'";
+            sbomFile << "      {'
+'";
+            sbomFile << "        \"vendor\": \"Heimdall\",'
+'";
+            sbomFile << "        \"name\": \"Gold Plugin\",'
+'";
+            sbomFile << "        \"version\": \"1.0.0\"'
+'";
+            sbomFile << "      }'
+'";
+            sbomFile << "    ]'
+'";
+            sbomFile << "  },'
+'";
+            sbomFile << "  \"components\": ['
+'";
             // Combine all components
             std::vector<std::string> allComponents;
-            for (const auto& file : processedFiles)
+            allComponents.reserve(processedFiles.size() + processedLibraries.size());
+            for (const auto& file : processedFiles) {
                 allComponents.push_back(file);
-            for (const auto& lib : processedLibraries)
+            }
+            for (const auto& lib : processedLibraries) {
                 allComponents.push_back(lib);
+            }
             bool first = true;
             for (const auto& path : allComponents) {
                 if (!first)
-                    sbomFile << ",\n";
+                    sbomFile << ",'
+'";
                 first = false;
                 std::string fileName = getFileName(path);
                 std::string checksum = calculateSimpleHash(path);
                 std::string fileSize = getFileSize(path);
                 std::string fileType = getFileType(path);
-                sbomFile << "    {\n";
-                sbomFile << "      \"type\": \"" << fileType << "\",\n";
-                sbomFile << "      \"name\": \"" << fileName << "\",\n";
-                sbomFile << "      \"purl\": \"pkg:generic/" << fileName << "@1.0.0\",\n";
-                sbomFile << "      \"hashes\": [\n";
-                sbomFile << "        {\n";
-                sbomFile << "          \"alg\": \"SHA-256\",\n";
-                sbomFile << "          \"content\": \"" << checksum << "\"\n";
-                sbomFile << "        }\n";
-                sbomFile << "      ],\n";
-                sbomFile << "      \"properties\": [\n";
-                sbomFile << "        {\n";
-                sbomFile << "          \"name\": \"fileSize\",\n";
-                sbomFile << "          \"value\": \"" << fileSize << "\"\n";
-                sbomFile << "        }\n";
-                sbomFile << "      ]\n";
+                sbomFile << "    {'
+'";
+                sbomFile << "      \"type\": \"" << fileType << "\",'
+'";
+                sbomFile << "      \"name\": \"" << fileName << "\",'
+'";
+                sbomFile << "      \"purl\": \"pkg:generic/" << fileName << "@1.0.0\",'
+'";
+                sbomFile << "      \"hashes\": ['
+'";
+                sbomFile << "        {'
+'";
+                sbomFile << "          \"alg\": \"SHA-256\",'
+'";
+                sbomFile << "          \"content\": \"" << checksum << "\"'
+'";
+                sbomFile << "        }'
+'";
+                sbomFile << "      ],'
+'";
+                sbomFile << "      \"properties\": ['
+'";
+                sbomFile << "        {'
+'";
+                sbomFile << "          \"name\": \"fileSize\",'
+'";
+                sbomFile << "          \"value\": \"" << fileSize << "\"'
+'";
+                sbomFile << "        }'
+'";
+                sbomFile << "      ]'
+'";
                 sbomFile << "    }";
             }
-            sbomFile << "\n  ]\n";
-            sbomFile << "}\n";
+            sbomFile << "'
+'  ]'
+'";
+            sbomFile << "}'
+'";
         }
         sbomFile.close();
-        std::cout << "Heimdall Gold Plugin: SBOM generated at " << outputPath << std::endl;
+        std::cout << "Heimdall Gold Plugin: SBOM generated at " << outputPath << '
+';
     }
 
-    std::cout << "Heimdall Gold Plugin finalized" << std::endl;
+    std::cout << "Heimdall Gold Plugin finalized" << '
+';
 }
 }
