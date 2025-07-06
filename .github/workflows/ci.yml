@@ -74,14 +74,10 @@ jobs:
         chmod +x llvm.sh
         sudo ./llvm.sh 19
         sudo apt-get install -y clang-19 lld-19 llvm-19-dev llvm-19-tools
-        # Debug: Check what LLVM libraries are available
-        echo "=== LLVM Installation Debug ==="
-        ls -la /usr/lib/llvm-19/lib/ | grep -E "(lld|LLVM)" | head -10
-        echo "=== System LLVM libraries ==="
-        ls -la /usr/lib/x86_64-linux-gnu/ | grep -E "(lld|LLVM)" | head -10
-        echo "=== LLVM config ==="
-        /usr/lib/llvm-19/bin/llvm-config --version
-        /usr/lib/llvm-19/bin/llvm-config --libs
+        # Install additional LLD libraries that might be missing
+        sudo apt-get install -y lld-19-dev || echo "lld-19-dev not available"
+        # Install additional BFD packages
+        sudo apt-get install -y binutils-dev binutils-multiarch-dev
     
     - name: Setup llvm-config
       run: |
@@ -233,6 +229,10 @@ jobs:
         chmod +x llvm.sh
         sudo ./llvm.sh 19
         sudo apt-get install -y clang-19 lld-19 llvm-19-dev llvm-19-tools
+        # Install additional LLD libraries that might be missing
+        sudo apt-get install -y lld-19-dev || echo "lld-19-dev not available"
+        # Install additional BFD packages
+        sudo apt-get install -y binutils-dev binutils-multiarch-dev
     
     - name: Setup llvm-config
       run: |

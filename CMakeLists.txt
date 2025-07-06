@@ -168,8 +168,8 @@ if(BUILD_LLD_PLUGIN)
     
     # If LLVM is found, try to find LLD libraries
     if(LLVM_FOUND)
-        # Look for LLD libraries in multiple locations
-        find_library(LLD_ELF_LIB lldELF 
+        # Look for LLD libraries in multiple locations with alternative names
+        find_library(LLD_ELF_LIB NAMES lldELF liblldELF
             HINTS 
             ${LLVM_LIBRARY_DIR}
             /opt/homebrew/opt/lld/lib
@@ -177,8 +177,9 @@ if(BUILD_LLD_PLUGIN)
             /usr/lib/llvm-19/lib
             /usr/lib/x86_64-linux-gnu
             /usr/lib64
+            /usr/lib
         )
-        find_library(LLD_COMMON_LIB lldCommon 
+        find_library(LLD_COMMON_LIB NAMES lldCommon liblldCommon
             HINTS 
             ${LLVM_LIBRARY_DIR}
             /opt/homebrew/opt/lld/lib
@@ -186,6 +187,7 @@ if(BUILD_LLD_PLUGIN)
             /usr/lib/llvm-19/lib
             /usr/lib/x86_64-linux-gnu
             /usr/lib64
+            /usr/lib
         )
         
         message(STATUS "LLD_ELF_LIB: ${LLD_ELF_LIB}")
@@ -195,15 +197,28 @@ if(BUILD_LLD_PLUGIN)
             set(LLD_AVAILABLE TRUE)
             message(STATUS "✓ LLD libraries found - will build LLD plugin")
         else()
-            set(LLD_AVAILABLE FALSE)
-            message(WARNING "✗ LLD libraries not found")
-            message(STATUS "Searched for lldELF and lldCommon in:")
-            message(STATUS "  - ${LLVM_LIBRARY_DIR}")
-            message(STATUS "  - /opt/homebrew/opt/lld/lib")
-            message(STATUS "  - /usr/local/opt/lld/lib")
-            message(STATUS "  - /usr/lib/llvm-19/lib")
-            message(STATUS "  - /usr/lib/x86_64-linux-gnu")
-            message(STATUS "  - /usr/lib64")
+            # Check if LLD is available through LLVM config
+            execute_process(
+                COMMAND ${LLVM_CONFIG} --libs lldELF lldCommon
+                OUTPUT_VARIABLE LLD_CONFIG_LIBS
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+            )
+            if(LLD_CONFIG_LIBS)
+                set(LLD_AVAILABLE TRUE)
+                message(STATUS "✓ LLD libraries found via LLVM config - will build LLD plugin")
+            else()
+                set(LLD_AVAILABLE FALSE)
+                message(WARNING "✗ LLD libraries not found")
+                message(STATUS "Searched for lldELF and lldCommon in:")
+                message(STATUS "  - ${LLVM_LIBRARY_DIR}")
+                message(STATUS "  - /opt/homebrew/opt/lld/lib")
+                message(STATUS "  - /usr/local/opt/lld/lib")
+                message(STATUS "  - /usr/lib/llvm-19/lib")
+                message(STATUS "  - /usr/lib/x86_64-linux-gnu")
+                message(STATUS "  - /usr/lib64")
+                message(STATUS "  - /usr/lib")
+            endif()
         endif()
     else()
         set(LLD_AVAILABLE FALSE)
