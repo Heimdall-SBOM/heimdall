@@ -1,0 +1,241 @@
+name: Dependencies
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  # Check for dependency updates
+  check-dependencies:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libssl-dev \
+          libelf-dev \
+          binutils-dev \
+          libbfd-dev \
+          pkg-config \
+          wget
+        
+        # Install LLVM
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+    
+    - name: Check for outdated packages
+      run: |
+        echo "Checking for outdated system packages..."
+        apt list --upgradable 2>/dev/null | grep -v "WARNING" || echo "All packages are up to date"
+    
+    - name: Check LLVM version
+      run: |
+        echo "Current LLVM version:"
+        clang-19 --version
+        echo "Available LLVM versions:"
+        apt list --installed | grep llvm || echo "No LLVM packages found"
+    
+    - name: Check OpenSSL version
+      run: |
+        echo "OpenSSL version:"
+        openssl version
+        echo "OpenSSL development version:"
+        pkg-config --modversion openssl || echo "OpenSSL dev package not found"
+
+  # Security vulnerability scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run CodeQL analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: cpp
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  # Dependency update PR creation
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Create dependency update PR
+      run: |
+        # This is a placeholder for automated dependency updates
+        # In a real implementation, you would:
+        # 1. Check for available updates
+        # 2. Update dependency files
+        # 3. Test the updates
+        # 4. Create a PR with the changes
+        
+        echo "Dependency update workflow would run here"
+        echo "This could integrate with tools like Dependabot or Renovate"
+        
+        # Example: Check for CMake version updates
+        echo "Current CMake version:"
+        cmake --version
+        
+        # Example: Check for compiler updates
+        echo "Current GCC version:"
+        gcc --version
+        
+        echo "Current Clang version:"
+        clang-19 --version
+
+  # License compliance check
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Check license headers
+      run: |
+        echo "Checking for Apache 2.0 license headers in source files..."
+        
+        # Check C++ files
+        missing_headers=0
+        for file in $(find src tests -name "*.cpp" -o -name "*.hpp"); do
+          if ! grep -q "Copyright 2025 The Heimdall Authors" "$file"; then
+            echo "Missing license header: $file"
+            missing_headers=$((missing_headers + 1))
+          fi
+        done
+        
+        # Check C files
+        for file in $(find . -name "*.c"); do
+          if ! grep -q "Copyright 2025 The Heimdall Authors" "$file"; then
+            echo "Missing license header: $file"
+            missing_headers=$((missing_headers + 1))
+          fi
+        done
+        
+        # Check shell scripts
+        for file in $(find . -name "*.sh"); do
+          if ! grep -q "Copyright 2025 The Heimdall Authors" "$file"; then
+            echo "Missing license header: $file"
+            missing_headers=$((missing_headers + 1))
+          fi
+        done
+        
+        if [ $missing_headers -gt 0 ]; then
+          echo "Found $missing_headers files missing license headers"
+          exit 1
+        else
+          echo "All source files have proper license headers"
+        fi
+    
+    - name: Check third-party licenses
+      run: |
+        echo "Checking third-party dependencies for license compliance..."
+        
+        # Check if nlohmann_json.hpp has proper license
+        if [ -f "tests/nlohmann_json.hpp" ]; then
+          if grep -q "MIT" "tests/nlohmann_json.hpp"; then
+            echo "✓ nlohmann/json has MIT license"
+          else
+            echo "⚠ nlohmann/json license not found"
+          fi
+        fi
+        
+        # Check for other third-party files
+        echo "Third-party files found:"
+        find . -name "*.hpp" -o -name "*.cpp" | grep -v "src/" | grep -v "tests/test_" || echo "No third-party files found"
+
+  # Performance regression testing
+  performance:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libssl-dev \
+          libelf-dev \
+          binutils-dev \
+          libbfd-dev \
+          pkg-config \
+          time \
+          wget
+        
+        # Install LLVM
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+    
+    - name: Build with timing
+      run: |
+        echo "Building with performance measurement..."
+        
+        # Time the build process
+        /usr/bin/time -v cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_COMPILER=clang-19 \
+          -DCMAKE_CXX_COMPILER=clang++-19 \
+          -DBUILD_LLD_PLUGIN=ON \
+          -DBUILD_GOLD_PLUGIN=ON \
+          -DBUILD_SHARED_CORE=ON \
+          -DBUILD_TESTS=ON \
+          -DBUILD_EXAMPLES=ON \
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+        
+        /usr/bin/time -v cmake --build build --parallel $(nproc)
+    
+    - name: Run performance tests
+      run: |
+        cd build
+        echo "Running tests with timing..."
+        /usr/bin/time -v ctest --output-on-failure --verbose
+        
+        # Check binary sizes
+        echo "Binary sizes:"
+        find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.a" | xargs ls -lh 

@@ -1,0 +1,308 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+env:
+  CMAKE_BUILD_TYPE: Release
+  CMAKE_CXX_STANDARD: 17
+  BUILD_LLD_PLUGIN: ON
+  BUILD_GOLD_PLUGIN: ON
+  BUILD_SHARED_CORE: ON
+  BUILD_TESTS: ON
+  BUILD_EXAMPLES: ON
+
+jobs:
+  # Build and test on all platforms
+  build-and-test:
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        compiler: [gcc, clang, msvc]
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+          - os: ubuntu-latest
+            compiler: clang
+          - os: macos-latest
+            compiler: clang
+          - os: windows-latest
+            compiler: msvc
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+        else
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        fi
+        echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+    
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libssl-dev \
+          libelf-dev \
+          binutils-dev \
+          libbfd-dev \
+          pkg-config \
+          lcov \
+          gcovr
+        
+        # Install LLVM
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+        
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
+        else
+          echo "CC=clang-19" >> $GITHUB_ENV
+          echo "CXX=clang++-19" >> $GITHUB_ENV
+        fi
+    
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew update
+        brew install cmake openssl libelf binutils llvm@19 pkg-config
+        echo "CC=clang" >> $GITHUB_ENV
+        echo "CXX=clang++" >> $GITHUB_ENV
+    
+    - name: Install dependencies (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        # Install vcpkg and dependencies
+        git clone https://github.com/Microsoft/vcpkg.git
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+        .\vcpkg install openssl:x64-windows
+        .\vcpkg integrate install
+        cd ..
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} \
+          -DCMAKE_C_COMPILER=${{ env.CC }} \
+          -DCMAKE_CXX_COMPILER=${{ env.CXX }} \
+          -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
+          -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
+          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+      env:
+        CC: ${{ env.CC }}
+        CXX: ${{ env.CXX }}
+    
+    - name: Build
+      run: |
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cmake --build build --config Release --parallel
+        else
+          cmake --build build --parallel $(nproc)
+        fi
+    
+    - name: Run tests
+      run: |
+        cd build
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          ctest --output-on-failure --verbose -C Release
+        else
+          ctest --output-on-failure --verbose
+        fi
+      env:
+        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+    
+    - name: Install
+      run: |
+        cd build
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cmake --install . --prefix install
+        else
+          make install DESTDIR=install
+        fi
+    
+    - name: Create artifacts
+      run: |
+        cd build
+        mkdir -p artifacts
+        
+        # Copy installed files
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          cp -r install/* artifacts/
+        else
+          cp -r install/* artifacts/
+        fi
+        
+        # Copy build artifacts
+        find . -name "*.so" -o -name "*.dylib" -o -name "*.dll" -o -name "*.a" | while read file; do
+          cp "$file" artifacts/
+        done
+        
+        # Create version file
+        echo "${{ steps.version.outputs.version }}" > artifacts/VERSION
+        
+        # Create platform info
+        echo "OS: ${{ matrix.os }}" > artifacts/PLATFORM
+        echo "Compiler: ${{ matrix.compiler }}" >> artifacts/PLATFORM
+        echo "Build Type: ${{ env.CMAKE_BUILD_TYPE }}" >> artifacts/PLATFORM
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: heimdall-${{ steps.version.outputs.version }}-${{ matrix.os }}-${{ matrix.compiler }}
+        path: build/artifacts/
+        retention-days: 30
+
+  # Create release
+  create-release:
+    name: Create Release
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set version
+      id: version
+      run: |
+        echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    
+    - name: Create release notes
+      id: release_notes
+      run: |
+        # Generate release notes from git log
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        if [ -n "$PREVIOUS_TAG" ]; then
+          CHANGELOG=$(git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD)
+        else
+          CHANGELOG=$(git log --pretty=format:"- %s" --reverse)
+        fi
+        
+        echo "## Heimdall ${{ steps.version.outputs.version }}" > RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+        echo "### Changes" >> RELEASE_NOTES.md
+        echo "$CHANGELOG" >> RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+        echo "### Supported Platforms" >> RELEASE_NOTES.md
+        echo "- Linux (GCC 9-12, Clang 15-18)" >> RELEASE_NOTES.md
+        echo "- macOS (Clang, GCC)" >> RELEASE_NOTES.md
+        echo "- Windows (MSVC, Clang-cl)" >> RELEASE_NOTES.md
+        echo "" >> RELEASE_NOTES.md
+        echo "### Build Artifacts" >> RELEASE_NOTES.md
+        echo "This release includes pre-built binaries for all supported platforms." >> RELEASE_NOTES.md
+    
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: Heimdall ${{ steps.version.outputs.version }}
+        body_path: RELEASE_NOTES.md
+        draft: false
+        prerelease: false
+    
+    - name: Upload release assets
+      run: |
+        # Find all artifact directories
+        for artifact_dir in artifacts/*/; do
+          if [ -d "$artifact_dir" ]; then
+            platform=$(basename "$artifact_dir")
+            cd "$artifact_dir"
+            
+            # Create archive
+            if [[ "$platform" == *"windows"* ]]; then
+              zip -r "../../heimdall-${{ steps.version.outputs.version }}-$platform.zip" .
+            else
+              tar -czf "../../heimdall-${{ steps.version.outputs.version }}-$platform.tar.gz" .
+            fi
+            
+            cd ../..
+          fi
+        done
+    
+    - name: Upload assets to release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/*.zip
+        asset_name: ${{ github.event.repository.name }}-${{ steps.version.outputs.version }}-${{ matrix.os }}-${{ matrix.compiler }}.zip
+        asset_content_type: application/zip
+      continue-on-error: true
+    
+    - name: Upload assets to release (tar.gz)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/*.tar.gz
+        asset_name: ${{ github.event.repository.name }}-${{ steps.version.outputs.version }}-${{ matrix.os }}-${{ matrix.compiler }}.tar.gz
+        asset_content_type: application/gzip
+      continue-on-error: true
+
+  # Docker image build
+  docker:
+    name: Build Docker Image
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          heimdall/heimdall:latest
+          heimdall/heimdall:${{ github.ref_name }}
+        platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max 

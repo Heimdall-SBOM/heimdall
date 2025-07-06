@@ -1,0 +1,412 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  # CMake configuration
+  CMAKE_BUILD_TYPE: Release
+  CMAKE_CXX_STANDARD: 17
+  
+  # Build options
+  BUILD_LLD_PLUGIN: ON
+  BUILD_GOLD_PLUGIN: ON
+  BUILD_SHARED_CORE: ON
+  BUILD_TESTS: ON
+  BUILD_EXAMPLES: ON
+
+jobs:
+  # Linux builds with different configurations
+  linux-gcc:
+    name: Linux GCC
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc-9, gcc-10, gcc-11, gcc-12]
+        build_type: [Debug, Release]
+        include:
+          - compiler: gcc-12
+            build_type: Release
+            enable_sanitizers: true
+            enable_coverage: true
+          - compiler: gcc-12
+            build_type: Debug
+            enable_sanitizers: false
+            enable_coverage: false
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # For better git history in coverage reports
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libssl-dev \
+          libelf-dev \
+          binutils-dev \
+          libbfd-dev \
+          pkg-config \
+          lcov \
+          gcovr \
+          clang-tidy \
+          cppcheck \
+          valgrind
+    
+    - name: Install LLVM/Clang
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+    
+    - name: Set up compiler
+      run: |
+        if [ "${{ matrix.compiler }}" = "gcc-9" ]; then
+          sudo apt-get install -y gcc-9 g++-9
+          echo "CC=gcc-9" >> $GITHUB_ENV
+          echo "CXX=g++-9" >> $GITHUB_ENV
+        elif [ "${{ matrix.compiler }}" = "gcc-10" ]; then
+          sudo apt-get install -y gcc-10 g++-10
+          echo "CC=gcc-10" >> $GITHUB_ENV
+          echo "CXX=g++-10" >> $GITHUB_ENV
+        elif [ "${{ matrix.compiler }}" = "gcc-11" ]; then
+          sudo apt-get install -y gcc-11 g++-11
+          echo "CC=gcc-11" >> $GITHUB_ENV
+          echo "CXX=g++-11" >> $GITHUB_ENV
+        elif [ "${{ matrix.compiler }}" = "gcc-12" ]; then
+          sudo apt-get install -y gcc-12 g++-12
+          echo "CC=gcc-12" >> $GITHUB_ENV
+          echo "CXX=g++-12" >> $GITHUB_ENV
+        fi
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_C_COMPILER=$CC \
+          -DCMAKE_CXX_COMPILER=$CXX \
+          -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
+          -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
+          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+          -DENABLE_SANITIZERS=${{ matrix.enable_sanitizers }} \
+          -DENABLE_COVERAGE=${{ matrix.enable_coverage }} \
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+    
+    - name: Build
+      run: |
+        cmake --build build --parallel $(nproc)
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure --verbose
+      env:
+        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+    
+    - name: Run static analysis
+      if: matrix.compiler == 'gcc-12' && matrix.build_type == 'Release'
+      run: |
+        cd build
+        make clang-tidy
+        make cppcheck
+    
+    - name: Run memory check
+      if: matrix.compiler == 'gcc-12' && matrix.build_type == 'Debug'
+      run: |
+        cd build
+        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=valgrind.log ctest --output-on-failure
+        cat valgrind.log
+    
+    - name: Generate coverage report
+      if: matrix.enable_coverage == 'true'
+      run: |
+        cd build
+        lcov --capture --directory . --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info
+        lcov --remove coverage.info '*/tests/*' --output-file coverage.info
+        lcov --list coverage.info
+    
+    - name: Upload coverage to Codecov
+      if: matrix.enable_coverage == 'true'
+      uses: codecov/codecov-action@v3
+      with:
+        file: build/coverage.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # Linux Clang builds
+  linux-clang:
+    name: Linux Clang
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [clang-15, clang-16, clang-17, clang-18]
+        build_type: [Debug, Release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libssl-dev \
+          libelf-dev \
+          binutils-dev \
+          libbfd-dev \
+          pkg-config \
+          clang-tidy \
+          cppcheck
+    
+    - name: Install LLVM/Clang
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+    
+    - name: Set up compiler
+      run: |
+        if [ "${{ matrix.compiler }}" = "clang-15" ]; then
+          sudo apt-get install -y clang-15 lld-15 libllvm15-dev
+          echo "CC=clang-15" >> $GITHUB_ENV
+          echo "CXX=clang++-15" >> $GITHUB_ENV
+        elif [ "${{ matrix.compiler }}" = "clang-16" ]; then
+          sudo apt-get install -y clang-16 lld-16 libllvm16-dev
+          echo "CC=clang-16" >> $GITHUB_ENV
+          echo "CXX=clang++-16" >> $GITHUB_ENV
+        elif [ "${{ matrix.compiler }}" = "clang-17" ]; then
+          sudo apt-get install -y clang-17 lld-17 libllvm17-dev
+          echo "CC=clang-17" >> $GITHUB_ENV
+          echo "CXX=clang++-17" >> $GITHUB_ENV
+        elif [ "${{ matrix.compiler }}" = "clang-18" ]; then
+          sudo apt-get install -y clang-18 lld-18 libllvm18-dev
+          echo "CC=clang-18" >> $GITHUB_ENV
+          echo "CXX=clang++-18" >> $GITHUB_ENV
+        fi
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_C_COMPILER=$CC \
+          -DCMAKE_CXX_COMPILER=$CXX \
+          -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
+          -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
+          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+    
+    - name: Build
+      run: |
+        cmake --build build --parallel $(nproc)
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure --verbose
+      env:
+        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+
+  # macOS builds
+  macos:
+    name: macOS
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        compiler: [clang, gcc]
+        build_type: [Debug, Release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake openssl libelf binutils llvm@19 pkg-config
+    
+    - name: Set up compiler
+      run: |
+        if [ "${{ matrix.compiler }}" = "gcc" ]; then
+          brew install gcc
+          echo "CC=gcc-13" >> $GITHUB_ENV
+          echo "CXX=g++-13" >> $GITHUB_ENV
+        else
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+        fi
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_C_COMPILER=$CC \
+          -DCMAKE_CXX_COMPILER=$CXX \
+          -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
+          -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
+          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm@19"
+    
+    - name: Build
+      run: |
+        cmake --build build --parallel $(sysctl -n hw.ncpu)
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure --verbose
+      env:
+        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+
+  # Windows builds
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        compiler: [msvc, clang-cl]
+        build_type: [Debug, Release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        # Install vcpkg and dependencies
+        git clone https://github.com/Microsoft/vcpkg.git
+        cd vcpkg
+        .\bootstrap-vcpkg.bat
+        .\vcpkg install openssl:x64-windows
+        .\vcpkg integrate install
+        cd ..
+    
+    - name: Set up compiler
+      if: matrix.compiler == 'clang-cl'
+      run: |
+        echo "CC=clang-cl" >> $GITHUB_ENV
+        echo "CXX=clang-cl" >> $GITHUB_ENV
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_C_COMPILER=${{ env.CC }} \
+          -DCMAKE_CXX_COMPILER=${{ env.CXX }} \
+          -DBUILD_LLD_PLUGIN=OFF \
+          -DBUILD_GOLD_PLUGIN=OFF \
+          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+          -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake
+    
+    - name: Build
+      run: |
+        cmake --build build --config ${{ matrix.build_type }} --parallel
+    
+    - name: Run tests
+      run: |
+        cd build
+        ctest --output-on-failure --verbose -C ${{ matrix.build_type }}
+      env:
+        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+
+  # Code quality checks
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libssl-dev \
+          libelf-dev \
+          binutils-dev \
+          libbfd-dev \
+          pkg-config \
+          clang-tidy \
+          cppcheck \
+          clang-format
+    
+    - name: Install LLVM
+      run: |
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+        sudo apt-get install -y clang-19 lld-19 libllvm19-dev
+    
+    - name: Check code formatting
+      run: |
+        find src tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format --dry-run --Werror
+    
+    - name: Run clang-tidy
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+        cd build
+        make clang-tidy
+    
+    - name: Run cppcheck
+      run: |
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
+        cd build
+        make cppcheck
+    
+    - name: Check for TODO/FIXME comments
+      run: |
+        echo "Checking for TODO/FIXME comments in source files..."
+        if grep -r "TODO\|FIXME" src/ --include="*.cpp" --include="*.hpp"; then
+          echo "Found TODO/FIXME comments in source files"
+          exit 1
+        fi
+
+  # Security scanning
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif' 
