@@ -13,23 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "gtest/gtest.h"
-#include "MetadataExtractor.hpp"
-#include "ComponentInfo.hpp"
 #include <filesystem>
+#include "ComponentInfo.hpp"
+#include "MetadataExtractor.hpp"
+#include "gtest/gtest.h"
 
 using namespace heimdall;
 
 // Helper: Only run if file exists
-#define REQUIRE_FILE(path) \
-    if (!std::filesystem::exists(path)) { \
+#define REQUIRE_FILE(path)                               \
+    if (!std::filesystem::exists(path)) {                \
         GTEST_SKIP() << "Test file not found: " << path; \
     }
 
 // -------- Package Manager Integration Tests --------
 
 TEST(PackageManagerIntegration, DetectRpm) {
-    std::string path = "/usr/lib/librpm.so"; // Adjust to a known RPM-owned file on your system
+    std::string path = "/usr/lib/librpm.so";  // Adjust to a known RPM-owned file on your system
     REQUIRE_FILE(path);
     ComponentInfo comp("rpmtest", path);
     MetadataExtractor extractor;
@@ -40,7 +40,7 @@ TEST(PackageManagerIntegration, DetectRpm) {
 }
 
 TEST(PackageManagerIntegration, DetectDeb) {
-    std::string path = "/usr/lib/x86_64-linux-gnu/libc.so.6"; // Adjust to a known DEB-owned file
+    std::string path = "/usr/lib/x86_64-linux-gnu/libc.so.6";  // Adjust to a known DEB-owned file
     REQUIRE_FILE(path);
     ComponentInfo comp("debtest", path);
     MetadataExtractor extractor;
@@ -51,7 +51,7 @@ TEST(PackageManagerIntegration, DetectDeb) {
 }
 
 TEST(PackageManagerIntegration, DetectPacman) {
-    std::string path = "/usr/lib/libc.so.6"; // Adjust to a known Pacman-owned file
+    std::string path = "/usr/lib/libc.so.6";  // Adjust to a known Pacman-owned file
     REQUIRE_FILE(path);
     ComponentInfo comp("pacmantest", path);
     MetadataExtractor extractor;
@@ -83,7 +83,9 @@ TEST(PackageManagerIntegration, DetectVcpkg) {
 }
 
 TEST(PackageManagerIntegration, DetectSpack) {
-    std::string path = "../tests/testdata/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-abcdef/lib/libz.a";
+    std::string path =
+        "../tests/testdata/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-abcdef/"
+        "lib/libz.a";
     REQUIRE_FILE(path);
     ComponentInfo comp("spacktest", path);
     MetadataExtractor extractor;
@@ -100,7 +102,7 @@ TEST(ArchiveSupport, ExtractMembers) {
     ComponentInfo comp("archivetest", path);
     MetadataExtractor extractor;
     extractor.extractMetadata(comp);
-    EXPECT_GT(comp.sourceFiles.size(), 0); // Should find members
+    EXPECT_GT(comp.sourceFiles.size(), 0);  // Should find members
     // Check for specific member name
     bool found_test_lib = false;
     for (const auto& member : comp.sourceFiles) {
@@ -118,11 +120,11 @@ TEST(ArchiveSupport, ExtractSymbols) {
     ComponentInfo comp("archivetest", path);
     MetadataExtractor extractor;
     extractor.extractMetadata(comp);
-    
+
     // For archives without symbol tables, we might not get symbols
     // But we should at least get the archive members
-    EXPECT_GT(comp.sourceFiles.size(), 0); // Should find members
-    
+    EXPECT_GT(comp.sourceFiles.size(), 0);  // Should find members
+
     // Check for specific member name
     bool found_test_lib = false;
     for (const auto& member : comp.sourceFiles) {
@@ -132,7 +134,7 @@ TEST(ArchiveSupport, ExtractSymbols) {
         }
     }
     EXPECT_TRUE(found_test_lib);
-    
+
     // If we have symbols, check for specific ones
     if (comp.symbols.size() > 0) {
         bool found_test_function1 = false;
@@ -157,4 +159,4 @@ TEST(ArchiveSupport, InvalidArchive) {
     MetadataExtractor extractor;
     bool result = extractor.extractSymbolInfo(comp);
     EXPECT_FALSE(result);
-} 
+}

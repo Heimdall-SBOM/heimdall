@@ -22,13 +22,13 @@ limitations under the License.
  */
 
 #include "ComponentInfo.hpp"
-#include "Utils.hpp"
 #include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <fstream>
-#include <sstream>
 #include <iomanip>
-#include <cctype>
+#include <sstream>
+#include "Utils.hpp"
 
 namespace heimdall {
 
@@ -37,8 +37,7 @@ namespace heimdall {
  * @param filePath The path to the file
  * @return The SHA256 hash as a hexadecimal string
  */
-std::string calculateSHA256(const std::string& filePath)
-{
+std::string calculateSHA256(const std::string& filePath) {
     return Utils::getFileChecksum(filePath);
 }
 
@@ -47,11 +46,9 @@ std::string calculateSHA256(const std::string& filePath)
  * @param filePath The path to the file
  * @return The file size in bytes
  */
-uint64_t getFileSize(const std::string& filePath)
-{
+uint64_t getFileSize(const std::string& filePath) {
     std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         return 0;
     }
     return file.tellg();
@@ -62,31 +59,25 @@ uint64_t getFileSize(const std::string& filePath)
  * @param filePath The path to the file
  * @return The determined file type
  */
-FileType determineFileType(const std::string& filePath)
-{
+FileType determineFileType(const std::string& filePath) {
     std::string lowerPath = filePath;
     std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
 
     // Helper function to check if string ends with suffix
     auto endsWith = [](const std::string& str, const std::string& suffix) {
-        if (str.length() < suffix.length()) return false;
+        if (str.length() < suffix.length())
+            return false;
         return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
     };
 
-    if (endsWith(lowerPath, ".o") || endsWith(lowerPath, ".obj"))
-    {
+    if (endsWith(lowerPath, ".o") || endsWith(lowerPath, ".obj")) {
         return FileType::Object;
-    }
-    else if (endsWith(lowerPath, ".a") || endsWith(lowerPath, ".lib"))
-    {
+    } else if (endsWith(lowerPath, ".a") || endsWith(lowerPath, ".lib")) {
         return FileType::StaticLibrary;
-    }
-    else if (endsWith(lowerPath, ".so") || endsWith(lowerPath, ".dylib") || endsWith(lowerPath, ".dll"))
-    {
+    } else if (endsWith(lowerPath, ".so") || endsWith(lowerPath, ".dylib") ||
+               endsWith(lowerPath, ".dll")) {
         return FileType::SharedLibrary;
-    }
-    else if (endsWith(lowerPath, ".exe") || lowerPath.find("bin/") != std::string::npos)
-    {
+    } else if (endsWith(lowerPath, ".exe") || lowerPath.find("bin/") != std::string::npos) {
         return FileType::Executable;
     }
 
@@ -99,16 +90,15 @@ FileType determineFileType(const std::string& filePath)
  * @param path The file path
  */
 ComponentInfo::ComponentInfo(const std::string& componentName, const std::string& path)
-    : name(componentName)
-    , filePath(path)
-    , fileType(determineFileType(path))
-    , fileSize(getFileSize(path))
-    , wasProcessed(false)
-    , detectedBy(LinkerType::Unknown)
-    , isSystemLibrary(false)
-    , containsDebugInfo(false)
-    , isStripped(false)
-{
+    : name(componentName),
+      filePath(path),
+      fileType(determineFileType(path)),
+      fileSize(getFileSize(path)),
+      wasProcessed(false),
+      detectedBy(LinkerType::Unknown),
+      isSystemLibrary(false),
+      containsDebugInfo(false),
+      isStripped(false) {
     checksum = calculateSHA256(path);
 }
 
@@ -116,10 +106,8 @@ ComponentInfo::ComponentInfo(const std::string& componentName, const std::string
  * @brief Add a dependency to the component
  * @param dependency The dependency to add
  */
-void ComponentInfo::addDependency(const std::string& dependency)
-{
-    if (std::find(dependencies.begin(), dependencies.end(), dependency) == dependencies.end())
-    {
+void ComponentInfo::addDependency(const std::string& dependency) {
+    if (std::find(dependencies.begin(), dependencies.end(), dependency) == dependencies.end()) {
         dependencies.push_back(dependency);
     }
 }
@@ -128,10 +116,8 @@ void ComponentInfo::addDependency(const std::string& dependency)
  * @brief Add a source file to the component
  * @param sourceFile The source file to add
  */
-void ComponentInfo::addSourceFile(const std::string& sourceFile)
-{
-    if (std::find(sourceFiles.begin(), sourceFiles.end(), sourceFile) == sourceFiles.end())
-    {
+void ComponentInfo::addSourceFile(const std::string& sourceFile) {
+    if (std::find(sourceFiles.begin(), sourceFiles.end(), sourceFile) == sourceFiles.end()) {
         sourceFiles.push_back(sourceFile);
     }
 }
@@ -140,8 +126,7 @@ void ComponentInfo::addSourceFile(const std::string& sourceFile)
  * @brief Set the component version
  * @param ver The version string
  */
-void ComponentInfo::setVersion(const std::string& ver)
-{
+void ComponentInfo::setVersion(const std::string& ver) {
     version = ver;
 }
 
@@ -149,8 +134,7 @@ void ComponentInfo::setVersion(const std::string& ver)
  * @brief Set the component supplier
  * @param sup The supplier name
  */
-void ComponentInfo::setSupplier(const std::string& sup)
-{
+void ComponentInfo::setSupplier(const std::string& sup) {
     supplier = sup;
 }
 
@@ -158,8 +142,7 @@ void ComponentInfo::setSupplier(const std::string& sup)
  * @brief Set the download location
  * @param location The download URL
  */
-void ComponentInfo::setDownloadLocation(const std::string& location)
-{
+void ComponentInfo::setDownloadLocation(const std::string& location) {
     downloadLocation = location;
 }
 
@@ -167,8 +150,7 @@ void ComponentInfo::setDownloadLocation(const std::string& location)
  * @brief Set the homepage URL
  * @param page The homepage URL
  */
-void ComponentInfo::setHomepage(const std::string& page)
-{
+void ComponentInfo::setHomepage(const std::string& page) {
     homepage = page;
 }
 
@@ -176,8 +158,7 @@ void ComponentInfo::setHomepage(const std::string& page)
  * @brief Set the license information
  * @param lic The license string
  */
-void ComponentInfo::setLicense(const std::string& lic)
-{
+void ComponentInfo::setLicense(const std::string& lic) {
     license = lic;
 }
 
@@ -185,16 +166,14 @@ void ComponentInfo::setLicense(const std::string& lic)
  * @brief Set the package manager
  * @param pkgMgr The package manager name
  */
-void ComponentInfo::setPackageManager(const std::string& pkgMgr)
-{
+void ComponentInfo::setPackageManager(const std::string& pkgMgr) {
     packageManager = pkgMgr;
 }
 
 /**
  * @brief Mark the component as processed
  */
-void ComponentInfo::markAsProcessed()
-{
+void ComponentInfo::markAsProcessed() {
     wasProcessed = true;
 }
 
@@ -202,8 +181,7 @@ void ComponentInfo::markAsProcessed()
  * @brief Set a processing error message
  * @param error The error message
  */
-void ComponentInfo::setProcessingError(const std::string& error)
-{
+void ComponentInfo::setProcessingError(const std::string& error) {
     processingError = error;
     wasProcessed = false;
 }
@@ -212,16 +190,14 @@ void ComponentInfo::setProcessingError(const std::string& error)
  * @brief Set the linker that detected this component
  * @param linker The linker type
  */
-void ComponentInfo::setDetectedBy(LinkerType linker)
-{
+void ComponentInfo::setDetectedBy(LinkerType linker) {
     detectedBy = linker;
 }
 
 /**
  * @brief Mark the component as a system library
  */
-void ComponentInfo::markAsSystemLibrary()
-{
+void ComponentInfo::markAsSystemLibrary() {
     isSystemLibrary = true;
 }
 
@@ -229,8 +205,7 @@ void ComponentInfo::markAsSystemLibrary()
  * @brief Set whether the component contains debug information
  * @param hasDebug true if debug info is present
  */
-void ComponentInfo::setContainsDebugInfo(bool hasDebug)
-{
+void ComponentInfo::setContainsDebugInfo(bool hasDebug) {
     containsDebugInfo = hasDebug;
 }
 
@@ -238,8 +213,7 @@ void ComponentInfo::setContainsDebugInfo(bool hasDebug)
  * @brief Set whether the component has been stripped
  * @param stripped true if the file has been stripped
  */
-void ComponentInfo::setStripped(bool stripped)
-{
+void ComponentInfo::setStripped(bool stripped) {
     isStripped = stripped;
 }
 
@@ -248,10 +222,10 @@ void ComponentInfo::setStripped(bool stripped)
  * @param symbolName The symbol name to look for
  * @return true if the symbol is found
  */
-bool ComponentInfo::hasSymbol(const std::string& symbolName) const
-{
-    return std::any_of(symbols.begin(), symbols.end(),
-        [&symbolName](const SymbolInfo& symbol) { return symbol.name == symbolName; });
+bool ComponentInfo::hasSymbol(const std::string& symbolName) const {
+    return std::any_of(symbols.begin(), symbols.end(), [&symbolName](const SymbolInfo& symbol) {
+        return symbol.name == symbolName;
+    });
 }
 
 /**
@@ -259,9 +233,9 @@ bool ComponentInfo::hasSymbol(const std::string& symbolName) const
  * @param sectionName The section name to look for
  * @return true if the section is found
  */
-bool ComponentInfo::hasSection(const std::string& sectionName) const
-{
-    return std::any_of(sections.begin(), sections.end(),
+bool ComponentInfo::hasSection(const std::string& sectionName) const {
+    return std::any_of(
+        sections.begin(), sections.end(),
         [&sectionName](const SectionInfo& section) { return section.name == sectionName; });
 }
 
@@ -269,15 +243,18 @@ bool ComponentInfo::hasSection(const std::string& sectionName) const
  * @brief Get the file type as a string
  * @return String representation of the file type
  */
-std::string ComponentInfo::getFileTypeString() const
-{
-    switch (fileType)
-    {
-        case FileType::Object: return "Object";
-        case FileType::StaticLibrary: return "StaticLibrary";
-        case FileType::SharedLibrary: return "SharedLibrary";
-        case FileType::Executable: return "Executable";
-        default: return "Unknown";
+std::string ComponentInfo::getFileTypeString() const {
+    switch (fileType) {
+        case FileType::Object:
+            return "Object";
+        case FileType::StaticLibrary:
+            return "StaticLibrary";
+        case FileType::SharedLibrary:
+            return "SharedLibrary";
+        case FileType::Executable:
+            return "Executable";
+        default:
+            return "Unknown";
     }
 }
 
@@ -285,15 +262,17 @@ std::string ComponentInfo::getFileTypeString() const
  * @brief Get the linker type as a string
  * @return String representation of the linker type
  */
-std::string ComponentInfo::getLinkerTypeString() const
-{
-    switch (detectedBy)
-    {
-        case LinkerType::LLD: return "LLD";
-        case LinkerType::Gold: return "Gold";
-        case LinkerType::BFD: return "BFD";
-        default: return "Unknown";
+std::string ComponentInfo::getLinkerTypeString() const {
+    switch (detectedBy) {
+        case LinkerType::LLD:
+            return "LLD";
+        case LinkerType::Gold:
+            return "Gold";
+        case LinkerType::BFD:
+            return "BFD";
+        default:
+            return "Unknown";
     }
 }
 
-} // namespace heimdall
+}  // namespace heimdall

@@ -72,5 +72,4 @@ TEST(UtilsJson, FormatJsonValue) {
     std::string value = "test\nvalue";
     std::string formatted = Utils::formatJsonValue(value);
     EXPECT_TRUE(formatted.front() == '"' && formatted.back() == '"');
-} 
- 
+}

@@ -79,10 +79,10 @@ TEST_F(ComponentInfoTest, AddSymbolAndSection) {
 TEST_F(ComponentInfoTest, AddDependencyAndSourceFile) {
     ComponentInfo component;
     component.addDependency("libssl.so");
-    component.addDependency("libssl.so"); // duplicate
+    component.addDependency("libssl.so");  // duplicate
     EXPECT_EQ(component.dependencies.size(), 1u);
     component.addSourceFile("main.cpp");
-    component.addSourceFile("main.cpp"); // duplicate
+    component.addSourceFile("main.cpp");  // duplicate
     EXPECT_EQ(component.sourceFiles.size(), 1u);
 }
 
@@ -135,4 +135,4 @@ TEST_F(ComponentInfoTest, GetFileTypeString) {
     EXPECT_EQ(component.getFileTypeString(), "SharedLibrary");
     component.fileType = FileType::Executable;
     EXPECT_EQ(component.getFileTypeString(), "Executable");
-} 
+}

@@ -27,35 +27,34 @@ limitations under the License.
  *          See heimdall-limitations.md for details.
  */
 #include "DWARFExtractor.hpp"
-#include "Utils.hpp"
-#include <iostream>
-#include <fstream>
 #include <algorithm>
-#include <mutex>
-#include <memory>
 #include <atomic>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include "Utils.hpp"
 #ifdef __linux__
 #include <elf.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <libelf.h>
+#include <unistd.h>
 #include <cctype>
 #endif
 
 #ifdef LLVM_DWARF_AVAILABLE
+#include <llvm/DebugInfo/DIContext.h>
 #include <llvm/DebugInfo/DWARF/DWARFContext.h>
-#include <llvm/DebugInfo/DWARF/DWARFUnit.h>
-#include <llvm/DebugInfo/DWARF/DWARFDie.h>
 #include <llvm/DebugInfo/DWARF/DWARFDebugLine.h>
+#include <llvm/DebugInfo/DWARF/DWARFDie.h>
+#include <llvm/DebugInfo/DWARF/DWARFUnit.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/Error.h>
-#include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/ErrorOr.h>
-#include <llvm/DebugInfo/DWARF/DWARFDebugLine.h>
-#include <llvm/DebugInfo/DIContext.h>
 #include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_ostream.h>
 #endif
 
 namespace heimdall {
@@ -132,7 +131,8 @@ DWARFExtractor::~DWARFExtractor() {
  * @param sourceFiles Output vector to store extracted source file paths
  * @return true if extraction was successful and any source files were found, false otherwise
  */
-bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) {
+bool DWARFExtractor::extractSourceFiles(const std::string& filePath,
+                                        std::vector<std::string>& sourceFiles) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
@@ -161,7 +161,8 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector
  * @param compileUnits Output vector to store extracted compile unit names
  * @return true if extraction was successful and any compile units were found, false otherwise
  */
-bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) {
+bool DWARFExtractor::extractCompileUnits(const std::string& filePath,
+                                         std::vector<std::string>& compileUnits) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
@@ -192,7 +193,8 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vecto
  * @param functions Output vector to store extracted function names
  * @return true if extraction was successful and any functions were found, false otherwise
  */
-bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<std::string>& functions) {
+bool DWARFExtractor::extractFunctions(const std::string& filePath,
+                                      std::vector<std::string>& functions) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
@@ -223,7 +225,8 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<s
  * @param lineInfo Output vector to store line number information
  * @return true if extraction was successful and any line info was found, false otherwise
  */
-bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<std::string>& lineInfo) {
+bool DWARFExtractor::extractLineInfo(const std::string& filePath,
+                                     std::vector<std::string>& lineInfo) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
@@ -286,7 +289,7 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #ifdef HEIMDALL_DEBUG_ENABLED
         std::cout << "DWARFExtractor: Creating DWARF context for: " << filePath << std::endl;
 #endif
-        
+
         // Check if file exists and is readable
         if (filePath.empty()) {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -294,7 +297,7 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #endif
             return nullptr;
         }
-        
+
         std::ifstream testFile(filePath);
         if (!testFile.good()) {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -303,7 +306,7 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
             return nullptr;
         }
         testFile.close();
-        
+
         // Create memory buffer from file
         auto bufferOrErr = llvm::MemoryBuffer::getFile(filePath);
         if (!bufferOrErr) {
@@ -318,11 +321,12 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
         auto objOrErr = llvm::object::ObjectFile::createObjectFile(g_buffer->getMemBufferRef());
         if (!objOrErr) {
 #ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: Failed to create object file from " << filePath << std::endl;
+            std::cout << "DWARFExtractor: Failed to create object file from " << filePath
+                      << std::endl;
 #endif
             return nullptr;
         }
-        
+
         // Additional safety check - ensure object file is valid
         if (!objOrErr.get()) {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -330,18 +334,17 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #endif
             return nullptr;
         }
-        
+
         g_objectFile = std::move(objOrErr.get());
 
         // Create DWARF context with new LLVM 19.1.7 API
         try {
-            auto newContext = llvm::DWARFContext::create(*g_objectFile, 
-                                                        llvm::DWARFContext::ProcessDebugRelocations::Process,
-                                                        nullptr, "", 
-                                                        [](llvm::Error) {}, // RecoverableErrorHandler - ignore errors
-                                                        [](llvm::Error) {}, // WarningHandler - ignore warnings
-                                                        false); // ThreadSafe - single-threaded for now
-            
+            auto newContext = llvm::DWARFContext::create(
+                *g_objectFile, llvm::DWARFContext::ProcessDebugRelocations::Process, nullptr, "",
+                [](llvm::Error) {},  // RecoverableErrorHandler - ignore errors
+                [](llvm::Error) {},  // WarningHandler - ignore warnings
+                false);              // ThreadSafe - single-threaded for now
+
             // Additional safety check - ensure the context is valid
             if (!newContext) {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -349,25 +352,28 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #endif
                 return nullptr;
             }
-            
+
             g_context = std::move(newContext);
             return g_context.get();
-            
+
         } catch (const std::exception& e) {
 #ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: Exception during DWARF context creation: " << e.what() << std::endl;
+            std::cout << "DWARFExtractor: Exception during DWARF context creation: " << e.what()
+                      << std::endl;
 #endif
             return nullptr;
         } catch (...) {
 #ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: Unknown exception during DWARF context creation" << std::endl;
+            std::cout << "DWARFExtractor: Unknown exception during DWARF context creation"
+                      << std::endl;
 #endif
             return nullptr;
         }
-        
+
     } catch (const std::exception& e) {
 #ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception during DWARF context creation: " << e.what() << std::endl;
+        std::cout << "DWARFExtractor: Exception during DWARF context creation: " << e.what()
+                  << std::endl;
 #endif
         return nullptr;
     } catch (...) {
@@ -376,7 +382,7 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #endif
         return nullptr;
     }
-    
+
     return nullptr;
 }
 
@@ -389,7 +395,8 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
  * @param die DWARF DIE (Debugging Information Entry)
  * @param sourceFiles Output vector for source files
  */
-void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die, std::vector<std::string>& sourceFiles) {
+void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die,
+                                               std::vector<std::string>& sourceFiles) {
     if (!die.isValid()) {
         return;
     }
@@ -399,7 +406,8 @@ void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die, std::v
         if (auto nameAttr = die.find(llvm::dwarf::DW_AT_name)) {
             if (auto name = nameAttr->getAsCString()) {
                 std::string fileName = *name;
-                if (!fileName.empty() && std::find(sourceFiles.begin(), sourceFiles.end(), fileName) == sourceFiles.end()) {
+                if (!fileName.empty() && std::find(sourceFiles.begin(), sourceFiles.end(),
+                                                   fileName) == sourceFiles.end()) {
                     sourceFiles.push_back(fileName);
                 }
             }
@@ -413,7 +421,8 @@ void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die, std::v
         }
     } catch (const std::exception& e) {
 #ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Exception in extractSourceFilesFromDie: " << e.what() << std::endl;
+        std::cout << "DWARFExtractor: Exception in extractSourceFilesFromDie: " << e.what()
+                  << std::endl;
 #endif
     } catch (...) {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -431,7 +440,8 @@ void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die, std::v
  * @param die DWARF DIE (Debugging Information Entry)
  * @param compileUnits Output vector for compile units
  */
-void DWARFExtractor::extractCompileUnitFromDie(const llvm::DWARFDie& die, std::vector<std::string>& compileUnits) {
+void DWARFExtractor::extractCompileUnitFromDie(const llvm::DWARFDie& die,
+                                               std::vector<std::string>& compileUnits) {
     if (!die.isValid()) {
         return;
     }
@@ -439,14 +449,14 @@ void DWARFExtractor::extractCompileUnitFromDie(const llvm::DWARFDie& die, std::v
     // Check if this is a compile unit
     if (die.getTag() == llvm::dwarf::DW_TAG_compile_unit) {
         std::string unitName = "unknown";
-        
+
         // Try to get the compile unit name
         if (auto nameAttr = die.find(llvm::dwarf::DW_AT_name)) {
             if (auto name = nameAttr->getAsCString()) {
                 unitName = *name;
             }
         }
-        
+
         if (std::find(compileUnits.begin(), compileUnits.end(), unitName) == compileUnits.end()) {
             compileUnits.push_back(unitName);
         }
@@ -467,24 +477,24 @@ void DWARFExtractor::extractCompileUnitFromDie(const llvm::DWARFDie& die, std::v
  * @param die DWARF DIE (Debugging Information Entry)
  * @param functions Output vector for functions
  */
-void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die, std::vector<std::string>& functions) {
+void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die,
+                                             std::vector<std::string>& functions) {
     if (!die.isValid()) {
         return;
     }
 
     // Check if this is a function
     if (die.getTag() == llvm::dwarf::DW_TAG_subprogram) {
-        
         std::string functionName = "unknown";
-        
+
         // Try to get the function name
         if (auto nameAttr = die.find(llvm::dwarf::DW_AT_name)) {
             if (auto name = nameAttr->getAsCString()) {
                 functionName = *name;
             }
         }
-        
-        if (!functionName.empty() && functionName != "unknown" && 
+
+        if (!functionName.empty() && functionName != "unknown" &&
             std::find(functions.begin(), functions.end(), functionName) == functions.end()) {
             functions.push_back(functionName);
         }
@@ -508,62 +518,75 @@ void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die, std::vec
  * @param sourceFiles Output vector for source files
  * @return true if any source files were found, false otherwise
  */
-bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath, std::vector<std::string>& sourceFiles) {
+bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath,
+                                                 std::vector<std::string>& sourceFiles) {
 #ifdef __linux__
     elf_version(EV_CURRENT);
     int fd = open(filePath.c_str(), O_RDONLY);
-    if (fd < 0) return false;
-    
+    if (fd < 0)
+        return false;
+
     Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
-    if (!elf) { 
-        close(fd); 
-        return false; 
+    if (!elf) {
+        close(fd);
+        return false;
     }
-    
+
     Elf_Scn* scn = nullptr;
     Elf64_Shdr* shdr = nullptr;
     bool found = false;
-    
+
     while ((scn = elf_nextscn(elf, scn)) != nullptr) {
         shdr = elf64_getshdr(scn);
-        if (!shdr) continue;
-        
+        if (!shdr)
+            continue;
+
         if (shdr->sh_type == SHT_PROGBITS) {
             // Look for .debug_line section
             std::string sectionName;
             {
                 Elf64_Ehdr* ehdr = elf64_getehdr(elf);
-                if (!ehdr) continue;
-                
+                if (!ehdr)
+                    continue;
+
                 Elf_Scn* shstrscn = elf_getscn(elf, ehdr->e_shstrndx);
-                if (!shstrscn) continue;
-                
+                if (!shstrscn)
+                    continue;
+
                 Elf64_Shdr* shstrshdr = elf64_getshdr(shstrscn);
-                if (!shstrshdr) continue;
-                
+                if (!shstrshdr)
+                    continue;
+
                 Elf_Data* shstrdata = elf_getdata(shstrscn, nullptr);
-                if (!shstrdata) continue;
-                
+                if (!shstrdata)
+                    continue;
+
                 char* shstrtab = static_cast<char*>(shstrdata->d_buf);
                 sectionName = shstrtab + shdr->sh_name;
             }
-            
+
             if (sectionName == ".debug_line") {
                 Elf_Data* data = elf_getdata(scn, nullptr);
-                if (!data) continue;
-                
+                if (!data)
+                    continue;
+
                 const char* buf = static_cast<const char*>(data->d_buf);
                 size_t sz = data->d_size;
-                
+
                 // Scan for null-terminated strings that look like file paths
                 for (size_t i = 0; i + 2 < sz;) {
                     if (isprint(buf[i]) && (buf[i] == '/' || isalpha(buf[i]))) {
                         size_t start = i;
-                        while (i < sz && isprint(buf[i]) && buf[i] != '\0') ++i;
+                        while (i < sz && isprint(buf[i]) && buf[i] != '\0')
+                            ++i;
                         if (i < sz && buf[i] == '\0') {
                             std::string s(buf + start, buf + i);
-                            if ((s.find(".c") != std::string::npos || s.find(".h") != std::string::npos || s.find(".cpp") != std::string::npos) && s.find('/') != std::string::npos) {
-                                if (std::find(sourceFiles.begin(), sourceFiles.end(), s) == sourceFiles.end()) {
+                            if ((s.find(".c") != std::string::npos ||
+                                 s.find(".h") != std::string::npos ||
+                                 s.find(".cpp") != std::string::npos) &&
+                                s.find('/') != std::string::npos) {
+                                if (std::find(sourceFiles.begin(), sourceFiles.end(), s) ==
+                                    sourceFiles.end()) {
                                     sourceFiles.push_back(s);
                                     found = true;
                                 }
@@ -577,18 +600,19 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath, st
             }
         }
     }
-    
+
     elf_end(elf);
     close(fd);
-    
+
 #ifdef HEIMDALL_DEBUG_ENABLED
     if (found) {
-        std::cout << "DWARFExtractor: Heuristic parser found " << sourceFiles.size() << " source files" << std::endl;
+        std::cout << "DWARFExtractor: Heuristic parser found " << sourceFiles.size()
+                  << " source files" << std::endl;
     } else {
         std::cout << "DWARFExtractor: Heuristic parser found no source files" << std::endl;
     }
 #endif
-    
+
     return found;
 #else
     (void)filePath;
@@ -597,4 +621,4 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath, st
 #endif
 }
 
-} // namespace heimdall 
+}  // namespace heimdall

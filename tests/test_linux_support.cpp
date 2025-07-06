@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <cstdlib>
-#include "MetadataExtractor.hpp"
-#include "ComponentInfo.hpp"
 #include <iostream>
+#include "ComponentInfo.hpp"
+#include "MetadataExtractor.hpp"
 
 using namespace heimdall;
 
@@ -28,7 +28,7 @@ protected:
     void SetUp() override {
         test_dir = std::filesystem::temp_directory_path() / "heimdall_linux_test";
         std::filesystem::create_directories(test_dir);
-        
+
         // Create a simple C source file for testing
         test_source = test_dir / "testlib.c";
         std::ofstream(test_source) << R"(
@@ -45,13 +45,13 @@ const char* test_version = "1.2.3";
 __attribute__((visibility("default")))
 const char* test_license = "MIT";
 )";
-        
+
         // Compile it into a shared library with build ID
         test_lib = test_dir / "libtest.so";
-        std::string compile_cmd = "gcc -shared -fPIC -g -Wl,--build-id=0x1234567890abcdef -o " + test_lib.string() + 
-                                 " " + test_source.string() + " 2>/dev/null";
+        std::string compile_cmd = "gcc -shared -fPIC -g -Wl,--build-id=0x1234567890abcdef -o " +
+                                  test_lib.string() + " " + test_source.string() + " 2>/dev/null";
         system(compile_cmd.c_str());
-        
+
         // Fallback to dummy file if compilation fails
         if (!std::filesystem::exists(test_lib)) {
             std::ofstream(test_lib) << "dummy content";
@@ -66,22 +66,22 @@ const char* test_license = "MIT";
 };
 
 TEST_F(LinuxSupportTest, ELFSymbolExtraction) {
-    #ifndef __linux__
-        GTEST_SKIP() << "ELF symbol extraction is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "ELF symbol extraction is Linux-specific";
+#endif
+
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
-    
+
     if (std::filesystem::file_size(test_lib) > 100) {
         bool result = extractor.extractSymbolInfo(component);
         EXPECT_TRUE(result);
         EXPECT_GT(component.symbols.size(), 0);
-        
+
         // Check for our test symbols
         bool found_test_function = false;
         bool found_test_version = false;
-        
+
         for (const auto& symbol : component.symbols) {
             if (symbol.name == "test_function") {
                 found_test_function = true;
@@ -90,29 +90,29 @@ TEST_F(LinuxSupportTest, ELFSymbolExtraction) {
                 found_test_version = true;
             }
         }
-        
+
         EXPECT_TRUE(found_test_function);
         EXPECT_TRUE(found_test_version);
     }
 }
 
 TEST_F(LinuxSupportTest, ELFSectionExtraction) {
-    #ifndef __linux__
-        GTEST_SKIP() << "ELF section extraction is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "ELF section extraction is Linux-specific";
+#endif
+
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
-    
+
     if (std::filesystem::file_size(test_lib) > 100) {
         bool result = extractor.extractSectionInfo(component);
         EXPECT_TRUE(result);
         EXPECT_GT(component.sections.size(), 0);
-        
+
         // Check for common ELF sections
         bool found_text = false;
         bool found_data = false;
-        
+
         for (const auto& section : component.sections) {
             if (section.name == ".text") {
                 found_text = true;
@@ -121,19 +121,19 @@ TEST_F(LinuxSupportTest, ELFSectionExtraction) {
                 found_data = true;
             }
         }
-        
+
         EXPECT_TRUE(found_text);
     }
 }
 
 TEST_F(LinuxSupportTest, ELFDependencyExtraction) {
-    #ifndef __linux__
-        GTEST_SKIP() << "ELF dependency extraction is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "ELF dependency extraction is Linux-specific";
+#endif
+
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
-    
+
     if (std::filesystem::file_size(test_lib) > 100) {
         bool result = extractor.extractDependencyInfo(component);
         // May or may not have dependencies, but should not crash
@@ -142,18 +142,18 @@ TEST_F(LinuxSupportTest, ELFDependencyExtraction) {
 }
 
 TEST_F(LinuxSupportTest, ELFBuildIdExtraction) {
-    #ifndef __linux__
-        GTEST_SKIP() << "ELF build ID extraction is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "ELF build ID extraction is Linux-specific";
+#endif
+
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
-    
+
     if (std::filesystem::file_size(test_lib) > 100) {
         // Test build ID extraction directly
         std::string buildId;
         bool result = MetadataHelpers::extractELFBuildId(test_lib.string(), buildId);
-        
+
         // May or may not have build ID, but should not crash
         if (result) {
             EXPECT_FALSE(buildId.empty());
@@ -163,47 +163,48 @@ TEST_F(LinuxSupportTest, ELFBuildIdExtraction) {
 }
 
 TEST_F(LinuxSupportTest, FileFormatDetection) {
-    #ifndef __linux__
-        GTEST_SKIP() << "ELF format detection is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "ELF format detection is Linux-specific";
+#endif
+
     MetadataExtractor extractor;
-    
+
     // Test ELF detection
     if (std::filesystem::file_size(test_lib) > 100) {
         EXPECT_TRUE(extractor.isELF(test_lib.string()));
         EXPECT_TRUE(MetadataHelpers::isELF(test_lib.string()));
     }
-    
+
     // Test non-ELF files
     EXPECT_FALSE(extractor.isELF(test_source.string()));
     EXPECT_FALSE(MetadataHelpers::isELF(test_source.string()));
 }
 
 TEST_F(LinuxSupportTest, DWARFSourceFileExtraction) {
-    #ifndef __linux__
-        GTEST_SKIP() << "DWARF source file extraction is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "DWARF source file extraction is Linux-specific";
+#endif
+
     std::vector<std::string> sourceFiles;
     bool result = heimdall::MetadataHelpers::extractSourceFiles(test_lib.string(), sourceFiles);
     // Should find at least one .c file (the test source)
     bool found_c = false;
     for (const auto& f : sourceFiles) {
-        if (f.find("testlib.c") != std::string::npos) found_c = true;
+        if (f.find("testlib.c") != std::string::npos)
+            found_c = true;
     }
     EXPECT_TRUE(result);
     EXPECT_TRUE(found_c);
 }
 
 TEST_F(LinuxSupportTest, DWARFCompileUnitExtraction) {
-    #ifndef __linux__
-        GTEST_SKIP() << "DWARF compile unit extraction is Linux-specific";
-    #endif
-    
+#ifndef __linux__
+    GTEST_SKIP() << "DWARF compile unit extraction is Linux-specific";
+#endif
+
     std::vector<std::string> units;
     bool result = heimdall::MetadataHelpers::extractCompileUnits(test_lib.string(), units);
     // We expect at least one compile unit (may be a stub string)
     EXPECT_TRUE(result);
     EXPECT_GE(units.size(), 1);
-} 
+}

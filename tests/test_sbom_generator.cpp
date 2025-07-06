@@ -17,8 +17,8 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include "SBOMGenerator.hpp"
 #include "ComponentInfo.hpp"
+#include "SBOMGenerator.hpp"
 
 using namespace heimdall;
 
@@ -81,4 +81,4 @@ TEST_F(SBOMGeneratorTest, GenerateSBOMCycloneDX) {
     std::string content = buffer.str();
     EXPECT_NE(content.find("CycloneDX"), std::string::npos);
     EXPECT_NE(content.find("foo"), std::string::npos);
-} 
+}

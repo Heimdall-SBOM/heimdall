@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <cstdlib>
 #include "Utils.hpp"
 
 using namespace heimdall;
@@ -27,11 +27,11 @@ protected:
     void SetUp() override {
         test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_extended_test";
         std::filesystem::create_directories(test_dir);
-        
+
         // Create test files
         test_file = test_dir / "test.txt";
         std::ofstream(test_file) << "test content";
-        
+
         // Create a larger file for checksum testing
         large_file = test_dir / "large.bin";
         std::ofstream large_stream(large_file, std::ios::binary);
@@ -39,20 +39,20 @@ protected:
             large_stream.write(reinterpret_cast<const char*>(&i), sizeof(i));
         }
         large_stream.close();
-        
+
         // Create test directories
         sub_dir = test_dir / "subdir";
         std::filesystem::create_directories(sub_dir);
-        
+
         // Set environment variable for testing
         setenv("TEST_VAR", "test_value", 1);
     }
-    
+
     void TearDown() override {
         std::filesystem::remove_all(test_dir);
         unsetenv("TEST_VAR");
     }
-    
+
     std::filesystem::path test_dir;
     std::filesystem::path test_file;
     std::filesystem::path large_file;
@@ -73,7 +73,7 @@ TEST_F(UtilsExtendedTest, SplitPath) {
     EXPECT_EQ(parts[1], "usr");
     EXPECT_EQ(parts[2], "lib");
     EXPECT_EQ(parts[3], "x86_64-linux-gnu");
-    
+
     auto relative_parts = Utils::splitPath("test/subdir/file.txt");
     ASSERT_EQ(relative_parts.size(), 3u);
     EXPECT_EQ(relative_parts[0], "test");
@@ -84,22 +84,22 @@ TEST_F(UtilsExtendedTest, SplitPath) {
 TEST_F(UtilsExtendedTest, GetFileSize) {
     EXPECT_GT(Utils::getFileSize(test_file.string()), 0u);
     EXPECT_EQ(Utils::getFileSize((test_dir / "nonexistent.txt").string()), 0u);
-    EXPECT_EQ(Utils::getFileSize(large_file.string()), 4000u); // 1000 * sizeof(int)
+    EXPECT_EQ(Utils::getFileSize(large_file.string()), 4000u);  // 1000 * sizeof(int)
 }
 
 TEST_F(UtilsExtendedTest, GetFileChecksum) {
     std::string checksum = Utils::getFileChecksum(test_file.string());
     EXPECT_FALSE(checksum.empty());
-    EXPECT_EQ(checksum.length(), 64u); // SHA256 is 32 bytes = 64 hex chars
-    
+    EXPECT_EQ(checksum.length(), 64u);  // SHA256 is 32 bytes = 64 hex chars
+
     // Same file should have same checksum
     std::string checksum2 = Utils::getFileChecksum(test_file.string());
     EXPECT_EQ(checksum, checksum2);
-    
+
     // Different files should have different checksums
     std::string large_checksum = Utils::getFileChecksum(large_file.string());
     EXPECT_NE(checksum, large_checksum);
-    
+
     // Non-existent file should return empty string
     EXPECT_TRUE(Utils::getFileChecksum((test_dir / "nonexistent.txt").string()).empty());
 }
@@ -118,7 +118,7 @@ TEST_F(UtilsExtendedTest, StringOperations) {
     EXPECT_FALSE(Utils::startsWith("hello world", "world"));
     EXPECT_TRUE(Utils::endsWith("hello world", "world"));
     EXPECT_FALSE(Utils::endsWith("hello world", "hello"));
-    
+
     EXPECT_EQ(Utils::replace("hello world", "world", "universe"), "hello universe");
     EXPECT_EQ(Utils::replace("hello hello", "hello", "hi"), "hi hi");
     EXPECT_EQ(Utils::replace("no change", "missing", "replacement"), "no change");
@@ -130,7 +130,7 @@ TEST_F(UtilsExtendedTest, SplitAndJoin) {
     EXPECT_EQ(parts[0], "a");
     EXPECT_EQ(parts[1], "b");
     EXPECT_EQ(parts[2], "c");
-    
+
     EXPECT_EQ(Utils::join(parts, ":"), "a:b:c");
     EXPECT_EQ(Utils::join(parts, "-"), "a-b-c");
     EXPECT_EQ(Utils::join({}, ":"), "");
@@ -141,16 +141,16 @@ TEST_F(UtilsExtendedTest, FileTypeDetection) {
     EXPECT_TRUE(Utils::isObjectFile("test.o"));
     EXPECT_TRUE(Utils::isObjectFile("test.obj"));
     EXPECT_FALSE(Utils::isObjectFile("test.txt"));
-    
+
     EXPECT_TRUE(Utils::isStaticLibrary("libtest.a"));
     EXPECT_TRUE(Utils::isStaticLibrary("test.lib"));
     EXPECT_FALSE(Utils::isStaticLibrary("test.txt"));
-    
+
     EXPECT_TRUE(Utils::isSharedLibrary("libtest.so"));
     EXPECT_TRUE(Utils::isSharedLibrary("test.dylib"));
     EXPECT_TRUE(Utils::isSharedLibrary("test.dll"));
     EXPECT_FALSE(Utils::isSharedLibrary("test.txt"));
-    
+
     EXPECT_TRUE(Utils::isExecutable("test.exe"));
     EXPECT_TRUE(Utils::isExecutable("bin/test"));
     EXPECT_FALSE(Utils::isExecutable("test.txt"));
@@ -194,13 +194,15 @@ TEST_F(UtilsExtendedTest, CurrentWorkingDirectory) {
 TEST_F(UtilsExtendedTest, LibrarySearchPaths) {
     auto paths = Utils::getLibrarySearchPaths();
     EXPECT_FALSE(paths.empty());
-    
+
     // Should contain standard paths
     bool has_usr_lib = false;
     bool has_usr_lib64 = false;
     for (const auto& path : paths) {
-        if (path.find("/usr/lib") != std::string::npos) has_usr_lib = true;
-        if (path.find("/usr/lib64") != std::string::npos) has_usr_lib64 = true;
+        if (path.find("/usr/lib") != std::string::npos)
+            has_usr_lib = true;
+        if (path.find("/usr/lib64") != std::string::npos)
+            has_usr_lib64 = true;
     }
     EXPECT_TRUE(has_usr_lib || has_usr_lib64);
 }
@@ -211,7 +213,7 @@ TEST_F(UtilsExtendedTest, FindLibrary) {
     if (!libc_path.empty()) {
         EXPECT_TRUE(Utils::fileExists(libc_path));
     }
-    
+
     // Test with non-existent library
     EXPECT_TRUE(Utils::findLibrary("nonexistent_library.so").empty());
 }
@@ -221,7 +223,7 @@ TEST_F(UtilsExtendedTest, IsSystemLibrary) {
     EXPECT_TRUE(Utils::isSystemLibrary("/usr/lib/libc.so"));
     EXPECT_TRUE(Utils::isSystemLibrary("/usr/lib64/libm.so"));
     EXPECT_TRUE(Utils::isSystemLibrary("/lib/libpthread.so"));
-    
+
     // Test with non-system paths
     EXPECT_FALSE(Utils::isSystemLibrary("/home/user/libtest.so"));
     EXPECT_FALSE(Utils::isSystemLibrary("./libtest.so"));
@@ -247,13 +249,13 @@ TEST_F(UtilsExtendedTest, PathOperations) {
     EXPECT_EQ(Utils::getFileName("/usr/lib/libtest.so"), "libtest.so");
     EXPECT_EQ(Utils::getFileName("libtest.so"), "libtest.so");
     EXPECT_EQ(Utils::getFileName(""), "");
-    
+
     EXPECT_EQ(Utils::getFileExtension("/usr/lib/libtest.so"), ".so");
     EXPECT_EQ(Utils::getFileExtension("libtest.so"), ".so");
     EXPECT_EQ(Utils::getFileExtension("test"), "");
     EXPECT_EQ(Utils::getFileExtension(""), "");
-    
+
     EXPECT_EQ(Utils::getDirectory("/usr/lib/libtest.so"), "/usr/lib");
     EXPECT_EQ(Utils::getDirectory("libtest.so"), "");
     EXPECT_EQ(Utils::getDirectory(""), "");
-} 
+}

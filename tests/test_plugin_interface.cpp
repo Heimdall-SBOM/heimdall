@@ -22,12 +22,12 @@ limitations under the License.
  */
 
 #include <gtest/gtest.h>
-#include "PluginInterface.hpp"
-#include "ComponentInfo.hpp"
-#include "SBOMGenerator.hpp"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include "ComponentInfo.hpp"
+#include "PluginInterface.hpp"
+#include "SBOMGenerator.hpp"
 
 namespace heimdall {
 namespace test {
@@ -39,91 +39,93 @@ class TestPluginInterface : public PluginInterface {
 public:
     TestPluginInterface() = default;
     ~TestPluginInterface() override = default;
-    
+
     // Implement pure virtual methods for testing
     bool initialize() override {
         return true;
     }
-    
+
     void cleanup() override {
         // Clean up test resources
     }
-    
+
     void processInputFile(const std::string& filePath) override {
         ComponentInfo component(extractComponentName(filePath), filePath);
         addComponent(component);
     }
-    
+
     void processLibrary(const std::string& libraryPath) override {
         ComponentInfo component(extractComponentName(libraryPath), libraryPath);
         component.fileType = FileType::SharedLibrary;
         addComponent(component);
     }
-    
+
     void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) override {
         SymbolInfo symbol;
         symbol.name = symbolName;
         symbol.address = address;
         symbol.size = size;
-        
+
         // Add to the last processed component
         if (!processedComponents.empty()) {
             processedComponents.back().addSymbol(symbol);
         }
     }
-    
+
     void setOutputPath(const std::string& path) override {
         if (sbomGenerator) {
             sbomGenerator->setOutputPath(path);
         }
     }
-    
+
     void setFormat(const std::string& format) override {
         if (sbomGenerator) {
             sbomGenerator->setFormat(format);
         }
     }
-    
+
     void generateSBOM() override {
         if (sbomGenerator) {
             sbomGenerator->generateSBOM();
         }
     }
-    
+
     void setVerbose(bool verbose) override {
         this->verbose = verbose;
     }
-    
+
     void setExtractDebugInfo(bool extract) override {
         this->extractDebugInfo = extract;
     }
-    
+
     void setIncludeSystemLibraries(bool include) override {
         this->includeSystemLibraries = include;
     }
-    
+
     size_t getComponentCount() const override {
         return processedComponents.size();
     }
-    
+
     void printStatistics() const override {
         // Print test statistics
         std::cout << "Test Plugin Statistics:" << std::endl;
         std::cout << "  Components processed: " << processedComponents.size() << std::endl;
         std::cout << "  Verbose mode: " << (verbose ? "enabled" : "disabled") << std::endl;
-        std::cout << "  Debug info extraction: " << (extractDebugInfo ? "enabled" : "disabled") << std::endl;
-        std::cout << "  System libraries: " << (includeSystemLibraries ? "included" : "excluded") << std::endl;
+        std::cout << "  Debug info extraction: " << (extractDebugInfo ? "enabled" : "disabled")
+                  << std::endl;
+        std::cout << "  System libraries: " << (includeSystemLibraries ? "included" : "excluded")
+                  << std::endl;
     }
-    
+
     // Expose protected methods for testing
     using PluginInterface::addComponent;
-    using PluginInterface::updateComponent;
-    using PluginInterface::shouldProcessFile;
     using PluginInterface::extractComponentName;
-    using PluginInterface::processedComponents;
-    using PluginInterface::verbose;
     using PluginInterface::extractDebugInfo;
     using PluginInterface::includeSystemLibraries;
+    using PluginInterface::processedComponents;
+    using PluginInterface::shouldProcessFile;
+    using PluginInterface::updateComponent;
+    using PluginInterface::verbose;
 };
 
 /**
@@ -133,38 +135,38 @@ class PluginInterfaceTest : public ::testing::Test {
 protected:
     void SetUp() override {
         plugin = std::make_unique<TestPluginInterface>();
-        
+
         // Create temporary test files
         createTestFiles();
     }
-    
+
     void TearDown() override {
         // Clean up test files
         cleanupTestFiles();
     }
-    
+
     void createTestFiles() {
         // Create test object file
         std::ofstream objFile("test_object.o");
         objFile << "test object file content";
         objFile.close();
-        
+
         // Create test library file
         std::ofstream libFile("libtest.so");
         libFile << "test library file content";
         libFile.close();
-        
+
         // Create test executable
         std::ofstream exeFile("test_executable.exe");
         exeFile << "test executable content";
         exeFile.close();
-        
+
         // Create test archive
         std::ofstream archiveFile("libtest.a");
         archiveFile << "test archive content";
         archiveFile.close();
     }
-    
+
     void cleanupTestFiles() {
         std::filesystem::remove("test_object.o");
         std::filesystem::remove("libtest.so");
@@ -173,7 +175,7 @@ protected:
         std::filesystem::remove("test_config.json");
         std::filesystem::remove("test_output.json");
     }
-    
+
     std::unique_ptr<TestPluginInterface> plugin;
 };
 
@@ -221,7 +223,7 @@ TEST_F(PluginInterfaceTest, ProcessLibrary) {
 TEST_F(PluginInterfaceTest, ProcessSymbol) {
     plugin->processInputFile("test_object.o");
     plugin->processSymbol("test_function", 0x1000, 64);
-    
+
     EXPECT_EQ(plugin->getComponentCount(), 1u);
     EXPECT_EQ(plugin->processedComponents[0].symbols.size(), 1u);
     EXPECT_EQ(plugin->processedComponents[0].symbols[0].name, "test_function");
@@ -233,7 +235,7 @@ TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
     plugin->processInputFile("test_object.o");
     plugin->processLibrary("libtest.so");
     plugin->processInputFile("test_executable.exe");
-    
+
     EXPECT_EQ(plugin->getComponentCount(), 3u);
     EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
     EXPECT_EQ(plugin->processedComponents[1].name, "test");
@@ -291,16 +293,16 @@ TEST_F(PluginInterfaceTest, GetComponentCount) {
 TEST_F(PluginInterfaceTest, PrintStatistics) {
     plugin->processInputFile("test_object.o");
     plugin->processLibrary("libtest.so");
-    
+
     // Capture output
     std::stringstream buffer;
     std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
-    
+
     plugin->printStatistics();
-    
+
     std::cout.rdbuf(old);
     std::string output = buffer.str();
-    
+
     EXPECT_FALSE(output.empty());
     EXPECT_TRUE(output.find("Components processed: 2") != std::string::npos);
 }
@@ -311,15 +313,15 @@ TEST_F(PluginInterfaceTest, AddComponent) {
     std::ofstream testFile("test_file.o");
     testFile << "test file content";
     testFile.close();
-    
+
     ComponentInfo component("test_component", "test_file.o");
     component.fileType = FileType::Object;
-    
+
     plugin->addComponent(component);
     EXPECT_EQ(plugin->getComponentCount(), 1u);
     EXPECT_EQ(plugin->processedComponents[0].name, "test_component");
     EXPECT_EQ(plugin->processedComponents[0].filePath, "test_file.o");
-    
+
     // Clean up
     std::filesystem::remove("test_file.o");
 }
@@ -329,11 +331,11 @@ TEST_F(PluginInterfaceTest, UpdateComponent) {
     std::ofstream testFile("test_file.o");
     testFile << "test file content";
     testFile.close();
-    
+
     // Add initial component
     ComponentInfo component("test_component", "test_file.o");
     plugin->addComponent(component);
-    
+
     // Update with symbols
     std::vector<SymbolInfo> symbols;
     SymbolInfo symbol1;
@@ -341,20 +343,20 @@ TEST_F(PluginInterfaceTest, UpdateComponent) {
     symbol1.address = 0x1000;
     symbol1.size = 64;
     symbols.push_back(symbol1);
-    
+
     SymbolInfo symbol2;
     symbol2.name = "function2";
     symbol2.address = 0x2000;
     symbol2.size = 128;
     symbols.push_back(symbol2);
-    
+
     plugin->updateComponent("test_component", "test_file.o", symbols);
-    
+
     EXPECT_EQ(plugin->getComponentCount(), 1u);
     EXPECT_EQ(plugin->processedComponents[0].symbols.size(), 2u);
     EXPECT_EQ(plugin->processedComponents[0].symbols[0].name, "function1");
     EXPECT_EQ(plugin->processedComponents[0].symbols[1].name, "function2");
-    
+
     // Clean up
     std::filesystem::remove("test_file.o");
 }
@@ -364,20 +366,20 @@ TEST_F(PluginInterfaceTest, UpdateComponentNotFound) {
     std::ofstream testFile("nonexistent.o");
     testFile << "test file content";
     testFile.close();
-    
+
     // Try to update non-existent component
     std::vector<SymbolInfo> symbols;
     SymbolInfo symbol;
     symbol.name = "test_function";
     symbols.push_back(symbol);
-    
+
     plugin->updateComponent("nonexistent", "nonexistent.o", symbols);
-    
+
     // Should create new component
     EXPECT_EQ(plugin->getComponentCount(), 1u);
     EXPECT_EQ(plugin->processedComponents[0].name, "nonexistent");
     EXPECT_EQ(plugin->processedComponents[0].symbols.size(), 1u);
-    
+
     // Clean up
     std::filesystem::remove("nonexistent.o");
 }
@@ -388,7 +390,7 @@ TEST_F(PluginInterfaceTest, ShouldProcessFile) {
     EXPECT_TRUE(plugin->shouldProcessFile("libtest.so"));
     EXPECT_TRUE(plugin->shouldProcessFile("test_executable.exe"));
     EXPECT_TRUE(plugin->shouldProcessFile("libtest.a"));
-    
+
     // Invalid files
     EXPECT_FALSE(plugin->shouldProcessFile("nonexistent.o"));
     EXPECT_FALSE(plugin->shouldProcessFile("test.txt"));
@@ -399,15 +401,15 @@ TEST_F(PluginInterfaceTest, ShouldProcessFile) {
 TEST_F(PluginInterfaceTest, ShouldProcessFileSystemLibraries) {
     // Test system library exclusion
     EXPECT_FALSE(plugin->includeSystemLibraries);
-    
+
     // Should not process system libraries by default
     EXPECT_FALSE(plugin->shouldProcessFile("/usr/lib/libc.so"));
     EXPECT_FALSE(plugin->shouldProcessFile("/usr/lib64/libstdc++.so"));
-    
+
     // Enable system libraries
     plugin->setIncludeSystemLibraries(true);
     EXPECT_TRUE(plugin->includeSystemLibraries);
-    
+
     // Should process system libraries when enabled
     bool checked = false;
     if (std::filesystem::exists("/usr/lib/libc.so")) {
@@ -420,7 +422,7 @@ TEST_F(PluginInterfaceTest, ShouldProcessFileSystemLibraries) {
     }
     // At least one libc should exist on a typical Linux system
     EXPECT_TRUE(checked);
-    
+
     if (std::filesystem::exists("/usr/lib64/libstdc++.so")) {
         EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib64/libstdc++.so"));
     }
@@ -499,11 +501,11 @@ TEST_F(PluginInterfaceTest, PluginUtilsExtractSymbolVersion) {
 TEST_F(PluginInterfaceTest, PluginUtilsGetLibrarySearchPaths) {
     auto paths = PluginUtils::getLibrarySearchPaths();
     EXPECT_FALSE(paths.empty());
-    
+
     // Should contain common library paths
     bool hasUsrLib = false;
     bool hasUsrLocalLib = false;
-    
+
     for (const auto& path : paths) {
         if (path.find("/usr/lib") != std::string::npos) {
             hasUsrLib = true;
@@ -512,7 +514,7 @@ TEST_F(PluginInterfaceTest, PluginUtilsGetLibrarySearchPaths) {
             hasUsrLocalLib = true;
         }
     }
-    
+
     EXPECT_TRUE(hasUsrLib || hasUsrLocalLib);
 }
 
@@ -555,10 +557,10 @@ TEST_F(PluginInterfaceTest, ProcessInvalidFileType) {
     std::ofstream textFile("test.txt");
     textFile << "This is a text file";
     textFile.close();
-    
+
     plugin->processInputFile("test.txt");
     EXPECT_EQ(plugin->getComponentCount(), 0u);
-    
+
     // Clean up
     std::filesystem::remove("test.txt");
 }
@@ -575,38 +577,38 @@ TEST_F(PluginInterfaceTest, FullWorkflow) {
     plugin->setVerbose(true);
     plugin->setOutputPath("test_output.json");
     plugin->setFormat("spdx");
-    
+
     // Process files
     plugin->processInputFile("test_object.o");
     plugin->processLibrary("libtest.so");
     plugin->processSymbol("function1", 0x1000, 64);
     plugin->processSymbol("function2", 0x2000, 128);
-    
+
     // Verify results
     EXPECT_EQ(plugin->getComponentCount(), 2u);
     EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
     EXPECT_EQ(plugin->processedComponents[1].name, "test");
     EXPECT_EQ(plugin->processedComponents[1].symbols.size(), 2u);
-    
+
     // Generate SBOM (should not crash)
     EXPECT_NO_THROW(plugin->generateSBOM());
-    
+
     // Clean up
     std::filesystem::remove("test_output.json");
 }
 
 TEST_F(PluginInterfaceTest, MultipleSymbolsPerComponent) {
     plugin->processInputFile("test_object.o");
-    
+
     // Add multiple symbols
     for (int i = 0; i < 5; ++i) {
         std::string symbolName = "function" + std::to_string(i);
         plugin->processSymbol(symbolName, 0x1000 + i * 0x100, 64);
     }
-    
+
     EXPECT_EQ(plugin->getComponentCount(), 1u);
     EXPECT_EQ(plugin->processedComponents[0].symbols.size(), 5u);
-    
+
     // Verify symbol names
     for (int i = 0; i < 5; ++i) {
         std::string expectedName = "function" + std::to_string(i);
@@ -614,5 +616,5 @@ TEST_F(PluginInterfaceTest, MultipleSymbolsPerComponent) {
     }
 }
 
-} // namespace test
-} // namespace heimdall 
+}  // namespace test
+}  // namespace heimdall

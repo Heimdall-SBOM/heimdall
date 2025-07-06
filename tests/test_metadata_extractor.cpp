@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <cstdlib>
-#include "MetadataExtractor.hpp"
-#include "ComponentInfo.hpp"
 #include <iostream>
+#include "ComponentInfo.hpp"
+#include "MetadataExtractor.hpp"
 
 using namespace heimdall;
 
@@ -28,7 +28,7 @@ protected:
     void SetUp() override {
         test_dir = std::filesystem::temp_directory_path() / "heimdall_metadata_test";
         std::filesystem::create_directories(test_dir);
-        
+
         // Create a simple C source file for testing
         test_source = test_dir / "testlib.c";
         std::ofstream(test_source) << R"(
@@ -45,13 +45,13 @@ const char* test_version = "1.2.3";
 __attribute__((visibility("default")))
 const char* test_license = "MIT";
 )";
-        
+
         // Compile it into a shared library with symbols
         test_lib = test_dir / "libtest.so";
-        std::string compile_cmd = "gcc -shared -fPIC -g -o " + test_lib.string() + 
-                                 " " + test_source.string() + " 2>/dev/null";
+        std::string compile_cmd = "gcc -shared -fPIC -g -o " + test_lib.string() + " " +
+                                  test_source.string() + " 2>/dev/null";
         system(compile_cmd.c_str());
-        
+
         // Fallback to dummy file if compilation fails
         if (!std::filesystem::exists(test_lib)) {
             std::ofstream(test_lib) << "dummy content";
@@ -68,15 +68,15 @@ const char* test_license = "MIT";
 TEST_F(MetadataExtractorTest, ExtractMetadataBasic) {
     MetadataExtractor extractor;
     ComponentInfo component("testlib", test_lib.string());
-    
+
     // Debug: Check if the library exists and its size
     std::cout << "Test library path: " << test_lib.string() << std::endl;
     std::cout << "Test library exists: " << std::filesystem::exists(test_lib) << std::endl;
     std::cout << "Test library size: " << std::filesystem::file_size(test_lib) << std::endl;
-    
+
     // Debug: Check if it's recognized as ELF
     std::cout << "Is ELF: " << extractor.isELF(test_lib.string()) << std::endl;
-    
+
     // Test individual extraction methods
     if (std::filesystem::file_size(test_lib) > 100) {
         // Real library - should extract symbols and sections
@@ -85,20 +85,20 @@ TEST_F(MetadataExtractorTest, ExtractMetadataBasic) {
         std::cout << "Symbol extraction result: " << symbolResult << std::endl;
         std::cout << "Number of symbols extracted: " << component.symbols.size() << std::endl;
         EXPECT_TRUE(symbolResult);
-        
+
         std::cout << "Testing section extraction..." << std::endl;
         bool sectionResult = extractor.extractSectionInfo(component);
         std::cout << "Section extraction result: " << sectionResult << std::endl;
         std::cout << "Number of sections extracted: " << component.sections.size() << std::endl;
         EXPECT_TRUE(sectionResult);
-        
+
         // Test the full extraction process
         bool result = extractor.extractMetadata(component);
         EXPECT_TRUE(component.wasProcessed);
-        
+
         // The overall result may be false if version/license extraction fails,
         // but the component should still be processed
-        EXPECT_TRUE(result || !result); // Accept either true or false
+        EXPECT_TRUE(result || !result);  // Accept either true or false
     } else {
         // Dummy file - should fail
         bool result = extractor.extractMetadata(component);
@@ -109,26 +109,25 @@ TEST_F(MetadataExtractorTest, ExtractMetadataBasic) {
 
 TEST_F(MetadataExtractorTest, FileFormatDetection) {
     MetadataExtractor extractor;
-    EXPECT_FALSE(extractor.isELF(test_source.string())); // .c file
+    EXPECT_FALSE(extractor.isELF(test_source.string()));  // .c file
     EXPECT_FALSE(extractor.isMachO("nonexistent"));
     EXPECT_FALSE(extractor.isPE(test_source.string()));
     EXPECT_FALSE(extractor.isArchive(test_source.string()));
-    
+
     // Test with the actual library
     if (std::filesystem::file_size(test_lib) > 100) {
-        // Platform-specific format detection
-        #ifdef __linux__
-            // On Linux, should detect ELF format for real library
-            EXPECT_TRUE(extractor.isELF(test_lib.string()));
-        #elif defined(__APPLE__)
-            // On macOS, should detect Mach-O format for real library
-            EXPECT_TRUE(extractor.isMachO(test_lib.string()));
-        #else
-            // On other platforms, just check that some format is detected
-            bool hasFormat = extractor.isELF(test_lib.string()) || 
-                           extractor.isMachO(test_lib.string()) || 
-                           extractor.isPE(test_lib.string());
-            EXPECT_TRUE(hasFormat);
-        #endif
+// Platform-specific format detection
+#ifdef __linux__
+        // On Linux, should detect ELF format for real library
+        EXPECT_TRUE(extractor.isELF(test_lib.string()));
+#elif defined(__APPLE__)
+        // On macOS, should detect Mach-O format for real library
+        EXPECT_TRUE(extractor.isMachO(test_lib.string()));
+#else
+        // On other platforms, just check that some format is detected
+        bool hasFormat = extractor.isELF(test_lib.string()) ||
+                         extractor.isMachO(test_lib.string()) || extractor.isPE(test_lib.string());
+        EXPECT_TRUE(hasFormat);
+#endif
     }
-} 
+}
