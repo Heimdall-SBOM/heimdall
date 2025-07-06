@@ -329,6 +329,7 @@ if(BUILD_SHARED_CORE)
     
     # Add LLVM include directories if DWARF support is enabled
     if(LLVM_DWARF_FOUND)
+        target_include_directories(heimdall-core PRIVATE ${LLVM_INCLUDE_DIRS})
         if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
             target_include_directories(heimdall-core PRIVATE /opt/homebrew/opt/llvm/include)
         endif()
