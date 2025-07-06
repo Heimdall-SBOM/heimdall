@@ -46,9 +46,9 @@ __attribute__((visibility("default")))
 const char* test_license = "MIT";
 )";
 
-        // Compile it into a shared library with build ID
+        // Compile it into a shared library with build ID and debug info
         test_lib = test_dir / "libtest.so";
-        std::string compile_cmd = "gcc -shared -fPIC -g -Wl,--build-id=0x1234567890abcdef -o " +
+        std::string compile_cmd = "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wl,--build-id=0x1234567890abcdef -o " +
                                   test_lib.string() + " " + test_source.string() + " 2>/dev/null";
         system(compile_cmd.c_str());
 
