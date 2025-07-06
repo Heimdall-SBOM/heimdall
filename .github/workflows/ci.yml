@@ -66,7 +66,8 @@ jobs:
           cppcheck \
           valgrind \
           binutils-multiarch-dev \
-          llvm-19-dev
+          llvm-19-dev \
+          binutils-source
     
     - name: Install LLVM/Clang
       run: |
@@ -222,6 +223,16 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
 
+    - name: Extract elf-bfd.h for BFD support
+      run: |
+        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
+        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
+        if [ -z "$ELF_BFD_H" ]; then
+          echo "elf-bfd.h not found in binutils source!"; exit 1;
+        fi
+        sudo cp "$ELF_BFD_H" /usr/include/
+        echo "Copied $ELF_BFD_H to /usr/include/"
+
   # Linux Clang builds
   linux-clang:
     name: Linux Clang
@@ -356,6 +367,16 @@ jobs:
         timeout 300 ctest --output-on-failure --verbose
       env:
         HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+
+    - name: Extract elf-bfd.h for BFD support
+      run: |
+        BINUTILS_SRC=$(find /usr/src -maxdepth 1 -type d -name 'binutils*' | head -n1)
+        ELF_BFD_H=$(find "$BINUTILS_SRC" -name elf-bfd.h | head -n1)
+        if [ -z "$ELF_BFD_H" ]; then
+          echo "elf-bfd.h not found in binutils source!"; exit 1;
+        fi
+        sudo cp "$ELF_BFD_H" /usr/include/
+        echo "Copied $ELF_BFD_H to /usr/include/"
 
   # macOS builds - DISABLED
   # macos:
