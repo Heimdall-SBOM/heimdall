@@ -34,6 +34,59 @@ Common SBOM formats include **SPDX** and **CycloneDX**.
 ### What is Heimdall?
 **Heimdall** is an open-source SBOM generator designed for C/C++ projects. It can extract metadata from binaries, libraries, and source code, and generate SBOMs in both SPDX and CycloneDX formats. Heimdall supports integration as a linker plugin (LLD/Gold), as a library, or as a standalone tool.
 
+### LLD Plugin
+The **LLD Plugin** integrates with LLVM's LLD linker to generate SBOMs during the linking process.
+
+**Benefits:**
+- **Cross-platform support**: Works on Linux, macOS, and Windows
+- **Fast linking**: LLD is significantly faster than traditional linkers
+- **Modern toolchain**: Part of the LLVM ecosystem with active development
+- **DWARF support**: Excellent debug information extraction capabilities
+- **Plugin architecture**: Clean integration with LLD's plugin system
+
+**Limitations:**
+- **LLVM dependency**: Requires LLVM/LLD to be installed
+- **Learning curve**: Different command-line syntax from traditional linkers
+- **Ecosystem integration**: May require adjustments to existing build systems
+
+**Best for:** Modern C++ projects, cross-platform development, projects already using LLVM toolchain.
+
+### Gold Plugin
+The **Gold Plugin** integrates with GNU Gold linker to generate SBOMs during the linking process.
+
+**Benefits:**
+- **Linux native**: Designed specifically for Linux ELF binaries
+- **Mature ecosystem**: Well-established in Linux development
+- **Performance**: Optimized for Linux systems
+- **BFD support**: Full Binary File Descriptor library integration
+- **Traditional workflow**: Familiar to Linux developers
+
+**Limitations:**
+- **Linux only**: Not available on macOS or Windows
+- **ELF format only**: Limited to Linux binary formats
+- **GNU dependency**: Requires GNU binutils and BFD libraries
+
+**Best for:** Linux-only projects, traditional Linux development workflows, projects requiring BFD features.
+
+### Choosing Between Plugins
+
+**Use LLD Plugin if:**
+- You need cross-platform support (Linux, macOS, Windows)
+- You're already using LLVM toolchain
+- You want the fastest linking performance
+- You need advanced DWARF debug information extraction
+
+**Use Gold Plugin if:**
+- You're developing Linux-only applications
+- You prefer traditional GNU toolchain
+- You need BFD library features
+- You want maximum compatibility with existing Linux build systems
+
+**Use Both if:**
+- You're developing cross-platform software
+- You want to compare SBOM generation between linkers
+- You need to support different build environments
+
 ---
 
 ## Getting Heimdall
