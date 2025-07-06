@@ -65,7 +65,9 @@ jobs:
           clang-tidy \
           cppcheck \
           valgrind \
-          binutils-multiarch-dev
+          binutils-multiarch-dev \
+          llvm-19-dev \
+          lld-19-dev
     
     - name: Install LLVM/Clang
       run: |
@@ -88,27 +90,6 @@ jobs:
         sudo ln -sf /usr/lib/llvm-19/bin/llvm-config /usr/local/bin/llvm-config
         echo "llvm-config version: $(llvm-config --version)"
         echo "llvm-config location: $(which llvm-config)"
-    
-    - name: Download LLD source headers
-      run: |
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/lld-19.1.7.src.tar.xz
-        tar -xf lld-19.1.7.src.tar.xz
-        sudo mkdir -p /usr/local/include
-        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/
-        # Debug: Check what was copied
-        echo "=== LLD Headers Debug ==="
-        ls -la /usr/local/include/lld/Common/ | head -10
-        echo "=== End LLD Headers Debug ==="
-    
-    - name: Download LLVM source headers
-      run: |
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/llvm-19.1.7.src.tar.xz
-        tar -xf llvm-19.1.7.src.tar.xz
-        sudo cp -r llvm-19.1.7.src/include/* /usr/local/include/
-        # Debug: Check DWARF headers
-        echo "=== LLVM DWARF Headers Debug ==="
-        ls -la /usr/local/include/llvm/DebugInfo/DWARF/ | head -10
-        echo "=== End LLVM DWARF Headers Debug ==="
     
     - name: Set up compiler
       run: |
@@ -232,7 +213,9 @@ jobs:
           pkg-config \
           clang-tidy \
           cppcheck \
-          binutils-multiarch-dev
+          binutils-multiarch-dev \
+          llvm-19-dev \
+          lld-19-dev
     
     - name: Install LLVM/Clang
       run: |
@@ -247,27 +230,6 @@ jobs:
         sudo ln -sf /usr/lib/llvm-19/bin/llvm-config /usr/local/bin/llvm-config
         echo "llvm-config version: $(llvm-config --version)"
         echo "llvm-config location: $(which llvm-config)"
-    
-    - name: Download LLD source headers
-      run: |
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/lld-19.1.7.src.tar.xz
-        tar -xf lld-19.1.7.src.tar.xz
-        sudo mkdir -p /usr/local/include
-        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/
-        # Debug: Check what was copied
-        echo "=== LLD Headers Debug ==="
-        ls -la /usr/local/include/lld/Common/ | head -10
-        echo "=== End LLD Headers Debug ==="
-    
-    - name: Download LLVM source headers
-      run: |
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/llvm-19.1.7.src.tar.xz
-        tar -xf llvm-19.1.7.src.tar.xz
-        sudo cp -r llvm-19.1.7.src/include/* /usr/local/include/
-        # Debug: Check DWARF headers
-        echo "=== LLVM DWARF Headers Debug ==="
-        ls -la /usr/local/include/llvm/DebugInfo/DWARF/ | head -10
-        echo "=== End LLVM DWARF Headers Debug ==="
     
     - name: Set up compiler
       run: |
