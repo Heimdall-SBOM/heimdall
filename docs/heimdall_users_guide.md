@@ -50,22 +50,136 @@ cd heimdall
 ## Building Heimdall from Source
 
 ### Prerequisites
-- **CMake** (>= 3.16)
-- **C++17** compatible compiler (GCC or Clang)
+- **C++17** compatible compiler (GCC 7+, Clang 5+)
+- **CMake** 3.16+
+- **LLVM/LLD** development libraries
+- **GNU Gold linker** (Linux only, optional for Gold plugin)
 - **OpenSSL** development libraries
-- **LLVM/LLD** (for LLD plugin support)
-- **binutils-dev** (for Gold plugin support)
 - **GoogleTest** (automatically downloaded if not found)
 
-On Ubuntu/Debian, install dependencies:
+### macOS Setup
 ```bash
-sudo apt update
-sudo apt install build-essential cmake libssl-dev llvm-dev lld binutils-dev
+# Install LLVM/LLD and other dependencies
+brew install llvm cmake ninja openssl
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+# Build Heimdall (LLD plugin only)
+./build.sh
 ```
 
-On Fedora/RHEL:
+### Linux Setup
+
+#### Ubuntu/Debian
 ```bash
-sudo dnf install gcc-c++ cmake openssl-devel llvm-devel lld binutils-devel
+# Install all dependencies including Gold linker
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    binutils \
+    binutils-dev \
+    libssl-dev \
+    libelf-dev \
+    libgtest-dev \
+    pkg-config
+
+# Install LLVM 19 (recommended for full DWARF support)
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+sudo apt-get update
+sudo apt-get install -y llvm-19-dev liblld-19-dev
+
+# Build Heimdall with both LLD and Gold plugins
+./build.sh
+```
+
+**Note**: 
+- LLVM 19 is recommended for full DWARF debug info support
+- `binutils` provides the Gold linker (`ld.gold`)
+- `binutils-dev` provides the BFD development files needed for the Gold plugin
+- `libgtest-dev` provides GoogleTest for unit testing (automatically downloaded if not available)
+
+### Installing GNU Gold Linker
+
+GNU Gold is the default linker on most modern Linux distributions. If not available:
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install binutils-gold
+```
+
+**Fedora/RHEL/CentOS:**
+```bash
+sudo yum install binutils-gold
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S binutils
+```
+
+**Verify Gold installation:**
+```bash
+ld.gold --version
+```
+
+**Note**: GNU Gold is not available on macOS. Use LLVM LLD linker instead, which provides similar performance benefits and better macOS integration.
+
+**Troubleshooting BFD headers**: If you encounter "bfd.h not found" errors:
+```bash
+sudo apt-get install -y binutils-dev libbfd-dev
+```
+
+**Alternative LLVM versions**:
+```bash
+# For LLVM 14 (Ubuntu default)
+sudo apt-get install -y llvm-dev liblld-14-dev
+
+# For LLVM 15
+sudo apt-get install -y llvm-15-dev liblld-15-dev
+
+# For LLVM 16
+sudo apt-get install -y llvm-16-dev liblld-16-dev
+```
+
+#### Fedora/RHEL/CentOS
+```bash
+# Install dependencies (required for build and tests)
+sudo yum install -y \
+    gcc-c++ \
+    cmake \
+    ninja-build \
+    llvm-devel \
+    lld-devel \
+    binutils-gold \
+    openssl-devel \
+    pkgconfig \
+    zlib-devel \
+    llvm-googletest \
+    binutils-devel
+
+# Build Heimdall
+./build.sh
+```
+
+**Note**: The `binutils-devel` package provides the BFD headers required for the Gold plugin.
+
+#### Arch Linux
+```bash
+# Install dependencies
+sudo pacman -S \
+    base-devel \
+    cmake \
+    ninja \
+    llvm \
+    lld \
+    binutils \
+    openssl \
+    pkgconf
+
+# Build Heimdall
+./build.sh
 ```
 
 ### Build Steps
@@ -86,10 +200,28 @@ make -j$(nproc)
 
 #### Optional Build Flags
 - `--debug` : Build in debug mode
+- `--sanitizers` : Enable AddressSanitizer and UBSan
 - `--no-lld` : Disable LLD plugin
 - `--no-gold` : Disable Gold plugin
 - `--no-tests` : Skip building tests
 - `--no-examples` : Skip building examples
+- `--build-dir DIR` : Set custom build directory
+- `--install-dir DIR` : Set custom install directory
+
+#### Build Examples
+```bash
+# Debug build with sanitizers
+./build.sh --debug --sanitizers
+
+# Build only LLD plugin (macOS default)
+./build.sh --no-gold
+
+# Build only Gold plugin (Linux only)
+./build.sh --no-lld
+
+# Custom build directory
+./build.sh --build-dir mybuild --install-dir myinstall
+```
 
 ---
 
