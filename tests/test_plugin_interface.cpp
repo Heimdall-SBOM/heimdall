@@ -1,3 +1,19 @@
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+you may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 /**
  * @file test_plugin_interface.cpp
  * @brief Unit tests for PluginInterface component
@@ -381,55 +397,32 @@ TEST_F(PluginInterfaceTest, ShouldProcessFile) {
 }
 
 TEST_F(PluginInterfaceTest, ShouldProcessFileSystemLibraries) {
+    // Test system library exclusion
+    EXPECT_FALSE(plugin->includeSystemLibraries);
+    
+    // Should not process system libraries by default
+    EXPECT_FALSE(plugin->shouldProcessFile("/usr/lib/libc.so"));
+    EXPECT_FALSE(plugin->shouldProcessFile("/usr/lib64/libstdc++.so"));
+    
+    // Enable system libraries
     plugin->setIncludeSystemLibraries(true);
+    EXPECT_TRUE(plugin->includeSystemLibraries);
     
+    // Should process system libraries when enabled
     bool checked = false;
+    if (std::filesystem::exists("/usr/lib/libc.so")) {
+        EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib/libc.so"));
+        checked = true;
+    }
+    if (std::filesystem::exists("/usr/lib64/libc.so")) {
+        EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib64/libc.so"));
+        checked = true;
+    }
+    // At least one libc should exist on a typical Linux system
+    EXPECT_TRUE(checked);
     
-    #ifdef __linux__
-        // Linux system libraries
-        if (std::filesystem::exists("/lib/x86_64-linux-gnu/libc.so.6")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/lib/x86_64-linux-gnu/libc.so.6"));
-            checked = true;
-        }
-        if (std::filesystem::exists("/usr/lib/x86_64-linux-gnu/libc.so.6")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib/x86_64-linux-gnu/libc.so.6"));
-            checked = true;
-        }
-        if (std::filesystem::exists("/usr/lib64/libc.so")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib64/libc.so"));
-            checked = true;
-        }
-        if (std::filesystem::exists("/usr/lib64/libstdc++.so")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib64/libstdc++.so"));
-        }
-    #elif defined(__APPLE__)
-        // macOS system libraries
-        if (std::filesystem::exists("/usr/lib/libSystem.B.dylib")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib/libSystem.B.dylib"));
-            checked = true;
-        }
-        if (std::filesystem::exists("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation"));
-            checked = true;
-        }
-        if (std::filesystem::exists("/usr/lib/libc++.1.dylib")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib/libc++.1.dylib"));
-        }
-    #else
-        // Other platforms - check for common libraries
-        if (std::filesystem::exists("/usr/lib/libc.so")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib/libc.so"));
-            checked = true;
-        }
-        if (std::filesystem::exists("/usr/local/lib/libc.so")) {
-            EXPECT_TRUE(plugin->shouldProcessFile("/usr/local/lib/libc.so"));
-            checked = true;
-        }
-    #endif
-    
-    // At least one system library should exist on a typical system
-    if (!checked) {
-        GTEST_SKIP() << "No system libraries found for testing";
+    if (std::filesystem::exists("/usr/lib64/libstdc++.so")) {
+        EXPECT_TRUE(plugin->shouldProcessFile("/usr/lib64/libstdc++.so"));
     }
 }
 

@@ -1,3 +1,48 @@
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/**
+ * @file MetadataExtractor.cpp
+ * @brief Implementation of the MetadataExtractor class for comprehensive binary metadata extraction
+ * @author Trevor Bakker
+ * @date 2025
+ * 
+ * This file implements the MetadataExtractor class, which provides comprehensive
+ * metadata extraction capabilities for various binary file formats including ELF,
+ * Mach-O, PE, and archive files. It supports extraction of version information,
+ * license details, symbol tables, section information, debug data, and dependency
+ * analysis.
+ * 
+ * The implementation uses the PIMPL idiom to hide implementation details and
+ * provides a clean public interface. It includes platform-specific code for
+ * Linux (ELF), macOS (Mach-O), and Windows (PE) binary formats.
+ * 
+ * Key features:
+ * - Multi-format binary file support (ELF, Mach-O, PE, archives)
+ * - Version detection from multiple sources
+ * - License information extraction
+ * - Symbol and section analysis
+ * - Debug information extraction
+ * - Dependency analysis
+ * - Package manager metadata detection
+ * 
+ * @see MetadataExtractor.hpp
+ * @see ComponentInfo.hpp
+ * @see DWARFExtractor.hpp
+ */
 #include "MetadataExtractor.hpp"
 #include "ComponentInfo.hpp"
 #include "Utils.hpp"
@@ -24,22 +69,88 @@
 
 namespace heimdall {
 
+/**
+ * @brief Private implementation class for MetadataExtractor using PIMPL idiom
+ * 
+ * This class encapsulates the private implementation details of the MetadataExtractor,
+ * providing a clean separation between the public interface and internal implementation.
+ * It handles file format detection and configuration options.
+ */
 class MetadataExtractor::Impl {
 public:
-    bool verbose = false;
-    bool extractDebugInfo = true;
+    bool verbose = false;           ///< Enable verbose output for debugging
+    bool extractDebugInfo = true;   ///< Whether to extract debug information
     
-    // File format detection
+    /**
+     * @brief Detect the file format of the given binary file
+     * @param filePath Path to the file to analyze
+     * @return true if format was successfully detected, false otherwise
+     * 
+     * This method examines the file header to determine if it's an ELF, Mach-O,
+     * PE, or archive file. The detected format is stored in the fileFormat member.
+     */
     bool detectFileFormat(const std::string& filePath);
-    std::string fileFormat;
+    
+    std::string fileFormat;         ///< Detected file format (ELF, Mach-O, PE, etc.)
 };
 
+/**
+ * @brief Default constructor for MetadataExtractor
+ * 
+ * Initializes a new MetadataExtractor instance with default settings.
+ * Debug information extraction is enabled by default, and verbose output
+ * is disabled.
+ */
 MetadataExtractor::MetadataExtractor() : pImpl(std::make_unique<Impl>())
 {
 }
 
+/**
+ * @brief Destructor for MetadataExtractor
+ * 
+ * Cleanly destroys the MetadataExtractor instance and its private implementation.
+ * Uses default destructor due to std::unique_ptr automatic cleanup.
+ */
 MetadataExtractor::~MetadataExtractor() = default;
 
+/**
+ * @brief Extract comprehensive metadata from a binary component.
+ *
+ * This is the main entry point for metadata extraction. It performs a comprehensive
+ * analysis of the binary file, extracting all available metadata including:
+ *   - File format detection (ELF, Mach-O, PE, archives)
+ *   - Version information from multiple sources
+ *   - License information
+ *   - Symbol table analysis
+ *   - Section information
+ *   - Debug information (if enabled)
+ *   - Dependency analysis
+ *   - Package manager metadata detection
+ *
+ * The method uses a multi-stage approach:
+ *   1. File existence and accessibility validation
+ *   2. File format detection
+ *   3. Basic metadata extraction (version, license, symbols, sections)
+ *   4. Debug information extraction (if enabled)
+ *   5. Dependency analysis
+ *   6. Package manager metadata detection with fallback strategies
+ *
+ * Package manager detection follows this priority order:
+ *   - RPM (Red Hat Package Manager)
+ *   - Debian packages
+ *   - Conan C++ package manager
+ *   - vcpkg package manager
+ *   - Spack package manager
+ *   - Generic system package detection
+ *
+ * @param component The ComponentInfo object to populate with extracted metadata.
+ * @return true if metadata extraction was successful, false otherwise.
+ *
+ * @note This method modifies the provided ComponentInfo object in-place.
+ * @note Filesystem errors are caught and logged, but don't prevent other extraction attempts.
+ * @see ComponentInfo
+ * @see MetadataHelpers
+ */
 bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 {
     try {
