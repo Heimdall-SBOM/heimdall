@@ -144,6 +144,8 @@ endif()
 
 # Find LLVM for LLD plugin
 if(BUILD_LLD_PLUGIN)
+    message(STATUS "=== LLD Plugin Configuration ===")
+    
     # Try to find Homebrew LLVM first
     set(LLVM_HOMEBREW_PREFIX "/opt/homebrew/opt/llvm")
     if(EXISTS "${LLVM_HOMEBREW_PREFIX}")
@@ -164,33 +166,52 @@ if(BUILD_LLD_PLUGIN)
         endif()
     endif()
     
-    # Look for LLD libraries in multiple locations
-    find_library(LLD_ELF_LIB lldELF 
-        HINTS 
-        ${LLVM_LIBRARY_DIR}
-        /opt/homebrew/opt/lld/lib
-        /usr/local/opt/lld/lib
-    )
-    find_library(LLD_COMMON_LIB lldCommon 
-        HINTS 
-        ${LLVM_LIBRARY_DIR}
-        /opt/homebrew/opt/lld/lib
-        /usr/local/opt/lld/lib
-    )
-    
-    if(LLD_ELF_LIB AND LLD_COMMON_LIB)
-        set(LLD_AVAILABLE TRUE)
-        message(STATUS "LLD libraries found - will build LLD plugin")
+    # If LLVM is found, try to find LLD libraries
+    if(LLVM_FOUND)
+        # Look for LLD libraries in multiple locations
+        find_library(LLD_ELF_LIB lldELF 
+            HINTS 
+            ${LLVM_LIBRARY_DIR}
+            /opt/homebrew/opt/lld/lib
+            /usr/local/opt/lld/lib
+            /usr/lib/llvm-19/lib
+            /usr/lib/x86_64-linux-gnu
+            /usr/lib64
+        )
+        find_library(LLD_COMMON_LIB lldCommon 
+            HINTS 
+            ${LLVM_LIBRARY_DIR}
+            /opt/homebrew/opt/lld/lib
+            /usr/local/opt/lld/lib
+            /usr/lib/llvm-19/lib
+            /usr/lib/x86_64-linux-gnu
+            /usr/lib64
+        )
+        
         message(STATUS "LLD_ELF_LIB: ${LLD_ELF_LIB}")
         message(STATUS "LLD_COMMON_LIB: ${LLD_COMMON_LIB}")
+        
+        if(LLD_ELF_LIB AND LLD_COMMON_LIB)
+            set(LLD_AVAILABLE TRUE)
+            message(STATUS "✓ LLD libraries found - will build LLD plugin")
+        else()
+            set(LLD_AVAILABLE FALSE)
+            message(WARNING "✗ LLD libraries not found")
+            message(STATUS "Searched for lldELF and lldCommon in:")
+            message(STATUS "  - ${LLVM_LIBRARY_DIR}")
+            message(STATUS "  - /opt/homebrew/opt/lld/lib")
+            message(STATUS "  - /usr/local/opt/lld/lib")
+            message(STATUS "  - /usr/lib/llvm-19/lib")
+            message(STATUS "  - /usr/lib/x86_64-linux-gnu")
+            message(STATUS "  - /usr/lib64")
+        endif()
     else()
         set(LLD_AVAILABLE FALSE)
-        message(WARNING "LLD libraries not found")
-        message(STATUS "Searched for lldELF and lldCommon in:")
-        message(STATUS "  - ${LLVM_LIBRARY_DIR}")
-        message(STATUS "  - /opt/homebrew/opt/lld/lib")
-        message(STATUS "  - /usr/local/opt/lld/lib")
+        message(WARNING "✗ LLVM not found - cannot build LLD plugin")
     endif()
+    
+    message(STATUS "LLD_AVAILABLE: ${LLD_AVAILABLE}")
+    message(STATUS "=== End LLD Plugin Configuration ===")
 endif()
 
 # Find BFD library for Gold plugin
@@ -205,10 +226,12 @@ endif()
 
 # Find Gold linker
 if(BUILD_GOLD_PLUGIN)
+    message(STATUS "=== Gold Plugin Configuration ===")
+    
     find_program(GOLD_LINKER NAMES ld.gold gold)
     if(GOLD_LINKER)
         set(GOLD_AVAILABLE TRUE)
-        message(STATUS "Gold linker found at: ${GOLD_LINKER}")
+        message(STATUS "✓ Gold linker found at: ${GOLD_LINKER}")
         
         find_path(GOLD_PLUGIN_HEADERS plugin-api.h
             PATHS /usr/include /usr/local/include
@@ -219,22 +242,41 @@ if(BUILD_GOLD_PLUGIN)
             set(GOLD_PLUGIN_HEADERS "${CMAKE_SOURCE_DIR}/include/gold")
         endif()
         
+        message(STATUS "GOLD_PLUGIN_HEADERS: ${GOLD_PLUGIN_HEADERS}")
+        
         # Check for BFD headers
         include(CheckIncludeFile)
         check_include_file(bfd.h BFD_HEADER_FOUND)
         check_include_file(elf-bfd.h ELF_BFD_HEADER_FOUND)
         
+        message(STATUS "BFD_HEADER_FOUND: ${BFD_HEADER_FOUND}")
+        message(STATUS "ELF_BFD_HEADER_FOUND: ${ELF_BFD_HEADER_FOUND}")
+        message(STATUS "BFD_FOUND: ${BFD_FOUND}")
+        
         if(BFD_HEADER_FOUND AND ELF_BFD_HEADER_FOUND AND BFD_FOUND)
             set(GOLD_BFD_AVAILABLE TRUE)
-            message(STATUS "BFD support available for Gold plugin")
+            message(STATUS "✓ BFD support available for Gold plugin")
         else()
             set(GOLD_BFD_AVAILABLE FALSE)
-            message(STATUS "BFD support not available for Gold plugin")
+            message(WARNING "✗ BFD support not available for Gold plugin")
+            if(NOT BFD_HEADER_FOUND)
+                message(STATUS "  - bfd.h not found")
+            endif()
+            if(NOT ELF_BFD_HEADER_FOUND)
+                message(STATUS "  - elf-bfd.h not found")
+            endif()
+            if(NOT BFD_FOUND)
+                message(STATUS "  - BFD library not found")
+            endif()
         endif()
     else()
         set(GOLD_AVAILABLE FALSE)
-        message(WARNING "Gold linker not found")
+        message(WARNING "✗ Gold linker not found")
     endif()
+    
+    message(STATUS "GOLD_AVAILABLE: ${GOLD_AVAILABLE}")
+    message(STATUS "GOLD_BFD_AVAILABLE: ${GOLD_BFD_AVAILABLE}")
+    message(STATUS "=== End Gold Plugin Configuration ===")
 endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
@@ -292,7 +334,7 @@ if(BUILD_SHARED_CORE)
 endif()
 
 # Heimdall LLD Plugin
-if(BUILD_LLD_PLUGIN AND LLD_AVAILABLE)
+if(BUILD_LLD_PLUGIN AND LLVM_FOUND)
     add_library(heimdall-lld SHARED
         src/lld/LLDPlugin.cpp
         src/lld/LLDAdapter.cpp
@@ -313,19 +355,34 @@ if(BUILD_LLD_PLUGIN AND LLD_AVAILABLE)
     )
     
     # Link to the appropriate LLVM library based on platform
-    if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
-        target_link_libraries(heimdall-lld PRIVATE
-            /opt/homebrew/opt/llvm/lib/libLLVM.dylib
-            ${LLD_ELF_LIB}
-            ${LLD_COMMON_LIB}
-        )
+    if(LLD_AVAILABLE)
+        if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
+            target_link_libraries(heimdall-lld PRIVATE
+                /opt/homebrew/opt/llvm/lib/libLLVM.dylib
+                ${LLD_ELF_LIB}
+                ${LLD_COMMON_LIB}
+            )
+        else()
+            # Fallback to detected LLVM library
+            target_link_libraries(heimdall-lld PRIVATE
+                ${LLVM_LIBS}
+                ${LLD_ELF_LIB}
+                ${LLD_COMMON_LIB}
+            )
+        endif()
+        message(STATUS "✓ LLD plugin will be built with full LLD support")
     else()
-        # Fallback to detected LLVM library
-        target_link_libraries(heimdall-lld PRIVATE
-            ${LLVM_LIBS}
-            ${LLD_ELF_LIB}
-            ${LLD_COMMON_LIB}
-        )
+        # Build with just LLVM support (limited functionality)
+        if(APPLE AND EXISTS "/opt/homebrew/opt/llvm")
+            target_link_libraries(heimdall-lld PRIVATE
+                /opt/homebrew/opt/llvm/lib/libLLVM.dylib
+            )
+        else()
+            target_link_libraries(heimdall-lld PRIVATE
+                ${LLVM_LIBS}
+            )
+        endif()
+        message(STATUS "⚠ LLD plugin will be built without LLD libraries (limited functionality)")
     endif()
     
     # Add platform-specific linker flags
@@ -355,7 +412,7 @@ if(BUILD_LLD_PLUGIN AND LLD_AVAILABLE)
 endif()
 
 # Heimdall Gold Plugin
-if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND GOLD_BFD_AVAILABLE)
+if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE)
     add_library(heimdall-gold SHARED
         src/gold/GoldPlugin.cpp
         src/gold/GoldAdapter.cpp
@@ -368,16 +425,20 @@ if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND GOLD_BFD_AVAILABLE)
     
     target_compile_definitions(heimdall-gold PRIVATE
         HEIMDALL_GOLD_PLUGIN
-        BFD_AVAILABLE=1
         # Disable LLVM DWARF for Gold plugin to avoid conflicts
         # LLVM_DWARF_AVAILABLE=0
     )
     
-    target_link_libraries(heimdall-gold PRIVATE dl)
-    
-    if(BFD_FOUND)
+    if(GOLD_BFD_AVAILABLE)
+        target_compile_definitions(heimdall-gold PRIVATE BFD_AVAILABLE=1)
         target_link_libraries(heimdall-gold PRIVATE ${BFD_LIBRARY})
+        message(STATUS "✓ Gold plugin will be built with BFD support")
+    else()
+        target_compile_definitions(heimdall-gold PRIVATE BFD_AVAILABLE=0)
+        message(STATUS "⚠ Gold plugin will be built without BFD support (limited functionality)")
     endif()
+    
+    target_link_libraries(heimdall-gold PRIVATE dl)
     
     # ENABLE heimdall-core linkage for Gold plugin
     if(BUILD_SHARED_CORE)
@@ -395,8 +456,6 @@ if(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND GOLD_BFD_AVAILABLE)
             LINK_FLAGS "-Wl,--no-undefined"
         )
     endif()
-elseif(BUILD_GOLD_PLUGIN AND GOLD_AVAILABLE AND NOT GOLD_BFD_AVAILABLE)
-    message(WARNING "Gold plugin not built: BFD headers not available")
 endif()
 
 # Tests

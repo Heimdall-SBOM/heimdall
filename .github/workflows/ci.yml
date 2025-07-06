@@ -72,6 +72,14 @@ jobs:
         chmod +x llvm.sh
         sudo ./llvm.sh 19
         sudo apt-get install -y clang-19 lld-19 llvm-19-dev
+        # Debug: Check what LLVM libraries are available
+        echo "=== LLVM Installation Debug ==="
+        ls -la /usr/lib/llvm-19/lib/ | grep -E "(lld|LLVM)" | head -10
+        echo "=== System LLVM libraries ==="
+        ls -la /usr/lib/x86_64-linux-gnu/ | grep -E "(lld|LLVM)" | head -10
+        echo "=== LLVM config ==="
+        /usr/lib/llvm-19/bin/llvm-config --version
+        /usr/lib/llvm-19/bin/llvm-config --libs
     
     - name: Set up compiler
       run: |
