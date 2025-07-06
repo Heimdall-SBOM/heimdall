@@ -1,4 +1,18 @@
+/**
+ * @file DWARFExtractor.cpp
+ * @brief Implementation of robust DWARF debug information extractor using LLVM libraries
+ * @author Trevor Bakker
+ * @date 2025
+ *
+ * This file implements the DWARFExtractor class, which provides comprehensive
+ * DWARF parsing capabilities using LLVM's DWARF libraries. It includes
+ * detailed error handling, fallback heuristics, and thread-safety notes.
+ *
+ * @warning This implementation is NOT thread-safe due to LLVM's DWARF library limitations.
+ *          See heimdall-limitations.md for details.
+ */
 #include "DWARFExtractor.hpp"
+#include "Utils.hpp"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -48,26 +62,61 @@ void DWARFExtractor::ensureLLVMInitialized() {
 }
 #endif
 
+/**
+ * @brief DWARFExtractor constructor
+ *
+ * Initializes the DWARFExtractor instance. No per-instance LLVM initialization is performed.
+ * Prints debug information if compiled with debug output enabled.
+ */
 DWARFExtractor::DWARFExtractor() {
-    std::cout << "DEBUG: DWARFExtractor constructor called" << std::endl;
-    std::cout << "DEBUG: About to check LLVM_DWARF_AVAILABLE" << std::endl;
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("DWARFExtractor constructor called");
+    Utils::debugPrint("About to check LLVM_DWARF_AVAILABLE");
+#endif
 #ifdef LLVM_DWARF_AVAILABLE
-    std::cout << "DEBUG: LLVM_DWARF_AVAILABLE is defined" << std::endl;
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("LLVM_DWARF_AVAILABLE is defined");
+#endif
     // No per-instance LLVM initialization
 #else
-    std::cout << "DEBUG: LLVM_DWARF_AVAILABLE is NOT defined" << std::endl;
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("LLVM_DWARF_AVAILABLE is NOT defined");
 #endif
-    std::cout << "DEBUG: DWARFExtractor constructor completed" << std::endl;
+#endif
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("DWARFExtractor constructor completed");
+#endif
 }
 
+/**
+ * @brief DWARFExtractor destructor
+ *
+ * Cleans up the DWARFExtractor instance. No per-instance LLVM cleanup is performed.
+ * Prints debug information if compiled with debug output enabled.
+ */
 DWARFExtractor::~DWARFExtractor() {
-    std::cout << "DEBUG: DWARFExtractor destructor called" << std::endl;
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("DWARFExtractor destructor called");
+#endif
 #ifdef LLVM_DWARF_AVAILABLE
     // No per-instance LLVM cleanup
 #endif
-    std::cout << "DEBUG: DWARFExtractor destructor completed" << std::endl;
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("DWARFExtractor destructor completed");
+#endif
 }
 
+/**
+ * @brief Extract source files from DWARF debug information
+ *
+ * Attempts to extract all source file paths from the DWARF information in the given ELF file.
+ * Uses LLVM's DWARFContext if available, otherwise falls back to a heuristic method.
+ * Handles edge cases where the file is missing, unreadable, or contains no DWARF info.
+ *
+ * @param filePath Path to the ELF file containing DWARF info
+ * @param sourceFiles Output vector to store extracted source file paths
+ * @return true if extraction was successful and any source files were found, false otherwise
+ */
 bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
@@ -87,6 +136,16 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath, std::vector
     return extractSourceFilesHeuristic(filePath, sourceFiles);
 }
 
+/**
+ * @brief Extract compile units from DWARF debug information
+ *
+ * Extracts the names of all compile units present in the DWARF information of the given ELF file.
+ * Uses LLVM's DWARFContext if available. If unavailable or extraction fails, returns false.
+ *
+ * @param filePath Path to the ELF file containing DWARF info
+ * @param compileUnits Output vector to store extracted compile unit names
+ * @return true if extraction was successful and any compile units were found, false otherwise
+ */
 bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
@@ -108,6 +167,16 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath, std::vecto
     return false;
 }
 
+/**
+ * @brief Extract function names from DWARF debug information
+ *
+ * Extracts all function names from the DWARF information in the given ELF file.
+ * Uses LLVM's DWARFContext if available. If unavailable or extraction fails, returns false.
+ *
+ * @param filePath Path to the ELF file containing DWARF info
+ * @param functions Output vector to store extracted function names
+ * @return true if extraction was successful and any functions were found, false otherwise
+ */
 bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<std::string>& functions) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
@@ -129,6 +198,16 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath, std::vector<s
     return false;
 }
 
+/**
+ * @brief Extract line number information from DWARF debug information
+ *
+ * Extracts line number information from the DWARF debug info in the given ELF file.
+ * Uses LLVM's DWARFContext if available. If unavailable or extraction fails, returns false.
+ *
+ * @param filePath Path to the ELF file containing DWARF info
+ * @param lineInfo Output vector to store line number information
+ * @return true if extraction was successful and any line info was found, false otherwise
+ */
 bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<std::string>& lineInfo) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
@@ -155,6 +234,15 @@ bool DWARFExtractor::extractLineInfo(const std::string& filePath, std::vector<st
     return false;
 }
 
+/**
+ * @brief Check if DWARF information is available in the file
+ *
+ * Checks whether the given ELF file contains any DWARF debug information.
+ * Uses LLVM's DWARFContext if available. If unavailable or extraction fails, returns false.
+ *
+ * @param filePath Path to the ELF file to check
+ * @return true if DWARF info is present, false otherwise
+ */
 bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
@@ -169,6 +257,15 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) {
 }
 
 #ifdef LLVM_DWARF_AVAILABLE
+/**
+ * @brief Initialize LLVM DWARF context for a file
+ *
+ * Attempts to create a DWARFContext for the given ELF file using LLVM's APIs.
+ * Handles file existence, readability, and error cases. Returns nullptr if context creation fails.
+ *
+ * @param filePath Path to the ELF file
+ * @return raw pointer to DWARF context if creation succeeded, nullptr otherwise
+ */
 llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePath) {
     try {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -268,6 +365,15 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
     return nullptr;
 }
 
+/**
+ * @brief Extract source files from a DWARF compile unit DIE
+ *
+ * Recursively traverses the DWARF DIE tree to extract all source file paths referenced
+ * in the compile unit. Handles edge cases where DIEs are missing or malformed.
+ *
+ * @param die DWARF DIE (Debugging Information Entry)
+ * @param sourceFiles Output vector for source files
+ */
 void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die, std::vector<std::string>& sourceFiles) {
     if (!die.isValid()) {
         return;
@@ -301,6 +407,15 @@ void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die, std::v
     }
 }
 
+/**
+ * @brief Extract compile unit information from a DWARF DIE
+ *
+ * Recursively traverses the DWARF DIE tree to extract compile unit names.
+ * Handles edge cases where DIEs are missing or malformed.
+ *
+ * @param die DWARF DIE (Debugging Information Entry)
+ * @param compileUnits Output vector for compile units
+ */
 void DWARFExtractor::extractCompileUnitFromDie(const llvm::DWARFDie& die, std::vector<std::string>& compileUnits) {
     if (!die.isValid()) {
         return;
@@ -328,6 +443,15 @@ void DWARFExtractor::extractCompileUnitFromDie(const llvm::DWARFDie& die, std::v
     }
 }
 
+/**
+ * @brief Extract function information from a DWARF DIE
+ *
+ * Recursively traverses the DWARF DIE tree to extract all function names.
+ * Handles edge cases where DIEs are missing or malformed.
+ *
+ * @param die DWARF DIE (Debugging Information Entry)
+ * @param functions Output vector for functions
+ */
 void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die, std::vector<std::string>& functions) {
     if (!die.isValid()) {
         return;
@@ -358,6 +482,17 @@ void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die, std::vec
 }
 #endif
 
+/**
+ * @brief Fallback heuristic DWARF parsing when LLVM DWARF fails
+ *
+ * Attempts to extract source file paths from the ELF file using a heuristic method
+ * if LLVM's DWARF parsing is unavailable or fails. This method is less reliable
+ * and should only be used as a last resort.
+ *
+ * @param filePath Path to the ELF file
+ * @param sourceFiles Output vector for source files
+ * @return true if any source files were found, false otherwise
+ */
 bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath, std::vector<std::string>& sourceFiles) {
 #ifdef __linux__
     elf_version(EV_CURRENT);

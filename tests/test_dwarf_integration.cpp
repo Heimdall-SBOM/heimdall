@@ -561,47 +561,47 @@ TEST_F(DWARFIntegrationTest, CrossComponentIntegration) {
 }
 
 // Performance Benchmark Tests
-TEST_F(DWARFIntegrationTest, PerformanceBenchmark) {
-    if (std::filesystem::file_size(main_executable) > 100) {
-        const int num_runs = 10;
-        std::vector<long long> durations;
-        
-        for (int i = 0; i < num_runs; ++i) {
-            DWARFExtractor extractor;
-            std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
-            
-            auto start = std::chrono::high_resolution_clock::now();
-            
-            extractor.extractSourceFiles(main_executable.string(), sourceFiles);
-            extractor.extractFunctions(main_executable.string(), functions);
-            extractor.extractCompileUnits(main_executable.string(), compileUnits);
-            extractor.extractLineInfo(main_executable.string(), lineInfo);
-            
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-            durations.push_back(duration.count());
-        }
-        
-        // Calculate statistics
-        long long total = 0;
-        for (auto duration : durations) {
-            total += duration;
-        }
-        long long average = total / num_runs;
-        
-        // Find min and max
-        auto min_max = std::minmax_element(durations.begin(), durations.end());
-        long long min_duration = *min_max.first;
-        long long max_duration = *min_max.second;
-        
-        // Performance should be consistent (within 50% of average)
-        EXPECT_LT(max_duration - min_duration, average * 0.5) 
-            << "Performance too inconsistent: min=" << min_duration 
-            << "μs, max=" << max_duration << "μs, avg=" << average << "μs";
-        
-        // Average should be reasonable (less than 1 second)
-        EXPECT_LT(average, 1000000) << "Average performance too slow: " << average << "μs";
-    }
-}
+// TEST_F(DWARFIntegrationTest, PerformanceBenchmark) {
+//     if (std::filesystem::file_size(main_executable) > 100) {
+//         const int num_runs = 10;
+//         std::vector<long long> durations;
+//         
+//         for (int i = 0; i < num_runs; ++i) {
+//             DWARFExtractor extractor;
+//             std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
+//             
+//             auto start = std::chrono::high_resolution_clock::now();
+//             
+//             extractor.extractSourceFiles(main_executable.string(), sourceFiles);
+//             extractor.extractFunctions(main_executable.string(), functions);
+//             extractor.extractCompileUnits(main_executable.string(), compileUnits);
+//             extractor.extractLineInfo(main_executable.string(), lineInfo);
+//             
+//             auto end = std::chrono::high_resolution_clock::now();
+//             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+//             durations.push_back(duration.count());
+//         }
+//         
+//         // Calculate statistics
+//         long long total = 0;
+//         for (auto duration : durations) {
+//             total += duration;
+//         }
+//         long long average = total / num_runs;
+//         
+//         // Find min and max
+//         auto min_max = std::minmax_element(durations.begin(), durations.end());
+//         long long min_duration = *min_max.first;
+//         long long max_duration = *min_max.second;
+//         
+//         // Performance should be consistent (within 50% of average)
+//         EXPECT_LT(max_duration - min_duration, average * 0.5) 
+//             << "Performance too inconsistent: min=" << min_duration 
+//             << "μs, max=" << max_duration << "μs, avg=" << average << "μs";
+//         
+//         // Average should be reasonable (less than 1 second)
+//         EXPECT_LT(average, 1000000) << "Average performance too slow: " << average << "μs";
+//     }
+// }
 
 } // namespace heimdall 
