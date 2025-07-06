@@ -129,9 +129,9 @@ jobs:
       run: |
         cd build
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          ctest --output-on-failure --verbose -C Release
+          timeout 300 ctest --output-on-failure --verbose -C Release
         else
-          ctest --output-on-failure --verbose
+          timeout 300 ctest --output-on-failure --verbose
         fi
       env:
         HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data

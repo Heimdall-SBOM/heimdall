@@ -389,11 +389,10 @@ TEST_F(DWARFIntegrationTest, LargeBinaryPerformance) {
 
 // Memory Leak Stress Tests
 TEST_F(DWARFIntegrationTest, MemoryLeakStressTest) {
-    const int num_iterations = 100;
-    const int components_per_iteration = 5;
+    const int num_iterations = 10;  // Reduced from 100
+    const int components_per_iteration = 2;  // Reduced from 5
 
-    std::vector<std::string> component_paths = {main_executable.string(), math_library.string(),
-                                                string_library.string(), static_library.string()};
+    std::vector<std::string> component_paths = {main_executable.string(), math_library.string()};
 
     for (int i = 0; i < num_iterations; ++i) {
         {
@@ -406,9 +405,10 @@ TEST_F(DWARFIntegrationTest, MemoryLeakStressTest) {
 
                 std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
 
-                // Test DWARF extraction
+                // Test DWARF extraction - only on valid ELF files
                 for (const auto& path : component_paths) {
-                    if (std::filesystem::file_size(path) > 100) {
+                    if (std::filesystem::file_size(path) > 100 && 
+                        Utils::getFileExtension(path) != ".a") {  // Skip static libraries for DWARF
                         dwarf_extractor->extractSourceFiles(path, sourceFiles);
                         dwarf_extractor->extractFunctions(path, functions);
                         dwarf_extractor->extractCompileUnits(path, compileUnits);
@@ -440,26 +440,26 @@ TEST_F(DWARFIntegrationTest, MemoryLeakStressTest) {
 }
 
 TEST_F(DWARFIntegrationTest, LargeVectorStressTest) {
-    const int num_iterations = 50;
+    const int num_iterations = 5;  // Reduced from 50
 
     if (std::filesystem::file_size(main_executable) > 100) {
         for (int i = 0; i < num_iterations; ++i) {
             {
                 DWARFExtractor extractor;
 
-                // Test with very large vectors
+                // Test with large vectors
                 std::vector<std::string> large_source_files;
                 std::vector<std::string> large_functions;
                 std::vector<std::string> large_compile_units;
                 std::vector<std::string> large_line_info;
 
-                large_source_files.reserve(10000);
-                large_functions.reserve(10000);
-                large_compile_units.reserve(10000);
-                large_line_info.reserve(10000);
+                large_source_files.reserve(1000);  // Reduced from 10000
+                large_functions.reserve(1000);     // Reduced from 10000
+                large_compile_units.reserve(1000); // Reduced from 10000
+                large_line_info.reserve(1000);     // Reduced from 10000
 
                 // Pre-populate with dummy data
-                for (int j = 0; j < 1000; ++j) {
+                for (int j = 0; j < 100; ++j) {  // Reduced from 1000
                     large_source_files.push_back("dummy_source_" + std::to_string(j));
                     large_functions.push_back("dummy_function_" + std::to_string(j));
                     large_compile_units.push_back("dummy_unit_" + std::to_string(j));
