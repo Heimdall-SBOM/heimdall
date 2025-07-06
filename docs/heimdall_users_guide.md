@@ -249,49 +249,89 @@ You can also run the test executable directly:
 ## Using Heimdall in Your Project
 
 ### CMake Integration
-Add Heimdall as a dependency in your `CMakeLists.txt`:
+Configure your CMake project to use the Heimdall plugins during linking:
 
 ```cmake
-find_package(Heimdall REQUIRED)
+# Find the Heimdall plugin libraries
+find_library(HEIMDALL_LLD heimdall-lld)
+find_library(HEIMDALL_GOLD heimdall-gold)
 
-add_executable(myapp main.cpp)
-target_link_libraries(myapp PRIVATE heimdall-core)
+# For LLD linker
+if(HEIMDALL_LLD)
+    target_link_options(myapp PRIVATE
+        "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
+        "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp.json"
+        "LINKER:--plugin-opt=sbom-format=spdx"
+    )
+endif()
+
+# For Gold linker (Linux only)
+if(HEIMDALL_GOLD AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(myapp PRIVATE
+        "LINKER:--plugin ${HEIMDALL_GOLD}"
+        "LINKER:--plugin-opt sbom-output=${CMAKE_BINARY_DIR}/myapp.json"
+        "LINKER:--plugin-opt sbom-format=spdx"
+    )
+endif()
 ```
 
-If using the plugin, ensure the plugin `.so` files are available and loaded by your linker.
-
 ### Makefile Integration
-Assuming Heimdall is installed to `/usr/local` or your custom prefix:
+Configure your Makefile to use the Heimdall plugins during linking:
 
 ```makefile
-CXXFLAGS += -I/usr/local/include/heimdall
-LDFLAGS  += -L/usr/local/lib -lheimdall-core
+# LLD plugin usage
+LDFLAGS += -Wl,--plugin-opt=load:/usr/lib/heimdall-plugins/heimdall-lld.so
+LDFLAGS += -Wl,--plugin-opt=sbom-output:$(TARGET).json
+LDFLAGS += -Wl,--plugin-opt=sbom-format=spdx
+
+# Gold plugin usage (Linux only)
+LDFLAGS += -Wl,--plugin /usr/lib/heimdall-plugins/heimdall-gold.so
+LDFLAGS += -Wl,--plugin-opt sbom-output=$(TARGET).json
+LDFLAGS += -Wl,--plugin-opt sbom-format=spdx
 
 myapp: main.o
 	$(CXX) $(CXXFLAGS) -o myapp main.o $(LDFLAGS)
 ```
 
-For plugin usage, pass the plugin to your linker (see below).
-
 ### Command-Line Usage
-You can use Heimdall as a linker plugin or as a standalone tool.
+You can use Heimdall as a linker plugin with both LLD and Gold linkers.
 
 #### LLD Plugin Example
 ```bash
+# Basic usage
 ld.lld --plugin-opt=load:./heimdall-lld.so \
       --plugin-opt=sbom-output:myapp.json \
+      main.o -o myapp
+
+# With specific format and verbose output
+ld.lld --plugin-opt=load:./heimdall-lld.so \
+      --plugin-opt=sbom-output:myapp.spdx.json \
+      --plugin-opt=sbom-format=spdx \
+      --plugin-opt=verbose=1 \
       main.o -o myapp
 ```
 
 #### Gold Plugin Example
 ```bash
+# Basic usage
 ld.gold --plugin ./heimdall-gold.so \
         --plugin-opt sbom-output=myapp.json \
         main.o -o myapp
+
+# With specific format and verbose output
+ld.gold --plugin ./heimdall-gold.so \
+        --plugin-opt sbom-output=myapp.cyclonedx.json \
+        --plugin-opt sbom-format=cyclonedx \
+        --plugin-opt verbose=1 \
+        main.o -o myapp
 ```
 
-#### Standalone (Planned)
-A standalone CLI is planned for future releases. For now, use the plugin or library integration.
+#### Plugin Options
+- `sbom-output`: Output file path for the SBOM
+- `sbom-format`: Output format (`spdx` or `cyclonedx`)
+- `verbose`: Enable verbose output (`1` for enabled, `0` for disabled)
+- `extract-debug-info`: Extract debug information (`1` for enabled, `0` for disabled)
+- `include-system-libraries`: Include system libraries in SBOM (`1` for enabled, `0` for disabled)
 
 ---
 
