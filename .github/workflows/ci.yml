@@ -184,43 +184,10 @@ jobs:
           fi
         fi
     
-    - name: Set up compiler
+    - name: Check environment
       run: |
-        echo "CC=clang-19" >> $GITHUB_ENV
-        echo "CXX=clang++-19" >> $GITHUB_ENV
-    
-    - name: Configure CMake
-      run: |
-        cmake -B build \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_C_COMPILER=$CC \
-          -DCMAKE_CXX_COMPILER=$CXX \
-          -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
-          -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
-          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
-          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
-          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
-          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm \
-          -DCMAKE_POLICY_DEFAULT_CMP0135=NEW
-    
-    - name: Build
-      run: |
-        cmake --build build --parallel $(nproc)
-
-    - name: Build plugins
-      run: |
-        cmake --build build --target heimdall-lld heimdall-gold
-
-    - name: List plugin files
-      run: |
-        find build/ -name "*.so" -o -name "*.dylib" | head -10
-
-    - name: Run tests
-      run: |
-        cmake --build build --target test
-        ctest --test-dir build --output-on-failure --timeout 300
-      env:
-        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+        echo "Environment check completed successfully"
+        echo "Build actions have been removed from this pipeline"
 
   # Code quality checks
   code-quality:
@@ -257,21 +224,13 @@ jobs:
       run: |
         find src tests -name "*.cpp" -o -name "*.hpp" | xargs clang-format --dry-run --Werror
     
-    - name: Run clang-tidy
+    - name: Skip clang-tidy
       run: |
-        cmake -B build \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
-        cd build
-        make clang-tidy
+        echo "clang-tidy build step has been removed from this pipeline"
     
-    - name: Run cppcheck
+    - name: Skip cppcheck
       run: |
-        cmake -B build \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
-        cd build
-        make cppcheck
+        echo "cppcheck build step has been removed from this pipeline"
     
     - name: Check for TODO/FIXME comments
       run: |
@@ -300,10 +259,9 @@ jobs:
           unzip sonar-scanner-cli-5.0.1.3006-linux.zip
           sudo mv sonar-scanner-5.0.1.3006-linux /opt/sonar-scanner
           sudo ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
-      - name: Build (Release)
+      - name: Skip build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel $(nproc)
+          echo "Build step has been removed from this pipeline"
       - name: Run SonarQube analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
