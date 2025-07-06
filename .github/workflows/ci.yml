@@ -83,10 +83,10 @@ jobs:
     
     - name: Download LLD source headers
       run: |
-        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.0.0/lld-19.0.0.src.tar.xz
-        tar -xf lld-19.0.0.src.tar.xz
+        wget https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/lld-19.1.7.src.tar.xz
+        tar -xf lld-19.1.7.src.tar.xz
         sudo mkdir -p /usr/local/include/lld
-        sudo cp -r lld-19.0.0.src/include/* /usr/local/include/lld/
+        sudo cp -r lld-19.1.7.src/include/* /usr/local/include/lld/
     
     - name: Set up compiler
       run: |
