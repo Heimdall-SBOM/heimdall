@@ -50,8 +50,7 @@ extern "C" {
 
 // Plugin initialization
 int onload(void* /*tv*/) {
-    std::cout << "Heimdall LLD Plugin activated" << '
-';
+    std::cout << "Heimdall LLD Plugin activated\n";
 
     // Initialize the adapter
     globalAdapter = std::make_unique<heimdall::LLDAdapter>();
@@ -63,8 +62,7 @@ int onload(void* /*tv*/) {
     globalSBOMGenerator->setFormat(format);
 
     if (verbose) {
-        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << '
-';
+        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << "\n";
     }
 
     return 0;
@@ -80,8 +78,7 @@ void onunload() {
         globalSBOMGenerator->generateSBOM();
     }
 
-    std::cout << "Heimdall LLD Plugin deactivated" << '
-';
+    std::cout << "Heimdall LLD Plugin deactivated\n";
 }
 
 // Plugin metadata
@@ -101,8 +98,7 @@ int heimdall_set_output_path(const char* path) {
             globalSBOMGenerator->setOutputPath(outputPath);
         }
         if (verbose) {
-            std::cout << "Heimdall: Output path set to " << outputPath << '
-';
+            std::cout << "Heimdall: Output path set to " << outputPath << "\n";
         }
         return 0;
     }
@@ -116,8 +112,7 @@ int heimdall_set_format(const char* fmt) {
             globalSBOMGenerator->setFormat(format);
         }
         if (verbose) {
-            std::cout << "Heimdall: Format set to " << format << '
-';
+            std::cout << "Heimdall: Format set to " << format << "\n";
         }
         return 0;
     }
@@ -143,8 +138,7 @@ int heimdall_process_input_file(const char* filePath) {
     processedFiles.push_back(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processing input file: " << path << '
-';
+        std::cout << "Heimdall: Processing input file: " << path << "\n";
     }
 
     // Process the file through the adapter
@@ -259,8 +253,7 @@ void heimdall_process_library(const char* libraryPath) {
     processedLibraries.push_back(path);
 
     if (verbose) {
-        std::cout << "Heimdall: Processing library: " << path << '
-';
+        std::cout << "Heimdall: Processing library: " << path << "\n";
     }
 
     // Process the library through the adapter
@@ -290,8 +283,7 @@ void heimdall_process_library(const char* libraryPath) {
 // Finalization
 void heimdall_finalize() {
     if (verbose) {
-        std::cout << "Heimdall: Finalizing SBOM generation" << '
-';
+        std::cout << "Heimdall: Finalizing SBOM generation\n";
     }
 
     if (globalSBOMGenerator) {
@@ -299,8 +291,7 @@ void heimdall_finalize() {
 
         if (verbose) {
             std::cout << "Heimdall: SBOM generated with "
-                      << globalSBOMGenerator->getComponentCount() << " components" << '
-';
+                      << globalSBOMGenerator->getComponentCount() << " components\n";
             globalSBOMGenerator->printStatistics();
         }
     }
@@ -365,8 +356,7 @@ char HeimdallPass::ID = 0;
 extern "C" {
 void heimdall_register_pass() {
     // This will be called when the plugin is loaded
-    std::cout << "Heimdall: LLVM Pass registered" << '
-';
+    std::cout << "Heimdall: LLVM Pass registered\n";
 }
 }
 #endif
@@ -375,8 +365,7 @@ void heimdall_register_pass() {
 extern "C" {
 // LLD Plugin entry point - called when plugin is loaded
 void heimdall_lld_plugin_init() {
-    std::cout << "Heimdall: LLD Plugin loaded and initialized" << '
-';
+    std::cout << "Heimdall: LLD Plugin loaded and initialized\n";
 
     // Initialize our plugin
     onload(nullptr);
@@ -384,8 +373,7 @@ void heimdall_lld_plugin_init() {
 
 // LLD Plugin cleanup - called when plugin is unloaded
 void heimdall_lld_plugin_cleanup() {
-    std::cout << "Heimdall: LLD Plugin cleanup" << '
-';
+    std::cout << "Heimdall: LLD Plugin cleanup\n";
 
     // Finalize SBOM generation
     heimdall_finalize();
