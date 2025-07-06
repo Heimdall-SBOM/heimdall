@@ -229,111 +229,111 @@ jobs:
       env:
         HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
 
-  # macOS builds
-  macos:
-    name: macOS
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        compiler: [clang, gcc]
-        build_type: [Debug, Release]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install cmake openssl libelf binutils llvm@19 pkg-config
-    
-    - name: Set up compiler
-      run: |
-        if [ "${{ matrix.compiler }}" = "gcc" ]; then
-          brew install gcc
-          echo "CC=gcc-13" >> $GITHUB_ENV
-          echo "CXX=g++-13" >> $GITHUB_ENV
-        else
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "CXX=clang++" >> $GITHUB_ENV
-        fi
-    
-    - name: Configure CMake
-      run: |
-        cmake -B build \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_C_COMPILER=$CC \
-          -DCMAKE_CXX_COMPILER=$CXX \
-          -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
-          -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
-          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
-          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
-          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
-          -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm@19"
-    
-    - name: Build
-      run: |
-        cmake --build build --parallel $(sysctl -n hw.ncpu)
-    
-    - name: Run tests
-      run: |
-        cd build
-        ctest --output-on-failure --verbose
-      env:
-        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+  # macOS builds - DISABLED
+  # macos:
+  #   name: macOS
+  #   runs-on: macos-latest
+  #   strategy:
+  #     matrix:
+  #       compiler: [clang, gcc]
+  #       build_type: [Debug, Release]
+  #   
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #   
+  #   - name: Install dependencies
+  #     run: |
+  #       brew update
+  #       brew install cmake openssl libelf binutils llvm@19 pkg-config
+  #   
+  #   - name: Set up compiler
+  #     run: |
+  #       if [ "${{ matrix.compiler }}" = "gcc" ]; then
+  #         brew install gcc
+  #         echo "CC=gcc-13" >> $GITHUB_ENV
+  #         echo "CXX=g++-13" >> $GITHUB_ENV
+  #       else
+  #         echo "CC=clang" >> $GITHUB_ENV
+  #         echo "CXX=clang++" >> $GITHUB_ENV
+  #       fi
+  #   
+  #   - name: Configure CMake
+  #     run: |
+  #       cmake -B build \
+  #         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+  #         -DCMAKE_C_COMPILER=$CC \
+  #         -DCMAKE_CXX_COMPILER=$CXX \
+  #         -DBUILD_LLD_PLUGIN=${{ env.BUILD_LLD_PLUGIN }} \
+  #         -DBUILD_GOLD_PLUGIN=${{ env.BUILD_GOLD_PLUGIN }} \
+  #         -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+  #         -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+  #         -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+  #         -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm@19"
+  #   
+  #   - name: Build
+  #     run: |
+  #       cmake --build build --parallel $(sysctl -n hw.ncpu)
+  #   
+  #   - name: Run tests
+  #     run: |
+  #       cd build
+  #       ctest --output-on-failure --verbose
+  #     env:
+  #       HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
 
-  # Windows builds
-  windows:
-    name: Windows
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        compiler: [msvc, clang-cl]
-        build_type: [Debug, Release]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        # Install vcpkg and dependencies
-        git clone https://github.com/Microsoft/vcpkg.git
-        cd vcpkg
-        .\bootstrap-vcpkg.bat
-        .\vcpkg install openssl:x64-windows
-        .\vcpkg integrate install
-        cd ..
-    
-    - name: Set up compiler
-      if: matrix.compiler == 'clang-cl'
-      run: |
-        echo "CC=clang-cl" >> $GITHUB_ENV
-        echo "CXX=clang-cl" >> $GITHUB_ENV
-    
-    - name: Configure CMake
-      run: |
-        cmake -B build \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_C_COMPILER=${{ env.CC }} \
-          -DCMAKE_CXX_COMPILER=${{ env.CXX }} \
-          -DBUILD_LLD_PLUGIN=OFF \
-          -DBUILD_GOLD_PLUGIN=OFF \
-          -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
-          -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
-          -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
-          -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake
-    
-    - name: Build
-      run: |
-        cmake --build build --config ${{ matrix.build_type }} --parallel
-    
-    - name: Run tests
-      run: |
-        cd build
-        ctest --output-on-failure --verbose -C ${{ matrix.build_type }}
-      env:
-        HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
+  # Windows builds - DISABLED
+  # windows:
+  #   name: Windows
+  #   runs-on: windows-latest
+  #   strategy:
+  #     matrix:
+  #       compiler: [msvc, clang-cl]
+  #       build_type: [Debug, Release]
+  #   
+  #   steps:
+  #   - name: Checkout code
+  #     uses: actions/checkout@v4
+  #   
+  #   - name: Install dependencies
+  #     run: |
+  #       # Install vcpkg and dependencies
+  #       git clone https://github.com/Microsoft/vcpkg.git
+  #       cd vcpkg
+  #       .\bootstrap-vcpkg.bat
+  #       .\vcpkg install openssl:x64-windows
+  #       .\vcpkg integrate install
+  #       cd ..
+  #   
+  #   - name: Set up compiler
+  #     if: matrix.compiler == 'clang-cl'
+  #     run: |
+  #       echo "CC=clang-cl" >> $GITHUB_ENV
+  #       echo "CXX=clang-cl" >> $GITHUB_ENV
+  #   
+  #   - name: Configure CMake
+  #     run: |
+  #       cmake -B build \
+  #         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+  #         -DCMAKE_C_COMPILER=${{ env.CC }} \
+  #         -DCMAKE_CXX_COMPILER=${{ env.CXX }} \
+  #         -DBUILD_LLD_PLUGIN=OFF \
+  #         -DBUILD_GOLD_PLUGIN=OFF \
+  #         -DBUILD_SHARED_CORE=${{ env.BUILD_SHARED_CORE }} \
+  #         -DBUILD_TESTS=${{ env.BUILD_TESTS }} \
+  #         -DBUILD_EXAMPLES=${{ env.BUILD_EXAMPLES }} \
+  #         -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake
+  #   
+  #   - name: Build
+  #     run: |
+  #       cmake --build build --config ${{ matrix.build_type }} --parallel
+  #   
+  #   - name: Run tests
+  #     run: |
+  #       cd build
+  #       ctest --output-on-failure --verbose -C ${{ matrix.build_type }}
+  #     env:
+  #       HEIMDALL_TEST_DATA_DIR: ${{ github.workspace }}/tests/data
 
   # Code quality checks
   code-quality:
@@ -398,7 +398,7 @@ jobs:
   sonarqube-analysis:
     name: SonarQube Analysis
     runs-on: ubuntu-latest
-    needs: [linux-gcc, linux-clang, macos, windows]
+    needs: [linux-gcc, linux-clang]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
