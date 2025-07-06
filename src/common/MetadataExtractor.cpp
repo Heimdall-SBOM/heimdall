@@ -526,9 +526,36 @@ bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath) {
 // MetadataHelpers implementation
 namespace MetadataHelpers {
 
-bool isELF(const std::string& filePath) {
-    std::ifstream file(filePath, std::ios::binary);
+/**
+ * @brief Utility function to safely open a file for binary reading
+ * @param filePath Path to the file to open
+ * @param file Reference to ifstream to open
+ * @return true if file opened successfully, false otherwise
+ */
+bool openFileSafely(const std::string& filePath, std::ifstream& file) {
+    file.open(filePath, std::ios::binary);
     if (!file.is_open()) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief Utility function to safely open a file and return empty string on failure
+ * @param filePath Path to the file to open
+ * @param file Reference to ifstream to open
+ * @return Empty string if file cannot be opened, otherwise empty string (caller should check file.is_open())
+ */
+std::string openFileOrReturnEmpty(const std::string& filePath, std::ifstream& file) {
+    if (!openFileSafely(filePath, file)) {
+        return "";
+    }
+    return "";
+}
+
+bool isELF(const std::string& filePath) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
         return false;
     }
 
@@ -545,8 +572,8 @@ bool isELF(const std::string& filePath) {
 
 bool isMachO(const std::string& filePath) {
 #ifdef __APPLE__
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open()) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
         return false;
     }
     uint32_t magic = 0;  // Initialize to zero
@@ -1575,8 +1602,8 @@ bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& 
 
 std::string detectLicenseFromFile(const std::string& filePath) {
     // Try to find license information in the file
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open()) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
         return "";
     }
 
@@ -1647,8 +1674,8 @@ std::string detectLicenseFromSymbols(const std::vector<heimdall::SymbolInfo>& sy
 }
 
 std::string detectVersionFromFile(const std::string& filePath) {
-    std::ifstream file(filePath, std::ios::binary);
-    if (!file.is_open()) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
         return "";
     }
 

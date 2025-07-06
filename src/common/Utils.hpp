@@ -294,6 +294,8 @@ std::string detectLicenseFromName(const std::string& componentName);
  */
 std::string detectLicenseFromPath(const std::string& filePath);
 
+
+
 } // namespace Utils
 
 

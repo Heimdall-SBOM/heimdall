@@ -680,4 +680,6 @@ std::string detectLicenseFromPath(const std::string& filePath) {
     return "NOASSERTION";
 }
 
+
+
 }  // namespace heimdall::Utils
