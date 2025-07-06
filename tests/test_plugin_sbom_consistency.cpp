@@ -54,12 +54,31 @@ protected:
         testDir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
         std::filesystem::create_directories(testDir);
 
+        // Ensure plugins are built before finding them
+        ensurePluginsBuilt();
+
         // Find plugin paths
         lldPluginPath = findPluginPath("heimdall-lld.so");
         goldPluginPath = findPluginPath("heimdall-gold.so");
 
         // Create a simple test binary
         createTestBinary();
+    }
+
+    void ensurePluginsBuilt() {
+        // Check if we're in a build directory and plugins don't exist
+        if (std::filesystem::exists("CMakeCache.txt")) {
+            bool lldExists = std::filesystem::exists("heimdall-lld.so");
+            bool goldExists = std::filesystem::exists("heimdall-gold.so");
+            
+            if (!lldExists || !goldExists) {
+                std::cerr << "Building missing plugins..." << std::endl;
+                int result = system("cmake --build . --target heimdall-lld heimdall-gold");
+                if (result != 0) {
+                    std::cerr << "WARNING: Failed to build plugins automatically" << std::endl;
+                }
+            }
+        }
     }
 
     void TearDown() override {
@@ -69,10 +88,13 @@ protected:
 
     std::string findPluginPath(const std::string& pluginName) {
         std::vector<std::string> searchPaths = {
-            "../../build/", 
+            "build/",  // Primary location in CI
             "../build/", 
-            "build/", 
+            "../../build/", 
             "./",
+            "build/install/lib64/heimdall-plugins/",  // Installed location
+            "../build/install/lib64/heimdall-plugins/",
+            "../../build/install/lib64/heimdall-plugins/",
             "../../build/tests/",
             "../build/tests/",
             "build/tests/",
@@ -91,6 +113,22 @@ protected:
         for (const auto& entry : std::filesystem::recursive_directory_iterator(currentDir)) {
             if (entry.is_regular_file() && entry.path().filename() == pluginName) {
                 return entry.path().string();
+            }
+        }
+
+        // If still not found, try to build the plugins
+        std::cerr << "WARNING: Plugin " << pluginName << " not found. Attempting to build..." << std::endl;
+        
+        // Try to run cmake build if we're in a build directory
+        if (std::filesystem::exists("CMakeCache.txt")) {
+            system("cmake --build . --target heimdall-lld heimdall-gold");
+            
+            // Check again after build attempt
+            for (const auto& path : searchPaths) {
+                std::string fullPath = path + pluginName;
+                if (std::filesystem::exists(fullPath)) {
+                    return std::filesystem::absolute(fullPath).string();
+                }
             }
         }
 
@@ -272,14 +310,17 @@ int main() {
 };
 
 TEST_F(PluginSBOMConsistencyTest, PluginPathsExist) {
-    if (lldPluginPath.empty()) {
-        GTEST_SKIP() << "LLD plugin not found";
-    }
-    if (goldPluginPath.empty()) {
-        GTEST_SKIP() << "Gold plugin not found";
-    }
-    EXPECT_FALSE(lldPluginPath.empty()) << "LLD plugin not found";
-    EXPECT_FALSE(goldPluginPath.empty()) << "Gold plugin not found";
+    // This test is critical and should never skip
+    EXPECT_FALSE(lldPluginPath.empty()) << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
+    EXPECT_FALSE(goldPluginPath.empty()) << "Gold plugin not found. Searched in build/, install/, and current directory tree.";
+    
+    // Verify the plugins are actually loadable
+    EXPECT_TRUE(std::filesystem::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
+    EXPECT_TRUE(std::filesystem::exists(goldPluginPath)) << "Gold plugin file does not exist: " << goldPluginPath;
+    
+    // Check file sizes to ensure they're not empty
+    EXPECT_GT(std::filesystem::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
+    EXPECT_GT(std::filesystem::file_size(goldPluginPath), 0) << "Gold plugin file is empty: " << goldPluginPath;
 }
 
 TEST_F(PluginSBOMConsistencyTest, TestBinaryExists) {
