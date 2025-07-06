@@ -18,6 +18,12 @@ env:
   BUILD_TESTS: ON
   BUILD_EXAMPLES: ON
 
+# Permissions for security scanning
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 jobs:
   # Linux builds with different configurations
   linux-gcc:

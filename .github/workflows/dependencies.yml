@@ -6,6 +6,12 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:  # Allow manual triggering
 
+# Permissions for security scanning
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
 jobs:
   # Check for dependency updates
   check-dependencies:
