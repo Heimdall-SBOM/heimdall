@@ -1,11 +1,11 @@
 # Multi-stage Dockerfile for Heimdall SBOM Generator
 # Stage 1: Build environment
-FROM rockylinux:9 AS builder
+FROM ubuntu:22.04 AS builder
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CMAKE_BUILD_TYPE=Release
-ENV CMAKE_CXX_STANDARD=23
+ENV CMAKE_CXX_STANDARD=17
 ENV BUILD_LLD_PLUGIN=ON
 ENV BUILD_GOLD_PLUGIN=ON
 ENV BUILD_SHARED_CORE=ON
@@ -13,22 +13,23 @@ ENV BUILD_TESTS=ON
 ENV BUILD_EXAMPLES=ON
 
 # Install build dependencies
-RUN dnf install -y \
+RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
-    openssl-devel \
-    elfutils-libelf-devel \
-    binutils-devel \
-    binutils \
-    pkgconfig \
+    libssl-dev \
+    libelf-dev \
+    binutils-dev \
+    libbfd-dev \
+    pkg-config \
     wget \
     git \
-    && dnf clean all
+    && rm -rf /var/lib/apt/lists/*
 
 # Install LLVM 19 (recommended for full DWARF support)
-RUN dnf config-manager --add-repo https://yum.llvm.org/rocky/9/llvm-toolchain-rocky9-19/ && \
-    dnf install -y llvm19-dev liblld19-dev
-
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list && \
+sudo apt-get update && \
+sudo apt-get install -y llvm-19-dev liblld-19-dev 
 # Set compiler environment
 ENV CC=clang-19
 ENV CXX=clang++-19
@@ -47,7 +48,7 @@ RUN cmake -B build \
     -DBUILD_SHARED_CORE=${BUILD_SHARED_CORE} \
     -DBUILD_TESTS=${BUILD_TESTS} \
     -DBUILD_EXAMPLES=${BUILD_EXAMPLES} \
-    -DLLVM_DIR=/usr/lib/llvm19/lib/cmake/llvm
+    -DLLVM_DIR=/usr/lib/llvm-19/lib/cmake/llvm
 
 RUN cmake --build build --parallel $(nproc)
 
@@ -58,14 +59,15 @@ RUN cd build && ctest --output-on-failure --verbose
 RUN cmake --install build --prefix /opt/heimdall
 
 # Stage 2: Runtime environment
-FROM rockylinux:9 AS runtime
+FROM ubuntu:22.04 AS runtime
 
 # Install runtime dependencies
-RUN dnf install -y \
-    openssl-libs \
-    elfutils-libelf \
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    libelf1 \
     binutils \
-    && dnf clean all
+    libbfd-2.38-system \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy installed files from builder
 COPY --from=builder /opt/heimdall /opt/heimdall
@@ -95,24 +97,24 @@ FROM runtime AS dev
 USER root
 
 # Install development tools
-RUN dnf install -y \
+RUN apt-get update && apt-get install -y \
     gdb \
     valgrind \
-    clang-tools-extra \
+    clang-tidy \
     cppcheck \
-    && dnf clean all
+    && rm -rf /var/lib/apt/lists/*
 
 # Switch back to non-root user
 USER heimdall
 
 # Stage 4: Minimal runtime (for production)
-FROM rockylinux:9 AS minimal
+FROM ubuntu:22.04 AS minimal
 
 # Install only essential runtime dependencies
-RUN dnf install -y \
-    openssl-libs \
-    elfutils-libelf \
-    && dnf clean all
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    libelf1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy only the core library and plugins
 COPY --from=builder /opt/heimdall/lib/libheimdall-core.so /usr/local/lib/
@@ -135,4 +137,4 @@ LABEL license="Apache-2.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD test -f /usr/local/lib/libheimdall-core.so || exit 1
+    CMD test -f /usr/local/lib/libheimdall-core.so || exit 1 
