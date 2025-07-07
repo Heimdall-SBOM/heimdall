@@ -32,11 +32,13 @@ Heimdall is a comprehensive Software Bill of Materials (SBOM) generation plugin 
 
 ### Prerequisites
 
-- C++17 compatible compiler (GCC 7+, Clang 5+)
+- C++11 compatible compiler (GCC 4.8+ or Clang 3.3+ recommended)
+- C++14, C++17, or C++23 compatible compiler for enhanced features
 - CMake 3.16+
-- LLVM/LLD development libraries (LLVM 19 recommended for full DWARF support)
-- GNU Gold linker (Linux only, optional for Gold plugin)
 - OpenSSL development libraries
+- LLVM 19 (for DWARF support)
+- libelf (for ELF parsing)
+- BFD (for Gold plugin)
 
 ### Quick Installation
 
@@ -44,6 +46,42 @@ Heimdall is a comprehensive Software Bill of Materials (SBOM) generation plugin 
 git clone https://github.com/heimdall-sbom/heimdall.git
 cd heimdall
 ./build.sh
+```
+
+### C++ Standard Support
+
+Heimdall supports C++11, C++14, C++17, and C++23 standards:
+
+**C++11 (Minimum):**
+- Basic functionality
+- Uses `.find() != std::string::npos` for string operations
+- Compatible with older compilers
+
+**C++14/17/23 (Enhanced features):**
+- Uses modern features like `std::string::contains()` (C++23)
+- `starts_with`, `ends_with` (C++20+)
+- Future support for `std::format`, `std::print`, and more
+
+### Building with Different Standards
+
+You can build Heimdall with any supported C++ standard:
+
+```bash
+# Default (C++23)
+cmake -B build -DHEIMDALL_CPP_STANDARD=23
+cmake --build build
+
+# C++17
+cmake -B build_cpp17 -DHEIMDALL_CPP_STANDARD=17
+cmake --build build_cpp17
+
+# C++14
+cmake -B build_cpp14 -DHEIMDALL_CPP_STANDARD=14
+cmake --build build_cpp14
+
+# C++11
+cmake -B build_cpp11 -DHEIMDALL_CPP_STANDARD=11
+cmake --build build_cpp11
 ```
 
 ## Installation
@@ -1029,3 +1067,29 @@ Heimdall provides different log levels:
 ---
 
 For more information, see the [main README](../README.md) and [API documentation](../docs/api.md).
+
+## Requirements
+
+- C++11 compatible compiler (GCC 4.8+ or Clang 3.3+ recommended)
+- C++14, C++17, or C++23 compatible compiler for enhanced features
+- CMake 3.16+
+- OpenSSL
+- LLVM 19 (for DWARF support)
+- libelf (for ELF parsing)
+- BFD (for Gold plugin)
+
+### C++ Standard Support
+
+Heimdall supports multiple C++ standards with different feature sets:
+
+**C++11 (Minimum):**
+- Basic functionality
+- Uses `.find() != std::string::npos` for string operations
+- Compatible with older compilers
+
+**C++14/17/23 (Enhanced features):**
+- Uses modern features like `std::string::contains()` (C++23)
+- `starts_with`, `ends_with` (C++20+)
+- Future support for `std::format`, `std::print`, and more
+
+If you encounter build errors, ensure your compiler supports the selected C++ standard and that CMake is passing the correct `-std=c++XX` flag to your compiler.

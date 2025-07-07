@@ -142,7 +142,8 @@ docker build --target minimal -t heimdall:minimal .
 ### Prerequisites
 
 - CMake 3.16+
-- C++17 compatible compiler
+- C++11 compatible compiler (minimum)
+- C++14/17/23 compatible compiler (recommended)
 - OpenSSL development libraries
 - libelf development libraries
 - LLVM 19+ (for DWARF support)
