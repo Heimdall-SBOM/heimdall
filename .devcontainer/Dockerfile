@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Heimdall SBOM Generator
 # Stage 1: Build environment
 # Use the official Ubuntu 22.04 image as a base
-FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
+FROM ubuntu:22.04 AS builder
 
 # Set the working directory to /workspaces
 WORKDIR /workspaces
