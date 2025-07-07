@@ -1,7 +1,16 @@
 # Multi-stage Dockerfile for Heimdall SBOM Generator
 # Stage 1: Build environment
-FROM ubuntu:22.04 AS builder
+# Use the official Ubuntu 22.04 image as a base
+FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
 
+# Set the working directory to /workspaces
+WORKDIR /workspaces
+
+# Install dependencies
+RUN sudo apt-get update && sudo apt-get install -y git build-essential cmake
+
+# Set the default user to vscode
+USER vscode
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CMAKE_BUILD_TYPE=Release
@@ -82,11 +91,11 @@ ENV LD_LIBRARY_PATH=/opt/heimdall/lib:/usr/local/lib:$LD_LIBRARY_PATH
 ENV PATH=/opt/heimdall/bin:$PATH
 
 # Create non-root user
-RUN useradd -m -s /bin/bash heimdall
-USER heimdall
+#RUN useradd -m -s /bin/bash heimdall
+#USER heimdall
 
 # Set working directory
-WORKDIR /workspace
+#WORKDIR /workspace
 
 # Default command
 CMD ["/bin/bash"]
