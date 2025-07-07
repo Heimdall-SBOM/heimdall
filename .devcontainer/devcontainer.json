@@ -1,5 +1,5 @@
 {
-  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04",
+  "dockerFile": "Dockerfile",
   "mounts": [
     "source=${localWorkspaceFolder}/.devcontainer,target=/workspaces/.devcontainer,type=bind",
     "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind"
