@@ -8,6 +8,6 @@
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "containerUser": "vscode",
   "postCreateCommand": [
-    "apt-get update && apt-get install -y git build-essential cmake"
+    "bash -c \"apt-get update && apt-get install -y git build-essential cmake\""
   ]
 }
