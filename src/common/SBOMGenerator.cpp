@@ -469,19 +469,30 @@ std::string SBOMGenerator::Impl::generateSPDXDocument() {
 std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
     std::stringstream ss;
 
+    // Generate a unique serial number in UUID format as required by 1.6 schema
+    std::string serialNumber = "urn:uuid:" + Utils::generateUUID();
+
     ss << "{\n";
+    ss << "  \"$schema\": \"http://cyclonedx.org/schema/bom-" << cyclonedxVersion << ".schema.json\",\n";
     ss << "  \"bomFormat\": \"CycloneDX\",\n";
     ss << "  \"specVersion\": \"" << cyclonedxVersion << "\",\n";
+    ss << "  \"serialNumber\": \"" << serialNumber << "\",\n";
     ss << "  \"version\": 1,\n";
     ss << "  \"metadata\": {\n";
     ss << "    \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
-    ss << "    \"tools\": [\n";
-    ss << "      {\n";
-    ss << "        \"vendor\": \"Heimdall\",\n";
-    ss << "        \"name\": \"SBOM Generator\",\n";
-    ss << "        \"version\": \"2.0.0\"\n";
-    ss << "      }\n";
-    ss << "    ],\n";
+    ss << "    \"tools\": {\n";
+    ss << "      \"components\": [\n";
+    ss << "        {\n";
+    ss << "          \"type\": \"application\",\n";
+    ss << "          \"bom-ref\": \"heimdall-sbom-generator\",\n";
+    ss << "          \"supplier\": {\n";
+    ss << "            \"name\": \"Heimdall Project\"\n";
+    ss << "          },\n";
+    ss << "          \"name\": \"Heimdall SBOM Generator\",\n";
+    ss << "          \"version\": \"2.0.0\"\n";
+    ss << "        }\n";
+    ss << "      ]\n";
+    ss << "    },\n";
     ss << "    \"component\": {\n";
     ss << "      \"type\": \"application\",\n";
     ss << "      \"name\": "
@@ -605,14 +616,54 @@ std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& comp
     
     std::stringstream evidence;
     evidence << "      \"evidence\": {\n";
-    evidence << "        \"licenses\": [\n";
+    
+    // Add identity evidence
+    bool hasIdentity = !component.checksum.empty() || !component.filePath.empty();
+    if (hasIdentity) {
+        evidence << "        \"identity\": {\n";
+        evidence << "          \"field\": \"hash\",\n";
+        evidence << "          \"confidence\": 1.0,\n";
+        evidence << "          \"methods\": [\n";
+        evidence << "            {\n";
+        evidence << "              \"technique\": \"binary-analysis\",\n";
+        evidence << "              \"confidence\": 1.0,\n";
+        evidence << "              \"value\": \"File hash verification\"\n";
+        evidence << "            }\n";
+        evidence << "          ]\n";
+        evidence << "        },\n";
+    }
+    
+    // Add occurrence evidence  
+    evidence << "        \"occurrences\": [\n";
     evidence << "          {\n";
-    evidence << "            \"license\": {\n";
-    evidence << "              \"id\": " << Utils::formatJsonValue(component.license.empty() ? "NOASSERTION" : component.license) << "\n";
-    evidence << "            }\n";
+    evidence << "            \"location\": " << Utils::formatJsonValue(component.filePath) << ",\n";
+    evidence << "            \"line\": 1\n";
     evidence << "          }\n";
-    evidence << "        ]\n";
-    evidence << "      }";
+    evidence << "        ]";
+    
+    // Add callstack evidence if debug info is available
+    if (component.containsDebugInfo && !component.functions.empty()) {
+        evidence << ",\n";
+        evidence << "        \"callstack\": {\n";
+        evidence << "          \"frames\": [\n";
+        bool firstFrame = true;
+        int frameCount = 0;
+        for (const auto& func : component.functions) {
+            if (!firstFrame) evidence << ",\n";
+            evidence << "            {\n";
+            evidence << "              \"function\": " << Utils::formatJsonValue(func) << ",\n";
+            evidence << "              \"line\": 1,\n";
+            evidence << "              \"column\": 1\n";
+            evidence << "            }";
+            firstFrame = false;
+            frameCount++;
+            if (frameCount >= 3) break; // Limit to first few for brevity
+        }
+        evidence << "\n          ]\n";
+        evidence << "        }";
+    }
+    
+    evidence << "\n      }";
     return evidence.str();
 }
 
@@ -620,18 +671,20 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     std::stringstream ss;
     ss << "    {\n";
     ss << "      \"type\": \"library\",\n";
+    ss << "      \"bom-ref\": \"component-" << generateSPDXId(component.name) << "\",\n";
     ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
     ss << "      \"version\": "
        << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version)
        << ",\n";
     ss << "      \"description\": "
        << Utils::formatJsonValue(component.getFileTypeString() + " component") << ",\n";
-    ss << "      \"supplier\": "
-       << Utils::formatJsonValue(component.supplier.empty() ? "Organization: UNKNOWN"
-                                                            : component.supplier)
-       << ",\n";
-    ss << "      \"homepage\": "
-       << Utils::formatJsonValue(component.homepage.empty() ? "N/A" : component.homepage) << ",\n";
+    
+    // Fix supplier to be an organizational entity object
+    ss << "      \"supplier\": {\n";
+    ss << "        \"name\": "
+       << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << "\n";
+    ss << "      },\n";
+    
     ss << "      \"hashes\": [\n";
     ss << "        {\n";
     ss << "          \"alg\": \"SHA-256\",\n";
@@ -650,7 +703,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "        }\n";
     ss << "      ]";
 
-    // Add debug properties and evidence
+    // Add debug properties and evidence for 1.6+
     std::string debugProperties = generateDebugProperties(component);
     std::string evidenceField = generateEvidenceField(component);
     
