@@ -7,10 +7,8 @@ FROM mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04
 WORKDIR /workspaces
 
 # Install dependencies
-RUN sudo apt-get update && sudo apt-get install -y git build-essential cmake
+RUN apt-get update && apt-get install -y git build-essential cmake
 
-# Set the default user to vscode
-USER vscode
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CMAKE_BUILD_TYPE=Release
@@ -35,10 +33,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install LLVM 19 (recommended for full DWARF support)
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
-echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list && \
-sudo apt-get update && \
-sudo apt-get install -y llvm-19-dev liblld-19-dev 
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | tee /etc/apt/sources.list.d/llvm.list && \
+apt-get update && \
+apt-get install -y llvm-19-dev liblld-19-dev 
 # Set compiler environment
 ENV CC=clang-19
 ENV CXX=clang++-19
@@ -114,7 +112,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Switch back to non-root user
-USER heimdall
+#USER heimdall
 
 # Stage 4: Minimal runtime (for production)
 FROM ubuntu:22.04 AS minimal
@@ -146,4 +144,4 @@ LABEL license="Apache-2.0"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD test -f /usr/local/lib/libheimdall-core.so || exit 1 
+    CMD test -f /usr/local/lib/libheimdall-core.so || exit 1
