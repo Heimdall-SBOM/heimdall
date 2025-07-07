@@ -152,7 +152,7 @@ std::vector<SBOMComponent> CycloneDXParser::parse(const std::string& filePath) {
     return parseContent(content);
 }
 
-std::string CycloneDXParser::extractVersion(const std::string& content) {
+std::string CycloneDXParser::extractVersion(const std::string& content) const {
     size_t pos = content.find("\"specVersion\"");
     if (pos == std::string::npos) {
         return "";
@@ -193,15 +193,15 @@ std::vector<SBOMComponent> CycloneDXParser::parseContent(const std::string& cont
     return {};
 }
 
-std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_4(const std::string& content) {
+std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_4(const std::string& content) const {
     return parseCycloneDX1_6(content); // Use 1.6 parser for now
 }
 
-std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_5(const std::string& content) {
+std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_5(const std::string& content) const {
     return parseCycloneDX1_6(content); // Use 1.6 parser for now
 }
 
-std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_6(const std::string& content) {
+std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_6(const std::string& content) const {
     std::vector<SBOMComponent> components;
     
     // Basic regex-based extraction for demonstration

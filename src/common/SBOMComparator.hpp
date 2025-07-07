@@ -104,10 +104,10 @@ public:
     std::string getName() const override { return "CycloneDX Parser"; }
     
 private:
-    std::string extractVersion(const std::string& content);
-    std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content);
-    std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content);
-    std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content);
+    std::string extractVersion(const std::string& content) const;
+    std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content) const;
+    std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content) const;
+    std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content) const;
 };
 
 /**
