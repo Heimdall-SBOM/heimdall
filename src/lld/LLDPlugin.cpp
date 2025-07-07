@@ -1,18 +1,13 @@
-/*
-Copyright 2025 The Heimdall Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+/**
+ * @file LLDPlugin.cpp
+ * @brief Heimdall plugin for LLVM LLD linker: SBOM generation and metadata extraction
+ * @author Trevor Bakker
+ * @date 2025
+ *
+ * This file implements the Heimdall plugin for the LLVM LLD linker, enabling
+ * SBOM generation and metadata extraction during the link process. It provides
+ * C interface functions for plugin configuration and file processing.
+ */
 #include <iostream>
 #include <memory>
 #include <string>
@@ -113,7 +108,11 @@ void heimdall_register_pass() {
 
 extern "C" {
 
-// Plugin initialization
+/**
+ * @brief Plugin initialization function called when the plugin is loaded
+ * @param tv Unused (reserved for future use)
+ * @return 0 on success
+ */
 int onload(void* /*tv*/) {
     std::cout << "Heimdall LLD Plugin activated\n";
 
@@ -134,7 +133,9 @@ int onload(void* /*tv*/) {
     return 0;
 }
 
-// Plugin cleanup
+/**
+ * @brief Plugin cleanup function called when the plugin is unloaded
+ */
 void onunload() {
     if (globalAdapter) {
         globalAdapter->finalize();
@@ -143,16 +144,27 @@ void onunload() {
     std::cout << "Heimdall LLD Plugin deactivated\n";
 }
 
-// Plugin metadata
+/**
+ * @brief Get the version string for the Heimdall LLD plugin
+ * @return Version string
+ */
 const char* heimdall_lld_version() {
     return "1.0.0";
 }
 
+/**
+ * @brief Get the description string for the Heimdall LLD plugin
+ * @return Description string
+ */
 const char* heimdall_lld_description() {
     return "Heimdall SBOM Generator Plugin for LLVM LLD Linker";
 }
 
-// Configuration functions
+/**
+ * @brief Set the output path for the generated SBOM
+ * @param path Output file path (C string)
+ * @return 0 on success, -1 on error
+ */
 int heimdall_set_output_path(const char* path) {
     if (path) {
         outputPath = std::string(path);
@@ -167,6 +179,11 @@ int heimdall_set_output_path(const char* path) {
     return -1;
 }
 
+/**
+ * @brief Set the output format for the generated SBOM
+ * @param fmt Output format (C string, e.g., "spdx" or "cyclonedx")
+ * @return 0 on success, -1 on error
+ */
 int heimdall_set_format(const char* fmt) {
     if (fmt) {
         format = std::string(fmt);
@@ -181,6 +198,11 @@ int heimdall_set_format(const char* fmt) {
     return -1;
 }
 
+/**
+ * @brief Set the CycloneDX version for SBOM output
+ * @param version CycloneDX version string
+ * @return 0 on success, -1 on error
+ */
 int heimdall_set_cyclonedx_version(const char* version) {
     if (version) {
         if (globalAdapter) {
@@ -194,6 +216,11 @@ int heimdall_set_cyclonedx_version(const char* version) {
     return -1;
 }
 
+/**
+ * @brief Set the SPDX version for SBOM output
+ * @param version SPDX version string
+ * @return 0 on success, -1 on error
+ */
 int heimdall_set_spdx_version(const char* version) {
     if (version) {
         spdxVersion = std::string(version);
@@ -208,6 +235,10 @@ int heimdall_set_spdx_version(const char* version) {
     return -1;
 }
 
+/**
+ * @brief Set verbose output mode
+ * @param v true to enable verbose output, false to disable
+ */
 void heimdall_set_verbose(bool v) {
     verbose = v;
     if (globalAdapter) {
@@ -215,6 +246,10 @@ void heimdall_set_verbose(bool v) {
     }
 }
 
+/**
+ * @brief Set whether to extract debug information
+ * @param extract true to extract debug info, false otherwise
+ */
 void heimdall_set_extract_debug_info(bool extract) {
     extractDebugInfo = extract;
     if (globalAdapter) {
@@ -222,6 +257,10 @@ void heimdall_set_extract_debug_info(bool extract) {
     }
 }
 
+/**
+ * @brief Set whether to include system libraries in the SBOM
+ * @param include true to include system libraries, false otherwise
+ */
 void heimdall_set_include_system_libraries(bool include) {
     includeSystemLibraries = include;
     if (globalAdapter) {
@@ -229,7 +268,11 @@ void heimdall_set_include_system_libraries(bool include) {
     }
 }
 
-// File processing functions
+/**
+ * @brief Process an input file for SBOM generation
+ * @param filePath Path to the input file (C string)
+ * @return 0 on success, -1 on error
+ */
 int heimdall_process_input_file(const char* filePath) {
     if (!globalAdapter || !filePath)
         return -1;
@@ -246,6 +289,11 @@ int heimdall_process_input_file(const char* filePath) {
     return 0;
 }
 
+/**
+ * @brief Process a library file for SBOM generation
+ * @param libraryPath Path to the library file (C string)
+ * @return 0 on success, -1 on error
+ */
 int heimdall_process_library(const char* libraryPath) {
     if (!globalAdapter || !libraryPath)
         return -1;
@@ -262,12 +310,19 @@ int heimdall_process_library(const char* libraryPath) {
     return 0;
 }
 
+/**
+ * @brief Finalize the plugin and generate the SBOM
+ */
 void heimdall_finalize() {
     if (globalAdapter) {
         globalAdapter->finalize();
     }
 }
 
+/**
+ * @brief Get the number of components processed by the plugin
+ * @return Number of components
+ */
 size_t heimdall_get_component_count() {
     if (globalAdapter) {
         return globalAdapter->getComponentCount();
@@ -275,25 +330,41 @@ size_t heimdall_get_component_count() {
     return 0;
 }
 
+/**
+ * @brief Print statistics about the plugin's processing
+ */
 void heimdall_print_statistics() {
     if (globalAdapter) {
         globalAdapter->printStatistics();
     }
 }
 
-// LLD Plugin Interface - Working Implementation
+/**
+ * @brief Initialize the Heimdall LLD plugin (legacy entry point)
+ */
 void heimdall_lld_plugin_init() {
     onload(nullptr);
 }
 
+/**
+ * @brief Cleanup the Heimdall LLD plugin (legacy entry point)
+ */
 void heimdall_lld_plugin_cleanup() {
     onunload();
 }
 
+/**
+ * @brief Process a file using the Heimdall LLD plugin (legacy entry point)
+ * @param filePath Path to the file (C string)
+ */
 void heimdall_lld_process_file(const char* filePath) {
     heimdall_process_input_file(filePath);
 }
 
+/**
+ * @brief Process a library using the Heimdall LLD plugin (legacy entry point)
+ * @param libraryPath Path to the library (C string)
+ */
 void heimdall_lld_process_library(const char* libraryPath) {
     heimdall_process_library(libraryPath);
 }

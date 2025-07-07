@@ -1,14 +1,35 @@
+/**
+ * @file StringUtils.hpp
+ * @brief String utility functions for substring checks and compatibility helpers
+ * @author Trevor Bakker
+ * @date 2025
+ *
+ * This header provides utility functions for string operations such as contains,
+ * starts_with, ends_with, and compatibility helpers for C++17/20/23.
+ */
+
 #pragma once
 
 #include <string>
 #include <memory>
+#include <filesystem>
 
+/**
+ * @namespace heimdall
+ * @brief Main namespace for Heimdall project utilities and components.
+ */
 namespace heimdall {
+/**
+ * @namespace StringUtils
+ * @brief Utility functions for string operations and compatibility.
+ */
 namespace StringUtils {
 
 /**
  * @brief Check if a string contains a substring (C++23 compatible)
- * Falls back to .find() != std::string::npos for C++17
+ * @param str The string to search in
+ * @param substr The substring to search for
+ * @return true if the substring is found, false otherwise
  */
 inline bool contains(const std::string& str, const std::string& substr) {
 #if __cplusplus >= 202302L
@@ -20,7 +41,9 @@ inline bool contains(const std::string& str, const std::string& substr) {
 
 /**
  * @brief Check if a string contains a substring (C++23 compatible)
- * Falls back to .find() != std::string::npos for C++17
+ * @param str The string to search in
+ * @param substr The substring to search for (C-string)
+ * @return true if the substring is found, false otherwise
  */
 inline bool contains(const std::string& str, const char* substr) {
 #if __cplusplus >= 202302L
@@ -32,7 +55,9 @@ inline bool contains(const std::string& str, const char* substr) {
 
 /**
  * @brief Check if a string starts with a prefix (C++20 compatible)
- * Falls back to manual check for C++17
+ * @param str The string to check
+ * @param prefix The prefix to look for
+ * @return true if the string starts with the prefix, false otherwise
  */
 inline bool starts_with(const std::string& str, const std::string& prefix) {
 #if __cplusplus >= 202002L
@@ -45,7 +70,9 @@ inline bool starts_with(const std::string& str, const std::string& prefix) {
 
 /**
  * @brief Check if a string ends with a suffix (C++20 compatible)
- * Falls back to manual check for C++17
+ * @param str The string to check
+ * @param suffix The suffix to look for
+ * @return true if the string ends with the suffix, false otherwise
  */
 inline bool ends_with(const std::string& str, const std::string& suffix) {
 #if __cplusplus >= 202002L
@@ -56,39 +83,11 @@ inline bool ends_with(const std::string& str, const std::string& suffix) {
 #endif
 }
 
-// make_unique for C++11
-#if __cplusplus < 201402L
-// C++11 only
-    template <typename T, typename... Args>
-    std::unique_ptr<T> make_unique(Args&&... args) {
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-    }
-#else
-    using std::make_unique;
-#endif
+// Filesystem compatibility (C++17+)
+namespace fs = std::filesystem;
 
-// Filesystem compatibility
-#if __cplusplus >= 201703L
-    #include <filesystem>
-    namespace fs = std::filesystem;
-#else
-    // Minimal fs namespace for C++11/14
-    #include <sys/stat.h>
-    #include <unistd.h>
-    namespace fs {
-        inline bool exists(const std::string& path) {
-            struct stat buffer;
-            return (stat(path.c_str(), &buffer) == 0);
-        }
-        inline uintmax_t file_size(const std::string& path) {
-            struct stat buffer;
-            if (stat(path.c_str(), &buffer) == 0) {
-                return static_cast<uintmax_t>(buffer.st_size);
-            }
-            return 0;
-        }
-    }
-#endif
+// make_unique for C++14+, but C++17+ always has it
+using std::make_unique;
 
 } // namespace StringUtils
 } // namespace heimdall 
