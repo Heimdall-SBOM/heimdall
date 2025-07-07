@@ -1,0 +1,16 @@
+{
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.devcontainer,target=/workspaces/.devcontainer,type=bind",
+    "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind"
+  ],
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "containerUser": "vscode",
+  "postCreateCommand": [
+    "sudo apt-get update",
+    "sudo apt-get install -y git",
+    "sudo apt-get install -y build-essential",
+    "sudo apt-get install -y cmake"
+  ]
+}
