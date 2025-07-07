@@ -746,3 +746,42 @@ if(BUILD_TESTS)
 else()
     message(STATUS "⚠ Post-build SBOM generation disabled (tests not enabled)")
 endif()
+
+# =====================
+# Documentation Generation (Pandoc)
+# =====================
+find_program(PANDOC_EXECUTABLE pandoc)
+if(PANDOC_EXECUTABLE)
+    set(HEIMDALL_DOCS
+        ${CMAKE_SOURCE_DIR}/docs/heimdall-users-guide.md
+        ${CMAKE_SOURCE_DIR}/docs/heimdall-developers-guide.md
+    )
+    set(HEIMDALL_DOCS_HTML)
+    set(HEIMDALL_DOCS_PDF)
+    foreach(DOC ${HEIMDALL_DOCS})
+        get_filename_component(DOC_NAME ${DOC} NAME_WE)
+        set(HTML_OUT ${CMAKE_SOURCE_DIR}/docs/${DOC_NAME}.html)
+        set(PDF_OUT ${CMAKE_SOURCE_DIR}/docs/${DOC_NAME}.pdf)
+        add_custom_command(
+            OUTPUT ${HTML_OUT}
+            COMMAND ${PANDOC_EXECUTABLE} -s -o ${HTML_OUT} ${DOC}
+            DEPENDS ${DOC}
+            COMMENT "Generating HTML documentation: ${HTML_OUT}"
+            VERBATIM
+        )
+        add_custom_command(
+            OUTPUT ${PDF_OUT}
+            COMMAND ${PANDOC_EXECUTABLE} -s --pdf-engine=xelatex -o ${PDF_OUT} ${DOC}
+            DEPENDS ${DOC}
+            COMMENT "Generating PDF documentation: ${PDF_OUT}"
+            VERBATIM
+        )
+        list(APPEND HEIMDALL_DOCS_HTML ${HTML_OUT})
+        list(APPEND HEIMDALL_DOCS_PDF ${PDF_OUT})
+    endforeach()
+    add_custom_target(docs-html ALL DEPENDS ${HEIMDALL_DOCS_HTML})
+    add_custom_target(docs-pdf ALL DEPENDS ${HEIMDALL_DOCS_PDF})
+    message(STATUS "✓ Pandoc documentation targets enabled: docs-html, docs-pdf")
+else()
+    message(WARNING "Pandoc not found: HTML and PDF documentation targets will not be available.")
+endif()

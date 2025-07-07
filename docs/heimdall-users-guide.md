@@ -1,3 +1,13 @@
+---
+**Note:** To generate HTML and PDF versions of this guide, install [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live):
+
+```sh
+sudo dnf install -y pandoc texlive
+```
+
+Then use the CMake targets `docs-html` and `docs-pdf`.
+---
+
 # Heimdall SBOM Generator - User Guide
 
 ## Table of Contents

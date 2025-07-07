@@ -266,11 +266,49 @@ Heimdall consists of several key components:
 
 ### Prerequisites
 
-- C++17 compatible compiler (GCC 7+, Clang 5+)
+- C++11 compatible compiler (GCC 4.8+ or Clang 3.3+ recommended)
+- C++14, C++17, or C++23 compatible compiler for enhanced features
 - CMake 3.16+
-- LLVM/LLD development libraries (LLVM 19 recommended for full DWARF support)
-- GNU Gold linker (Linux only, optional for Gold plugin)
-- OpenSSL development libraries
+- OpenSSL
+- LLVM 19 (for DWARF support)
+- libelf (for ELF parsing)
+- BFD (for Gold plugin)
+
+### C++ Standard Support
+
+Heimdall supports C++11, C++14, C++17, and C++23 standards:
+
+**C++11 (Minimum):**
+- Basic functionality
+- Uses `.find() != std::string::npos` for string operations
+- Compatible with older compilers
+
+**C++14/17/23 (Enhanced features):**
+- Uses modern features like `std::string::contains()` (C++23)
+- `starts_with`, `ends_with` (C++20+)
+- Future support for `std::format`, `std::print`, and more
+
+### Building with Different Standards
+
+You can build Heimdall with any supported C++ standard:
+
+```bash
+# Default (C++23)
+cmake -B build -DHEIMDALL_CPP_STANDARD=23
+cmake --build build
+
+# C++17
+cmake -B build_cpp17 -DHEIMDALL_CPP_STANDARD=17
+cmake --build build_cpp17
+
+# C++14
+cmake -B build_cpp14 -DHEIMDALL_CPP_STANDARD=14
+cmake --build build_cpp14
+
+# C++11
+cmake -B build_cpp11 -DHEIMDALL_CPP_STANDARD=11
+cmake --build build_cpp11
+```
 
 ### macOS Setup
 
@@ -930,5 +968,20 @@ cd build && make test
 ## License
 
 Licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
+
+## Documentation Generation
+
+To generate HTML and PDF versions of the user and developer guides, you must have [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live) installed:
+
+```sh
+sudo dnf install -y pandoc texlive
+```
+
+Once installed, you can use the following CMake targets:
+
+- `make docs-html` – Generates HTML versions of the guides in the `docs/` directory
+- `make docs-pdf` – Generates PDF versions of the guides in the `docs/` directory
+
+The generated `.html` and `.pdf` files are not checked into version control (see `.gitignore`).
 
 

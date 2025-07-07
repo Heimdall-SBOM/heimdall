@@ -91,4 +91,10 @@ coverage/
 Testing/
 CTestTestfile.cmake
 CTestCostData.txt
-DartConfiguration.tcl 
+DartConfiguration.tcl
+
+# Ignore generated HTML and PDF documentation for the user and developer guides in the docs directory
+docs/heimdall-users-guide.html
+docs/heimdall-users-guide.pdf
+docs/heimdall-developers-guide.html
+docs/heimdall-developers-guide.pdf 
