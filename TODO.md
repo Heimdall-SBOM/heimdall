@@ -84,6 +84,10 @@
 - [ ] **Trend Analysis**: Historical analysis of SBOM changes over time
 
 ### Documentation and Community
+- [ ] **C++ Standard Documentation**: Update documentation to accurately reflect current C++ standard support
+  - Currently documents C++11/14 support but builds are broken
+  - Need to either fix builds or update docs to reflect actual supported standards
+  - Consider documenting workarounds for C++11/14 environments
 - [ ] **Video Tutorials**: Video tutorials for common use cases
 - [ ] **Community Examples**: Community-contributed examples and use cases
 - [ ] **Best Practices Guide**: Comprehensive best practices guide
@@ -100,6 +104,11 @@
 - [ ] **Logging**: Enhanced logging and debugging capabilities
 
 ### Build System
+- [ ] **C++11/14 Build Support**: Fix C++11 and C++14 builds (currently broken due to LLVM requirements and dependencies)
+  - LLVM 19 requires C++17 minimum, blocking C++11/14 builds
+  - GoogleTest 1.13+ requires C++14 minimum
+  - Need to implement conditional compilation or find compatible LLVM versions
+  - Consider using older LLVM versions (7-10) that support C++14 for C++11/14 builds
 - [ ] **Package Management**: Add package management for dependencies
 - [ ] **Cross-Compilation**: Support for cross-compilation
 - [ ] **Installation Scripts**: Improved installation scripts
