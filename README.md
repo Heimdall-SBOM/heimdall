@@ -342,7 +342,7 @@ sudo apt-get install -y \
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list
 sudo apt-get update
-sudo apt-get install -y llvm-19-dev liblld-19-dev
+sudo apt-get install -y llvm-19-dev liblld-19-dev llvm-dev
 
 # Build Heimdall with both LLD and Gold plugins
 ./build.sh
