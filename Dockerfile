@@ -25,13 +25,11 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install LLVM 19
-RUN wget https://apt.llvm.org/llvm.sh && \
-    chmod +x llvm.sh && \
-    ./llvm.sh 19 && \
-    apt-get install -y clang-19 lld-19 libllvm19-dev && \
-    rm llvm.sh
-
+# Install LLVM 19 (recommended for full DWARF support)
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list && \
+sudo apt-get update && \
+sudo apt-get install -y llvm-19-dev liblld-19-dev 
 # Set compiler environment
 ENV CC=clang-19
 ENV CXX=clang++-19
