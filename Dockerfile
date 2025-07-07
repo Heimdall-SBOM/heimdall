@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for Heimdall SBOM Generator
 # Stage 1: Build environment
-FROM ubuntu:22.04 AS builder
+FROM ubuntu:25.04 AS builder
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
