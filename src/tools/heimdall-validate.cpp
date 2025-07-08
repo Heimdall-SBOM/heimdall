@@ -91,11 +91,14 @@ int validateCommand(const std::vector<std::string>& args) {
     
     std::string filePath = args[1];
     std::string format = "";
+    std::string version = "";
     
     // Parse options
     for (size_t i = 2; i < args.size(); ++i) {
         if (args[i] == "--format" && i + 1 < args.size()) {
             format = args[++i];
+        } else if (args[i] == "--version" && i + 1 < args.size()) {
+            version = args[++i];
         } else if (args[i] == "--help") {
             printUsage("heimdall-validate");
             return 0;
@@ -119,8 +122,34 @@ int validateCommand(const std::vector<std::string>& args) {
     }
     
     // Validate
-    std::cout << "Validating " << filePath << " (" << format << " format)...\n";
-    auto result = validator->validate(filePath);
+    std::cout << "Validating " << filePath << " (" << format;
+    if (!version.empty()) std::cout << ", version " << version;
+    std::cout << " format)...\n";
+    
+    heimdall::ValidationResult result;
+    if (!version.empty()) {
+        // Use version-specific validation if supported
+        // Only CycloneDXValidator and SPDXValidator support this
+        if (format == "cyclonedx" || format == "cyclone") {
+            auto* cyclonedx = dynamic_cast<heimdall::CycloneDXValidator*>(validator.get());
+            if (cyclonedx) {
+                result = cyclonedx->validate(filePath, version);
+            } else {
+                result = validator->validate(filePath);
+            }
+        } else if (format == "spdx") {
+            auto* spdx = dynamic_cast<heimdall::SPDXValidator*>(validator.get());
+            if (spdx) {
+                result = spdx->validate(filePath, version);
+            } else {
+                result = validator->validate(filePath);
+            }
+        } else {
+            result = validator->validate(filePath);
+        }
+    } else {
+        result = validator->validate(filePath);
+    }
     
     // Print results
     std::cout << "\nValidation Results:\n";
