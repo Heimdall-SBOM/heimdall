@@ -29,6 +29,7 @@ limitations under the License.
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <random>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -731,6 +732,48 @@ std::string resolveLibraryPath(const std::string& libraryName) {
     }
 
     return "";
+}
+
+/**
+ * @brief Generate a UUID v4 string
+ * @return A UUID v4 string in the format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+ */
+std::string generateUUID() {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 15);
+    static std::uniform_int_distribution<> dis2(8, 11);
+
+    std::stringstream ss;
+    ss << std::hex;
+    
+    for (int i = 0; i < 8; i++) {
+        ss << dis(gen);
+    }
+    ss << "-";
+    
+    for (int i = 0; i < 4; i++) {
+        ss << dis(gen);
+    }
+    ss << "-";
+    
+    ss << "4"; // version 4
+    for (int i = 0; i < 3; i++) {
+        ss << dis(gen);
+    }
+    ss << "-";
+    
+    ss << std::hex << dis2(gen); // variant (8-b)
+    for (int i = 0; i < 3; i++) {
+        ss << dis(gen);
+    }
+    ss << "-";
+    
+    for (int i = 0; i < 12; i++) {
+        ss << dis(gen);
+    }
+    
+    return ss.str();
 }
 
 }  // namespace heimdall::Utils

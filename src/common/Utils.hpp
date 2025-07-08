@@ -301,4 +301,10 @@ std::string resolveLibraryPath(const std::string& libraryName);
  */
 std::string detectLicenseFromPath(const std::string& filePath);
 
+/**
+ * @brief Generate a UUID v4 string
+ * @return A UUID v4 string in the format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+ */
+std::string generateUUID();
+
 }  // namespace heimdall::Utils

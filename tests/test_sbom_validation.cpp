@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <algorithm>
 #include "../src/common/SBOMValidator.hpp"
 #include "../src/common/SBOMComparator.hpp"
 

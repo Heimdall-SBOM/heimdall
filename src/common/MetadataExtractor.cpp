@@ -569,7 +569,7 @@ bool isELF(const std::string& filePath) {
     return (magic[0] == 0x7f && magic[1] == 'E' && magic[2] == 'L' && magic[3] == 'F');
 }
 
-bool isMachO(const std::string& [[maybe_unused]] filePath) {
+bool isMachO([[maybe_unused]] const std::string& filePath) {
 #ifdef __APPLE__
     std::ifstream file;
     if (!openFileSafely(filePath, file)) {
@@ -1238,7 +1238,7 @@ bool extractMachOSections(const std::string& filePath,
 #endif
 }
 
-bool extractMachOVersion(const std::string& [[maybe_unused]] filePath, std::string& version) {
+bool extractMachOVersion([[maybe_unused]] const std::string& filePath, std::string& version) {
     // Implementation would use Mach-O APIs
     Utils::debugPrint("Mach-O version extraction not implemented");
     return false;
@@ -1341,25 +1341,25 @@ bool extractMachOUUID(const std::string& filePath, std::string& uuid) {
 #endif
 }
 
-bool extractPESymbols(const std::string& [[maybe_unused]] filePath, std::vector<heimdall::SymbolInfo>& symbols) {
+bool extractPESymbols([[maybe_unused]] const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols) {
     // Implementation would use PE parsing libraries
     Utils::debugPrint("PE symbol extraction not implemented");
     return false;
 }
 
-bool extractPESections(const std::string& [[maybe_unused]] filePath, std::vector<heimdall::SectionInfo>& sections) {
+bool extractPESections([[maybe_unused]] const std::string& filePath, std::vector<heimdall::SectionInfo>& sections) {
     // Implementation would use PE parsing libraries
     Utils::debugPrint("PE section extraction not implemented");
     return false;
 }
 
-bool extractPEVersion(const std::string& [[maybe_unused]] filePath, std::string& version) {
+bool extractPEVersion([[maybe_unused]] const std::string& filePath, std::string& version) {
     // Implementation would use PE parsing libraries
     Utils::debugPrint("PE version extraction not implemented");
     return false;
 }
 
-bool extractPECompanyName(const std::string& [[maybe_unused]] filePath, std::string& company) {
+bool extractPECompanyName([[maybe_unused]] const std::string& filePath, std::string& company) {
     // Implementation would use PE parsing libraries
     Utils::debugPrint("PE company name extraction not implemented");
     return false;

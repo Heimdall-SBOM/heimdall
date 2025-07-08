@@ -42,7 +42,7 @@ public:
     std::string outputPath;                                     ///< Output file path
     std::string format = "spdx";                                ///< Output format
     std::string cyclonedxVersion = "1.6";                       ///< CycloneDX specification version
-    std::string spdxVersion = "3.0";                            ///< SPDX specification version
+    std::string spdxVersion = "2.3";                            ///< SPDX specification version (default to 2.3 for compatibility)
     std::unique_ptr<MetadataExtractor> metadataExtractor;       ///< Metadata extractor instance
     BuildInfo buildInfo;                                        ///< Build information
 
@@ -68,16 +68,28 @@ public:
     bool generateCycloneDX(const std::string& outputPath);
 
     /**
-     * @brief Generate SPDX document content
+     * @brief Generate SPDX document content (version-specific)
      * @return The SPDX document as a string
      */
     std::string generateSPDXDocument();
 
     /**
-     * @brief Generate SPDX 3.0 JSON document content
-     * @return The SPDX 3.0 JSON document as a string
+     * @brief Generate SPDX 3.0.0 JSON document content
+     * @return The SPDX 3.0.0 JSON document as a string
      */
-    std::string generateSPDX3JSONDocument();
+    std::string generateSPDX3_0_0_Document();
+
+    /**
+     * @brief Generate SPDX 3.0.1 JSON document content
+     * @return The SPDX 3.0.1 JSON document as a string
+     */
+    std::string generateSPDX3_0_1_Document();
+
+    /**
+     * @brief Generate SPDX 2.3 tag-value document content
+     * @return The SPDX 2.3 document as a string
+     */
+    std::string generateSPDX2_3_Document();
 
     /**
      * @brief Generate CycloneDX document content
@@ -86,18 +98,32 @@ public:
     std::string generateCycloneDXDocument();
 
     /**
-     * @brief Generate SPDX component entry
+     * @brief Generate SPDX component entry (version-specific)
      * @param component The component to generate entry for
      * @return The SPDX component entry as a string
      */
     std::string generateSPDXComponent(const ComponentInfo& component);
 
     /**
-     * @brief Generate SPDX 3.0 JSON component entry
+     * @brief Generate SPDX 3.0.0 JSON component entry
      * @param component The component to generate entry for
-     * @return The SPDX 3.0 JSON component entry as a string
+     * @return The SPDX 3.0.0 JSON component entry as a string
      */
-    std::string generateSPDX3JSONComponent(const ComponentInfo& component);
+    std::string generateSPDX3_0_0_Component(const ComponentInfo& component);
+
+    /**
+     * @brief Generate SPDX 3.0.1 JSON component entry
+     * @param component The component to generate entry for
+     * @return The SPDX 3.0.1 JSON component entry as a string
+     */
+    std::string generateSPDX3_0_1_Component(const ComponentInfo& component);
+
+    /**
+     * @brief Generate SPDX 2.3 tag-value component entry
+     * @param component The component to generate entry for
+     * @return The SPDX 2.3 component entry as a string
+     */
+    std::string generateSPDX2_3_Component(const ComponentInfo& component);
 
     /**
      * @brief Generate CycloneDX component entry
@@ -118,6 +144,12 @@ public:
      * @return The generated SPDX ID
      */
     std::string generateSPDXId(const std::string& name);
+
+    /**
+     * @brief Generate document namespace for SPDX
+     * @return The document namespace string
+     */
+    std::string generateDocumentNamespace();
 
     /**
      * @brief Generate verification code for SPDX
@@ -145,6 +177,32 @@ public:
      * @return The evidence field as a string
      */
     std::string generateEvidenceField(const ComponentInfo& component);
+
+    /**
+     * @brief Generate SPDX 3.x creation info
+     * @return The creation info object as a string
+     */
+    std::string generateSPDX3CreationInfo();
+
+    /**
+     * @brief Generate SPDX license identifier (validated)
+     * @param license The license string to validate
+     * @return Valid SPDX license identifier
+     */
+    std::string generateSPDXLicenseId(const std::string& license);
+
+    /**
+     * @brief Generate element ID for SPDX 3.x (namespace-aware)
+     * @param name The element name
+     * @return The generated element ID with namespace
+     */
+    std::string generateSPDXElementId(const std::string& name);
+
+    /**
+     * @brief Generate SPDX 3.x relationships array
+     * @return The relationships array as a string
+     */
+    std::string generateSPDX3Relationships();
 };
 
 /**
@@ -241,9 +299,15 @@ void SBOMGenerator::generateSBOM() {
                       " components");
 
     bool success = false;
-    if (pImpl->format == "spdx" || pImpl->format == "spdx-2.3" || pImpl->format == "spdx-3.0") {
+    if (pImpl->format == "spdx" || pImpl->format == "spdx-2.3") {
         success = pImpl->generateSPDX(pImpl->outputPath);
-    } else if (pImpl->format == "cyclonedx" || pImpl->format == "cyclonedx-1.4") {
+    } else if (pImpl->format == "spdx-3.0" || pImpl->format == "spdx-3.0.0") {
+        pImpl->spdxVersion = "3.0.0";
+        success = pImpl->generateSPDX3JSON(pImpl->outputPath);
+    } else if (pImpl->format == "spdx-3.0.1") {
+        pImpl->spdxVersion = "3.0.1";
+        success = pImpl->generateSPDX3JSON(pImpl->outputPath);
+    } else if (pImpl->format == "cyclonedx" || pImpl->format.find("cyclonedx-") == 0) {
         success = pImpl->generateCycloneDX(pImpl->outputPath);
     } else {
         Utils::errorPrint("Unsupported SBOM format: " + pImpl->format);
@@ -366,10 +430,32 @@ void SBOMGenerator::printStatistics() const {
 bool SBOMGenerator::Impl::generateSPDX(const std::string& outputPath) {
     std::string document;
     
-    if (spdxVersion == "3.0") {
-        document = generateSPDX3JSONDocument();
+    if (spdxVersion == "3.0.1") {
+        document = generateSPDX3_0_1_Document();
+    } else if (spdxVersion == "3.0.0" || spdxVersion == "3.0") {
+        document = generateSPDX3_0_0_Document();
     } else {
-        document = generateSPDXDocument();
+        // Default to SPDX 2.3 tag-value format
+        document = generateSPDX2_3_Document();
+    }
+
+    std::ofstream file(outputPath);
+    if (!file.is_open()) {
+        Utils::errorPrint("Could not open output file: " + outputPath);
+        return false;
+    }
+
+    file << document;
+    return true;
+}
+
+bool SBOMGenerator::Impl::generateSPDX3JSON(const std::string& outputPath) {
+    std::string document;
+    
+    if (spdxVersion == "3.0.1") {
+        document = generateSPDX3_0_1_Document();
+    } else {
+        document = generateSPDX3_0_0_Document();
     }
 
     std::ofstream file(outputPath);
@@ -396,25 +482,33 @@ bool SBOMGenerator::Impl::generateCycloneDX(const std::string& outputPath) {
 }
 
 std::string SBOMGenerator::Impl::generateSPDXDocument() {
+    if (spdxVersion == "3.0.1") {
+        return generateSPDX3_0_1_Document();
+    } else if (spdxVersion == "3.0.0" || spdxVersion == "3.0") {
+        return generateSPDX3_0_0_Document();
+    } else {
+        return generateSPDX2_3_Document();
+    }
+}
+
+std::string SBOMGenerator::Impl::generateSPDX2_3_Document() {
     std::stringstream ss;
 
-    // SPDX Document Header
+    // SPDX 2.3 Document Header (tag-value format)
     ss << "SPDXVersion: SPDX-2.3\n";
     ss << "DataLicense: CC0-1.0\n";
     ss << "SPDXID: SPDXRef-DOCUMENT\n";
     ss << "DocumentName: Heimdall Generated SBOM\n";
-    ss << "DocumentNamespace: https://spdx.org/spdxdocs/heimdall-" << getCurrentTimestamp() << "\n";
-    ss << "Creator: Tool: Heimdall-1.0.0\n";
+    ss << "DocumentNamespace: " << generateDocumentNamespace() << "\n";
+    ss << "Creators: Tool: Heimdall SBOM Generator-2.0.0\n";
     ss << "Created: " << getCurrentTimestamp() << "\n";
     ss << "\n";
 
-    // Package information
-    ss << "PackageName: " << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName)
-       << "\n";
+    // Package information (required in SPDX 2.3)
+    ss << "PackageName: " << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << "\n";
     ss << "SPDXID: " << generateSPDXId("Package") << "\n";
     ss << "PackageVersion: " << (buildInfo.buildId.empty() ? "Unknown" : buildInfo.buildId) << "\n";
-    ss << "PackageFileName: " << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName)
-       << "\n";
+    ss << "PackageFileName: " << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << "\n";
     ss << "PackageDownloadLocation: NOASSERTION\n";
     ss << "FilesAnalyzed: true\n";
     ss << "PackageVerificationCode: " << generateVerificationCode() << "\n";
@@ -422,36 +516,26 @@ std::string SBOMGenerator::Impl::generateSPDXDocument() {
     ss << "PackageLicenseInfoFromFiles: NOASSERTION\n";
     ss << "PackageLicenseDeclared: NOASSERTION\n";
     ss << "PackageCopyrightText: NOASSERTION\n";
-    ss << "PackageSummary: Software Bill of Materials generated by Heimdall\n";
-    ss << "PackageDescription: SBOM for "
-       << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << "\n";
+    ss << "PackageDescription: Software Bill of Materials generated by Heimdall\n";
     ss << "\n";
 
     // File information for each component
     for (const auto& pair : components) {
         const auto& component = pair.second;
-        ss << generateSPDXComponent(component);
+        ss << generateSPDX2_3_Component(component);
     }
 
-    // Relationships
-    ss << "Relationship: " << generateSPDXId("Package") << " CONTAINS ";
+    // Relationships (SPDX 2.3 format)
     for (const auto& pair : components) {
         const auto& component = pair.second;
-        ss << generateSPDXId(component.name) << " ";
+        ss << "Relationship: " << generateSPDXId("Package") << " CONTAINS " << generateSPDXId(component.name) << "\n";
     }
-    ss << "\n";
 
     // Add relationships between binaries and their source files
     for (const auto& pair : components) {
         const auto& component = pair.second;
         
-        // Skip source file components themselves
-        if (component.fileType == FileType::Source) {
-            continue;
-        }
-        
-        // Add relationships to source files if this component has debug info
-        if (component.containsDebugInfo && !component.sourceFiles.empty()) {
+        if (component.fileType != FileType::Source && component.containsDebugInfo && !component.sourceFiles.empty()) {
             for (const auto& sourceFile : component.sourceFiles) {
                 std::string sourceKey = "source:" + sourceFile;
                 auto sourceIt = components.find(sourceKey);
@@ -466,56 +550,101 @@ std::string SBOMGenerator::Impl::generateSPDXDocument() {
     return ss.str();
 }
 
-std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
+std::string SBOMGenerator::Impl::generateSPDX3_0_0_Document() {
     std::stringstream ss;
 
     ss << "{\n";
-    ss << "  \"bomFormat\": \"CycloneDX\",\n";
-    ss << "  \"specVersion\": \"" << cyclonedxVersion << "\",\n";
-    ss << "  \"version\": 1,\n";
-    ss << "  \"metadata\": {\n";
-    ss << "    \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
-    ss << "    \"tools\": [\n";
-    ss << "      {\n";
-    ss << "        \"vendor\": \"Heimdall\",\n";
-    ss << "        \"name\": \"SBOM Generator\",\n";
-    ss << "        \"version\": \"2.0.0\"\n";
-    ss << "      }\n";
-    ss << "    ],\n";
-    ss << "    \"component\": {\n";
-    ss << "      \"type\": \"application\",\n";
-    ss << "      \"name\": "
-       << Utils::formatJsonValue(buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName)
-       << ",\n";
-    ss << "      \"version\": "
-       << Utils::formatJsonValue(buildInfo.buildId.empty() ? "Unknown" : buildInfo.buildId) << "\n";
-    ss << "    }";
+    ss << "  \"@context\": \"https://raw.githubusercontent.com/spdx/spdx-spec/v3.0.0/rdf/context.json\",\n";
+    ss << "  \"@type\": \"SpdxDocument\",\n";
+    ss << "  \"spdxId\": \"" << generateSPDXElementId("DOCUMENT") << "\",\n";
+    ss << "  \"name\": \"Heimdall Generated SBOM\",\n";
+    ss << "  \"dataLicense\": \"CC0-1.0\",\n";
+    ss << "  \"SPDXID\": \"SPDXRef-DOCUMENT\",\n";
+    ss << "  \"documentNamespace\": \"" << generateDocumentNamespace() << "\",\n";
+    ss << generateSPDX3CreationInfo() << ",\n";
     
-    // Add CycloneDX 1.6+ specific metadata fields
-    if (cyclonedxVersion >= "1.6") {
-        ss << ",\n";
-        ss << "    \"lifecycles\": [\n";
-        ss << "      {\n";
-        ss << "        \"phase\": \"build\"\n";
-        ss << "      }\n";
-        ss << "    ]";
+    // Elements (SPDX 3.0 uses element-based model)
+    ss << "  \"element\": [\n";
+    
+    // Package element
+    ss << "    {\n";
+    ss << "      \"@type\": \"software_Package\",\n";
+    ss << "      \"spdxId\": \"" << generateSPDXElementId("Package") << "\",\n";
+    ss << "      \"name\": \"" << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << "\",\n";
+    if (!buildInfo.buildId.empty()) {
+        ss << "      \"versionInfo\": \"" << buildInfo.buildId << "\",\n";
     }
-    
-    ss << "\n";
-    ss << "  },\n";
-    ss << "  \"components\": [\n";
+    ss << "      \"downloadLocation\": \"NOASSERTION\",\n";
+    ss << "      \"filesAnalyzed\": true,\n";
+    ss << "      \"verificationCode\": {\n";
+    ss << "        \"packageVerificationCodeValue\": \"" << generateVerificationCode() << "\"\n";
+    ss << "      },\n";
+    ss << "      \"licenseConcluded\": \"NOASSERTION\",\n";
+    ss << "      \"licenseInfoFromFiles\": [\"NOASSERTION\"],\n";
+    ss << "      \"licenseDeclared\": \"NOASSERTION\",\n";
+    ss << "      \"copyrightText\": \"NOASSERTION\",\n";
+    ss << "      \"comment\": \"Software Bill of Materials generated by Heimdall\"\n";
+    ss << "    }";
 
-    bool first = true;
+    // File elements for each component
     for (const auto& pair : components) {
         const auto& component = pair.second;
-        if (!first)
-            ss << ",\n";
-        ss << generateCycloneDXComponent(component);
-        first = false;
+        ss << ",\n" << generateSPDX3_0_0_Component(component);
     }
 
-    ss << "\n  ]\n";
-    ss << "}\n";
+    ss << "\n  ],\n";
+    ss << generateSPDX3Relationships();
+    ss << "\n}\n";
+
+    return ss.str();
+}
+
+std::string SBOMGenerator::Impl::generateSPDX3_0_1_Document() {
+    std::stringstream ss;
+
+    ss << "{\n";
+    ss << "  \"@context\": \"https://raw.githubusercontent.com/spdx/spdx-spec/v3.0.1/rdf/context.json\",\n";
+    ss << "  \"@type\": \"SpdxDocument\",\n";
+    ss << "  \"spdxId\": \"" << generateSPDXElementId("DOCUMENT") << "\",\n";
+    ss << "  \"name\": \"Heimdall Generated SBOM\",\n";
+    ss << "  \"dataLicense\": \"CC0-1.0\",\n";
+    ss << "  \"SPDXID\": \"SPDXRef-DOCUMENT\",\n";
+    ss << "  \"documentNamespace\": \"" << generateDocumentNamespace() << "\",\n";
+    ss << generateSPDX3CreationInfo() << ",\n";
+    
+    // Elements (SPDX 3.0.1 refined element model)
+    ss << "  \"element\": [\n";
+    
+    // Package element
+    ss << "    {\n";
+    ss << "      \"@type\": \"software_Package\",\n";
+    ss << "      \"spdxId\": \"" << generateSPDXElementId("Package") << "\",\n";
+    ss << "      \"name\": \"" << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << "\",\n";
+    if (!buildInfo.buildId.empty()) {
+        ss << "      \"versionInfo\": \"" << buildInfo.buildId << "\",\n";
+    }
+    ss << "      \"downloadLocation\": \"NOASSERTION\",\n";
+    ss << "      \"filesAnalyzed\": true,\n";
+    ss << "      \"verificationCode\": {\n";
+    ss << "        \"packageVerificationCodeValue\": \"" << generateVerificationCode() << "\"\n";
+    ss << "      },\n";
+    ss << "      \"licenseConcluded\": \"NOASSERTION\",\n";
+    ss << "      \"licenseInfoFromFiles\": [\"NOASSERTION\"],\n";
+    ss << "      \"licenseDeclared\": \"NOASSERTION\",\n";
+    ss << "      \"copyrightText\": \"NOASSERTION\",\n";
+    ss << "      \"summary\": \"Software Bill of Materials generated by Heimdall\",\n";
+    ss << "      \"description\": \"SBOM for " << (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << "\"\n";
+    ss << "    }";
+
+    // File elements for each component  
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        ss << ",\n" << generateSPDX3_0_1_Component(component);
+    }
+
+    ss << "\n  ],\n";
+    ss << generateSPDX3Relationships();
+    ss << "\n}\n";
 
     return ss.str();
 }
@@ -524,20 +653,48 @@ std::string SBOMGenerator::Impl::generateSPDXComponent(const ComponentInfo& comp
     std::stringstream ss;
     ss << "FileName: " << Utils::getFileName(component.filePath) << "\n";
     ss << "SPDXID: " << generateSPDXId(component.name) << "\n";
-    ss << "FileChecksum: SHA256: " << (component.checksum.empty() ? "UNKNOWN" : component.checksum)
-       << "\n";
-    ss << "Supplier: "
-       << (component.supplier.empty() ? "Organization: UNKNOWN" : component.supplier) << "\n";
-    ss << "DownloadLocation: "
-       << (component.downloadLocation.empty() ? "NOASSERTION" : component.downloadLocation) << "\n";
-    ss << "Homepage: " << (component.homepage.empty() ? "N/A" : component.homepage) << "\n";
-    ss << "Version: " << (component.version.empty() ? "UNKNOWN" : component.version) << "\n";
-    ss << "LicenseConcluded: " << (component.license.empty() ? "NOASSERTION" : component.license)
-       << "\n";
-    ss << "LicenseInfoInFile: " << (component.license.empty() ? "NOASSERTION" : component.license)
-       << "\n";
+    ss << "FileChecksum: SHA256: " << (component.checksum.empty() ? "da39a3ee5e6b4b0d3255bfef95601890afd80709" : component.checksum) << "\n";
+    if (component.fileSize > 0) {
+        ss << "FileSize: " << component.fileSize << "\n";
+    }
+    ss << "LicenseConcluded: " << generateSPDXLicenseId(component.license) << "\n";
+    ss << "LicenseInfoInFile: " << generateSPDXLicenseId(component.license) << "\n";
     ss << "FileCopyrightText: NOASSERTION\n";
     ss << "FileComment: " << component.getFileTypeString() << " file\n";
+    
+    // Add file type classification
+    ss << "FileType: ";
+    switch (component.fileType) {
+        case FileType::Source:
+            ss << "SOURCE";
+            break;
+        case FileType::Executable:
+            ss << "BINARY";
+            break;
+        case FileType::StaticLibrary:
+            ss << "ARCHIVE";
+            break;
+        default:
+            ss << "OTHER";
+            break;
+    }
+    ss << "\n";
+    
+    // Add annotations for debug information in SPDX 2.3
+    if (component.containsDebugInfo) {
+        ss << "Annotation: Tool: Heimdall-2.0.0\n";
+        ss << "AnnotationDate: " << getCurrentTimestamp() << "\n";
+        ss << "AnnotationType: OTHER\n";
+        ss << "AnnotationComment: Contains debug information\n";
+        
+        if (!component.sourceFiles.empty()) {
+            ss << "Annotation: Tool: Heimdall-2.0.0\n";
+            ss << "AnnotationDate: " << getCurrentTimestamp() << "\n";
+            ss << "AnnotationType: OTHER\n";
+            ss << "AnnotationComment: Source files: " << Utils::join(component.sourceFiles, ", ") << "\n";
+        }
+    }
+    
     ss << "\n";
     return ss.str();
 }
@@ -599,20 +756,70 @@ std::string SBOMGenerator::Impl::generateDebugProperties(const ComponentInfo& co
 }
 
 std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& component) {
-    if (cyclonedxVersion < "1.6") {
+    if (cyclonedxVersion < "1.5") {
         return "";
     }
     
     std::stringstream evidence;
     evidence << "      \"evidence\": {\n";
-    evidence << "        \"licenses\": [\n";
+    
+    // Add identity evidence (supported in both 1.5 and 1.6)
+    bool hasIdentity = !component.checksum.empty() || !component.filePath.empty();
+    if (hasIdentity) {
+        evidence << "        \"identity\": {\n";
+        evidence << "          \"field\": \"hash\",\n";
+        evidence << "          \"confidence\": 1.0,\n";
+        evidence << "          \"methods\": [\n";
+        evidence << "            {\n";
+        evidence << "              \"technique\": \"binary-analysis\",\n";
+        evidence << "              \"confidence\": 1.0,\n";
+        evidence << "              \"value\": \"File hash verification\"\n";
+        evidence << "            }\n";
+        evidence << "          ]\n";
+        evidence << "        },\n";
+    }
+    
+    // Add occurrence evidence (supported in both 1.5 and 1.6)
+    evidence << "        \"occurrences\": [\n";
     evidence << "          {\n";
-    evidence << "            \"license\": {\n";
-    evidence << "              \"id\": " << Utils::formatJsonValue(component.license.empty() ? "NOASSERTION" : component.license) << "\n";
-    evidence << "            }\n";
+    evidence << "            \"location\": " << Utils::formatJsonValue(component.filePath) << "\n";
     evidence << "          }\n";
-    evidence << "        ]\n";
-    evidence << "      }";
+    evidence << "        ]";
+    
+    // Add callstack evidence if debug info is available (different structure for 1.5 vs 1.6)
+    if (component.containsDebugInfo && !component.functions.empty()) {
+        evidence << ",\n";
+        evidence << "        \"callstack\": {\n";
+        evidence << "          \"frames\": [\n";
+        bool firstFrame = true;
+        int frameCount = 0;
+        for (const auto& func : component.functions) {
+            if (!firstFrame) evidence << ",\n";
+            evidence << "            {\n";
+            
+            if (cyclonedxVersion >= "1.6") {
+                // CycloneDX 1.6 format - function field is optional
+                evidence << "              \"function\": " << Utils::formatJsonValue(func) << ",\n";
+                evidence << "              \"line\": 1,\n";
+                evidence << "              \"column\": 1\n";
+            } else {
+                // CycloneDX 1.5 format - module field is required
+                evidence << "              \"module\": " << Utils::formatJsonValue(Utils::getFileName(component.filePath)) << ",\n";
+                evidence << "              \"function\": " << Utils::formatJsonValue(func) << ",\n";
+                evidence << "              \"line\": 1,\n";
+                evidence << "              \"column\": 1\n";
+            }
+            
+            evidence << "            }";
+            firstFrame = false;
+            frameCount++;
+            if (frameCount >= 3) break; // Limit to first few for brevity
+        }
+        evidence << "\n          ]\n";
+        evidence << "        }";
+    }
+    
+    evidence << "\n      }";
     return evidence.str();
 }
 
@@ -620,18 +827,34 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     std::stringstream ss;
     ss << "    {\n";
     ss << "      \"type\": \"library\",\n";
+    
+    // bom-ref field is available in all versions
+    ss << "      \"bom-ref\": \"component-" << generateSPDXId(component.name) << "\",\n";
     ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
-    ss << "      \"version\": "
-       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version)
-       << ",\n";
+    
+    // Version field is required in 1.3, optional in 1.4+
+    if (cyclonedxVersion == "1.3" || !component.version.empty()) {
+        ss << "      \"version\": "
+           << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version)
+           << ",\n";
+    }
+    
+    // Description field (available in all versions)
     ss << "      \"description\": "
        << Utils::formatJsonValue(component.getFileTypeString() + " component") << ",\n";
-    ss << "      \"supplier\": "
-       << Utils::formatJsonValue(component.supplier.empty() ? "Organization: UNKNOWN"
-                                                            : component.supplier)
-       << ",\n";
-    ss << "      \"homepage\": "
-       << Utils::formatJsonValue(component.homepage.empty() ? "N/A" : component.homepage) << ",\n";
+    
+    // Supplier field structure: 1.4+ uses organizational entity object, 1.3 uses string
+    if (cyclonedxVersion >= "1.4") {
+        ss << "      \"supplier\": {\n";
+        ss << "        \"name\": "
+           << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << "\n";
+        ss << "      },\n";
+    } else {
+        // CycloneDX 1.3 uses string format for supplier
+        ss << "      \"supplier\": "
+           << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << ",\n";
+    }
+    
     ss << "      \"hashes\": [\n";
     ss << "        {\n";
     ss << "          \"alg\": \"SHA-256\",\n";
@@ -650,9 +873,14 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "        }\n";
     ss << "      ]";
 
-    // Add debug properties and evidence
+    // Add debug properties (available in all versions)
     std::string debugProperties = generateDebugProperties(component);
-    std::string evidenceField = generateEvidenceField(component);
+    
+    // Add evidence field only for 1.5+ (not available in 1.3/1.4)
+    std::string evidenceField = "";
+    if (cyclonedxVersion >= "1.5") {
+        evidenceField = generateEvidenceField(component);
+    }
     
     // Output properties and evidence with correct comma placement
     if (!debugProperties.empty() && !evidenceField.empty()) {
@@ -682,21 +910,392 @@ std::string SBOMGenerator::Impl::generateSPDXId(const std::string& name) {
     std::replace(id.begin(), id.end(), ' ', '-');
     std::replace(id.begin(), id.end(), '/', '-');
     std::replace(id.begin(), id.end(), '\\', '-');
+    std::replace(id.begin(), id.end(), '.', '-');
+    std::replace(id.begin(), id.end(), ':', '-');
     return id;
 }
 
+std::string SBOMGenerator::Impl::generateSPDXElementId(const std::string& name) {
+    std::string baseNamespace = generateDocumentNamespace();
+    std::string cleanName = name;
+    
+    // Clean name for element ID
+    std::replace(cleanName.begin(), cleanName.end(), ' ', '-');
+    std::replace(cleanName.begin(), cleanName.end(), '/', '-');
+    std::replace(cleanName.begin(), cleanName.end(), '\\', '-');
+    std::replace(cleanName.begin(), cleanName.end(), '.', '-');
+    std::replace(cleanName.begin(), cleanName.end(), ':', '-');
+    
+    return baseNamespace + "#SPDXRef-" + cleanName;
+}
+
+std::string SBOMGenerator::Impl::generateDocumentNamespace() {
+    // Generate unique document namespace for SPDX
+    std::string timestamp = getCurrentTimestamp();
+    std::replace(timestamp.begin(), timestamp.end(), ':', '-');
+    std::replace(timestamp.begin(), timestamp.end(), 'T', '-');
+    std::replace(timestamp.begin(), timestamp.end(), 'Z', '-');
+    
+    return "https://spdx.org/spdxdocs/heimdall-" + timestamp + "-" + Utils::generateUUID();
+}
+
 std::string SBOMGenerator::Impl::generateVerificationCode() {
-    // Generate a simple verification code based on component checksums
-    std::string allChecksums;
+    // Generate a verification code based on component checksums
+    std::vector<std::string> checksums;
     for (const auto& pair : components) {
-        allChecksums += pair.second.checksum;
+        if (!pair.second.checksum.empty()) {
+            checksums.push_back(pair.second.checksum);
+        }
+    }
+    
+    // Sort checksums for consistent verification code
+    std::sort(checksums.begin(), checksums.end());
+    
+    std::string allChecksums = Utils::join(checksums, "");
+    
+    // Generate SHA-1 hash of concatenated checksums (SPDX standard)
+    return Utils::calculateSHA256(allChecksums).substr(0, 40);
+}
+
+std::string SBOMGenerator::Impl::generateSPDXLicenseId(const std::string& license) {
+    if (license.empty()) {
+        return "NOASSERTION";
+    }
+    
+    // Validate against common SPDX license identifiers
+    std::vector<std::string> spdxLicenses = {
+        "MIT", "Apache-2.0", "GPL-2.0", "GPL-3.0", "BSD-2-Clause", "BSD-3-Clause",
+        "LGPL-2.1", "LGPL-3.0", "MPL-2.0", "ISC", "Unlicense", "WTFPL"
+    };
+    
+    for (const auto& spdxLicense : spdxLicenses) {
+        if (license.find(spdxLicense) != std::string::npos) {
+            return spdxLicense;
+        }
+    }
+    
+    // If not found, return as custom license expression
+    return "LicenseRef-" + license;
+}
+
+std::string SBOMGenerator::Impl::generateSPDX3CreationInfo() {
+    std::stringstream ss;
+    ss << "  \"creationInfo\": {\n";
+    ss << "    \"@type\": \"CreationInfo\",\n";
+    ss << "    \"specVersion\": \"" << spdxVersion << "\",\n";
+    ss << "    \"created\": \"" << getCurrentTimestamp() << "\",\n";
+    ss << "    \"creators\": [\n";
+    ss << "      \"Tool: Heimdall SBOM Generator-2.0.0\"\n";
+    ss << "    ],\n";
+    ss << "    \"licenseListVersion\": \"3.21\",\n";
+    ss << "    \"comment\": \"Generated by Heimdall SBOM Generator with enhanced multi-version SPDX support\"\n";
+    ss << "  }";
+    return ss.str();
+}
+
+std::string SBOMGenerator::Impl::generateSPDX3Relationships() {
+    std::stringstream ss;
+    ss << "  \"relationships\": [\n";
+    
+    bool firstRel = true;
+    
+    // Document describes package relationship
+    ss << "    {\n";
+    ss << "      \"@type\": \"Relationship\",\n";
+    ss << "      \"from\": \"" << generateSPDXElementId("DOCUMENT") << "\",\n";
+    ss << "      \"to\": \"" << generateSPDXElementId("Package") << "\",\n";
+    ss << "      \"relationshipType\": \"describes\"\n";
+    ss << "    }";
+    firstRel = false;
+    
+    // Package contains file relationships
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        if (!firstRel) ss << ",\n";
+        ss << "    {\n";
+        ss << "      \"@type\": \"Relationship\",\n";
+        ss << "      \"from\": \"" << generateSPDXElementId("Package") << "\",\n";
+        ss << "      \"to\": \"" << generateSPDXElementId(component.name) << "\",\n";
+        ss << "      \"relationshipType\": \"contains\"\n";
+        ss << "    }";
+        firstRel = false;
     }
 
-    // Simple hash of all checksums
-    std::hash<std::string> hasher;
+    // Add relationships between binaries and their source files
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        
+        if (component.fileType != FileType::Source && component.containsDebugInfo && !component.sourceFiles.empty()) {
+            for (const auto& sourceFile : component.sourceFiles) {
+                std::string sourceKey = "source:" + sourceFile;
+                auto sourceIt = components.find(sourceKey);
+                if (sourceIt != components.end()) {
+                    ss << ",\n";
+                    ss << "    {\n";
+                    ss << "      \"@type\": \"Relationship\",\n";
+                    ss << "      \"from\": \"" << generateSPDXElementId(component.name) << "\",\n";
+                    ss << "      \"to\": \"" << generateSPDXElementId(sourceIt->second.name) << "\",\n";
+                    ss << "      \"relationshipType\": \"generatedFrom\"\n";
+                    ss << "    }";
+                }
+            }
+        }
+    }
+    
+    ss << "\n  ]";
+    return ss.str();
+}
+
+std::string SBOMGenerator::Impl::generateSPDX3_0_0_Component(const ComponentInfo& component) {
     std::stringstream ss;
-    ss << std::hex << hasher(allChecksums);
-    return ss.str().substr(0, 40);  // SPDX uses 40-character verification codes
+    ss << "    {\n";
+    ss << "      \"@type\": \"software_File\",\n";
+    ss << "      \"spdxId\": \"" << generateSPDXElementId(component.name) << "\",\n";
+    ss << "      \"name\": \"" << Utils::getFileName(component.filePath) << "\",\n";
+    ss << "      \"integrityMethod\": [\n";
+    ss << "        {\n";
+    ss << "          \"@type\": \"Hash\",\n";
+    ss << "          \"algorithm\": \"sha256\",\n";
+    ss << "          \"hashValue\": \"" << (component.checksum.empty() ? "da39a3ee5e6b4b0d3255bfef95601890afd80709" : component.checksum) << "\"\n";
+    ss << "        }\n";
+    ss << "      ],\n";
+    if (component.fileSize > 0) {
+        ss << "      \"size\": " << component.fileSize << ",\n";
+    }
+    ss << "      \"licenseConcluded\": \"" << generateSPDXLicenseId(component.license) << "\",\n";
+    ss << "      \"licenseInfoFromFiles\": [\"" << generateSPDXLicenseId(component.license) << "\"],\n";
+    ss << "      \"copyrightText\": \"NOASSERTION\",\n";
+    ss << "      \"comment\": \"" << component.getFileTypeString() << " file\",\n";
+    ss << "      \"fileKind\": \"";
+    
+    // Map file types to SPDX 3.0 file kinds
+    switch (component.fileType) {
+        case FileType::Source:
+            ss << "source";
+            break;
+        case FileType::Executable:
+            ss << "binary";
+            break;
+        case FileType::StaticLibrary:
+            ss << "archive";
+            break;
+        default:
+            ss << "other";
+            break;
+    }
+    ss << "\",\n";
+        ss << "      \"contentType\": \"application/octet-stream\"";
+
+    // Add security and AI/ML extensions for SPDX 3.0
+    if (component.containsDebugInfo) {
+        ss << ",\n      \"extension\": {\n";
+        ss << "        \"@type\": \"Extension\",\n";
+        ss << "        \"extensionType\": \"software\",\n";
+        ss << "        \"comment\": \"Contains debug information\"\n";
+        ss << "      }";
+    }
+    
+    ss << "\n    }";
+    return ss.str();
+}
+
+std::string SBOMGenerator::Impl::generateSPDX3_0_1_Component(const ComponentInfo& component) {
+    std::stringstream ss;
+    ss << "    {\n";
+    ss << "      \"@type\": \"software_File\",\n";
+    ss << "      \"spdxId\": \"" << generateSPDXElementId(component.name) << "\",\n";
+    ss << "      \"name\": \"" << Utils::getFileName(component.filePath) << "\",\n";
+    ss << "      \"integrityMethod\": [\n";
+    ss << "        {\n";
+    ss << "          \"@type\": \"Hash\",\n";
+    ss << "          \"algorithm\": \"sha256\",\n";
+    ss << "          \"hashValue\": \"" << (component.checksum.empty() ? "da39a3ee5e6b4b0d3255bfef95601890afd80709" : component.checksum) << "\"\n";
+    ss << "        }\n";
+    ss << "      ],\n";
+    if (component.fileSize > 0) {
+        ss << "      \"size\": " << component.fileSize << ",\n";
+    }
+    ss << "      \"licenseConcluded\": \"" << generateSPDXLicenseId(component.license) << "\",\n";
+    ss << "      \"licenseInfoFromFiles\": [\"" << generateSPDXLicenseId(component.license) << "\"],\n";
+    ss << "      \"copyrightText\": \"NOASSERTION\",\n";
+    ss << "      \"comment\": \"" << component.getFileTypeString() << " file\",\n";
+    ss << "      \"description\": \"" << component.getFileTypeString() << " component from " << component.filePath << "\",\n";
+    ss << "      \"fileKind\": \"";
+    
+    // Map file types to SPDX 3.0.1 file kinds (refined from 3.0.0)
+    switch (component.fileType) {
+        case FileType::Source:
+            ss << "source";
+            break;
+        case FileType::Executable:
+            ss << "binary";
+            break;
+        case FileType::StaticLibrary:
+            ss << "archive";
+            break;
+        default:
+            ss << "other";
+            break;
+    }
+    ss << "\",\n";
+        ss << "      \"contentType\": \"application/octet-stream\"";
+
+    // Enhanced extensions for SPDX 3.0.1
+    if (component.containsDebugInfo || !component.sourceFiles.empty()) {
+        ss << ",\n      \"extension\": {\n";
+        ss << "        \"@type\": \"software_Extension\",\n";
+        ss << "        \"extensionType\": \"debug_information\",\n";
+        ss << "        \"comment\": \"Contains debug information";
+        
+        if (!component.sourceFiles.empty()) {
+            ss << " with source files: " << Utils::join(component.sourceFiles, ", ");
+        }
+        
+        ss << "\"\n";
+        ss << "      }";
+    }
+    
+    ss << "\n    }";
+    return ss.str();
+}
+
+std::string SBOMGenerator::Impl::generateSPDX2_3_Component(const ComponentInfo& component) {
+    std::stringstream ss;
+    ss << "FileName: " << Utils::getFileName(component.filePath) << "\n";
+    ss << "SPDXID: " << generateSPDXId(component.name) << "\n";
+    ss << "FileChecksum: SHA256: " << (component.checksum.empty() ? "da39a3ee5e6b4b0d3255bfef95601890afd80709" : component.checksum) << "\n";
+    if (component.fileSize > 0) {
+        ss << "FileSize: " << component.fileSize << "\n";
+    }
+    ss << "LicenseConcluded: " << generateSPDXLicenseId(component.license) << "\n";
+    ss << "LicenseInfoInFile: " << generateSPDXLicenseId(component.license) << "\n";
+    ss << "FileCopyrightText: NOASSERTION\n";
+    ss << "FileComment: " << component.getFileTypeString() << " file\n";
+    
+    // Add file type classification
+    ss << "FileType: ";
+    switch (component.fileType) {
+        case FileType::Source:
+            ss << "SOURCE";
+            break;
+        case FileType::Executable:
+            ss << "BINARY";
+            break;
+        case FileType::StaticLibrary:
+            ss << "ARCHIVE";
+            break;
+        default:
+            ss << "OTHER";
+            break;
+    }
+    ss << "\n";
+    
+    // Add annotations for debug information in SPDX 2.3
+    if (component.containsDebugInfo) {
+        ss << "Annotation: Tool: Heimdall-2.0.0\n";
+        ss << "AnnotationDate: " << getCurrentTimestamp() << "\n";
+        ss << "AnnotationType: OTHER\n";
+        ss << "AnnotationComment: Contains debug information\n";
+        
+        if (!component.sourceFiles.empty()) {
+            ss << "Annotation: Tool: Heimdall-2.0.0\n";
+            ss << "AnnotationDate: " << getCurrentTimestamp() << "\n";
+            ss << "AnnotationType: OTHER\n";
+            ss << "AnnotationComment: Source files: " << Utils::join(component.sourceFiles, ", ") << "\n";
+        }
+    }
+    
+    ss << "\n";
+    return ss.str();
+}
+
+// CycloneDX methods (keep existing implementation)
+std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
+    std::stringstream ss;
+
+    ss << "{\n";
+    
+    // Add $schema field only for 1.4+
+    if (cyclonedxVersion >= "1.4") {
+        ss << "  \"$schema\": \"http://cyclonedx.org/schema/bom-" << cyclonedxVersion << ".schema.json\",\n";
+    }
+    
+    ss << "  \"bomFormat\": \"CycloneDX\",\n";
+    ss << "  \"specVersion\": \"" << cyclonedxVersion << "\",\n";
+    
+    // Add serialNumber for 1.3+ (optional in 1.3/1.4, required in 1.5+)
+    if (cyclonedxVersion >= "1.3") {
+        std::string serialNumber = "urn:uuid:" + Utils::generateUUID();
+        ss << "  \"serialNumber\": \"" << serialNumber << "\",\n";
+    }
+    
+    ss << "  \"version\": 1,\n";
+    ss << "  \"metadata\": {\n";
+    ss << "    \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
+    
+    // Tools structure varies by version
+    if (cyclonedxVersion >= "1.5") {
+        // CycloneDX 1.5+ uses tools.components structure
+        ss << "    \"tools\": {\n";
+        ss << "      \"components\": [\n";
+        ss << "        {\n";
+        ss << "          \"type\": \"application\",\n";
+        ss << "          \"bom-ref\": \"heimdall-sbom-generator\",\n";
+        ss << "          \"supplier\": {\n";
+        ss << "            \"name\": \"Heimdall Project\"\n";
+        ss << "          },\n";
+        ss << "          \"name\": \"Heimdall SBOM Generator\",\n";
+        ss << "          \"version\": \"2.0.0\"\n";
+        ss << "        }\n";
+        ss << "      ]\n";
+        ss << "    },\n";
+    } else {
+        // CycloneDX 1.3 and 1.4 use simple tools array
+        ss << "    \"tools\": [\n";
+        ss << "      {\n";
+        ss << "        \"vendor\": \"Heimdall Project\",\n";
+        ss << "        \"name\": \"Heimdall SBOM Generator\",\n";
+        ss << "        \"version\": \"2.0.0\"\n";
+        ss << "      }\n";
+        ss << "    ],\n";
+    }
+    
+    ss << "    \"component\": {\n";
+    ss << "      \"type\": \"application\",\n";
+    ss << "      \"name\": "
+       << Utils::formatJsonValue(buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName)
+       << ",\n";
+    ss << "      \"version\": "
+       << Utils::formatJsonValue(buildInfo.buildId.empty() ? "Unknown" : buildInfo.buildId) << "\n";
+    ss << "    }";
+    
+    // Add CycloneDX 1.5+ specific metadata fields (lifecycles supported in both 1.5 and 1.6)
+    if (cyclonedxVersion >= "1.5") {
+        ss << ",\n";
+        ss << "    \"lifecycles\": [\n";
+        ss << "      {\n";
+        ss << "        \"phase\": \"build\"\n";
+        ss << "      }\n";
+        ss << "    ]";
+    }
+    
+    ss << "\n";
+    ss << "  },\n";
+    ss << "  \"components\": [\n";
+
+    bool first = true;
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        if (!first)
+            ss << ",\n";
+        ss << generateCycloneDXComponent(component);
+        first = false;
+    }
+
+    ss << "\n  ]\n";
+    ss << "}\n";
+
+    return ss.str();
 }
 
 std::string SBOMGenerator::Impl::generatePURL(const ComponentInfo& component) {
@@ -715,163 +1314,6 @@ std::string SBOMGenerator::Impl::generatePURL(const ComponentInfo& component) {
     return ss.str();
 }
 
-std::string SBOMGenerator::Impl::generateSPDX3JSONDocument() {
-    std::stringstream ss;
 
-    ss << "{\n";
-    ss << "  \"spdxVersion\": \"SPDX-3.0\",\n";
-    ss << "  \"dataLicense\": \"CC0-1.0\",\n";
-    ss << "  \"SPDXID\": \"SPDXRef-DOCUMENT\",\n";
-    ss << "  \"name\": " << Utils::formatJsonValue("Heimdall Generated SBOM") << ",\n";
-    ss << "  \"documentNamespace\": " << Utils::formatJsonValue("https://spdx.org/spdxdocs/heimdall-" + getCurrentTimestamp()) << ",\n";
-    ss << "  \"creationInfo\": {\n";
-    ss << "    \"creators\": [\n";
-    ss << "      \"Tool: Heimdall-2.0.0\"\n";
-    ss << "    ],\n";
-    ss << "    \"created\": " << Utils::formatJsonValue(getCurrentTimestamp()) << "\n";
-    ss << "  },\n";
-    ss << "  \"packages\": [\n";
-    ss << "    {\n";
-    ss << "      \"SPDXID\": " << Utils::formatJsonValue(generateSPDXId("Package")) << ",\n";
-    ss << "      \"name\": " << Utils::formatJsonValue(buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName) << ",\n";
-    ss << "      \"versionInfo\": " << Utils::formatJsonValue(buildInfo.buildId.empty() ? "Unknown" : buildInfo.buildId) << ",\n";
-    ss << "      \"downloadLocation\": \"NOASSERTION\",\n";
-    ss << "      \"filesAnalyzed\": true,\n";
-    ss << "      \"verificationCode\": {\n";
-    ss << "        \"packageVerificationCodeValue\": " << Utils::formatJsonValue(generateVerificationCode()) << "\n";
-    ss << "      },\n";
-    ss << "      \"licenseConcluded\": \"NOASSERTION\",\n";
-    ss << "      \"licenseInfoFromFiles\": [\"NOASSERTION\"],\n";
-    ss << "      \"licenseDeclared\": \"NOASSERTION\",\n";
-    ss << "      \"copyrightText\": \"NOASSERTION\",\n";
-    ss << "      \"summary\": " << Utils::formatJsonValue("Software Bill of Materials generated by Heimdall") << ",\n";
-    ss << "      \"description\": " << Utils::formatJsonValue("SBOM for " + (buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName)) << "\n";
-    ss << "    }\n";
-    ss << "  ],\n";
-    ss << "  \"files\": [\n";
-
-    bool first = true;
-    for (const auto& pair : components) {
-        const auto& component = pair.second;
-        if (!first)
-            ss << ",\n";
-        ss << generateSPDX3JSONComponent(component);
-        first = false;
-    }
-
-    ss << "\n  ],\n";
-    ss << "  \"relationships\": [\n";
-    
-    // Package contains relationships
-    bool firstRel = true;
-    for (const auto& pair : components) {
-        const auto& component = pair.second;
-        if (!firstRel)
-            ss << ",\n";
-        ss << "    {\n";
-        ss << "      \"spdxElementId\": " << Utils::formatJsonValue(generateSPDXId("Package")) << ",\n";
-        ss << "      \"relatedSpdxElement\": " << Utils::formatJsonValue(generateSPDXId(component.name)) << ",\n";
-        ss << "      \"relationshipType\": \"CONTAINS\"\n";
-        ss << "    }";
-        firstRel = false;
-    }
-
-    // Add relationships between binaries and their source files
-    for (const auto& pair : components) {
-        const auto& component = pair.second;
-        
-        // Skip source file components themselves
-        if (component.fileType == FileType::Source) {
-            continue;
-        }
-        
-        // Add relationships to source files if this component has debug info
-        if (component.containsDebugInfo && !component.sourceFiles.empty()) {
-            for (const auto& sourceFile : component.sourceFiles) {
-                std::string sourceKey = "source:" + sourceFile;
-                auto sourceIt = components.find(sourceKey);
-                if (sourceIt != components.end()) {
-                    ss << ",\n";
-                    ss << "    {\n";
-                    ss << "      \"spdxElementId\": " << Utils::formatJsonValue(generateSPDXId(component.name)) << ",\n";
-                    ss << "      \"relatedSpdxElement\": " << Utils::formatJsonValue(generateSPDXId(sourceIt->second.name)) << ",\n";
-                    ss << "      \"relationshipType\": \"GENERATED_FROM\"\n";
-                    ss << "    }";
-                }
-            }
-        }
-    }
-
-    ss << "\n  ]\n";
-    ss << "}\n";
-
-    return ss.str();
-}
-
-std::string SBOMGenerator::Impl::generateSPDX3JSONComponent(const ComponentInfo& component) {
-    std::stringstream ss;
-    ss << "    {\n";
-    ss << "      \"SPDXID\": " << Utils::formatJsonValue(generateSPDXId(component.name)) << ",\n";
-    ss << "      \"fileName\": " << Utils::formatJsonValue(Utils::getFileName(component.filePath)) << ",\n";
-    ss << "      \"checksums\": [\n";
-    ss << "        {\n";
-    ss << "          \"algorithm\": \"SHA256\",\n";
-    ss << "          \"checksumValue\": " << Utils::formatJsonValue(component.checksum.empty() ? "UNKNOWN" : component.checksum) << "\n";
-    ss << "        }\n";
-    ss << "      ],\n";
-    ss << "      \"licenseConcluded\": " << Utils::formatJsonValue(component.license.empty() ? "NOASSERTION" : component.license) << ",\n";
-    ss << "      \"licenseInfoInFiles\": [" << Utils::formatJsonValue(component.license.empty() ? "NOASSERTION" : component.license) << "],\n";
-    ss << "      \"copyrightText\": \"NOASSERTION\",\n";
-    ss << "      \"comment\": " << Utils::formatJsonValue(component.getFileTypeString() + " file") << ",\n";
-    ss << "      \"fileTypes\": [\n";
-    ss << "        " << Utils::formatJsonValue(component.getFileTypeString()) << "\n";
-    ss << "      ]";
-
-    // Add DWARF debug information as annotations
-    if (component.containsDebugInfo) {
-        ss << ",\n      \"annotations\": [\n";
-        
-        // Add source files annotation
-        if (!component.sourceFiles.empty()) {
-            ss << "        {\n";
-            ss << "          \"annotator\": \"Tool: Heimdall-2.0.0\",\n";
-            ss << "          \"annotationDate\": " << Utils::formatJsonValue(getCurrentTimestamp()) << ",\n";
-            ss << "          \"annotationType\": \"OTHER\",\n";
-            ss << "          \"comment\": " << Utils::formatJsonValue("Source files: " + Utils::join(component.sourceFiles, ", ")) << "\n";
-            ss << "        }";
-        }
-        
-        // Add functions annotation if available
-        if (!component.functions.empty()) {
-            if (!component.sourceFiles.empty()) {
-                ss << ",\n";
-            }
-            ss << "        {\n";
-            ss << "          \"annotator\": \"Tool: Heimdall-2.0.0\",\n";
-            ss << "          \"annotationDate\": " << Utils::formatJsonValue(getCurrentTimestamp()) << ",\n";
-            ss << "          \"annotationType\": \"OTHER\",\n";
-            ss << "          \"comment\": " << Utils::formatJsonValue("Functions: " + Utils::join(component.functions, ", ")) << "\n";
-            ss << "        }";
-        }
-        
-        // Add compile units annotation if available
-        if (!component.compileUnits.empty()) {
-            if (!component.sourceFiles.empty() || !component.functions.empty()) {
-                ss << ",\n";
-            }
-            ss << "        {\n";
-            ss << "          \"annotator\": \"Tool: Heimdall-2.0.0\",\n";
-            ss << "          \"annotationDate\": " << Utils::formatJsonValue(getCurrentTimestamp()) << ",\n";
-            ss << "          \"annotationType\": \"OTHER\",\n";
-            ss << "          \"comment\": " << Utils::formatJsonValue("Compile units: " + Utils::join(component.compileUnits, ", ")) << "\n";
-            ss << "        }";
-        }
-        
-        ss << "\n      ]";
-    }
-    
-    ss << "\n    }";
-    return ss.str();
-}
 
 }  // namespace heimdall
