@@ -469,7 +469,7 @@ std::string SBOMGenerator::Impl::generateSPDXDocument() {
 std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
     std::stringstream ss;
 
-    // Generate a unique serial number in UUID format as required by 1.6 schema
+    // Generate a unique serial number in UUID format as required by 1.5+ schema
     std::string serialNumber = "urn:uuid:" + Utils::generateUUID();
 
     ss << "{\n";
@@ -502,8 +502,8 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
        << Utils::formatJsonValue(buildInfo.buildId.empty() ? "Unknown" : buildInfo.buildId) << "\n";
     ss << "    }";
     
-    // Add CycloneDX 1.6+ specific metadata fields
-    if (cyclonedxVersion >= "1.6") {
+    // Add CycloneDX 1.5+ specific metadata fields (lifecycles supported in both 1.5 and 1.6)
+    if (cyclonedxVersion >= "1.5") {
         ss << ",\n";
         ss << "    \"lifecycles\": [\n";
         ss << "      {\n";
@@ -610,14 +610,14 @@ std::string SBOMGenerator::Impl::generateDebugProperties(const ComponentInfo& co
 }
 
 std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& component) {
-    if (cyclonedxVersion < "1.6") {
+    if (cyclonedxVersion < "1.5") {
         return "";
     }
     
     std::stringstream evidence;
     evidence << "      \"evidence\": {\n";
     
-    // Add identity evidence
+    // Add identity evidence (supported in both 1.5 and 1.6)
     bool hasIdentity = !component.checksum.empty() || !component.filePath.empty();
     if (hasIdentity) {
         evidence << "        \"identity\": {\n";
@@ -633,15 +633,14 @@ std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& comp
         evidence << "        },\n";
     }
     
-    // Add occurrence evidence  
+    // Add occurrence evidence (supported in both 1.5 and 1.6)
     evidence << "        \"occurrences\": [\n";
     evidence << "          {\n";
-    evidence << "            \"location\": " << Utils::formatJsonValue(component.filePath) << ",\n";
-    evidence << "            \"line\": 1\n";
+    evidence << "            \"location\": " << Utils::formatJsonValue(component.filePath) << "\n";
     evidence << "          }\n";
     evidence << "        ]";
     
-    // Add callstack evidence if debug info is available
+    // Add callstack evidence if debug info is available (different structure for 1.5 vs 1.6)
     if (component.containsDebugInfo && !component.functions.empty()) {
         evidence << ",\n";
         evidence << "        \"callstack\": {\n";
@@ -651,9 +650,20 @@ std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& comp
         for (const auto& func : component.functions) {
             if (!firstFrame) evidence << ",\n";
             evidence << "            {\n";
-            evidence << "              \"function\": " << Utils::formatJsonValue(func) << ",\n";
-            evidence << "              \"line\": 1,\n";
-            evidence << "              \"column\": 1\n";
+            
+            if (cyclonedxVersion >= "1.6") {
+                // CycloneDX 1.6 format - function field is optional
+                evidence << "              \"function\": " << Utils::formatJsonValue(func) << ",\n";
+                evidence << "              \"line\": 1,\n";
+                evidence << "              \"column\": 1\n";
+            } else {
+                // CycloneDX 1.5 format - module field is required
+                evidence << "              \"module\": " << Utils::formatJsonValue(Utils::getFileName(component.filePath)) << ",\n";
+                evidence << "              \"function\": " << Utils::formatJsonValue(func) << ",\n";
+                evidence << "              \"line\": 1,\n";
+                evidence << "              \"column\": 1\n";
+            }
+            
             evidence << "            }";
             firstFrame = false;
             frameCount++;
