@@ -469,30 +469,53 @@ std::string SBOMGenerator::Impl::generateSPDXDocument() {
 std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
     std::stringstream ss;
 
-    // Generate a unique serial number in UUID format as required by 1.5+ schema
-    std::string serialNumber = "urn:uuid:" + Utils::generateUUID();
-
     ss << "{\n";
-    ss << "  \"$schema\": \"http://cyclonedx.org/schema/bom-" << cyclonedxVersion << ".schema.json\",\n";
+    
+    // Add $schema field only for 1.4+
+    if (cyclonedxVersion >= "1.4") {
+        ss << "  \"$schema\": \"http://cyclonedx.org/schema/bom-" << cyclonedxVersion << ".schema.json\",\n";
+    }
+    
     ss << "  \"bomFormat\": \"CycloneDX\",\n";
     ss << "  \"specVersion\": \"" << cyclonedxVersion << "\",\n";
-    ss << "  \"serialNumber\": \"" << serialNumber << "\",\n";
+    
+    // Add serialNumber for 1.3+ (optional in 1.3/1.4, required in 1.5+)
+    if (cyclonedxVersion >= "1.3") {
+        std::string serialNumber = "urn:uuid:" + Utils::generateUUID();
+        ss << "  \"serialNumber\": \"" << serialNumber << "\",\n";
+    }
+    
     ss << "  \"version\": 1,\n";
     ss << "  \"metadata\": {\n";
     ss << "    \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
-    ss << "    \"tools\": {\n";
-    ss << "      \"components\": [\n";
-    ss << "        {\n";
-    ss << "          \"type\": \"application\",\n";
-    ss << "          \"bom-ref\": \"heimdall-sbom-generator\",\n";
-    ss << "          \"supplier\": {\n";
-    ss << "            \"name\": \"Heimdall Project\"\n";
-    ss << "          },\n";
-    ss << "          \"name\": \"Heimdall SBOM Generator\",\n";
-    ss << "          \"version\": \"2.0.0\"\n";
-    ss << "        }\n";
-    ss << "      ]\n";
-    ss << "    },\n";
+    
+    // Tools structure varies by version
+    if (cyclonedxVersion >= "1.5") {
+        // CycloneDX 1.5+ uses tools.components structure
+        ss << "    \"tools\": {\n";
+        ss << "      \"components\": [\n";
+        ss << "        {\n";
+        ss << "          \"type\": \"application\",\n";
+        ss << "          \"bom-ref\": \"heimdall-sbom-generator\",\n";
+        ss << "          \"supplier\": {\n";
+        ss << "            \"name\": \"Heimdall Project\"\n";
+        ss << "          },\n";
+        ss << "          \"name\": \"Heimdall SBOM Generator\",\n";
+        ss << "          \"version\": \"2.0.0\"\n";
+        ss << "        }\n";
+        ss << "      ]\n";
+        ss << "    },\n";
+    } else {
+        // CycloneDX 1.3 and 1.4 use simple tools array
+        ss << "    \"tools\": [\n";
+        ss << "      {\n";
+        ss << "        \"vendor\": \"Heimdall Project\",\n";
+        ss << "        \"name\": \"Heimdall SBOM Generator\",\n";
+        ss << "        \"version\": \"2.0.0\"\n";
+        ss << "      }\n";
+        ss << "    ],\n";
+    }
+    
     ss << "    \"component\": {\n";
     ss << "      \"type\": \"application\",\n";
     ss << "      \"name\": "
@@ -681,19 +704,33 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     std::stringstream ss;
     ss << "    {\n";
     ss << "      \"type\": \"library\",\n";
+    
+    // bom-ref field is available in all versions
     ss << "      \"bom-ref\": \"component-" << generateSPDXId(component.name) << "\",\n";
     ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
-    ss << "      \"version\": "
-       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version)
-       << ",\n";
+    
+    // Version field is required in 1.3, optional in 1.4+
+    if (cyclonedxVersion == "1.3" || !component.version.empty()) {
+        ss << "      \"version\": "
+           << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version)
+           << ",\n";
+    }
+    
+    // Description field (available in all versions)
     ss << "      \"description\": "
        << Utils::formatJsonValue(component.getFileTypeString() + " component") << ",\n";
     
-    // Fix supplier to be an organizational entity object
-    ss << "      \"supplier\": {\n";
-    ss << "        \"name\": "
-       << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << "\n";
-    ss << "      },\n";
+    // Supplier field structure: 1.4+ uses organizational entity object, 1.3 uses string
+    if (cyclonedxVersion >= "1.4") {
+        ss << "      \"supplier\": {\n";
+        ss << "        \"name\": "
+           << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << "\n";
+        ss << "      },\n";
+    } else {
+        // CycloneDX 1.3 uses string format for supplier
+        ss << "      \"supplier\": "
+           << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << ",\n";
+    }
     
     ss << "      \"hashes\": [\n";
     ss << "        {\n";
@@ -713,9 +750,14 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "        }\n";
     ss << "      ]";
 
-    // Add debug properties and evidence for 1.6+
+    // Add debug properties (available in all versions)
     std::string debugProperties = generateDebugProperties(component);
-    std::string evidenceField = generateEvidenceField(component);
+    
+    // Add evidence field only for 1.5+ (not available in 1.3/1.4)
+    std::string evidenceField = "";
+    if (cyclonedxVersion >= "1.5") {
+        evidenceField = generateEvidenceField(component);
+    }
     
     // Output properties and evidence with correct comma placement
     if (!debugProperties.empty() && !evidenceField.empty()) {
