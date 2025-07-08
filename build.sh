@@ -54,6 +54,7 @@ BUILD_GOLD_PLUGIN=true
 BUILD_SHARED_CORE=true
 BUILD_TESTS=true
 BUILD_EXAMPLES=true
+CXX_STANDARD=""
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -95,6 +96,10 @@ while [[ $# -gt 0 ]]; do
             INSTALL_DIR="$2"
             shift 2
             ;;
+        --cxx-standard)
+            CXX_STANDARD="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "Heimdall SBOM Generator Build Script"
             echo ""
@@ -110,6 +115,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-examples        Disable example projects"
             echo "  --build-dir DIR      Set build directory (default: build)"
             echo "  --install-dir DIR    Set install directory (default: install)"
+            echo "  --cxx-standard VER   Set C++ standard version (e.g., 17, 20)"
             echo "  --help, -h           Show this help message"
             echo ""
             exit 0
@@ -203,6 +209,12 @@ CMAKE_ARGS=(
     "-DENABLE_DEBUG=$ENABLE_DEBUG"
     "-DENABLE_SANITIZERS=$ENABLE_SANITIZERS"
 )
+
+# Add C++ standard if specified
+if [[ -n "$CXX_STANDARD" ]]; then
+    print_status "Using C++ standard: $CXX_STANDARD"
+    CMAKE_ARGS+=("-DCMAKE_CXX_STANDARD=$CXX_STANDARD")
+fi
 
 # Add platform-specific options
 if [[ "$OSTYPE" == "darwin"* ]]; then
