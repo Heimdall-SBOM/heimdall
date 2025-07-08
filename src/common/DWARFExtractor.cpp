@@ -29,6 +29,7 @@ limitations under the License.
 #include "DWARFExtractor.hpp"
 #include <algorithm>
 #include <atomic>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
