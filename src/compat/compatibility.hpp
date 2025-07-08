@@ -6,12 +6,25 @@
 #include <cstring>
 #include <algorithm>
 #include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace heimdall {
 namespace compat {
 
 // Feature detection macros
-#if __cplusplus >= 201703L
+#if __cplusplus >= 202302L
+    #define HEIMDALL_CPP23_AVAILABLE 1
+    #define HEIMDALL_CPP20_AVAILABLE 1
+    #define HEIMDALL_CPP17_AVAILABLE 1
+    #define HEIMDALL_FULL_DWARF 1
+    #define HEIMDALL_MODERN_FEATURES 1
+#elif __cplusplus >= 202002L
+    #define HEIMDALL_CPP20_AVAILABLE 1
+    #define HEIMDALL_CPP17_AVAILABLE 1
+    #define HEIMDALL_FULL_DWARF 1
+    #define HEIMDALL_MODERN_FEATURES 1
+#elif __cplusplus >= 201703L
     #define HEIMDALL_CPP17_AVAILABLE 1
     #define HEIMDALL_FULL_DWARF 1
 #elif __cplusplus >= 201402L
@@ -36,6 +49,189 @@ namespace compat {
     using std::string_view;
     using std::variant;
     using std::monostate;
+    
+    #if HEIMDALL_CPP20_AVAILABLE
+        #include <span>
+        #include <concepts>
+        #include <ranges>
+        #include <format>
+        #include <source_location>
+        #include <bit>
+        #include <numbers>
+        #include <compare>
+        #include <coroutine>
+        #include <latch>
+        #include <barrier>
+        #include <semaphore>
+        #include <stop_token>
+        #include <syncstream>
+        #include <chrono>
+        #include <version>
+        
+        using std::span;
+        using std::source_location;
+        using std::strong_ordering;
+        using std::weak_ordering;
+        using std::partial_ordering;
+        
+        // C++20 concepts
+        template<typename T>
+        concept integral = std::integral<T>;
+        
+        template<typename T>
+        concept floating_point = std::floating_point<T>;
+        
+        template<typename T>
+        concept arithmetic = std::is_arithmetic_v<T>;
+        
+        template<typename T>
+        concept convertible_to_string = requires(T t) {
+            { std::to_string(t) } -> std::convertible_to<std::string>;
+        };
+        
+        // C++20 ranges
+        namespace ranges = std::ranges;
+        
+        // C++20 format
+        namespace fmt = std::format;
+        
+        // C++20 expected (if available)
+        #if __has_include(<expected>)
+            #include <expected>
+            using std::expected;
+            using std::unexpected;
+        #else
+            // Custom expected implementation for C++20 without <expected>
+            template<typename T, typename E>
+            class expected {
+            private:
+                bool has_value_;
+                union {
+                    T value_;
+                    E error_;
+                };
+                
+            public:
+                expected(const T& value) : has_value_(true), value_(value) {}
+                expected(T&& value) : has_value_(true), value_(std::move(value)) {}
+                expected(const unexpected<E>& err) : has_value_(false), error_(err.value()) {}
+                
+                ~expected() {
+                    if (has_value_) {
+                        value_.~T();
+                    } else {
+                        error_.~E();
+                    }
+                }
+                
+                bool has_value() const { return has_value_; }
+                explicit operator bool() const { return has_value_; }
+                
+                T& value() {
+                    if (!has_value_) {
+                        throw std::runtime_error("expected has no value");
+                    }
+                    return value_;
+                }
+                
+                const T& value() const {
+                    if (!has_value_) {
+                        throw std::runtime_error("expected has no value");
+                    }
+                    return value_;
+                }
+                
+                E& error() {
+                    if (has_value_) {
+                        throw std::runtime_error("expected has value, not error");
+                    }
+                    return error_;
+                }
+                
+                const E& error() const {
+                    if (has_value_) {
+                        throw std::runtime_error("expected has value, not error");
+                    }
+                    return error_;
+                }
+                
+                T& operator*() { return value(); }
+                const T& operator*() const { return value(); }
+                
+                T* operator->() { return &value(); }
+                const T* operator->() const { return &value(); }
+            };
+            
+            template<typename E>
+            class unexpected {
+            private:
+                E value_;
+                
+            public:
+                unexpected(const E& value) : value_(value) {}
+                unexpected(E&& value) : value_(std::move(value)) {}
+                
+                const E& value() const { return value_; }
+                E& value() { return value_; }
+            };
+        #endif
+        
+        // C++20 flat_map and flat_set (if available)
+        #if __has_include(<flat_map>)
+            #include <flat_map>
+            #include <flat_set>
+            using std::flat_map;
+            using std::flat_set;
+        #endif
+        
+        // C++20 move_only_function (if available)
+        #if __has_include(<functional>)
+            #include <functional>
+            using std::move_only_function;
+        #endif
+        
+    #endif // HEIMDALL_CPP20_AVAILABLE
+    
+    #if HEIMDALL_CPP23_AVAILABLE
+        // C++23 features
+        #include <generator>
+        #include <expected>
+        #include <flat_map>
+        #include <flat_set>
+        #include <move_only_function>
+        #include <print>
+        #include <stacktrace>
+        #include <mdspan>
+        #include <text_encoding>
+        #include <string_view>
+        #include <optional>
+        
+        using std::generator;
+        using std::expected;
+        using std::unexpected;
+        using std::flat_map;
+        using std::flat_set;
+        using std::move_only_function;
+        using std::print;
+        using std::stacktrace;
+        
+        // C++23 concepts
+        template<typename T>
+        concept sized_range = std::ranges::sized_range<T>;
+        
+        template<typename T>
+        concept random_access_range = std::ranges::random_access_range<T>;
+        
+        template<typename T>
+        concept contiguous_range = std::ranges::contiguous_range<T>;
+        
+        // C++23 utilities
+        template<typename T>
+        constexpr auto to_underlying(T e) noexcept {
+            return static_cast<std::underlying_type_t<T>>(e);
+        }
+        
+    #endif // HEIMDALL_CPP23_AVAILABLE
     
 #else
     // Use Boost.Filesystem and custom implementations
@@ -219,7 +415,84 @@ namespace compat {
     // Monostate for variant
     struct monostate {};
     
+    // Custom span implementation for C++11/14
+    template<typename T>
+    class span {
+    private:
+        T* data_;
+        size_t size_;
+        
+    public:
+        span() : data_(nullptr), size_(0) {}
+        
+        span(T* data, size_t size) : data_(data), size_(size) {}
+        
+        template<typename Container>
+        span(Container& c) : data_(c.data()), size_(c.size()) {}
+        
+        T* data() const { return data_; }
+        size_t size() const { return size_; }
+        bool empty() const { return size_ == 0; }
+        
+        T& operator[](size_t index) const { return data_[index]; }
+        
+        T* begin() const { return data_; }
+        T* end() const { return data_ + size_; }
+        
+        T& front() const { return data_[0]; }
+        T& back() const { return data_[size_ - 1]; }
+    };
+    
 #endif
+
+// Utility functions that work across all C++ standards
+namespace utils {
+
+// Safe string conversion
+template<typename T>
+string_view to_string_view(const T& value) {
+    if constexpr (std::is_convertible_v<T, string_view>) {
+        return string_view(value);
+    } else if constexpr (std::is_convertible_v<T, std::string>) {
+        return string_view(std::string(value));
+    } else {
+        // Fallback for other types
+        static thread_local std::string temp;
+        temp = std::to_string(value);
+        return string_view(temp);
+    }
+}
+
+// Format string (C++20+ uses std::format, older uses sprintf)
+template<typename... Args>
+std::string format_string(const std::string& fmt, Args&&... args) {
+#if HEIMDALL_CPP20_AVAILABLE
+    return std::format(fmt, std::forward<Args>(args)...);
+#else
+    // Simple implementation for older C++
+    std::string result = fmt;
+    // This is a simplified version - in practice you'd want a proper formatting library
+    return result;
+#endif
+}
+
+// Safe optional access
+template<typename T>
+T get_optional_value(const optional<T>& opt, const T& default_value = T{}) {
+    return opt.has_value() ? opt.value() : default_value;
+}
+
+// Type-safe enum to string conversion
+template<typename Enum>
+std::string enum_to_string(Enum e) {
+    if constexpr (HEIMDALL_CPP23_AVAILABLE) {
+        return std::format("{}", to_underlying(e));
+    } else {
+        return std::to_string(static_cast<std::underlying_type_t<Enum>>(e));
+    }
+}
+
+} // namespace utils
 
 } // namespace compat
 } // namespace heimdall

@@ -84,7 +84,7 @@ std::string LLVMDetector::getVersionString(LLVMVersion version) {
         case LLVMVersion::LLVM_11_18:
             return "LLVM 11-18 (C++14+ compatible)";
         case LLVMVersion::LLVM_19_PLUS:
-            return "LLVM 19+ (C++17+ required)";
+            return "LLVM 19+ (C++17+ required, C++20/23 supported)";
         case LLVMVersion::UNKNOWN:
         default:
             return "Unknown LLVM version";
