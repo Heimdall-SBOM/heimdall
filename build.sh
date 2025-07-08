@@ -49,6 +49,7 @@ BUILD_DIR="build"
 INSTALL_DIR="install"
 ENABLE_DEBUG=false
 ENABLE_SANITIZERS=false
+ENABLE_COVERAGE=false
 BUILD_LLD_PLUGIN=true
 BUILD_GOLD_PLUGIN=true
 BUILD_SHARED_CORE=true
@@ -66,6 +67,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --sanitizers)
             ENABLE_SANITIZERS=true
+            shift
+            ;;
+        --coverage)
+            ENABLE_COVERAGE=true
             shift
             ;;
         --no-lld)
@@ -100,7 +105,7 @@ while [[ $# -gt 0 ]]; do
             CXX_STANDARD="$2"
             shift 2
             ;;
-        --help|-h)
+        -h|--help)
             echo "Heimdall SBOM Generator Build Script"
             echo ""
             echo "Usage: $0 [options]"
@@ -108,6 +113,7 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --debug              Build in debug mode"
             echo "  --sanitizers         Enable AddressSanitizer and UBSan"
+            echo "  --coverage           Enable code coverage instrumentation"
             echo "  --no-lld             Disable LLD plugin build"
             echo "  --no-gold            Disable Gold plugin build"
             echo "  --no-shared-core     Disable shared core library"
@@ -116,7 +122,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --build-dir DIR      Set build directory (default: build)"
             echo "  --install-dir DIR    Set install directory (default: install)"
             echo "  --cxx-standard VER   Set C++ standard version (e.g., 17, 20)"
-            echo "  --help, -h           Show this help message"
+            echo "  -h, --help           Show this help message"
             echo ""
             exit 0
             ;;
@@ -209,6 +215,12 @@ CMAKE_ARGS=(
     "-DENABLE_DEBUG=$ENABLE_DEBUG"
     "-DENABLE_SANITIZERS=$ENABLE_SANITIZERS"
 )
+
+# Add code coverage if specified
+if [[ "$ENABLE_COVERAGE" == true ]]; then
+    print_status "Enabling code coverage instrumentation"
+    CMAKE_ARGS+=("-DENABLE_COVERAGE=ON")
+fi
 
 # Add C++ standard if specified
 if [[ -n "$CXX_STANDARD" ]]; then
