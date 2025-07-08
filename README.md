@@ -18,6 +18,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **CI/CD Ready**: Seamless integration with modern build systems
 - **Security Focused**: Enables vulnerability scanning and compliance tracking
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
+- **C++ Standard Compatibility**: Supports C++11, C++14, C++17, C++20, and C++23
 
 ## Quick Start
 
@@ -95,15 +96,28 @@ Heimdall consists of several key components:
 
 **Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
 
+## C++ Standard Support
+
+Heimdall supports multiple C++ standards with automatic compatibility detection:
+
+| C++ Standard | LLVM Version | Features | Dependencies |
+|--------------|--------------|----------|--------------|
+| C++11        | 7-18         | Basic    | Boost.Filesystem |
+| C++14        | 7-18         | Basic    | Boost.Filesystem |
+| C++17        | 11+          | Full     | Standard library |
+| C++20        | 19+          | Full     | Standard library |
+| C++23        | 19+          | Full     | Standard library |
+
 ## Building from Source
 
 ### Prerequisites
 
-- C++17 compatible compiler (GCC 7+, Clang 5+)
+- C++11+ compatible compiler (GCC 4.8+, Clang 3.3+)
 - CMake 3.16+
 - LLVM/LLD development libraries
 - GNU Gold linker (Linux only, optional for Gold plugin)
 - OpenSSL development libraries
+- Boost.Filesystem (for C++11/14 compatibility)
 
 ### macOS Setup
 
@@ -114,6 +128,12 @@ export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 
 # Build Heimdall (LLD plugin only)
 ./build.sh
+
+# Build with C++14
+./build.sh --cxx-standard 14
+
+# Build with C++11 compatibility mode
+./build.sh --cxx-standard 11 --cpp11-14
 ```
 
 ### Linux Setup
@@ -134,6 +154,12 @@ sudo apt-get install -y \
 
 # Build Heimdall with both LLD and Gold plugins
 ./build.sh
+
+# Build with C++14
+./build.sh --cxx-standard 14
+
+# Build with C++11 compatibility mode
+./build.sh --cxx-standard 11 --cpp11-14
 ```
 
 #### Fedora/RHEL/CentOS

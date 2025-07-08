@@ -1,23 +1,17 @@
-# Copyright 2025 The Heimdall Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 #!/bin/bash
 
-# Heimdall SBOM Generator Build Script
-# This script builds the Heimdall project with support for both LLD and Gold plugins
+# Heimdall Build Script
+# Supports C++11, C++14, C++17, C++20, and C++23
 
 set -e
+
+# Default values
+BUILD_TYPE="Release"
+CXX_STANDARD="17"
+ENABLE_TESTS="ON"
+ENABLE_COVERAGE="OFF"
+ENABLE_CPP11_14="OFF"
+USE_BOOST_FILESYSTEM="OFF"
 
 # Colors for output
 RED='\033[0;31m'
@@ -43,255 +37,201 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Default configuration
-BUILD_TYPE="Release"
-BUILD_DIR="build"
-INSTALL_DIR="install"
-ENABLE_DEBUG=false
-ENABLE_SANITIZERS=false
-BUILD_LLD_PLUGIN=true
-BUILD_GOLD_PLUGIN=true
-BUILD_SHARED_CORE=true
-BUILD_TESTS=true
-BUILD_EXAMPLES=true
+# Function to show help
+show_help() {
+    cat << EOF
+Heimdall Build Script
+
+Usage: $0 [OPTIONS]
+
+Options:
+    --build-type TYPE        Build type (Debug, Release, RelWithDebInfo, MinSizeRel) [default: Release]
+    --cxx-standard VERSION   C++ standard version (11, 14, 17, 20, 23) [default: 17]
+    --tests                  Enable tests [default: ON]
+    --no-tests               Disable tests
+    --coverage               Enable coverage reporting
+    --cpp11-14               Enable C++11/14 compatibility mode (requires Boost.Filesystem)
+    --help                   Show this help message
+
+Examples:
+    $0                                    # Build with C++17 (default)
+    $0 --cxx-standard 14                  # Build with C++14
+    $0 --cxx-standard 11 --cpp11-14       # Build with C++11 compatibility mode
+    $0 --build-type Debug --coverage      # Debug build with coverage
+    $0 --cxx-standard 23                  # Build with C++23
+
+C++ Standard Compatibility:
+    C++11: Requires LLVM 7-18, Boost.Filesystem
+    C++14: Requires LLVM 7-18, Boost.Filesystem  
+    C++17: Requires LLVM 11+, standard library
+    C++20: Requires LLVM 19+, standard library
+    C++23: Requires LLVM 19+, standard library
+
+EOF
+}
+
+# Function to check if Boost.Filesystem is available
+check_boost_filesystem() {
+    print_status "Checking for Boost.Filesystem..."
+    
+    # Try to find boost_filesystem using pkg-config
+    if pkg-config --exists libboost_filesystem; then
+        print_success "Boost.Filesystem found via pkg-config"
+        return 0
+    fi
+    
+    # Try to find boost_filesystem using find_library
+    if [ -f "/usr/lib/x86_64-linux-gnu/libboost_filesystem.so" ] || \
+       [ -f "/usr/lib/libboost_filesystem.so" ] || \
+       [ -f "/usr/local/lib/libboost_filesystem.so" ]; then
+        print_success "Boost.Filesystem library found"
+        return 0
+    fi
+    
+    # Check for Homebrew Boost on macOS
+    if [ -f "/opt/homebrew/lib/libboost_filesystem.dylib" ] || \
+       [ -f "/usr/local/lib/libboost_filesystem.dylib" ]; then
+        print_success "Boost.Filesystem library found (Homebrew)"
+        return 0
+    fi
+    
+    print_error "Boost.Filesystem not found. Please install it:"
+    echo "  Ubuntu/Debian: sudo apt-get install libboost-filesystem-dev"
+    echo "  CentOS/RHEL: sudo yum install boost-devel"
+    echo "  macOS: brew install boost"
+    return 1
+}
+
+# Function to validate C++ standard compatibility
+validate_cxx_standard() {
+    local standard=$1
+    
+    case $standard in
+        11|14)
+            if [ "$ENABLE_CPP11_14" = "OFF" ]; then
+                print_warning "C++$standard requires compatibility mode. Enabling --cpp11-14"
+                ENABLE_CPP11_14="ON"
+                USE_BOOST_FILESYSTEM="ON"
+            fi
+            ;;
+        17|20|23)
+            if [ "$ENABLE_CPP11_14" = "ON" ]; then
+                print_warning "C++$standard doesn't require compatibility mode. Disabling --cpp11-14"
+                ENABLE_CPP11_14="OFF"
+                USE_BOOST_FILESYSTEM="OFF"
+            fi
+            ;;
+        *)
+            print_error "Unsupported C++ standard: $standard"
+            print_error "Supported standards: 11, 14, 17, 20, 23"
+            exit 1
+            ;;
+    esac
+}
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --debug)
-            BUILD_TYPE="Debug"
-            ENABLE_DEBUG=true
-            shift
+        --build-type)
+            BUILD_TYPE="$2"
+            shift 2
             ;;
-        --sanitizers)
-            ENABLE_SANITIZERS=true
-            shift
+        --cxx-standard)
+            CXX_STANDARD="$2"
+            shift 2
             ;;
-        --no-lld)
-            BUILD_LLD_PLUGIN=false
-            shift
-            ;;
-        --no-gold)
-            BUILD_GOLD_PLUGIN=false
-            shift
-            ;;
-        --no-shared-core)
-            BUILD_SHARED_CORE=false
+        --tests)
+            ENABLE_TESTS="ON"
             shift
             ;;
         --no-tests)
-            BUILD_TESTS=false
+            ENABLE_TESTS="OFF"
             shift
             ;;
-        --no-examples)
-            BUILD_EXAMPLES=false
+        --coverage)
+            ENABLE_COVERAGE="ON"
             shift
             ;;
-        --build-dir)
-            BUILD_DIR="$2"
-            shift 2
-            ;;
-        --install-dir)
-            INSTALL_DIR="$2"
-            shift 2
+        --cpp11-14)
+            ENABLE_CPP11_14="ON"
+            USE_BOOST_FILESYSTEM="ON"
+            shift
             ;;
         --help|-h)
-            echo "Heimdall SBOM Generator Build Script"
-            echo ""
-            echo "Usage: $0 [options]"
-            echo ""
-            echo "Options:"
-            echo "  --debug              Build in debug mode"
-            echo "  --sanitizers         Enable AddressSanitizer and UBSan"
-            echo "  --no-lld             Disable LLD plugin build"
-            echo "  --no-gold            Disable Gold plugin build"
-            echo "  --no-shared-core     Disable shared core library"
-            echo "  --no-tests           Disable test suite"
-            echo "  --no-examples        Disable example projects"
-            echo "  --build-dir DIR      Set build directory (default: build)"
-            echo "  --install-dir DIR    Set install directory (default: install)"
-            echo "  --help, -h           Show this help message"
-            echo ""
+            show_help
             exit 0
             ;;
         *)
             print_error "Unknown option: $1"
+            show_help
             exit 1
             ;;
     esac
 done
 
-# Check if we're in the right directory
-if [[ ! -f "CMakeLists.txt" ]]; then
-    print_error "CMakeLists.txt not found. Please run this script from the project root."
-    exit 1
-fi
+# Validate C++ standard
+validate_cxx_standard "$CXX_STANDARD"
 
-print_status "Building Heimdall SBOM Generator"
-print_status "Build type: $BUILD_TYPE"
-print_status "Build directory: $BUILD_DIR"
-print_status "Install directory: $INSTALL_DIR"
-
-# Check for required tools
-print_status "Checking for required tools..."
-
-# Check for CMake
-if ! command -v cmake &> /dev/null; then
-    print_error "CMake not found. Please install CMake 3.16 or later."
-    exit 1
-fi
-
-CMAKE_VERSION=$(cmake --version | head -n1 | cut -d' ' -f3)
-print_success "Found CMake $CMAKE_VERSION"
-
-# Check for C++ compiler
-if command -v g++ &> /dev/null; then
-    COMPILER="g++"
-    COMPILER_VERSION=$(g++ --version | head -n1 | cut -d' ' -f4)
-    print_success "Found GCC $COMPILER_VERSION"
-elif command -v clang++ &> /dev/null; then
-    COMPILER="clang++"
-    COMPILER_VERSION=$(clang++ --version | head -n1 | cut -d' ' -f3)
-    print_success "Found Clang $COMPILER_VERSION"
-else
-    print_error "No C++ compiler found. Please install GCC or Clang."
-    exit 1
-fi
-
-# Check for LLVM/LLD (for LLD plugin)
-if [[ "$BUILD_LLD_PLUGIN" == true ]]; then
-    if command -v llvm-config &> /dev/null; then
-        LLVM_VERSION=$(llvm-config --version)
-        print_success "Found LLVM $LLVM_VERSION"
-    else
-        print_warning "LLVM not found. LLD plugin will not be built."
-        BUILD_LLD_PLUGIN=false
+# Check Boost.Filesystem if needed
+if [ "$USE_BOOST_FILESYSTEM" = "ON" ]; then
+    if ! check_boost_filesystem; then
+        exit 1
     fi
-fi
-
-# Check for Gold linker (for Gold plugin)
-if [[ "$BUILD_GOLD_PLUGIN" == true ]]; then
-    if command -v ld.gold &> /dev/null; then
-        print_success "Found Gold linker"
-    else
-        print_warning "Gold linker not found. Gold plugin will not be built."
-        BUILD_GOLD_PLUGIN=false
-    fi
-fi
-
-# Check for OpenSSL (for checksums)
-if ! pkg-config --exists openssl; then
-    print_warning "OpenSSL not found via pkg-config. Checksum generation may not work."
 fi
 
 # Create build directory
-print_status "Creating build directory..."
+BUILD_DIR="build"
+print_status "Creating build directory: $BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
-# Configure CMake
-print_status "Configuring CMake..."
+# Configure with CMake
+print_status "Configuring with CMake..."
+print_status "  Build Type: $BUILD_TYPE"
+print_status "  C++ Standard: $CXX_STANDARD"
+print_status "  Tests: $ENABLE_TESTS"
+print_status "  Coverage: $ENABLE_COVERAGE"
+print_status "  C++11/14 Mode: $ENABLE_CPP11_14"
+print_status "  Use Boost.Filesystem: $USE_BOOST_FILESYSTEM"
 
-CMAKE_ARGS=(
-    "-DCMAKE_BUILD_TYPE=$BUILD_TYPE"
-    "-DCMAKE_INSTALL_PREFIX=$INSTALL_DIR"
-    "-DBUILD_LLD_PLUGIN=$BUILD_LLD_PLUGIN"
-    "-DBUILD_GOLD_PLUGIN=$BUILD_GOLD_PLUGIN"
-    "-DBUILD_SHARED_CORE=$BUILD_SHARED_CORE"
-    "-DBUILD_TESTS=$BUILD_TESTS"
-    "-DBUILD_EXAMPLES=$BUILD_EXAMPLES"
-    "-DENABLE_DEBUG=$ENABLE_DEBUG"
-    "-DENABLE_SANITIZERS=$ENABLE_SANITIZERS"
-)
+cmake .. \
+    -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+    -DCMAKE_CXX_STANDARD="$CXX_STANDARD" \
+    -DENABLE_TESTS="$ENABLE_TESTS" \
+    -DENABLE_COVERAGE="$ENABLE_COVERAGE" \
+    -DENABLE_CPP11_14="$ENABLE_CPP11_14" \
+    -DUSE_BOOST_FILESYSTEM="$USE_BOOST_FILESYSTEM"
 
-# Add platform-specific options
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    print_status "Detected macOS"
-    CMAKE_ARGS+=("-DPLATFORM_MACOS=TRUE")
-    # Homebrew LLVM detection (Apple Silicon and Intel)
-    if [[ -d "/opt/homebrew/opt/llvm" ]]; then
-        print_status "Using Homebrew LLVM from /opt/homebrew/opt/llvm"
-        CMAKE_ARGS+=(
-            "-DCMAKE_PREFIX_PATH=/opt/homebrew/opt/llvm"
-            "-DCMAKE_INCLUDE_PATH=/opt/homebrew/opt/llvm/include"
-            "-DCMAKE_LIBRARY_PATH=/opt/homebrew/opt/llvm/lib"
-        )
-    elif [[ -d "/usr/local/opt/llvm" ]]; then
-        print_status "Using Homebrew LLVM from /usr/local/opt/llvm"
-        CMAKE_ARGS+=(
-            "-DCMAKE_PREFIX_PATH=/usr/local/opt/llvm"
-            "-DCMAKE_INCLUDE_PATH=/usr/local/opt/llvm/include"
-            "-DCMAKE_LIBRARY_PATH=/usr/local/opt/llvm/lib"
-        )
-    fi
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    print_status "Detected Linux"
-    CMAKE_ARGS+=("-DPLATFORM_LINUX=TRUE")
+if [ $? -eq 0 ]; then
+    print_success "Configuration completed successfully"
 else
-    print_warning "Unknown platform: $OSTYPE"
-fi
-
-cmake "${CMAKE_ARGS[@]}" ..
-
-if [[ $? -ne 0 ]]; then
-    print_error "CMake configuration failed"
+    print_error "Configuration failed"
     exit 1
 fi
 
-# Build the project
-print_status "Building project..."
-make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# Build
+print_status "Building..."
+make -j$(nproc)
 
-if [[ $? -ne 0 ]]; then
+if [ $? -eq 0 ]; then
+    print_success "Build completed successfully"
+else
     print_error "Build failed"
     exit 1
 fi
 
 # Run tests if enabled
-if [[ "$BUILD_TESTS" == true ]]; then
+if [ "$ENABLE_TESTS" = "ON" ]; then
     print_status "Running tests..."
     make test
+    
+    if [ $? -eq 0 ]; then
+        print_success "All tests passed"
+    else
+        print_error "Some tests failed"
+        exit 1
+    fi
 fi
 
-# Install if requested
-print_status "Installing..."
-make install
-
-# Show build results
 print_success "Build completed successfully!"
-
-print_status "Build artifacts:"
-if [[ "$BUILD_SHARED_CORE" == true ]]; then
-    if [[ -f "libheimdall-core.so" ]]; then
-        print_success "  - libheimdall-core.so (Linux)"
-    elif [[ -f "libheimdall-core.dylib" ]]; then
-        print_success "  - libheimdall-core.dylib (macOS)"
-    fi
-fi
-
-if [[ "$BUILD_LLD_PLUGIN" == true ]]; then
-    if [[ -f "heimdall-lld.so" ]]; then
-        print_success "  - heimdall-lld.so (Linux)"
-    elif [[ -f "heimdall-lld.dylib" ]]; then
-        print_success "  - heimdall-lld.dylib (macOS)"
-    fi
-fi
-
-if [[ "$BUILD_GOLD_PLUGIN" == true ]]; then
-    if [[ -f "heimdall-gold.so" ]]; then
-        print_success "  - heimdall-gold.so"
-    fi
-fi
-
-print_status "Installation directory: $INSTALL_DIR"
-print_status ""
-print_status "Usage examples:"
-print_status "  # Using LLD plugin:"
-print_status "  ld.lld --plugin-opt=load:./heimdall-lld.dylib \\"
-print_status "         --plugin-opt=sbom-output:myapp.json \\"
-print_status "         main.o -o myapp"
-print_status ""
-print_status "  # Using Gold plugin:"
-print_status "  ld.gold --plugin ./heimdall-gold.so \\"
-print_status "          --plugin-opt sbom-output=myapp.json \\"
-print_status "          main.o -o myapp"
+print_status "Build artifacts are in: $BUILD_DIR"
