@@ -50,14 +50,13 @@ Options:
     --tests                  Enable tests [default: ON]
     --no-tests               Disable tests
     --coverage               Enable coverage reporting
-    --cpp11-14               Enable C++11/14 compatibility mode (requires Boost.Filesystem)
     --no-boost                Disable Boost.Filesystem requirement
     --help                   Show this help message
 
 Examples:
     $0                                    # Build with C++17 (default)
-    $0 --cxx-standard 14                  # Build with C++14
-    $0 --cxx-standard 11 --cpp11-14       # Build with C++11 compatibility mode
+    $0 --cxx-standard 14                  # Build with C++14 (auto-enables compatibility mode)
+    $0 --cxx-standard 11                  # Build with C++11 (auto-enables compatibility mode)
     $0 --build-type Debug --coverage      # Debug build with coverage
     $0 --cxx-standard 23                  # Build with C++23
 
@@ -109,20 +108,16 @@ validate_cxx_standard() {
     
     case $standard in
         11|14)
-            if [ "$ENABLE_CPP11_14" = "OFF" ]; then
-                print_warning "C++$standard requires compatibility mode. Enabling --cpp11-14"
-                ENABLE_CPP11_14="ON"
-                if [ "$USE_BOOST_FILESYSTEM" != "OFF" ]; then
-                    USE_BOOST_FILESYSTEM="ON"
-                fi
+            # C++11/14 automatically enable compatibility mode
+            ENABLE_CPP11_14="ON"
+            if [ "$USE_BOOST_FILESYSTEM" != "OFF" ]; then
+                USE_BOOST_FILESYSTEM="ON"
             fi
             ;;
         17|20|23)
-            if [ "$ENABLE_CPP11_14" = "ON" ]; then
-                print_warning "C++$standard doesn't require compatibility mode. Disabling --cpp11-14"
-                ENABLE_CPP11_14="OFF"
-                USE_BOOST_FILESYSTEM="OFF"
-            fi
+            # C++17+ use standard library features
+            ENABLE_CPP11_14="OFF"
+            USE_BOOST_FILESYSTEM="OFF"
             ;;
         *)
             print_error "Unsupported C++ standard: $standard"
@@ -153,11 +148,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --coverage)
             ENABLE_COVERAGE="ON"
-            shift
-            ;;
-        --cpp11-14)
-            ENABLE_CPP11_14="ON"
-            USE_BOOST_FILESYSTEM="ON"
             shift
             ;;
         --no-boost)
