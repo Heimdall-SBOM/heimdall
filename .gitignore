@@ -1,5 +1,10 @@
 # Ignore build artifacts and CMake files
 build/
+build-cpp11/
+build-cpp14/
+build-cpp17/
+build-cpp20/
+build-cpp23/
 install/
 CMakeFiles/
 CMakeCache.txt
