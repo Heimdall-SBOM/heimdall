@@ -12,5 +12,14 @@ RUN yum update -y \
     openssl-devel \
     pkgconfig \
     zlib-devel \
-    llvm-googletest \
-    binutils-devel
+    pandoc \
+    llvm-googletest 
+
+    RUN dnf install -y binutils-devel \
+                       libffi-devel \
+                       elfutils-libelf-devel \
+                       llvm-devel \
+                       lld-devel \
+                       epel-release \
+                       pandoc \
+                       texlive
