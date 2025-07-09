@@ -69,12 +69,13 @@ while [[ $# -gt 0 ]]; do
             echo "  --help, -h           Show this help message"
             echo ""
             echo "This script removes all build artifacts including:"
-            echo "  - Build directory and all contents"
-            echo "  - Install directory and all contents"
-            echo "  - CMake cache files"
-            echo "  - Compiled binaries and libraries"
-            echo "  - Test outputs"
-            echo "  - Example build artifacts"
+echo "  - Build directory and all contents"
+echo "  - C++ standard-specific build directories (build_cpp11, build_cpp14, etc.)"
+echo "  - Install directory and all contents"
+echo "  - CMake cache files"
+echo "  - Compiled binaries and libraries"
+echo "  - Test outputs"
+echo "  - Example build artifacts"
             echo ""
             exit 0
             ;;
@@ -101,6 +102,16 @@ if [[ -d "$BUILD_DIR" ]]; then
 else
     print_warning "Build directory not found: $BUILD_DIR"
 fi
+
+# Clean C++ standard-specific build directories
+CXX_BUILD_DIRS=("build_cpp11" "build_cpp14" "build_cpp17" "build_cpp23")
+for dir in "${CXX_BUILD_DIRS[@]}"; do
+    if [[ -d "$dir" ]]; then
+        print_status "Removing C++ build directory: $dir"
+        rm -rf "$dir"
+        print_success "C++ build directory removed: $dir"
+    fi
+done
 
 # Clean install directory
 if [[ -d "$INSTALL_DIR" ]]; then
@@ -163,6 +174,7 @@ print_success "All build artifacts cleaned successfully!"
 
 print_status "Cleanup summary:"
 echo "  ✓ Build directory removed"
+echo "  ✓ C++ standard-specific build directories removed"
 echo "  ✓ Install directory removed"
 echo "  ✓ Example build artifacts removed"
 echo "  ✓ Test outputs removed"
