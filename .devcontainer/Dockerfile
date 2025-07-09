@@ -19,6 +19,8 @@ RUN yum update -y \
     gdb \
     gcc \
     g++ \
-    binutils-devel
+    llvm-googletest 
+
+    RUN dnf install -y binutils-devel
 
 RUN scl enable toolset-14 -- bash
