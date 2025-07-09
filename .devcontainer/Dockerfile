@@ -2,7 +2,7 @@ FROM rockylinux:9
 ENV container=docker
 
 RUN dnf update \
-   && dnf install -y \
+   && dnf install \
     build-essential \
     cmake \
     ninja-build \
@@ -14,5 +14,5 @@ RUN dnf update \
     llvm-19-dev \
     liblld-19-dev \
     llvm-dev \
-    pkg-config
+    pkg-config -y
 
