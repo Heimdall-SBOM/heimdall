@@ -23,7 +23,6 @@ RUN yum -y install rpm dnf-plugins-core \
  && yum -y install \
     gcc-c++ \
     cmake \
-    ninja-build \
     llvm-devel \
     lld-devel \
     binutils-gold \
