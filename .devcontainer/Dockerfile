@@ -1,18 +1,16 @@
 FROM rockylinux:9
 ENV container=docker
 
-RUN dnf update -y \
-   && dnf install \
-    build-essential \
+RUN yum update -y \
+    yum install -y \
+    gcc-c++ \
     cmake \
     ninja-build \
-    binutils \
-    binutils-dev \
-    libssl-dev \
-    libelf-dev \
-    libgtest-dev \
-    llvm-19-dev \
-    liblld-19-dev \
-    llvm-dev \
-    pkg-config -y
-
+    llvm-devel \
+    lld-devel \
+    binutils-gold \
+    openssl-devel \
+    pkgconfig \
+    zlib-devel \
+    llvm-googletest \
+    binutils-devel
