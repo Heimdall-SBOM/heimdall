@@ -12,6 +12,7 @@ ENABLE_TESTS="ON"
 ENABLE_COVERAGE="OFF"
 ENABLE_CPP11_14="OFF"
 USE_BOOST_FILESYSTEM="OFF"
+BUILD_ALL_STANDARDS="OFF"
 
 # Colors for output
 RED='\033[0;31m'
@@ -51,6 +52,7 @@ Options:
     --no-tests               Disable tests
     --coverage               Enable coverage reporting
     --no-boost                Disable Boost.Filesystem requirement
+    --all-standards          Build all C++ standards (11, 14, 17, 20, 23)
     --help                   Show this help message
 
 Examples:
@@ -59,6 +61,7 @@ Examples:
     $0 --cxx-standard 11                  # Build with C++11 (auto-enables compatibility mode)
     $0 --build-type Debug --coverage      # Debug build with coverage
     $0 --cxx-standard 23                  # Build with C++23
+    $0 --all-standards                    # Build all C++ standards
 
 C++ Standard Compatibility:
     C++11: Requires LLVM 7-18, Boost.Filesystem
@@ -154,6 +157,10 @@ while [[ $# -gt 0 ]]; do
             USE_BOOST_FILESYSTEM="OFF"
             shift
             ;;
+        --all-standards)
+            BUILD_ALL_STANDARDS="ON"
+            shift
+            ;;
         --help|-h)
             show_help
             exit 0
@@ -165,6 +172,18 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Handle --all-standards option
+if [ "$BUILD_ALL_STANDARDS" = "ON" ]; then
+    print_status "Building all C++ standards..."
+    if [ -f "./scripts/build_all_standards.sh" ]; then
+        print_status "Calling scripts/build_all_standards.sh"
+        exec ./scripts/build_all_standards.sh
+    else
+        print_error "scripts/build_all_standards.sh not found"
+        exit 1
+    fi
+fi
 
 # Validate C++ standard
 validate_cxx_standard "$CXX_STANDARD"
