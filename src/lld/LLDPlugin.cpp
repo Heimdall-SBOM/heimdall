@@ -297,6 +297,14 @@ void heimdall_finalize() {
     }
 }
 
+int heimdall_set_cyclonedx_version(const char* version) {
+    if (version && globalSBOMGenerator) {
+        globalSBOMGenerator->setCycloneDXVersion(version);
+        return 0;
+    }
+    return -1;
+}
+
 }  // extern "C"
 
 // LLVM Pass Plugin Interface (Legacy Pass Manager)

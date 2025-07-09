@@ -6,6 +6,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
 [![Tests](https://img.shields.io/badge/tests-20%20passed-brightgreen.svg)](#testing)
+[![C++ Standards](https://img.shields.io/badge/C%2B%2B-11%2F14%2F17%2F20%2F23-blue.svg)](#c-standard-support)
 
 ## Features
 
@@ -18,7 +19,8 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **CI/CD Ready**: Seamless integration with modern build systems
 - **Security Focused**: Enables vulnerability scanning and compliance tracking
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
-- **C++ Standard Compatibility**: Supports C++11, C++14, C++17, C++20, and C++23
+- **Multi-Standard C++ Support**: Robust compatibility layer supporting C++11, C++14, C++17, C++20, and C++23
+- **Enhanced Compatibility**: Automatic feature detection and standard library compatibility
 
 ## Quick Start
 
@@ -72,6 +74,7 @@ Heimdall consists of several key components:
 - **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives)
 - **Utils**: Utility functions for file operations, path handling, and JSON formatting
 - **PluginInterface**: Common interface for both LLD and Gold plugins
+- **Compatibility Layer**: Multi-standard C++ support with `heimdall::compat` namespace
 
 ### Plugin Adapters
 
@@ -98,15 +101,43 @@ Heimdall consists of several key components:
 
 ## C++ Standard Support
 
-Heimdall supports multiple C++ standards with automatic compatibility detection:
+Heimdall supports multiple C++ standards with a robust compatibility layer that ensures consistent behavior across different compiler versions and standard library implementations:
 
-| C++ Standard | LLVM Version | Features | Dependencies |
-|--------------|--------------|----------|--------------|
-| C++11        | 7-18         | Basic    | Boost.Filesystem |
-| C++14        | 7-18         | Basic    | Boost.Filesystem |
-| C++17        | 11+          | Full     | Standard library |
-| C++20        | 19+          | Full     | Standard library |
-| C++23        | 19+          | Full     | Standard library |
+| C++ Standard | LLVM Version | Features | Dependencies | Status |
+|--------------|--------------|----------|--------------|--------|
+| C++11        | 7-18         | Basic + Compatibility | Optional Boost.Filesystem | ✅ Working |
+| C++14        | 7-18         | Enhanced + Compatibility | Optional Boost.Filesystem | ✅ Working |
+| C++17        | 11+          | Full Standard Library | Standard library | ✅ Working |
+| C++20        | 19+          | Full + {fmt} Library | {fmt} library | ✅ Working |
+| C++23        | 19+          | Full + std::format | Standard library | ✅ Working |
+
+### Compatibility Layer Features
+
+- **Namespace Safety**: Standard library includes outside namespaces to prevent pollution
+- **Type Compatibility**: `heimdall::compat::optional`, `string_view`, `variant`, `span`
+- **Filesystem Support**: `heimdall::compat::fs` namespace alias
+- **Utility Functions**: Common utilities in `heimdall::compat::utils`
+- **Automatic Detection**: Feature detection based on C++ standard
+- **Conditional Compilation**: Standard-specific optimizations and implementations
+
+### Build Commands by Standard
+
+```bash
+# C++11 (with compatibility mode)
+./build.sh --cxx-standard 11 --tests --cpp11-14 --no-boost
+
+# C++14 (with compatibility mode)
+./build.sh --cxx-standard 14 --tests --cpp11-14 --no-boost
+
+# C++17 (standard library)
+./build.sh --cxx-standard 17 --tests
+
+# C++20 (with {fmt} library)
+./build.sh --cxx-standard 20 --tests
+
+# C++23 (with std::format)
+./build.sh --cxx-standard 23 --tests
+```
 
 ## Building from Source
 
@@ -117,7 +148,7 @@ Heimdall supports multiple C++ standards with automatic compatibility detection:
 - LLVM/LLD development libraries
 - GNU Gold linker (Linux only, optional for Gold plugin)
 - OpenSSL development libraries
-- Boost.Filesystem (for C++11/14 compatibility)
+- Optional: Boost.Filesystem (for C++11/14 compatibility)
 
 ### macOS Setup
 
@@ -129,11 +160,11 @@ export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 # Build Heimdall (LLD plugin only)
 ./build.sh
 
-# Build with C++14
-./build.sh --cxx-standard 14
+# Build with specific C++ standard
+./build.sh --cxx-standard 17 --tests
 
 # Build with C++11 compatibility mode
-./build.sh --cxx-standard 11 --cpp11-14
+./build.sh --cxx-standard 11 --tests --cpp11-14 --no-boost
 ```
 
 ### Linux Setup
@@ -155,11 +186,11 @@ sudo apt-get install -y \
 # Build Heimdall with both LLD and Gold plugins
 ./build.sh
 
-# Build with C++14
-./build.sh --cxx-standard 14
+# Build with specific C++ standard
+./build.sh --cxx-standard 20 --tests
 
 # Build with C++11 compatibility mode
-./build.sh --cxx-standard 11 --cpp11-14
+./build.sh --cxx-standard 11 --tests --cpp11-14 --no-boost
 ```
 
 #### Fedora/RHEL/CentOS
@@ -180,6 +211,9 @@ sudo yum install -y \
 
 # Build Heimdall
 ./build.sh
+
+# Build with specific C++ standard
+./build.sh --cxx-standard 23 --tests
 ```
 
 **Note**: The `binutils-devel` package provides the BFD headers required for the Gold plugin. Without this package, the Gold plugin will not be built, but the LLD plugin and core library will still work.
@@ -199,6 +233,31 @@ sudo pacman -S \
 
 # Build Heimdall
 ./build.sh
+```
+
+### Build Options
+
+```bash
+# Debug build with sanitizers
+./build.sh --debug --sanitizers
+
+# Build only LLD plugin (macOS default)
+./build.sh --no-gold
+
+# Build only Gold plugin (Linux only)
+./build.sh --no-lld
+
+# Custom build directory
+./build.sh --build-dir mybuild --install-dir myinstall
+
+# Force build both plugins (Linux only)
+./build.sh --force-gold
+
+# Build with specific C++ standard
+./build.sh --cxx-standard 17 --tests
+
+# Build with compatibility mode (C++11/14)
+./build.sh --cxx-standard 14 --tests --cpp11-14 --no-boost
 ```
 
 ### Installing GNU Gold Linker
@@ -260,25 +319,6 @@ sudo make install
 /usr/local/bin/ld.gold --version
 ```
 
-### Build Options
-
-```bash
-# Debug build with sanitizers
-./build.sh --debug --sanitizers
-
-# Build only LLD plugin (macOS default)
-./build.sh --no-gold
-
-# Build only Gold plugin (Linux only)
-./build.sh --no-lld
-
-# Custom build directory
-./build.sh --build-dir mybuild --install-dir myinstall
-
-# Force build both plugins (Linux only)
-./build.sh --force-gold
-```
-
 ### Cleaning Build Artifacts
 
 For a complete clean checkout (removes all build artifacts):
@@ -302,14 +342,28 @@ make clean
 
 ## Testing
 
-The project includes a comprehensive test suite using Google Test. To run the tests:
+The project includes a comprehensive test suite using Google Test that validates compatibility across all supported C++ standards. To run the tests:
 
 ```bash
-# Build and run tests
-./build.sh
-cd build
-ctest --output-on-failure
+# Build and run tests with default C++ standard
+./build.sh --tests
+
+# Test specific C++ standard
+./build.sh --cxx-standard 17 --tests
+
+# Test all C++ standards
+for std in 11 14 17 20 23; do
+    echo "Testing C++$std..."
+    ./build.sh --cxx-standard $std --tests --cpp11-14 --no-boost
+done
 ```
+
+The test suite validates:
+- C++11/14/17/20/23 feature compatibility
+- `heimdall::compat` namespace functionality
+- Standard library integration
+- LLVM detection and compatibility
+- Filesystem operations across standards
 
 For more detailed test information, see [tests/README.md](tests/README.md).
 
@@ -546,6 +600,24 @@ public:
 };
 ```
 
+### Compatibility Layer
+
+```cpp
+#include "compat/compatibility.hpp"
+
+using namespace heimdall::compat;
+
+// Works across all C++ standards
+optional<int> opt(42);
+string_view sv("hello");
+fs::path p("file.txt");
+variant<int, std::string> v(100);
+
+// Utility functions
+string_view result = utils::to_string_view(42);
+int val = utils::get_optional_value(opt, 0);
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -593,6 +665,12 @@ public:
    ```
    Solution: The core library will still build successfully. Install LLVM/LLD or Gold linker development packages if you need the respective plugins.
 
+8. **C++ Standard compatibility issues**
+   ```
+   Error: 'std::filesystem' is not a member of 'std'
+   ```
+   Solution: Use the compatibility layer with `heimdall::compat::fs` or build with `--cpp11-14 --no-boost` for older standards.
+
 ### Platform-Specific Issues
 
 #### macOS
@@ -638,6 +716,8 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development
 
 For detailed information about LLD integration rationale, see [docs/lld-integration-rationale.md](docs/lld-integration-rationale.md).
 
+For comprehensive multi-standard C++ support documentation, see [docs/multi-standard-support.md](docs/multi-standard-support.md).
+
 ### Development Setup
 
 ```bash
@@ -648,21 +728,9 @@ cd heimdall
 # Build in debug mode
 ./build.sh --debug
 
-# Run tests
-cd build && make test
-
-# Clean for check-in (removes all build artifacts)
-./clean.sh
+# Test all C++ standards
+for std in 11 14 17 20 23; do
+    ./build.sh --cxx-standard $std --tests --cpp11-14 --no-boost
+done
 ```
-
-### Code Style
-
-- Follow the existing C++ style
-- Use meaningful variable and function names
-- Add comments for complex logic
-- Include unit tests for new features
-
-## License
-
-Licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
 

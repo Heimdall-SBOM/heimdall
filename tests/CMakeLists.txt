@@ -1,7 +1,19 @@
 # Tests directory CMakeLists.txt
 
-# Find GoogleTest
-find_package(GTest REQUIRED)
+# Try to find system GTest first
+find_package(GTest)
+
+# If not found, use FetchContent to download and build GTest
+if(NOT GTest_FOUND)
+    message(STATUS "GTest not found, using FetchContent to download GoogleTest.")
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
 
 # Test executable
 add_executable(heimdall-tests
@@ -22,11 +34,22 @@ target_include_directories(heimdall-tests PRIVATE
 )
 
 # Link libraries
-target_link_libraries(heimdall-tests PRIVATE
-    heimdall-core
-    GTest::gtest
-    GTest::gtest_main
-)
+# Support both system and FetchContent GTest targets
+if(TARGET GTest::gtest_main)
+    target_link_libraries(heimdall-tests PRIVATE
+        heimdall-core
+        GTest::gtest
+        GTest::gtest_main
+    )
+elseif(TARGET gtest_main)
+    target_link_libraries(heimdall-tests PRIVATE
+        heimdall-core
+        gtest
+        gtest_main
+    )
+else()
+    message(FATAL_ERROR "No suitable GTest target found!")
+endif()
 
 # Add compatibility definitions
 if(ENABLE_CPP11_14)
@@ -46,8 +69,32 @@ if(USE_BOOST_FILESYSTEM)
     )
 endif()
 
+# Find or fetch fmt for C++20 (not needed for C++23)
+if (CMAKE_CXX_STANDARD EQUAL 20)
+    find_package(fmt QUIET)
+    if (NOT fmt_FOUND)
+        include(FetchContent)
+        FetchContent_Declare(
+            fmt
+            GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+            GIT_TAG 10.2.1 # or latest stable
+        )
+        FetchContent_MakeAvailable(fmt)
+    endif()
+endif()
+
+# Link fmt for C++20
+if (CMAKE_CXX_STANDARD EQUAL 20)
+    target_link_libraries(heimdall-tests PRIVATE fmt::fmt)
+endif()
+
 # Add test
 add_test(NAME heimdall-tests COMMAND heimdall-tests)
 
 # Enable CTest integration
 enable_testing()
+
+# Link stdc++fs for C++17
+if(CMAKE_CXX_STANDARD EQUAL 17)
+    target_link_libraries(heimdall-tests PRIVATE stdc++fs)
+endif()

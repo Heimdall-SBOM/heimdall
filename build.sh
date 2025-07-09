@@ -51,6 +51,7 @@ Options:
     --no-tests               Disable tests
     --coverage               Enable coverage reporting
     --cpp11-14               Enable C++11/14 compatibility mode (requires Boost.Filesystem)
+    --no-boost                Disable Boost.Filesystem requirement
     --help                   Show this help message
 
 Examples:
@@ -111,7 +112,9 @@ validate_cxx_standard() {
             if [ "$ENABLE_CPP11_14" = "OFF" ]; then
                 print_warning "C++$standard requires compatibility mode. Enabling --cpp11-14"
                 ENABLE_CPP11_14="ON"
-                USE_BOOST_FILESYSTEM="ON"
+                if [ "$USE_BOOST_FILESYSTEM" != "OFF" ]; then
+                    USE_BOOST_FILESYSTEM="ON"
+                fi
             fi
             ;;
         17|20|23)
@@ -155,6 +158,10 @@ while [[ $# -gt 0 ]]; do
         --cpp11-14)
             ENABLE_CPP11_14="ON"
             USE_BOOST_FILESYSTEM="ON"
+            shift
+            ;;
+        --no-boost)
+            USE_BOOST_FILESYSTEM="OFF"
             shift
             ;;
         --help|-h)

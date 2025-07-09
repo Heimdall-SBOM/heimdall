@@ -31,6 +31,7 @@ std::string format = "spdx";
 bool verbose = false;
 std::vector<std::string> processedFiles;
 std::vector<std::string> processedLibraries;
+std::string cyclonedxVersion = "1.6"; // NEW: store requested CycloneDX version
 
 // Simple utility functions to avoid heimdall-core dependencies
 std::string getFileName(const std::string& path) {
@@ -252,6 +253,14 @@ int heimdall_process_library(const char* libraryPath) {
     return 0;
 }
 
+int heimdall_set_cyclonedx_version(const char* version) {
+    if (version) {
+        cyclonedxVersion = version;
+        return 0;
+    }
+    return -1;
+}
+
 // Plugin cleanup and finalization
 void heimdall_finalize() {
     if (globalAdapter) {
@@ -316,7 +325,7 @@ void heimdall_finalize() {
             // Generate CycloneDX format
             sbomFile << "{\n";
             sbomFile << "  \"bomFormat\": \"CycloneDX\",\n";
-            sbomFile << "  \"specVersion\": \"1.5\",\n";
+            sbomFile << "  \"specVersion\": \"" << cyclonedxVersion << "\",\n";
             sbomFile << "  \"version\": 1,\n";
             sbomFile << "  \"metadata\": {\n";
             sbomFile << "    \"timestamp\": \"" << __DATE__ << " " << __TIME__ << "\",\n";

@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.16)
-project(heimdall VERSION 1.0.0 LANGUAGES CXX)
+project(Heimdall VERSION 1.0.0 LANGUAGES CXX C)
+
+# Configuration options (default ON)
+option(BUILD_LLD_PLUGIN "Build LLD plugin" ON)
+option(BUILD_GOLD_PLUGIN "Build Gold plugin" ON)
+option(BUILD_SHARED_CORE "Build shared core library" ON)
+option(BUILD_TESTS "Build test suite" ON)
+option(BUILD_EXAMPLES "Build example projects" ON)
+option(ENABLE_DEBUG "Enable debug output" OFF)
+option(ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
+option(ENABLE_COVERAGE "Enable code coverage" OFF)
 
 # Set default C++ standard
 if(NOT DEFINED CMAKE_CXX_STANDARD)
@@ -31,18 +41,32 @@ if(CMAKE_CXX_STANDARD LESS 17)
         set(HEIMDALL_CPP11_AVAILABLE 1)
         set(HEIMDALL_NO_DWARF 1)
         set(ENABLE_CPP11_14 ON)
-        set(USE_BOOST_FILESYSTEM ON)
+        if(NOT DEFINED USE_BOOST_FILESYSTEM)
+            set(USE_BOOST_FILESYSTEM ON)
+        endif()
     else()
         # C++14 mode
         set(HEIMDALL_CPP14_AVAILABLE 1)
         set(HEIMDALL_BASIC_DWARF 1)
         set(ENABLE_CPP11_14 ON)
-        set(USE_BOOST_FILESYSTEM ON)
+        if(NOT DEFINED USE_BOOST_FILESYSTEM)
+            set(USE_BOOST_FILESYSTEM ON)
+        endif()
     endif()
 else()
     # C++17+ mode
     set(HEIMDALL_CPP17_AVAILABLE 1)
     set(HEIMDALL_FULL_DWARF 1)
+    
+    # C++20+ features
+    if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
+        set(HEIMDALL_CPP20_AVAILABLE 1)
+    endif()
+    
+    # C++23+ features
+    if(CMAKE_CXX_STANDARD GREATER_EQUAL 23)
+        set(HEIMDALL_CPP23_AVAILABLE 1)
+    endif()
 endif()
 
 # Boost dependency for C++11/14 compatibility
@@ -83,10 +107,14 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(include)
 include_directories(src)
 
-# Add subdirectories
+# Add src directory
 add_subdirectory(src)
 
-if(ENABLE_TESTS)
+# Add examples directory (for test binary)
+add_subdirectory(examples)
+
+# Add tests if enabled
+if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
