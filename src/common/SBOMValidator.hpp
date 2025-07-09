@@ -66,6 +66,9 @@ public:
     ValidationResult validate(const std::string& filePath) override;
     ValidationResult validateContent(const std::string& content) override;
     std::string getName() const override { return "SPDX Validator"; }
+    // Version-specific validation
+    ValidationResult validate(const std::string& filePath, const std::string& version);
+    ValidationResult validateContent(const std::string& content, const std::string& version);
     
 private:
     std::string trimWhitespace(const std::string& str);
@@ -85,6 +88,9 @@ public:
     ValidationResult validate(const std::string& filePath) override;
     ValidationResult validateContent(const std::string& content) override;
     std::string getName() const override { return "CycloneDX Validator"; }
+    // Version-specific validation
+    ValidationResult validate(const std::string& filePath, const std::string& version);
+    ValidationResult validateContent(const std::string& content, const std::string& version);
     
 private:
     std::string extractVersion(const std::string& content);
