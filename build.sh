@@ -187,7 +187,7 @@ if [ "$USE_BOOST_FILESYSTEM" = "ON" ]; then
 fi
 
 # Create build directory
-BUILD_DIR="build"
+BUILD_DIR="build-cpp${CXX_STANDARD}"
 print_status "Creating build directory: $BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
