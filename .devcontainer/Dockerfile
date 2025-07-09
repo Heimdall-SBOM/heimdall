@@ -1,5 +1,5 @@
 ARG VARIANT=debian-12
-FROM mcr.microsoft.com/devcontainers/base:${VARIANT}
+FROM mcr.microsoft.com/devcontainers/cpp:dev-bookworm
 USER root
 
 # Install needed packages. Use a separate RUN statement to add your own dependencies.
