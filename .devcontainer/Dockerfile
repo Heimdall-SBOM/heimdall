@@ -13,4 +13,10 @@ RUN yum update -y \
     pkgconfig \
     zlib-devel \
     llvm-googletest \
+    clang \
+    lldb \
+    llvm \
+    gdb \
+    gcc \
+    g++ \
     binutils-devel
