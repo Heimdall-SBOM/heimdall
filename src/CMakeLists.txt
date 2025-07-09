@@ -35,35 +35,37 @@ target_compile_definitions(heimdall-core PRIVATE
     ${LLVM_DEFINITIONS}
 )
 
-# LLD Plugin
-add_library(heimdall-lld SHARED
-    lld/LLDAdapter.cpp
-    lld/LLDAdapter.hpp
-    lld/LLDPlugin.cpp
-    common/MetadataExtractor.hpp
-    common/SBOMGenerator.hpp
-    common/Utils.hpp
-)
+# LLD Plugin (only for C++17+ due to LLVM 19 compatibility)
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+    add_library(heimdall-lld SHARED
+        lld/LLDAdapter.cpp
+        lld/LLDAdapter.hpp
+        lld/LLDPlugin.cpp
+        common/MetadataExtractor.hpp
+        common/SBOMGenerator.hpp
+        common/Utils.hpp
+    )
 
-set_target_properties(heimdall-lld PROPERTIES
-    CXX_STANDARD ${CMAKE_CXX_STANDARD}
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-    PREFIX ""
-    SUFFIX ".so"
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-)
+    set_target_properties(heimdall-lld PROPERTIES
+        CXX_STANDARD ${CMAKE_CXX_STANDARD}
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+        PREFIX ""
+        SUFFIX ".so"
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+    )
 
-target_include_directories(heimdall-lld PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${LLVM_INCLUDE_DIRS}
-)
+    target_include_directories(heimdall-lld PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
+        ${LLVM_INCLUDE_DIRS}
+    )
 
-target_link_libraries(heimdall-lld PRIVATE
-    heimdall-core
-    ${LLVM_LIBRARIES}
-)
+    target_link_libraries(heimdall-lld PRIVATE
+        heimdall-core
+        ${LLVM_LIBRARIES}
+    )
+endif()
 
 # Gold Plugin (Linux only)
 if(UNIX AND NOT APPLE)
@@ -95,6 +97,15 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
+# Require GCC 12+ for C++20 and C++23 builds (for <format> support)
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12)
+            message(FATAL_ERROR "GCC 12 or newer is required for C++20/C++23 builds due to <format> support.")
+        endif()
+    endif()
+endif()
+
 add_subdirectory(tools)
 
 # Install
@@ -105,10 +116,12 @@ install(TARGETS heimdall-core
     RUNTIME DESTINATION bin
 )
 
-install(TARGETS heimdall-lld
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-)
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+    install(TARGETS heimdall-lld
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+endif()
 
 if(UNIX AND NOT APPLE)
     install(TARGETS heimdall-gold

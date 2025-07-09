@@ -217,13 +217,14 @@ std::pair<std::string, std::string> getDifferenceInfo(const SBOMDifference& diff
  */
 void printDetailedDifferences(const std::vector<SBOMDifference>& differences) {
     if (differences.empty()) {
+        std::cout << "No differences found.\n";
         return;
     }
     
     std::cout << "Detailed Differences:\n";
     for (const auto& diff : differences) {
-        auto [symbol, message] = getDifferenceInfo(diff);
-        std::cout << "  " << symbol << " " << message << "\n";
+        std::pair<std::string, std::string> info = getDifferenceInfo(diff);
+        std::cout << "  " << info.first << " " << info.second << "\n";
     }
 }
 

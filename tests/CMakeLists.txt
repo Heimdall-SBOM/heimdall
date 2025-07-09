@@ -15,86 +15,97 @@ if(NOT GTest_FOUND)
     FetchContent_MakeAvailable(googletest)
 endif()
 
-# Test executable
-add_executable(heimdall-tests
-    test_cyclonedx_all_versions_cpp.cpp
-)
+find_package(OpenSSL REQUIRED)
+find_library(ELF_LIBRARY NAMES elf)
 
-# Set properties
-set_target_properties(heimdall-tests PROPERTIES
-    CXX_STANDARD ${CMAKE_CXX_STANDARD}
-    CXX_STANDARD_REQUIRED ON
-    CXX_EXTENSIONS OFF
-)
-
-# Include directories
-target_include_directories(heimdall-tests PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
-)
-
-# Link libraries
-# Support both system and FetchContent GTest targets
-if(TARGET GTest::gtest_main)
-    target_link_libraries(heimdall-tests PRIVATE
-        heimdall-core
-        GTest::gtest
-        GTest::gtest_main
+# Test executable and test setup only for C++17+
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+    add_executable(heimdall-tests
+        test_cyclonedx_all_versions_cpp.cpp
     )
-elseif(TARGET gtest_main)
-    target_link_libraries(heimdall-tests PRIVATE
-        heimdall-core
-        gtest
-        gtest_main
-    )
-else()
-    message(FATAL_ERROR "No suitable GTest target found!")
-endif()
 
-# Add compatibility definitions
-if(ENABLE_CPP11_14)
-    target_compile_definitions(heimdall-tests PRIVATE
-        HEIMDALL_CPP11_14_MODE=1
+    # Set properties
+    set_target_properties(heimdall-tests PROPERTIES
+        CXX_STANDARD ${CMAKE_CXX_STANDARD}
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
     )
-endif()
 
-# Add Boost if needed
-if(USE_BOOST_FILESYSTEM)
-    target_link_libraries(heimdall-tests PRIVATE
-        Boost::filesystem
-        Boost::system
+    # Include directories
+    target_include_directories(heimdall-tests PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
+        ${CMAKE_SOURCE_DIR}/src
+        ${OPENSSL_INCLUDE_DIR}
     )
-    target_compile_definitions(heimdall-tests PRIVATE
-        USE_BOOST_FILESYSTEM=1
-    )
-endif()
 
-# Find or fetch fmt for C++20 (not needed for C++23)
-if (CMAKE_CXX_STANDARD EQUAL 20)
-    find_package(fmt QUIET)
-    if (NOT fmt_FOUND)
-        include(FetchContent)
-        FetchContent_Declare(
-            fmt
-            GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-            GIT_TAG 10.2.1 # or latest stable
+    # Link libraries
+    # Support both system and FetchContent GTest targets
+    if(TARGET GTest::gtest_main)
+        target_link_libraries(heimdall-tests PRIVATE
+            heimdall-core
+            GTest::gtest
+            GTest::gtest_main
+            ${OPENSSL_LIBRARIES}
+            ${ELF_LIBRARY}
         )
-        FetchContent_MakeAvailable(fmt)
+    elseif(TARGET gtest_main)
+        target_link_libraries(heimdall-tests PRIVATE
+            heimdall-core
+            gtest
+            gtest_main
+            ${OPENSSL_LIBRARIES}
+            ${ELF_LIBRARY}
+        )
+    else()
+        message(FATAL_ERROR "No suitable GTest target found!")
     endif()
-endif()
 
-# Link fmt for C++20
-if (CMAKE_CXX_STANDARD EQUAL 20)
-    target_link_libraries(heimdall-tests PRIVATE fmt::fmt)
-endif()
+    # Add compatibility definitions
+    if(ENABLE_CPP11_14)
+        target_compile_definitions(heimdall-tests PRIVATE
+            HEIMDALL_CPP11_14_MODE=1
+        )
+    endif()
 
-# Add test
-add_test(NAME heimdall-tests COMMAND heimdall-tests)
+    # Add Boost if needed
+    if(USE_BOOST_FILESYSTEM)
+        target_link_libraries(heimdall-tests PRIVATE
+            Boost::filesystem
+            Boost::system
+        )
+        target_compile_definitions(heimdall-tests PRIVATE
+            USE_BOOST_FILESYSTEM=1
+        )
+    endif()
 
-# Enable CTest integration
-enable_testing()
+    # Find or fetch fmt for C++20 (not needed for C++23)
+    if (CMAKE_CXX_STANDARD EQUAL 20)
+        find_package(fmt QUIET)
+        if (NOT fmt_FOUND)
+            include(FetchContent)
+            FetchContent_Declare(
+                fmt
+                GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+                GIT_TAG 10.2.1 # or latest stable
+            )
+            FetchContent_MakeAvailable(fmt)
+        endif()
+    endif()
 
-# Link stdc++fs for C++17
-if(CMAKE_CXX_STANDARD EQUAL 17)
-    target_link_libraries(heimdall-tests PRIVATE stdc++fs)
+    # Link fmt for C++20
+    if (CMAKE_CXX_STANDARD EQUAL 20)
+        target_link_libraries(heimdall-tests PRIVATE fmt::fmt)
+    endif()
+
+    # Add test
+    add_test(NAME heimdall-tests COMMAND heimdall-tests)
+
+    # Enable CTest integration
+    enable_testing()
+
+    # Link stdc++fs for C++17
+    if(CMAKE_CXX_STANDARD EQUAL 17)
+        target_link_libraries(heimdall-tests PRIVATE stdc++fs)
+    endif()
 endif()

@@ -30,6 +30,7 @@ limitations under the License.
 #include <sstream>
 #include "MetadataExtractor.hpp"
 #include "Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -202,8 +203,8 @@ public:
 /**
  * @brief Default constructor
  */
-SBOMGenerator::SBOMGenerator() : pImpl(std::make_unique<Impl>()) {
-    pImpl->metadataExtractor = std::make_unique<MetadataExtractor>();
+SBOMGenerator::SBOMGenerator() : pImpl(heimdall::compat::make_unique<Impl>()) {
+    pImpl->metadataExtractor = heimdall::compat::make_unique<MetadataExtractor>();
 }
 
 /**

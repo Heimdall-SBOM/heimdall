@@ -22,7 +22,9 @@ limitations under the License.
 #include <string>
 #include <vector>
 #include "../common/MetadataExtractor.hpp"
+#include "../common/Utils.hpp"
 #include "GoldAdapter.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace {
 std::unique_ptr<heimdall::GoldAdapter> globalAdapter;
@@ -35,11 +37,11 @@ std::string cyclonedxVersion = "1.6"; // NEW: store requested CycloneDX version
 
 // Simple utility functions to avoid heimdall-core dependencies
 std::string getFileName(const std::string& path) {
-    return std::filesystem::path(path).filename().string();
+    return heimdall::Utils::getFileName(path);
 }
 
 bool fileExists(const std::string& path) {
-    return std::filesystem::exists(path);
+    return heimdall::Utils::fileExists(path);
 }
 
 std::string calculateSimpleHash(const std::string& path) {
@@ -63,16 +65,14 @@ std::string calculateSimpleHash(const std::string& path) {
 }
 
 std::string getFileSize(const std::string& path) {
-    try {
-        return std::to_string(std::filesystem::file_size(path));
-    } catch (...) {
-        return "0";
+    if (heimdall::Utils::fileExists(path)) {
+        return std::to_string(heimdall::Utils::getFileSize(path));
     }
+    return "0";
 }
 
-std::string getFileType(const std::string& path) {
-    std::string fileName = getFileName(path);
-    std::string extension = std::filesystem::path(fileName).extension().string();
+std::string getFileType(const std::string& fileName) {
+    std::string extension = heimdall::Utils::getFileExtension(fileName);
 
     if (extension == ".o" || extension == ".obj") {
         return "OBJECT";
@@ -91,11 +91,11 @@ std::string getFileType(const std::string& path) {
 }  // namespace
 
 extern "C" {
-int onload(void* /*tv*/) {
+int onload(void* handle) {
     std::cout << "Heimdall Gold Plugin activated\n";
 
     // Initialize the adapter
-    globalAdapter = std::make_unique<heimdall::GoldAdapter>();
+    globalAdapter = heimdall::compat::make_unique<heimdall::GoldAdapter>();
     globalAdapter->initialize();
 
     if (verbose) {
@@ -183,13 +183,13 @@ int heimdall_process_input_file(const char* filePath) {
                 std::string candidate = libDir;
                 candidate += "/";
                 candidate += dep;
-                if (std::filesystem::exists(candidate)) {
+                if (heimdall::Utils::fileExists(candidate)) {
                     depPath = candidate;
                     break;
                 }
             }
         }
-        if (!depPath.empty() && std::filesystem::exists(depPath)) {
+        if (!depPath.empty() && heimdall::Utils::fileExists(depPath)) {
             // Avoid duplicate processing
             if (std::find(processedLibraries.begin(), processedLibraries.end(), depPath) ==
                 processedLibraries.end()) {

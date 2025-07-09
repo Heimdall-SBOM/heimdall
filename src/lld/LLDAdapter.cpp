@@ -21,6 +21,7 @@ limitations under the License.
 #include <vector>
 #include "../common/ComponentInfo.hpp"
 #include "../common/Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -97,7 +98,7 @@ void LLDAdapter::Impl::logProcessing(const std::string& message) {
 }
 
 // LLDAdapter implementation
-LLDAdapter::LLDAdapter() : pImpl(std::make_unique<Impl>()) {}
+LLDAdapter::LLDAdapter() : pImpl(heimdall::compat::make_unique<Impl>()) {}
 
 LLDAdapter::~LLDAdapter() = default;
 

@@ -96,6 +96,21 @@
 namespace heimdall {
 namespace compat {
 
+// C++11/14/17/20/23 compatibility: make_unique implementation
+#if __cplusplus >= 201402L
+    // C++14 and above: alias to std::make_unique
+    template<typename T, typename... Args>
+    inline std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::make_unique<T>(std::forward<Args>(args)...);
+    }
+#else
+    // C++11: provide fallback
+    template<typename T, typename... Args>
+    inline std::unique_ptr<T> make_unique(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+#endif
+
 // Define namespace aliases and compatibility types based on C++ standard
 #if defined(HEIMDALL_CPP17_AVAILABLE) && !defined(HEIMDALL_CPP20_AVAILABLE)
     // C++17: Use standard library with namespace alias
@@ -312,6 +327,7 @@ namespace compat {
 namespace utils {
     template<typename T>
     string_view to_string_view(const T& value) {
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
         if constexpr (std::is_convertible_v<T, string_view>) {
             return string_view(value);
         } else if constexpr (std::is_convertible_v<T, std::string>) {
@@ -321,17 +337,22 @@ namespace utils {
             temp = std::to_string(value);
             return string_view(temp);
         }
+#else
+        // C++11/14: no if constexpr, no is_convertible_v
+        // Only handle string_view, std::string, and fallback to std::to_string
+        return string_view(std::to_string(value));
+#endif
     }
     
     template<typename... Args>
     std::string format_string(const std::string& fmt, Args&&... args) {
-    #if HEIMDALL_CPP17_AVAILABLE
+#if HEIMDALL_CPP17_AVAILABLE
         // Use std::format if available (C++20+), else fallback
         return fmt; // No formatting for C++11/14/17
-    #else
+#else
         std::string result = fmt;
         return result;
-    #endif
+#endif
     }
     
     template<typename T>
@@ -341,7 +362,11 @@ namespace utils {
     
     template<typename Enum>
     std::string enum_to_string(Enum e) {
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
         return std::to_string(static_cast<std::underlying_type_t<Enum>>(e));
+#else
+        return std::to_string(static_cast<typename std::underlying_type<Enum>::type>(e));
+#endif
     }
 } // namespace utils
 

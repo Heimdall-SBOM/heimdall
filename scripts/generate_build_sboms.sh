@@ -123,9 +123,16 @@ generate_sbom_with_plugin() {
     
     print_status "Generating ${plugin_name} ${format} SBOM: ${output_file}"
     
-    # Use the C++ SBOM loader
-    "${BUILD_DIR}/src/tools/sbom_loader" "${plugin_path}" "${format}" "${output_file}" "${binary_path}" "${cyclonedx_version}" "${spdx_version}"
-    
+    # Build the command with correct argument order and flags
+    local cmd=("${BUILD_DIR}/src/tools/sbom_loader" "${plugin_path}" "${binary_path}" --format "${format}" --output "${output_file}")
+    if [[ "${format}" == cyclonedx* ]]; then
+        cmd+=(--cyclonedx-version "${cyclonedx_version}")
+    fi
+    if [[ "${format}" == spdx* ]]; then
+        cmd+=(--spdx-version "${spdx_version}")
+    fi
+
+    "${cmd[@]}"
     if [[ $? -eq 0 ]] && [[ -f "${output_file}" ]]; then
         print_success "Generated ${plugin_name} ${format} SBOM: ${output_file}"
         return 0

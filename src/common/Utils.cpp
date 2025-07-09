@@ -29,6 +29,7 @@ limitations under the License.
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include "../compat/compatibility.hpp"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -42,86 +43,87 @@ limitations under the License.
 
 namespace heimdall::Utils {
 
-/**
- * @brief Extract the filename from a file path
- * @param filePath The full file path
- * @return The filename without the directory path
- */
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE) || (defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM)
 std::string getFileName(const std::string& filePath) {
-    std::filesystem::path path(filePath);
+    heimdall::compat::fs::path path(filePath);
     return path.filename().string();
 }
-
-/**
- * @brief Extract the file extension from a file path
- * @param filePath The full file path
- * @return The file extension (including the dot)
- */
 std::string getFileExtension(const std::string& filePath) {
-    std::filesystem::path path(filePath);
+    heimdall::compat::fs::path path(filePath);
     return path.extension().string();
 }
-
-/**
- * @brief Extract the directory path from a file path
- * @param filePath The full file path
- * @return The directory path without the filename
- */
 std::string getDirectory(const std::string& filePath) {
-    std::filesystem::path path(filePath);
+    heimdall::compat::fs::path path(filePath);
     return path.parent_path().string();
 }
-
-/**
- * @brief Normalize a file path (resolve relative paths, remove redundant separators)
- * @param path The path to normalize
- * @return The normalized path
- */
 std::string normalizePath(const std::string& path) {
-    std::filesystem::path fsPath(path);
+    heimdall::compat::fs::path fsPath(path);
     return fsPath.lexically_normal().string();
 }
-
-/**
- * @brief Split a path into its components
- * @param path The path to split
- * @return Vector of path components
- */
 std::vector<std::string> splitPath(const std::string& path) {
     std::vector<std::string> result;
-    std::filesystem::path fsPath(path);
-
+    heimdall::compat::fs::path fsPath(path);
     for (const auto& part : fsPath) {
         if (!part.empty() && part.string() != "." && part.string() != "..") {
             result.push_back(part.string());
         }
     }
-
     return result;
 }
-
-/**
- * @brief Check if a file exists
- * @param filePath The path to check
- * @return true if the file exists, false otherwise
- */
 bool fileExists(const std::string& filePath) {
-    return std::filesystem::exists(filePath);
+    return heimdall::compat::fs::exists(filePath);
 }
-
-/**
- * @brief Get the size of a file in bytes
- * @param filePath The path to the file
- * @return The file size in bytes, or 0 if the file doesn't exist
- */
 uint64_t getFileSize(const std::string& filePath) {
     if (!fileExists(filePath)) {
         return 0;
     }
-
-    std::filesystem::path path(filePath);
-    return std::filesystem::file_size(path);
+    heimdall::compat::fs::path path(filePath);
+    return heimdall::compat::fs::file_size(path);
 }
+#else
+#include <libgen.h>
+#include <sys/stat.h>
+std::string getFileName(const std::string& filePath) {
+    char* pathCopy = strdup(filePath.c_str());
+    std::string fileName = basename(pathCopy);
+    free(pathCopy);
+    return fileName;
+}
+std::string getFileExtension(const std::string& filePath) {
+    size_t dot = filePath.find_last_of('.');
+    if (dot == std::string::npos) return "";
+    return filePath.substr(dot);
+}
+std::string getDirectory(const std::string& filePath) {
+    char* pathCopy = strdup(filePath.c_str());
+    std::string dirName = dirname(pathCopy);
+    free(pathCopy);
+    return dirName;
+}
+std::string normalizePath(const std::string& path) {
+    // Just return the input for C++11/14 minimal stub
+    return path;
+}
+std::vector<std::string> splitPath(const std::string& path) {
+    std::vector<std::string> result;
+    size_t start = 0, end = 0;
+    while ((end = path.find('/', start)) != std::string::npos) {
+        if (end != start) result.push_back(path.substr(start, end - start));
+        start = end + 1;
+    }
+    if (start < path.size()) result.push_back(path.substr(start));
+    return result;
+}
+bool fileExists(const std::string& filePath) {
+    struct stat buffer;
+    return (stat(filePath.c_str(), &buffer) == 0);
+}
+uint64_t getFileSize(const std::string& filePath) {
+    struct stat buffer;
+    if (stat(filePath.c_str(), &buffer) != 0) return 0;
+    return buffer.st_size;
+}
+#endif
 
 /**
  * @brief Calculate SHA256 checksum of a file

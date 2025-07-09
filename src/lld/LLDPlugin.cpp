@@ -21,6 +21,8 @@ limitations under the License.
 #include "../common/SBOMGenerator.hpp"
 #include "../common/Utils.hpp"
 #include "LLDAdapter.hpp"
+#include "LLDPlugin.hpp"
+#include "../compat/compatibility.hpp"
 
 #ifdef LLVM_AVAILABLE
 #include "llvm/IR/Function.h"
@@ -53,13 +55,12 @@ int onload(void* /*tv*/) {
     std::cout << "Heimdall LLD Plugin activated\n";
 
     // Initialize the adapter
-    globalAdapter = std::make_unique<heimdall::LLDAdapter>();
+    globalAdapter = heimdall::compat::make_unique<heimdall::LLDAdapter>();
     globalAdapter->initialize();
 
     // Initialize the SBOM generator
-    globalSBOMGenerator = std::make_unique<heimdall::SBOMGenerator>();
-    globalSBOMGenerator->setOutputPath(outputPath);
-    globalSBOMGenerator->setFormat(format);
+    globalSBOMGenerator = heimdall::compat::make_unique<heimdall::SBOMGenerator>();
+    // globalSBOMGenerator->initialize(); // Removed: SBOMGenerator does not have initialize()
 
     if (verbose) {
         std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << "\n";

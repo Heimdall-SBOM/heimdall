@@ -31,6 +31,7 @@ limitations under the License.
 #include <sstream>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace heimdall::Utils {
 

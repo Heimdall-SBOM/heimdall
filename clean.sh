@@ -104,7 +104,7 @@ else
 fi
 
 # Clean C++ standard-specific build directories
-CXX_BUILD_DIRS=("build_cpp11" "build_cpp14" "build_cpp17" "build_cpp23")
+CXX_BUILD_DIRS=("build_cpp11" "build_cpp14" "build_cpp17" "build_cpp20" "build_cpp23")
 for dir in "${CXX_BUILD_DIRS[@]}"; do
     if [[ -d "$dir" ]]; then
         print_status "Removing C++ build directory: $dir"

@@ -23,10 +23,11 @@ limitations under the License.
 #include "../common/PluginInterface.hpp"
 #include "../common/SBOMGenerator.hpp"
 #include "../common/Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
-GoldAdapter::Impl::Impl() : sbomGenerator(std::make_unique<SBOMGenerator>()) {}
+GoldAdapter::Impl::Impl() : sbomGenerator(heimdall::compat::make_unique<SBOMGenerator>()) {}
 GoldAdapter::Impl::~Impl() = default;
 
 bool GoldAdapter::Impl::initialize() {
@@ -113,7 +114,7 @@ void GoldAdapter::Impl::printStatistics() const {
     sbomGenerator->printStatistics();
 }
 
-GoldAdapter::GoldAdapter() : pImpl(std::make_unique<Impl>()) {}
+GoldAdapter::GoldAdapter() : pImpl(heimdall::compat::make_unique<Impl>()) {}
 GoldAdapter::~GoldAdapter() = default;
 bool GoldAdapter::initialize() {
     return pImpl->initialize();
