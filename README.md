@@ -10,7 +10,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 ## Features
 
 - **Dual Linker Support**: Works seamlessly with both LLVM LLD and GNU Gold linkers
-- **Multiple SBOM Formats**: Generates SPDX 2.3 and CycloneDX 1.4 compliant reports
+- **Multiple SBOM Formats**: Generates SPDX 2.3, 3.0, and 3.0.1 and CycloneDX 1.4, 1.5, and 1.6 compliant reports
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
 - **Cross-Platform**: Native support for macOS and Linux
