@@ -1,7 +1,7 @@
 FROM rockylinux:9
 ENV container=docker
 
-RUN dnf update \
+RUN dnf update -y \
    && dnf install \
     build-essential \
     cmake \
