@@ -1,9 +1,8 @@
-# [Choice] Debian version (use bullseye on local arm64/Apple Silicon): bookworm, bullseye, buster
-ARG VARIANT="bookworm"
-FROM buildpack-deps:${VARIANT}-curl
+FROM rockylinux:9
+ENV container=docker
 
-RUN apt-get update \
-   && apt-get install -y \
+RUN dnf update \
+   && dnf install -y \
     build-essential \
     cmake \
     ninja-build \
