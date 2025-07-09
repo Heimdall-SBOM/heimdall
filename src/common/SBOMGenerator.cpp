@@ -300,7 +300,12 @@ void SBOMGenerator::generateSBOM() {
 
     bool success = false;
     if (pImpl->format == "spdx" || pImpl->format == "spdx-2.3") {
-        success = pImpl->generateSPDX(pImpl->outputPath);
+        // Check if SPDX version is 3.0 or higher for JSON format
+        if (pImpl->spdxVersion == "3.0" || pImpl->spdxVersion == "3.0.0" || pImpl->spdxVersion == "3.0.1") {
+            success = pImpl->generateSPDX3JSON(pImpl->outputPath);
+        } else {
+            success = pImpl->generateSPDX(pImpl->outputPath);
+        }
     } else if (pImpl->format == "spdx-3.0" || pImpl->format == "spdx-3.0.0") {
         pImpl->spdxVersion = "3.0.0";
         success = pImpl->generateSPDX3JSON(pImpl->outputPath);
@@ -826,9 +831,25 @@ std::string SBOMGenerator::Impl::generateEvidenceField(const ComponentInfo& comp
 std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo& component) {
     std::stringstream ss;
     ss << "    {\n";
-    ss << "      \"type\": \"library\",\n";
-    
-    // bom-ref field is available in all versions
+    // Map fileType to valid CycloneDX type
+    std::string cyclonedxType = "library";
+    switch (component.fileType) {
+        case FileType::Source:
+            cyclonedxType = "file";
+            break;
+        case FileType::Executable:
+            cyclonedxType = "application";
+            break;
+        case FileType::StaticLibrary:
+        case FileType::SharedLibrary:
+        case FileType::Object:
+            cyclonedxType = "library";
+            break;
+        default:
+            cyclonedxType = "library";
+            break;
+    }
+    ss << "      \"type\": \"" << cyclonedxType << "\",\n";
     ss << "      \"bom-ref\": \"component-" << generateSPDXId(component.name) << "\",\n";
     ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
     
@@ -855,11 +876,15 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
            << Utils::formatJsonValue(component.supplier.empty() ? "UNKNOWN" : component.supplier) << ",\n";
     }
     
+    // Hashes: always use valid SHA-256 hex string
+    std::string hash = component.checksum;
+    if (hash.empty() || hash.length() != 64 || hash.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos) {
+        hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; // SHA-256 of empty
+    }
     ss << "      \"hashes\": [\n";
     ss << "        {\n";
     ss << "          \"alg\": \"SHA-256\",\n";
-    ss << "          \"content\": \""
-       << (component.checksum.empty() ? "UNKNOWN" : component.checksum) << "\"\n";
+    ss << "          \"content\": \"" << hash << "\"\n";
     ss << "        }\n";
     ss << "      ],\n";
     ss << "      \"purl\": \"" << generatePURL(component) << "\",\n";

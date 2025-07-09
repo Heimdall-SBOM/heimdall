@@ -239,6 +239,22 @@ generate_sbom_with_plugin() {
     fi
 }
 
+# Function to generate multiple CycloneDX versions
+generate_cyclonedx_versions() {
+    local plugin_path="$1"
+    local output_base="$2"
+    local binary_path="$3"
+    local plugin_name="$4"
+    
+    # Generate CycloneDX 1.4, 1.5, and 1.6
+    local versions=("1.4" "1.5" "1.6")
+    
+    for version in "${versions[@]}"; do
+        local output_file="${output_base}-v${version}.cyclonedx.json"
+        generate_sbom_with_plugin "${plugin_path}" "cyclonedx" "${output_file}" "${binary_path}" "${plugin_name}" "${version}"
+    done
+}
+
 # Create and compile the SBOM generator
 create_sbom_generator
 compile_sbom_generator
@@ -249,7 +265,7 @@ print_status "Starting SBOM generation..."
 # LLD Plugin SBOMs
 if [[ "${LLD_AVAILABLE}" == "true" ]]; then
     generate_sbom_with_plugin "${LLD_PLUGIN}" "spdx" "${SBOM_DIR}/heimdall-build-lld.spdx" "${TEST_BINARY}" "LLD"
-    generate_sbom_with_plugin "${LLD_PLUGIN}" "cyclonedx" "${SBOM_DIR}/heimdall-build-lld.cyclonedx.json" "${TEST_BINARY}" "LLD"
+    generate_cyclonedx_versions "${LLD_PLUGIN}" "${SBOM_DIR}/heimdall-build-lld" "${TEST_BINARY}" "LLD"
 else
     print_warning "Skipping LLD SBOM generation (plugin not available)"
 fi
@@ -257,7 +273,7 @@ fi
 # Gold Plugin SBOMs
 if [[ "${GOLD_AVAILABLE}" == "true" ]]; then
     generate_sbom_with_plugin "${GOLD_PLUGIN}" "spdx" "${SBOM_DIR}/heimdall-build-gold.spdx" "${TEST_BINARY}" "Gold"
-    generate_sbom_with_plugin "${GOLD_PLUGIN}" "cyclonedx" "${SBOM_DIR}/heimdall-build-gold.cyclonedx.json" "${TEST_BINARY}" "Gold"
+    generate_cyclonedx_versions "${GOLD_PLUGIN}" "${SBOM_DIR}/heimdall-build-gold" "${TEST_BINARY}" "Gold"
 else
     print_warning "Skipping Gold SBOM generation (plugin not available)"
 fi
@@ -279,7 +295,7 @@ for lib in "${SHARED_LIBS[@]}"; do
     # LLD Plugin SBOMs for shared library
     if [[ "${LLD_AVAILABLE}" == "true" ]]; then
         generate_sbom_with_plugin "${LLD_PLUGIN}" "spdx" "${SBOM_DIR}/${lib_name}-lld.spdx" "${lib}" "LLD"
-        generate_sbom_with_plugin "${LLD_PLUGIN}" "cyclonedx" "${SBOM_DIR}/${lib_name}-lld.cyclonedx.json" "${lib}" "LLD"
+        generate_cyclonedx_versions "${LLD_PLUGIN}" "${SBOM_DIR}/${lib_name}-lld" "${lib}" "LLD"
     else
         print_warning "Skipping LLD SBOM generation for ${lib_name} (plugin not available)"
     fi
@@ -287,7 +303,7 @@ for lib in "${SHARED_LIBS[@]}"; do
     # Gold Plugin SBOMs for shared library
     if [[ "${GOLD_AVAILABLE}" == "true" ]]; then
         generate_sbom_with_plugin "${GOLD_PLUGIN}" "spdx" "${SBOM_DIR}/${lib_name}-gold.spdx" "${lib}" "Gold"
-        generate_sbom_with_plugin "${GOLD_PLUGIN}" "cyclonedx" "${SBOM_DIR}/${lib_name}-gold.cyclonedx.json" "${lib}" "Gold"
+        generate_cyclonedx_versions "${GOLD_PLUGIN}" "${SBOM_DIR}/${lib_name}-gold" "${lib}" "Gold"
     else
         print_warning "Skipping Gold SBOM generation for ${lib_name} (plugin not available)"
     fi
@@ -305,11 +321,14 @@ else
     print_warning "✗ LLD SPDX SBOM: Not generated"
 fi
 
-if [[ -f "${SBOM_DIR}/heimdall-build-lld.cyclonedx.json" ]]; then
-    print_success "✓ LLD CycloneDX SBOM: ${SBOM_DIR}/heimdall-build-lld.cyclonedx.json"
-else
-    print_warning "✗ LLD CycloneDX SBOM: Not generated"
-fi
+# Check for CycloneDX versions
+for version in "1.4" "1.5" "1.6"; do
+    if [[ -f "${SBOM_DIR}/heimdall-build-lld-v${version}.cyclonedx.json" ]]; then
+        print_success "✓ LLD CycloneDX ${version} SBOM: ${SBOM_DIR}/heimdall-build-lld-v${version}.cyclonedx.json"
+    else
+        print_warning "✗ LLD CycloneDX ${version} SBOM: Not generated"
+    fi
+done
 
 if [[ -f "${SBOM_DIR}/heimdall-build-gold.spdx" ]]; then
     print_success "✓ Gold SPDX SBOM: ${SBOM_DIR}/heimdall-build-gold.spdx"
@@ -317,11 +336,14 @@ else
     print_warning "✗ Gold SPDX SBOM: Not generated"
 fi
 
-if [[ -f "${SBOM_DIR}/heimdall-build-gold.cyclonedx.json" ]]; then
-    print_success "✓ Gold CycloneDX SBOM: ${SBOM_DIR}/heimdall-build-gold.cyclonedx.json"
-else
-    print_warning "✗ Gold CycloneDX SBOM: Not generated"
-fi
+# Check for CycloneDX versions
+for version in "1.4" "1.5" "1.6"; do
+    if [[ -f "${SBOM_DIR}/heimdall-build-gold-v${version}.cyclonedx.json" ]]; then
+        print_success "✓ Gold CycloneDX ${version} SBOM: ${SBOM_DIR}/heimdall-build-gold-v${version}.cyclonedx.json"
+    else
+        print_warning "✗ Gold CycloneDX ${version} SBOM: Not generated"
+    fi
+done
 
 # Shared library SBOMs
 print_status ""
@@ -341,11 +363,14 @@ for lib in "${SHARED_LIBS[@]}"; do
         print_warning "✗ ${lib_name} LLD SPDX SBOM: Not generated"
     fi
     
-    if [[ -f "${SBOM_DIR}/${lib_name}-lld.cyclonedx.json" ]]; then
-        print_success "✓ ${lib_name} LLD CycloneDX SBOM: ${SBOM_DIR}/${lib_name}-lld.cyclonedx.json"
-    else
-        print_warning "✗ ${lib_name} LLD CycloneDX SBOM: Not generated"
-    fi
+    # Check for CycloneDX versions
+    for version in "1.4" "1.5" "1.6"; do
+        if [[ -f "${SBOM_DIR}/${lib_name}-lld-v${version}.cyclonedx.json" ]]; then
+            print_success "✓ ${lib_name} LLD CycloneDX ${version} SBOM: ${SBOM_DIR}/${lib_name}-lld-v${version}.cyclonedx.json"
+        else
+            print_warning "✗ ${lib_name} LLD CycloneDX ${version} SBOM: Not generated"
+        fi
+    done
     
     # Gold SBOMs for this library
     if [[ -f "${SBOM_DIR}/${lib_name}-gold.spdx" ]]; then
@@ -354,11 +379,14 @@ for lib in "${SHARED_LIBS[@]}"; do
         print_warning "✗ ${lib_name} Gold SPDX SBOM: Not generated"
     fi
     
-    if [[ -f "${SBOM_DIR}/${lib_name}-gold.cyclonedx.json" ]]; then
-        print_success "✓ ${lib_name} Gold CycloneDX SBOM: ${SBOM_DIR}/${lib_name}-gold.cyclonedx.json"
-    else
-        print_warning "✗ ${lib_name} Gold CycloneDX SBOM: Not generated"
-    fi
+    # Check for CycloneDX versions
+    for version in "1.4" "1.5" "1.6"; do
+        if [[ -f "${SBOM_DIR}/${lib_name}-gold-v${version}.cyclonedx.json" ]]; then
+            print_success "✓ ${lib_name} Gold CycloneDX ${version} SBOM: ${SBOM_DIR}/${lib_name}-gold-v${version}.cyclonedx.json"
+        else
+            print_warning "✗ ${lib_name} Gold CycloneDX ${version} SBOM: Not generated"
+        fi
+    done
 done
 
 print_status ""

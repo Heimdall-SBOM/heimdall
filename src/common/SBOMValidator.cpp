@@ -27,6 +27,15 @@ ValidationResult SPDXValidator::validate(const std::string& filePath) {
     return validateContent(content);
 }
 
+ValidationResult SPDXValidator::validate(const std::string& filePath, const std::string& version) {
+    ValidationResult result = validate(filePath);
+    if (result.isValid) {
+        // Override metadata with specified version
+        result.metadata["version"] = version;
+    }
+    return result;
+}
+
 ValidationResult SPDXValidator::validateContent(const std::string& content) {
     ValidationResult result;
     // Detect SPDX version
@@ -40,6 +49,15 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
         result.addError("Cannot determine SPDX format");
         return result;
     }
+}
+
+ValidationResult SPDXValidator::validateContent(const std::string& content, const std::string& version) {
+    ValidationResult result = validateContent(content);
+    if (result.isValid) {
+        // Override metadata with specified version
+        result.metadata["version"] = version;
+    }
+    return result;
 }
 
 std::string SPDXValidator::trimWhitespace(const std::string& str) {
@@ -178,6 +196,15 @@ ValidationResult CycloneDXValidator::validate(const std::string& filePath) {
     return validateContent(content);
 }
 
+ValidationResult CycloneDXValidator::validate(const std::string& filePath, const std::string& version) {
+    ValidationResult result = validate(filePath);
+    if (result.isValid) {
+        // Override metadata with specified version
+        result.metadata["version"] = version;
+    }
+    return result;
+}
+
 std::string CycloneDXValidator::extractVersion(const std::string& content) {
     size_t pos = content.find("\"specVersion\"");
     if (pos == std::string::npos) {
@@ -221,6 +248,27 @@ ValidationResult CycloneDXValidator::validateContent(const std::string& content)
         result.addError("Unsupported CycloneDX version: " + version);
         return result;
     }
+}
+
+ValidationResult CycloneDXValidator::validateContent(const std::string& content, const std::string& version) {
+    ValidationResult result;
+    
+    if (version == "1.4") {
+        result = validateCycloneDX1_4(content);
+    } else if (version == "1.5") {
+        result = validateCycloneDX1_5(content);
+    } else if (version == "1.6") {
+        result = validateCycloneDX1_6(content);
+    } else {
+        result.addError("Unsupported CycloneDX version: " + version);
+        return result;
+    }
+    
+    if (result.isValid) {
+        // Override metadata with specified version
+        result.metadata["version"] = version;
+    }
+    return result;
 }
 
 ValidationResult CycloneDXValidator::validateCycloneDX1_4(const std::string& content) {
