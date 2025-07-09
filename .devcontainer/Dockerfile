@@ -23,3 +23,4 @@ RUN yum update -y \
                        epel-release \
                        pandoc \
                        texlive
+
