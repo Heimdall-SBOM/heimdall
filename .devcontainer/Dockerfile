@@ -18,7 +18,9 @@ ENV BUILD_TESTS=ON
 ENV BUILD_EXAMPLES=ON
 
 # Install build dependencies
-RUN yum install -y \
+RUN yum -y install rpm dnf-plugins-core \
+ && yum -y update \
+ && yum -y install \
     gcc-c++ \
     cmake \
     ninja-build \
