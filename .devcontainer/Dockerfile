@@ -20,3 +20,5 @@ RUN yum update -y \
     gcc \
     g++ \
     binutils-devel
+
+RUN scl enable toolset-14 -- bash
