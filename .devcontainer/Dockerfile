@@ -18,7 +18,7 @@ ENV BUILD_TESTS=ON
 ENV BUILD_EXAMPLES=ON
 
 # Install build dependencies
-yum install -y \
+RUN yum install -y \
     gcc-c++ \
     cmake \
     ninja-build \
