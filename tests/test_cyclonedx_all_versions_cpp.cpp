@@ -185,9 +185,9 @@ TEST_F(CompatibilityTest, CompatibilityVariantTest) {
     int result = std::visit([](auto&& arg) -> int {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, int>) {
-            return arg * 2;
+            return std::forward<decltype(arg)>(arg) * 2;
         } else {
-            return arg.size();
+            return std::forward<decltype(arg)>(arg).size();
         }
     }, v3);
     EXPECT_EQ(result, 200);

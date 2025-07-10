@@ -21,6 +21,10 @@ from typing import Dict, List, Optional
 import requests
 import pandas as pd
 
+# Constants for file extensions
+EXCEL_EXTENSION = '.xlsx'
+CSV_EXTENSION = '.csv'
+
 
 class SonarQubeIssuesExporter:
     """Exports SonarQube issues to CSV format."""
@@ -195,9 +199,6 @@ class SonarQubeIssuesExporter:
             issues: List of issue dictionaries
             output_file: Output Excel file path
         """
-        EXCEL_EXTENSION = '.xlsx'
-        CSV_EXTENSION = '.csv'
-        
         if not issues:
             print("No issues to export")
             return
@@ -290,12 +291,12 @@ Examples:
     
     # Export to file
     if args.format == 'excel':
-        if not args.output.endswith('.xlsx'):
-            args.output = args.output.replace('.csv', '.xlsx')
+        if not args.output.endswith(EXCEL_EXTENSION):
+            args.output = args.output.replace(CSV_EXTENSION, EXCEL_EXTENSION)
         exporter.export_to_excel(issues, args.output)
     else:
-        if not args.output.endswith('.csv'):
-            args.output = args.output.replace('.xlsx', '.csv')
+        if not args.output.endswith(CSV_EXTENSION):
+            args.output = args.output.replace(EXCEL_EXTENSION, CSV_EXTENSION)
         exporter.export_to_csv(issues, args.output)
     
     # Print summary
