@@ -51,7 +51,7 @@ void* openssl_worker(void* arg)
         char data[BUFFER_SIZE];
         snprintf(data, sizeof(data), "Thread %d data for hashing", thread_id);
         
-        EVP_DigestUpdate(md_ctx, data, strlen(data));
+        EVP_DigestUpdate(md_ctx, data, sizeof data );
         
         unsigned char hash[EVP_MAX_MD_SIZE];
         unsigned int hash_len;
