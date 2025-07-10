@@ -1,9 +1,10 @@
 # Ignore build artifacts and CMake files
 build/
-build_cpp11/
-build_cpp14/
-build_cpp17/
-build_cpp23/
+build-cpp11/
+build-cpp14/
+build-cpp17/
+build-cpp20/
+build-cpp23/
 install/
 CMakeFiles/
 CMakeCache.txt
@@ -49,9 +50,6 @@ examples/*/test_plugin.c
 tests/temp/
 tests/output/
 
-# Ignore temporary test files
-test_dwarf_*
-
 # Ignore macOS system files
 .DS_Store
 
@@ -95,10 +93,4 @@ coverage/
 Testing/
 CTestTestfile.cmake
 CTestCostData.txt
-DartConfiguration.tcl
-
-# Ignore generated HTML and PDF documentation for the user and developer guides in the docs directory
-docs/heimdall-users-guide.html
-docs/heimdall-users-guide.pdf
-docs/heimdall-developers-guide.html
-docs/heimdall-developers-guide.pdf 
+DartConfiguration.tcl 

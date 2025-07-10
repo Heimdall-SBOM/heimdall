@@ -53,6 +53,7 @@ limitations under the License.
 #include "ComponentInfo.hpp"
 #include "DWARFExtractor.hpp"
 #include "Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 #ifdef __linux__
 #include <elf.h>
@@ -101,7 +102,7 @@ public:
  * Debug information extraction is enabled by default, and verbose output
  * is disabled.
  */
-MetadataExtractor::MetadataExtractor() : pImpl(std::make_unique<Impl>()) {}
+MetadataExtractor::MetadataExtractor() : pImpl(heimdall::compat::make_unique<Impl>()) {}
 
 /**
  * @brief Destructor for MetadataExtractor
@@ -223,10 +224,15 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
 
         component.markAsProcessed();
         return success;
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
     } catch (const std::filesystem::filesystem_error& e) {
-        heimdall::Utils::errorPrint(std::string("Filesystem error in extractMetadata: ") +
-                                    e.what());
+        heimdall::Utils::errorPrint(std::string("Filesystem error in extractMetadata: ") + e.what());
         return false;
+#else
+    } catch (const std::exception& e) {
+        heimdall::Utils::errorPrint(std::string("Exception in extractMetadata: ") + e.what());
+        return false;
+#endif
     }
 }
 

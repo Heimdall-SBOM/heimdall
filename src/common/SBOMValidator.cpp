@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
+#include "Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -12,7 +14,7 @@ namespace heimdall {
 
 ValidationResult SPDXValidator::validate(const std::string& filePath) {
     ValidationResult result;
-    if (!std::filesystem::exists(filePath)) {
+    if (!heimdall::Utils::fileExists(filePath)) {
         result.addError("File does not exist: " + filePath);
         return result;
     }
@@ -181,7 +183,7 @@ bool SPDXValidator::isValidSPDXLicenseExpression(const std::string& license) {
 
 ValidationResult CycloneDXValidator::validate(const std::string& filePath) {
     ValidationResult result;
-    if (!std::filesystem::exists(filePath)) {
+    if (!heimdall::Utils::fileExists(filePath)) {
         result.addError("File does not exist: " + filePath);
         return result;
     }
@@ -320,12 +322,10 @@ bool CycloneDXValidator::isValidUUID(const std::string& uuid) {
 // SBOM Validator Factory Implementation
 
 std::unique_ptr<SBOMValidator> SBOMValidatorFactory::createValidator(const std::string& format) {
-    std::string lowerFormat = format;
-    std::transform(lowerFormat.begin(), lowerFormat.end(), lowerFormat.begin(), ::tolower);
-    if (lowerFormat == "spdx") {
-        return std::make_unique<SPDXValidator>();
-    } else if (lowerFormat == "cyclonedx" || lowerFormat == "cyclone") {
-        return std::make_unique<CycloneDXValidator>();
+    if (format == "spdx" || format == "spdx-2.3" || format == "spdx-3.0" || format == "spdx-3.0.0" || format == "spdx-3.0.1") {
+        return heimdall::compat::make_unique<SPDXValidator>();
+    } else if (format == "cyclonedx" || format == "cyclonedx-1.4" || format == "cyclonedx-1.5" || format == "cyclonedx-1.6") {
+        return heimdall::compat::make_unique<CycloneDXValidator>();
     } else {
         return nullptr;
     }

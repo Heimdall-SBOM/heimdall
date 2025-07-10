@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <optional>
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -43,7 +44,7 @@ struct SBOMDifference {
     
     Type type;
     SBOMComponent component;
-    std::optional<SBOMComponent> oldComponent;
+    heimdall::compat::optional<SBOMComponent> oldComponent;
     
     SBOMDifference() = default;
     SBOMDifference(Type t, const SBOMComponent& comp) : type(t), component(comp) {}

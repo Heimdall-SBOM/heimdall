@@ -1,13 +1,18 @@
-/**
- * @file GoldPlugin.cpp
- * @brief Heimdall plugin for GNU Gold linker: SBOM generation and metadata extraction
- * @author Trevor Bakker
- * @date 2025
- *
- * This file implements the Heimdall plugin for the GNU Gold linker, enabling
- * SBOM generation and metadata extraction during the link process. It provides
- * C interface functions for plugin configuration and file processing.
- */
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -16,24 +21,27 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include <chrono>
-#include <iomanip>
 #include "../common/MetadataExtractor.hpp"
+#include "../common/Utils.hpp"
 #include "GoldAdapter.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace {
 std::unique_ptr<heimdall::GoldAdapter> globalAdapter;
-// Non-const global variables - these are modified at runtime by plugin configuration functions
-std::string outputPath = "heimdall-gold-sbom.json";  // Modified by heimdall_set_output_path()
-std::string format = "spdx";                         // Modified by heimdall_set_format()
-std::string spdxVersion = "3.0";                     // Modified by heimdall_set_spdx_version()
-bool verbose = false;                                // Modified by heimdall_set_verbose()
-std::vector<std::string> processedFiles;             // Modified during file processing
-std::vector<std::string> processedLibraries;         // Modified during library processing
+std::string outputPath = "heimdall-gold-sbom.json";
+std::string format = "spdx";
+bool verbose = false;
+std::vector<std::string> processedFiles;
+std::vector<std::string> processedLibraries;
+std::string cyclonedxVersion = "1.6"; // NEW: store requested CycloneDX version
 
 // Simple utility functions to avoid heimdall-core dependencies
 std::string getFileName(const std::string& path) {
-    return std::filesystem::path(path).filename().string();
+    return heimdall::Utils::getFileName(path);
+}
+
+bool fileExists(const std::string& path) {
+    return heimdall::Utils::fileExists(path);
 }
 
 std::string calculateSimpleHash(const std::string& path) {
@@ -57,16 +65,14 @@ std::string calculateSimpleHash(const std::string& path) {
 }
 
 std::string getFileSize(const std::string& path) {
-    try {
-        return std::to_string(std::filesystem::file_size(path));
-    } catch (...) {
-        return "0";
+    if (heimdall::Utils::fileExists(path)) {
+        return std::to_string(heimdall::Utils::getFileSize(path));
     }
+    return "0";
 }
 
-std::string getFileType(const std::string& path) {
-    std::string fileName = getFileName(path);
-    std::string extension = std::filesystem::path(fileName).extension().string();
+std::string getFileType(const std::string& fileName) {
+    std::string extension = heimdall::Utils::getFileExtension(fileName);
 
     if (extension == ".o" || extension == ".obj") {
         return "OBJECT";
@@ -85,16 +91,11 @@ std::string getFileType(const std::string& path) {
 }  // namespace
 
 extern "C" {
-/**
- * @brief Plugin initialization function called when the plugin is loaded
- * @param tv Unused (reserved for future use)
- * @return 0 on success
- */
-int onload(void* /*tv*/) {
+int onload(void* handle) {
     std::cout << "Heimdall Gold Plugin activated\n";
 
     // Initialize the adapter
-    globalAdapter = std::make_unique<heimdall::GoldAdapter>();
+    globalAdapter = heimdall::compat::make_unique<heimdall::GoldAdapter>();
     globalAdapter->initialize();
 
     if (verbose) {
@@ -104,27 +105,15 @@ int onload(void* /*tv*/) {
     return 0;
 }
 
-/**
- * @brief Get the version string for the Heimdall Gold plugin
- * @return Version string
- */
 const char* heimdall_gold_version() {
     return "1.0.0";
 }
 
-/**
- * @brief Get the description string for the Heimdall Gold plugin
- * @return Description string
- */
 const char* heimdall_gold_description() {
     return "Heimdall SBOM Generator Plugin for GNU Gold Linker";
 }
 
-/**
- * @brief Set the output path for the generated SBOM
- * @param path Output file path (C string)
- * @return 0 on success, -1 on error
- */
+// Configuration functions
 int heimdall_set_output_path(const char* path) {
     if (path) {
         outputPath = std::string(path);
@@ -138,11 +127,6 @@ int heimdall_set_output_path(const char* path) {
     return -1;
 }
 
-/**
- * @brief Set the output format for the generated SBOM
- * @param fmt Output format (C string, e.g., "spdx" or "cyclonedx")
- * @return 0 on success, -1 on error
- */
 int heimdall_set_format(const char* fmt) {
     if (fmt) {
         format = std::string(fmt);
@@ -156,58 +140,13 @@ int heimdall_set_format(const char* fmt) {
     return -1;
 }
 
-/**
- * @brief Set the CycloneDX version for SBOM output
- * @param version CycloneDX version string
- * @return 0 on success, -1 on error
- */
-int heimdall_set_cyclonedx_version(const char* version) {
-    if (version) {
-        if (globalAdapter) {
-            globalAdapter->setCycloneDXVersion(version);
-        }
-        if (verbose) {
-            std::cout << "Heimdall: CycloneDX version set to " << version << "\n";
-        }
-        return 0;
-    }
-    return -1;
-}
-
-/**
- * @brief Set the SPDX version for SBOM output
- * @param version SPDX version string
- * @return 0 on success, -1 on error
- */
-int heimdall_set_spdx_version(const char* version) {
-    if (version) {
-        spdxVersion = std::string(version);
-        if (globalAdapter) {
-            globalAdapter->setSPDXVersion(version);
-        }
-        if (verbose) {
-            std::cout << "Heimdall: SPDX version set to " << version << "\n";
-        }
-        return 0;
-    }
-    return -1;
-}
-
-/**
- * @brief Set verbose output mode
- * @param v true to enable verbose output, false to disable
- */
 void heimdall_set_verbose(bool v) {
     verbose = v;
     if (globalAdapter)
         globalAdapter->setVerbose(v);
 }
 
-/**
- * @brief Process an input file for SBOM generation
- * @param filePath Path to the input file (C string)
- * @return 0 on success, -1 on error
- */
+// File processing functions
 int heimdall_process_input_file(const char* filePath) {
     if (!globalAdapter || !filePath)
         return -1;
@@ -231,9 +170,26 @@ int heimdall_process_input_file(const char* filePath) {
     // --- NEW: Detect and process dependencies ---
     std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(path);
     for (const auto& dep : deps) {
-        // Try to resolve the library path using the improved resolver
-        std::string depPath = heimdall::Utils::resolveLibraryPath(dep);
-        if (!depPath.empty() && std::filesystem::exists(depPath)) {
+        std::string depPath;
+        // Absolute path? Use as is
+        if (!dep.empty() && dep[0] == '/') {
+            depPath = dep;
+        } else {
+            // Search standard library paths
+            std::vector<std::string> libPaths = {
+                "/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib",
+                "/lib",     "/lib64",         "/usr/lib64"};
+            for (const auto& libDir : libPaths) {
+                std::string candidate = libDir;
+                candidate += "/";
+                candidate += dep;
+                if (heimdall::Utils::fileExists(candidate)) {
+                    depPath = candidate;
+                    break;
+                }
+            }
+        }
+        if (!depPath.empty() && heimdall::Utils::fileExists(depPath)) {
             // Avoid duplicate processing
             if (std::find(processedLibraries.begin(), processedLibraries.end(), depPath) ==
                 processedLibraries.end()) {
@@ -263,11 +219,6 @@ int heimdall_process_input_file(const char* filePath) {
     return 0;
 }
 
-/**
- * @brief Process a library file for SBOM generation
- * @param libraryPath Path to the library file (C string)
- * @return 0 on success, -1 on error
- */
 int heimdall_process_library(const char* libraryPath) {
     if (!globalAdapter || !libraryPath)
         return -1;
@@ -302,13 +253,21 @@ int heimdall_process_library(const char* libraryPath) {
     return 0;
 }
 
-/**
- * @brief Finalize the plugin and generate the SBOM
- */
+int heimdall_set_cyclonedx_version(const char* version) {
+    if (version) {
+        cyclonedxVersion = version;
+        return 0;
+    }
+    return -1;
+}
+
+// Plugin cleanup and finalization
 void heimdall_finalize() {
     if (globalAdapter) {
         globalAdapter->generateSBOM();
         globalAdapter->cleanup();
     }
+
+    std::cout << "Heimdall Gold Plugin finalized\n";
 }
 }

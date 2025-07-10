@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <chrono>
 #include <iomanip>
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -343,12 +344,13 @@ std::map<std::string, int> SBOMComparator::getDiffStatistics(const std::vector<S
 // Private helper methods
 
 std::unique_ptr<SBOMParser> SBOMComparator::createParser(const std::string& format) {
-    if (format == "spdx") {
-        return std::make_unique<SPDXParser>();
-    } else if (format == "cyclonedx") {
-        return std::make_unique<CycloneDXParser>();
+    if (format == "spdx" || format == "spdx-2.3" || format == "spdx-3.0" || format == "spdx-3.0.0" || format == "spdx-3.0.1") {
+        return heimdall::compat::make_unique<SPDXParser>();
+    } else if (format == "cyclonedx" || format == "cyclonedx-1.4" || format == "cyclonedx-1.5" || format == "cyclonedx-1.6") {
+        return heimdall::compat::make_unique<CycloneDXParser>();
+    } else {
+        return nullptr;
     }
-    return nullptr;
 }
 
 std::vector<SBOMDifference> SBOMComparator::compareComponents(const std::vector<SBOMComponent>& oldComponents,
@@ -660,10 +662,10 @@ std::unique_ptr<SBOMParser> SBOMParserFactory::createParser(const std::string& f
     std::string lowerFormat = format;
     std::transform(lowerFormat.begin(), lowerFormat.end(), lowerFormat.begin(), ::tolower);
 
-    if (lowerFormat == "spdx") {
-        return std::make_unique<SPDXParser>();
-    } else if (lowerFormat == "cyclonedx" || lowerFormat == "cyclone") {
-        return std::make_unique<CycloneDXParser>();
+    if (lowerFormat == "spdx" || lowerFormat == "spdx-2.3" || lowerFormat == "spdx-3.0" || lowerFormat == "spdx-3.0.0" || lowerFormat == "spdx-3.0.1") {
+        return heimdall::compat::make_unique<SPDXParser>();
+    } else if (lowerFormat == "cyclonedx" || lowerFormat == "cyclonedx-1.4" || lowerFormat == "cyclonedx-1.5" || lowerFormat == "cyclonedx-1.6") {
+        return heimdall::compat::make_unique<CycloneDXParser>();
     } else {
         return nullptr;
     }

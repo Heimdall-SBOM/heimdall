@@ -1,21 +1,19 @@
+# Heimdall
+
 <img src="https://github.com/bakkertj/heimdall/blob/18e0ce7fc630923f15e6e29e94059e40b7d1af99/docs/images/logo_w_text.png" width="400">
 
-A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries, including comprehensive DWARF debug information.
+A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries.
 
-[![Build Status](https://github.com/heimdall-sbom/heimdall/actions/workflows/ci.yml/badge.svg)](https://github.com/heimdall-sbom/heimdall/actions/workflows/ci.yml)
+[![Build Status](https://github.com/your-org/heimdall/workflows/Build%20and%20Test/badge.svg)](https://github.com/your-org/heimdall/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
-[![Tests](https://img.shields.io/badge/tests-169%20passed-brightgreen.svg)](#testing)
-[![DWARF Support](https://img.shields.io/badge/DWARF-Enhanced-orange.svg)](#dwarf-debug-information-support)
-[![SBOM Validation](https://img.shields.io/badge/SBOM-Validated-brightgreen.svg)](#sbom-validation)
-[![SPDX 3.0](https://img.shields.io/badge/SPDX-3.0%20Ready-blue.svg)](#sbom-formats)
-[![CycloneDX 1.6](https://img.shields.io/badge/CycloneDX-1.6%20Ready-green.svg)](#sbom-formats)
+[![Tests](https://img.shields.io/badge/tests-20%20passed-brightgreen.svg)](#testing)
+[![C++ Standards](https://img.shields.io/badge/C%2B%2B-11%2F14%2F17%2F20%2F23-blue.svg)](#c-standard-support)
 
 ## Features
 
 - **Dual Linker Support**: Works seamlessly with both LLVM LLD and GNU Gold linkers
-- **Multiple SBOM Formats**: Generates SPDX 2.3/3.0 and CycloneDX 1.4-1.6 compliant reports (1.6/3.0 are defaults, older versions can be selected)
-- **Enhanced DWARF Integration**: Extracts and includes source files, functions, and compile units in SBOMs
+- **Multiple SBOM Formats**: Generates SPDX 2.3, 3.0, and 3.0.1 and CycloneDX 1.4, 1.5, and 1.6 compliant reports
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
 - **Cross-Platform**: Native support for macOS and Linux
@@ -23,363 +21,157 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **CI/CD Ready**: Seamless integration with modern build systems
 - **Security Focused**: Enables vulnerability scanning and compliance tracking
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
-- **SBOM Validation**: Built-in validation tools for standards compliance
-- **Shared Library SBOMs**: Automatic generation of SBOMs for all built shared libraries
-- **Version Selection**: Configurable SBOM format versions for maximum compatibility
+- **Multi-Standard C++ Support**: Robust compatibility layer supporting C++11, C++14, C++17, C++20, and C++23
+- **Enhanced Compatibility**: Automatic feature detection and standard library compatibility
+- **Multi-Compiler Support**: Automatic detection and selection of GCC and Clang versions
+- **SCL Integration**: Support for Software Collections (SCL) on RHEL/Rocky/CentOS
 
-## DWARF Debug Information Support
+## Build System and Compatibility
 
-Heimdall now provides **comprehensive DWARF debug information integration** that enhances your SBOMs with detailed source code traceability:
+Heimdall features a robust build system that automatically selects the correct compiler and LLVM version for each C++ standard. The build scripts in `scripts/` ensure seamless compatibility and provide clear diagnostics if your system is missing required tools.
 
-### **Source File Tracking**
-- **Automatic extraction** of source file paths from DWARF debug info
-- **Separate SBOM components** for each source file with checksums and metadata
-- **Parent-child relationships** between binaries and their source files
-- **License detection** for source files
+### Key Features
 
-### **Function-Level Analysis**
-- **Function names** extracted from DWARF and included in SBOM properties
-- **Compile unit information** for build system integration
-- **Debug information flags** indicating presence of DWARF data
-- **Fallback extraction** using ELF symbol table when DWARF parsing fails
+- **Automatic Compiler/LLVM Selection**: Detects all available GCC and Clang versions, as well as all installed LLVM versions
+- **Multi-Compiler Support**: Choose between GCC and Clang with the `--compiler` option
+- **SCL Integration**: Automatic detection and guidance for SCL toolsets on RHEL/Rocky/CentOS
+- **Compatibility Checker**: Run `./scripts/show_build_compatibility.sh` to see which C++ standards you can build
+- **Clear Error Messages**: Specific instructions when SCL activation is needed
 
-### **Standards Compliance**
-- **SPDX 2.3**: Source files as separate `FileName` entries with `GENERATED_FROM` relationships
-- **SPDX 3.0**: Enhanced JSON format with extended relationships and metadata
-- **CycloneDX 1.6+**: DWARF data as component properties with `heimdall:` namespace (default is 1.6, can specify 1.4/1.5)
-- **Full interoperability** with existing SBOM tools and workflows
-
-### **Usage Examples**
+### Build Commands
 
 ```bash
-# Generate SBOM with DWARF debug information
-gcc -g -c main.c -o main.o
+# Build all compatible standards
+./scripts/build_all_standards.sh
 
-# LLD with enhanced DWARF support and CycloneDX 1.6 (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.cyclonedx.json \
-       --plugin-opt=format:cyclonedx \
-       main.o -o myapp
+# Build a specific standard with GCC (default)
+./scripts/build.sh --standard 17 --compiler gcc --tests
 
-# LLD with SPDX 3.0 JSON (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.spdx.json \
-       --plugin-opt=format:spdx \
-       main.o -o myapp
+# Build a specific standard with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
 
-# LLD with SPDX 2.3 tag-value explicitly
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.spdx \
-       --plugin-opt=format:spdx \
-       --plugin-opt=spdx-version:2.3 \
-       main.o -o myapp
+# Build with tests and SBOM generation
+./scripts/build.sh --standard 20 --all
 
-# Gold with CycloneDX 1.5 explicitly
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.cyclonedx.json \
-        --plugin-opt format=cyclonedx \
-        --plugin-opt cyclonedx-version=1.5 \
-        main.o -o myapp
+# Clean all build artifacts
+./scripts/clean.sh
+
+# Check compatibility
+./scripts/show_build_compatibility.sh
 ```
 
-### **Generated SBOM Content**
+## C++ Standard Support
 
-**CycloneDX with DWARF Properties:**
-```json
-{
-  "properties": [
-    {
-      "name": "heimdall:source-files",
-      "value": "main.c,utils.c,header.h"
-    },
-    {
-      "name": "heimdall:functions", 
-      "value": "main,calculate,process_data"
-    },
-    {
-      "name": "heimdall:contains-debug-info",
-      "value": "true"
-    }
-  ]
-}
-```
+Heimdall supports multiple C++ standards with automatic compiler and LLVM version selection:
 
-**SPDX with Source File Relationships:**
-```
-FileName: main.c
-SPDXID: SPDXRef-main.c
-FileChecksum: SHA256: abc123...
-LicenseConcluded: MIT
+| C++ Standard | LLVM Version | GCC Version | Clang Version | Features | Status |
+|--------------|--------------|-------------|---------------|----------|--------|
+| C++11        | 7+           | 4.8+        | 3.3+          | Basic + Compatibility | ✅ Working |
+| C++14        | 7+           | 6+          | 3.4+          | Enhanced + Compatibility | ✅ Working |
+| C++17        | 11+          | 7+          | 5+            | Full Standard Library | ✅ Working |
+| C++20        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+| C++23        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
 
-Relationship: SPDXRef-myapp GENERATED_FROM SPDXRef-main.c
-```
-
-## SBOM Validation
-
-Heimdall includes comprehensive validation tools to ensure your SBOMs are standards compliant:
-
-### **Automated Validation**
-```bash
-# Basic validation (JSON syntax, SPDX structure)
-./scripts/validate_sboms.sh build
-
-# Advanced validation (schema validation, detailed reporting)
-python3 scripts/validate_sboms_online.py build
-
-# Command-line validation tool
-./build/bin/heimdall-validate --validate build/sboms/myapp.cyclonedx.json
-./build/bin/heimdall-validate --validate build/sboms/myapp.spdx.json
-```
-
-### **Validation Features**
-- **JSON syntax validation** for CycloneDX and SPDX 3.0 files
-- **SPDX structure validation** (supports both 2.3 tag-value and 3.0 JSON formats)
-- **Required field checking** for both standards
-- **Detailed validation logs** and summary reports
-- **CI/CD integration** examples
-- **Online validation** tool references
-- **SBOM comparison** and diff generation
-- **SBOM merging** capabilities
-
-### **Validation Results**
-✅ **All 16 Heimdall SBOMs pass validation:**
-- 8 CycloneDX files (JSON syntax and schema compliant)
-- 8 SPDX files (structure and format compliant)
-- Full compliance with SPDX 2.3/3.0 and CycloneDX 1.4-1.6 standards
-
-## Shared Library SBOM Generation
-
-Heimdall automatically generates SBOMs for all built shared libraries:
-
-### **Generated SBOMs**
-- **Main binary**: 4 SBOMs (SPDX/CycloneDX × LLD/Gold plugins)
-- **Shared libraries**: 10 SBOMs (3 libraries × 2 formats × 2 plugins)
-- **Total**: 14 SBOM files with extended DWARF information
-
-### **Shared Libraries Covered**
-- `heimdall-gold.so` (Gold plugin)
-- `heimdall-lld.so` (LLD plugin)
-- `libheimdall-core.so.1.0.0` (Core library)
-
-### **Usage**
-```bash
-# Build and generate all SBOMs
-./build.sh
-make build-test-sbom
-
-# SBOMs are generated in build/sboms/
-ls build/sboms/
-# heimdall-build-*.{spdx,cyclonedx.json}
-# heimdall-gold-*.{spdx,cyclonedx.json}
-# heimdall-lld-*.{spdx,cyclonedx.json}
-# libheimdall-core-*.{spdx,cyclonedx.json}
-```
+> **Note:** C++20/23 require GCC 13+ or Clang 14+ for `<format>` support. The build system will provide clear guidance if your compiler is too old.
 
 ## Quick Start
+
+### Prerequisites
+
+- **Linux**: GCC 4.8+ or Clang 3.3+, CMake 3.16+, LLVM development libraries
+- **macOS**: Xcode Command Line Tools, CMake 3.16+, LLVM (via Homebrew)
+- **SCL Support**: On RHEL/Rocky/CentOS, SCL toolsets are automatically detected
 
 ### Installation
 
 ```bash
-git clone https://github.com/heimdall-sbom/heimdall.git
+git clone https://github.com/your-org/heimdall.git
 cd heimdall
-./build.sh
+
+# Build with default settings (GCC, C++17)
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Or build all compatible standards
+./scripts/build_all_standards.sh
 ```
 
-### Usage
+### Usage Examples
 
 ```bash
-# Using LLD (macOS/Linux) with DWARF support and CycloneDX 1.6 (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.json \
-       main.o -o myapp
+# Build C++11 with system GCC
+./scripts/build.sh --standard 11 --compiler gcc --tests
 
-# Using LLD with SPDX 3.0 JSON (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.spdx.json \
-       --plugin-opt=format:spdx \
-       main.o -o myapp
+# Build C++17 with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
 
-# Using Gold (Linux only) with DWARF support
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.json \
-        main.o -o myapp
+# Build C++23 with GCC (requires SCL activation on RHEL/Rocky/CentOS)
+scl enable gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
+
+# Build with tests and SBOM generation
+./scripts/build.sh --standard 20 --all
+
+# Check what you can build on your system
+./scripts/show_build_compatibility.sh
 ```
 
-### Build System Integration
+### Using Heimdall as a Linker Plugin
 
-#### CMake
-```cmake
-find_library(HEIMDALL_LLD heimdall-lld)
-target_link_options(myapp PRIVATE
-    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
-    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp.json"
-    "LINKER:--plugin-opt=format:cyclonedx"
-)
+Once built, you can use Heimdall to generate SBOMs during compilation. See the complete usage guide in [`docs/usage.md`](docs/usage.md) and try the examples:
+
+**Format-Specific Examples:**
+```bash
+# SPDX-only example
+cd examples/heimdall-usage-spdx-example
+./run_example.sh
+
+# CycloneDX-only example  
+cd examples/heimdall-usage-cyclonedx-example
+./run_example.sh
+
+# General example with multiple formats
+cd examples/heimdall-usage-example
+./run_example.sh
+./advanced_example.sh
 ```
 
-#### Makefile
-```makefile
-LDFLAGS += -Wl,--plugin-opt=load:/usr/lib/heimdall-plugins/heimdall-lld.dylib
-LDFLAGS += -Wl,--plugin-opt=sbom-output:$(TARGET).json
-LDFLAGS += -Wl,--plugin-opt=format:cyclonedx
+**Quick Example:**
+```bash
+# Navigate to the example directory
+cd examples/heimdall-usage-example
+
+# Run the automated example
+./run_example.sh
+
+# Or try the advanced example with different SBOM formats
+./advanced_example.sh
 ```
-
-## Architecture
-
-Heimdall consists of several key components:
-
-### Core Components
-
-- **ComponentInfo**: Represents individual software components with metadata including DWARF debug information
-- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX 2.3/3.0, CycloneDX 1.4-1.6) with enhanced DWARF data
-- **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives) including DWARF debug info
-- **DWARFExtractor**: Robust DWARF debug information extraction using LLVM libraries with fallback symbol table extraction
-- **Utils**: Utility functions for file operations, path handling, and JSON formatting
-- **PluginInterface**: Common interface for both LLD and Gold plugins
-- **SBOMValidator**: Comprehensive validation tools for SBOM standards compliance
-- **SBOMComparator**: Tools for comparing, merging, and diffing SBOMs
-
-### Plugin Adapters
-
-- **LLDAdapter**: Interfaces with LLVM LLD linker plugin system
-- **GoldAdapter**: Interfaces with GNU Gold linker plugin system
-
-### File Format Support
-
-- **ELF**: Linux executables and libraries with full DWARF support
-- **Mach-O**: macOS executables and libraries with DWARF support
-- **PE**: Windows executables and libraries (basic support)
-- **Archive**: Static libraries (.a, .lib) with member extraction
-
-## Supported Platforms
-
-| Platform | LLD | Gold | DWARF Support | Status |
-|----------|-----|------|---------------|--------|
-| macOS (ARM64) | ✅ | ❌ | ✅ Full | LLD Only - Gold not available on macOS |
-| macOS (x86_64) | ✅ | ❌ | ✅ Full | LLD Only - Gold not available on macOS |
-| Linux (x86_64) | ✅ | ✅ | ✅ Full | Fully Supported |
-| Linux (ARM64) | ✅ | ✅ | ✅ Full | Fully Supported |
-
-**Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
 
 ## Building from Source
-
-### Prerequisites
-
-- C++11 compatible compiler (GCC 4.8+ or Clang 3.3+ recommended)
-- C++14, C++17, or C++23 compatible compiler for enhanced features
-- CMake 3.16+
-- OpenSSL
-- LLVM 19 (for DWARF support)
-- libelf (for ELF parsing)
-- BFD (for Gold plugin)
-
-### C++ Standard Support
-
-Heimdall supports C++11, C++14, C++17, and C++23 standards:
-
-**C++11 (Minimum):**
-- Basic functionality
-- Uses `.find() != std::string::npos` for string operations
-- Compatible with older compilers
-
-**C++14/17/23 (Enhanced features):**
-- Uses modern features like `std::string::contains()` (C++23)
-- `starts_with`, `ends_with` (C++20+)
-- Future support for `std::format`, `std::print`, and more
-
-### Building with Different Standards
-
-You can build Heimdall with any supported C++ standard:
-
-```bash
-# Default (C++23)
-cmake -B build -DHEIMDALL_CPP_STANDARD=23
-cmake --build build
-
-# C++17
-cmake -B build_cpp17 -DHEIMDALL_CPP_STANDARD=17
-cmake --build build_cpp17
-
-# C++14
-cmake -B build_cpp14 -DHEIMDALL_CPP_STANDARD=14
-cmake --build build_cpp14
-
-# C++11
-cmake -B build_cpp11 -DHEIMDALL_CPP_STANDARD=11
-cmake --build build_cpp11
-```
-
-### macOS Setup
-
-```bash
-# Install LLVM/LLD and other dependencies
-brew install llvm cmake ninja openssl
-export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-
-# Build Heimdall (LLD plugin only)
-./build.sh
-```
 
 ### Linux Setup
 
 #### Ubuntu/Debian
 ```bash
-# Install all dependencies including Gold linker
+# Install dependencies
 sudo apt-get update
 sudo apt-get install -y \
     build-essential \
     cmake \
     ninja-build \
-    binutils \
-    binutils-dev \
+    llvm-dev \
+    liblld-dev \
+    binutils-gold \
     libssl-dev \
-    libelf-dev \
-    libgtest-dev \
     pkg-config
 
-# Install LLVM 19 (recommended for full DWARF support)
-wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-sudo apt-get update
-sudo apt-get install -y llvm-19-dev liblld-19-dev llvm-dev
-
-# Build Heimdall with both LLD and Gold plugins
-./build.sh
+# Build Heimdall
+./scripts/build.sh --standard 17 --compiler gcc --tests
 ```
-
-**Note**: 
-- LLVM 19 is recommended for full DWARF debug info support. The build system will automatically detect and use LLVM 19 if available.
-- `binutils` provides the Gold linker (`ld.gold`), while `binutils-dev` provides the BFD development files needed for the Gold plugin.
-- `libgtest-dev` provides GoogleTest for unit testing. If not available, the build system will download it automatically.
-- The build system now includes Ubuntu-specific library paths (`/usr/lib/x86_64-linux-gnu`) for proper system library detection.
-
-**Troubleshooting BFD headers**: If you encounter "bfd.h not found" errors, try installing additional packages:
-```bash
-sudo apt-get install -y binutils-dev libbfd-dev
-```
-
-**Alternative LLVM versions**: If you prefer to use a different LLVM version, you can install it instead:
-```bash
-# For LLVM 14 (Ubuntu default)
-sudo apt-get install -y llvm-dev liblld-14-dev
-
-# For LLVM 15
-sudo apt-get install -y llvm-15-dev liblld-15-dev
-
-# For LLVM 16
-sudo apt-get install -y llvm-16-dev liblld-16-dev
-```
-
-**Library Detection**: Heimdall now properly detects system libraries on Ubuntu including:
-- OpenSSL libraries (`libssl.so.3`, `libcrypto.so.3`)
-- System C library (`libc.so.6`)
-- Pthread library (`libpthread.so.0`)
-- Other system libraries in `/usr/lib/x86_64-linux-gnu/`
 
 #### Fedora/RHEL/CentOS
 ```bash
-# Install dependencies (required for build and tests)
+# Install dependencies
 sudo yum install -y \
     gcc-c++ \
     cmake \
@@ -388,16 +180,18 @@ sudo yum install -y \
     lld-devel \
     binutils-gold \
     openssl-devel \
-    pkgconfig \
-    zlib-devel \
-    llvm-googletest \
-    binutils-devel
+    pkgconfig
 
-# Build Heimdall
-./build.sh
+# For C++20/23, you may need SCL toolsets
+sudo yum install -y gcc-toolset-14
+
+# Build with system GCC
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Or activate SCL for C++20/23
+scl enable gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
 ```
-
-**Note**: The `binutils-devel` package provides the BFD headers required for the Gold plugin. Without this package, the Gold plugin will not be built, but the LLD plugin and core library will still work.
 
 #### Arch Linux
 ```bash
@@ -413,200 +207,179 @@ sudo pacman -S \
     pkgconf
 
 # Build Heimdall
-./build.sh
+./scripts/build.sh --standard 17 --compiler gcc --tests
 ```
 
-### Installing GNU Gold Linker
-
-For detailed installation instructions, see [docs/gold-installation.md](docs/gold-installation.md).
-
-#### Linux (Recommended)
-
-GNU Gold is the default linker on most modern Linux distributions. If not available:
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install binutils-gold
-```
-
-**Fedora/RHEL/CentOS:**
-```bash
-sudo yum install binutils-gold
-```
-
-**Arch Linux:**
-```bash
-sudo pacman -S binutils
-```
-
-**Verify Gold installation:**
-```bash
-ld.gold --version
-```
-
-#### macOS (Not Supported)
-
-GNU Gold is not available on macOS because:
-- Gold is designed for ELF format binaries (Linux)
-- macOS uses Mach-O format binaries
-- Apple's linker ecosystem is different from Linux
-
-**Alternative on macOS:**
-- Use LLVM LLD linker (fully supported)
-- LLD provides similar performance benefits to Gold
-- LLD has better macOS integration
-
-#### Building Gold from Source (Linux only)
-
-If you need a specific version of Gold:
+### macOS Setup
 
 ```bash
-# Download and build binutils with Gold
-wget https://ftp.gnu.org/gnu/binutils/binutils-2.44.tar.gz
-tar xf binutils-2.44.tar.gz
-cd binutils-2.44
+# Install LLVM and other dependencies
+brew install llvm cmake ninja openssl
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 
-# Configure with Gold enabled
-./configure --enable-gold --enable-plugins --prefix=/usr/local
-make -j$(nproc)
-sudo make install
+# Build Heimdall (LLD plugin only)
+./scripts/build.sh --standard 17 --compiler gcc --tests
 
-# Verify installation
-/usr/local/bin/ld.gold --version
+# Or use Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
 ```
 
 ### Build Options
 
 ```bash
-# Debug build with sanitizers
-./build.sh --debug --sanitizers
+# Build with specific C++ standard
+./scripts/build.sh --standard 20 --compiler gcc --tests
 
-# Build only LLD plugin (macOS default)
-./build.sh --no-gold
+# Build with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
 
-# Build only Gold plugin (Linux only)
-./build.sh --no-lld
+# Build with tests and SBOM generation
+./scripts/build.sh --standard 23 --all
+
+# Clean build directory before building
+./scripts/build.sh --standard 17 --compiler gcc --clean --tests
 
 # Custom build directory
-./build.sh --build-dir mybuild --install-dir myinstall
-
-# Force build both plugins (Linux only)
-./build.sh --force-gold
+./scripts/build.sh --standard 17 --compiler gcc --build-dir mybuild --tests
 ```
 
-### Cleaning Build Artifacts
+### SCL Integration (RHEL/Rocky/CentOS)
 
-For a complete clean checkout (removes all build artifacts):
+For C++20/23 on RHEL/Rocky/CentOS systems:
 
 ```bash
-# Comprehensive clean (recommended for check-in)
-./clean.sh
+# Check available SCL toolsets
+scl --list
 
-# Or with custom directories
-./clean.sh --build-dir mybuild --install-dir myinstall
+# Activate GCC 14 toolset
+scl enable gcc-toolset-14 bash
+
+# Build C++23
+./scripts/build.sh --standard 23 --compiler gcc --tests
 ```
 
-For incremental clean (removes only object files and binaries):
-
-```bash
-cd build
-make clean
-```
-
-**Note**: `make clean` only removes compiled objects and binaries but leaves CMake cache files, installed files, and build configuration. Use `./clean.sh` for a complete clean checkout.
+The build system will automatically detect if you need SCL and provide clear instructions.
 
 ## Testing
 
-The project includes a comprehensive test suite using Google Test. To run the tests:
+The project includes a comprehensive test suite that validates compatibility across all supported C++ standards:
 
 ```bash
-# Build and run tests
-./build.sh
-cd build
-ctest --output-on-failure
+# Test with default settings
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Test specific C++ standard with Clang
+./scripts/build.sh --standard 20 --compiler clang --tests
+
+# Test all compatible standards
+./scripts/build_all_standards.sh
 ```
 
-For more detailed test information, see [tests/README.md](tests/README.md).
+The test suite validates:
+- C++11/14/17/20/23 feature compatibility
+- Multi-compiler support (GCC and Clang)
+- LLVM detection and compatibility
+- Filesystem operations across standards
+- SCL integration on supported platforms
 
-## Code Coverage
+## Usage
 
-The project supports code coverage analysis using gcov and lcov. Coverage reports help identify untested code paths and ensure comprehensive testing.
-
-### Enabling Coverage
-
-To enable code coverage, build with the `ENABLE_COVERAGE` option:
-
+### Using LLD (macOS/Linux) - Wrapper Approach
 ```bash
-# From project root
-mkdir -p build
-cd build
-cmake -DENABLE_COVERAGE=ON ..
-make -j$(nproc)
+# Step 1: Link normally with LLD
+g++ -fuse-ld=lld main.o utils.o math.o -o myapp
+
+# Step 2: Generate SBOM using wrapper tool
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so myapp --format spdx --output myapp.spdx
 ```
 
-### Running Coverage Analysis
-
-#### Using the Coverage Script (Recommended)
-
+### Using Gold (Linux only) - Plugin Interface
 ```bash
-# From project root
-./tests/coverage.sh
+# Direct plugin integration (requires dependencies)
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=myapp.spdx \
+    main.o utils.o math.o -o myapp
+
+# Or use wrapper approach if plugin fails
+g++ -fuse-ld=gold main.o utils.o math.o -o myapp
+heimdall-sbom ../../build-cpp23/lib/heimdall-gold.so myapp --format spdx --output myapp.spdx
 ```
 
-This script will:
-- Automatically enable coverage if not already enabled
-- Build the project with coverage instrumentation
-- Run all tests to generate coverage data
-- Generate both text and HTML coverage reports
-- Display a summary of coverage results
+### Plugin Compatibility
 
-#### Using the Simple Coverage Script
+**Important:** Heimdall uses different approaches for different linkers:
 
-For basic coverage information:
+- **LLVM LLD:** Uses wrapper approach with `heimdall-sbom` tool (works with all LLVM versions)
+- **LLVM 19+:** Plugin interface completely changed - wrapper approach is the only reliable method
+- **GNU Gold:** Uses native plugin interface with `--plugin` and `--plugin-opt` (requires dependencies)
 
+**Current Status:** Heimdall provides universal compatibility through the wrapper approach for LLD and plugin interface for Gold with automatic fallback.
+
+For detailed technical rationale and compatibility information, see [docs/rationale.md](docs/rationale.md).
+
+**Quick compatibility check:**
 ```bash
-# From project root
-./tests/simple_coverage.sh
+# Check your system
+ld.lld --version
+ld.gold --version
+
+# Test with the example
+cd examples/heimdall-usage-example
+./run_example.sh
 ```
 
-#### Using CMake Targets
+### Build System Integration
 
-```bash
-# From build directory
-make coverage        # Run tests and generate coverage
-make coverage-clean  # Clean coverage data
+#### CMake
+```cmake
+find_library(HEIMDALL_LLD heimdall-lld)
+target_link_options(myapp PRIVATE
+    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
+    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp.json"
+)
 ```
 
-### Coverage Reports
+#### Makefile
+```makefile
+LDFLAGS += -Wl,--plugin-opt=load:/usr/lib/heimdall-plugins/heimdall-lld.dylib
+LDFLAGS += -Wl,--plugin-opt=sbom-output:$(TARGET).json
+```
 
-Coverage reports are generated in the `build/coverage/` directory:
+## Architecture
 
-- `coverage_summary.txt`: Text summary of coverage statistics
-- `basic_coverage_report.txt`: Basic coverage information
-- `coverage.info`: lcov coverage data file
-- `html/`: HTML coverage report (if lcov is available)
+Heimdall consists of several key components:
 
-### Current Coverage
+### Core Components
 
-The current test suite provides:
-- **Line Coverage**: ~76.2%
-- **Function Coverage**: ~80.1%
+- **ComponentInfo**: Represents individual software components with metadata
+- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX)
+- **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives)
+- **Utils**: Utility functions for file operations, path handling, and JSON formatting
+- **PluginInterface**: Common interface for both LLD and Gold plugins
+- **Compatibility Layer**: Multi-standard C++ support with `heimdall::compat` namespace
 
-### Coverage Requirements
+### Plugin Adapters
 
-- **GCC/G++**: Coverage instrumentation is built into GCC
-- **lcov** (optional): For HTML coverage reports
-  - Ubuntu/Debian: `sudo apt-get install lcov`
-  - CentOS/RHEL: `sudo yum install lcov`
-  - macOS: `brew install lcov`
+- **LLDAdapter**: Interfaces with LLVM LLD linker plugin system
+- **GoldAdapter**: Interfaces with GNU Gold linker plugin system
 
-### Coverage Best Practices
+### File Format Support
 
-1. **Regular Coverage Runs**: Run coverage analysis regularly during development
-2. **Coverage Goals**: Aim for high coverage (>80%) on critical code paths
-3. **Coverage Gaps**: Use coverage reports to identify untested code
-4. **Coverage Cleanup**: Clean coverage data between runs for accurate results
-5. **CI Integration**: Include coverage analysis in continuous integration
+- **ELF**: Linux executables and libraries
+- **Mach-O**: macOS executables and libraries  
+- **PE**: Windows executables and libraries
+- **Archive**: Static libraries (.a, .lib)
+
+## Supported Platforms
+
+| Platform | LLD | Gold | Status |
+|----------|-----|------|--------|
+| macOS (ARM64) | ✅ | ❌ | LLD Only - Gold not available on macOS |
+| macOS (x86_64) | ✅ | ❌ | LLD Only - Gold not available on macOS |
+| Linux (x86_64) | ✅ | ✅ | Fully Supported |
+| Linux (ARM64) | ✅ | ✅ | Fully Supported |
+
+**Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
 
 ## Configuration
 
@@ -646,103 +419,73 @@ include_system_libraries=false
 
 ## SBOM Formats
 
-### SPDX 2.3 and 3.0
+### SPDX 2.3
 
-Heimdall generates SPDX 2.3 and 3.0 compliant documents with:
+Heimdall generates SPDX 2.3 compliant documents with:
 
-- **SPDX 2.3**: Tag-value format with package information, file-level details, license information, checksums (SHA256), and relationships including `GENERATED_FROM` for source files
-- **SPDX 3.0**: JSON format with enhanced relationships, extended metadata, and improved structure for modern tooling
-- **Version Selection**: Default to SPDX 3.0, can specify 2.3 for legacy compatibility
-- **Full Standards Compliance**: Complete compliance with SPDX 2.3 and 3.0 specifications
+- Package information
+- File-level details
+- License information
+- Checksums (SHA256)
+- Relationships between components
 
-### CycloneDX 1.4-1.6
+### CycloneDX 1.4
 
-Heimdall generates CycloneDX 1.4-1.6 compliant documents with:
+Heimdall generates CycloneDX 1.4 compliant documents with:
 
 - Component metadata
 - Dependencies
 - External references
 - PURL identifiers
 - Hash information
-- Enhanced properties with DWARF debug information
 
 ## Examples
 
-### Simple C Program with DWARF Support
+### Simple C Program
 
 ```bash
-# Compile with debug information
-gcc -g -c main.c -o main.o
+# Compile with SBOM generation
+gcc -c main.c -o main.o
 
-# Using LLD (macOS/Linux) with enhanced DWARF support and CycloneDX 1.6 (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:main-sbom.json \
-       --plugin-opt=format:cyclonedx \
-       main.o -o main
+# Using LLD (macOS/Linux) - Wrapper approach
+g++ -fuse-ld=lld main.o -o main
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so main --format spdx --output main.spdx
 
-# Using LLD with SPDX 3.0 JSON (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:main-sbom.spdx.json \
-       --plugin-opt=format:spdx \
-       main.o -o main
+# Using Gold (Linux only) - Plugin interface
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=main.spdx \
+    main.o -o main
 
-# Using Gold (Linux only) with enhanced DWARF support
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=main-sbom.json \
-        --plugin-opt format=cyclonedx \
-        main.o -o main
-
-# View generated SBOM with DWARF data
-cat main-sbom.json
+# View generated SBOM
+cat main.spdx
 ```
 
-### CMake Project with DWARF Integration
+### CMake Project
 
 ```cmake
 # Find Heimdall
 find_library(HEIMDALL_LLD heimdall-lld REQUIRED)
 
-# Add SBOM generation to target with DWARF support and CycloneDX 1.6 (default)
-target_link_options(myapp PRIVATE
-    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
-    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp-sbom.json"
-    "LINKER:--plugin-opt=format:cyclonedx"
+# Add SBOM generation to target (LLD wrapper approach)
+add_custom_command(TARGET myapp POST_BUILD
+    COMMAND heimdall-sbom ${HEIMDALL_LLD} $<TARGET_FILE:myapp> 
+            --format spdx --output ${CMAKE_BINARY_DIR}/myapp.spdx
+    COMMENT "Generating SBOM for myapp"
 )
-
-# Or with SPDX 3.0 JSON (default)
-target_link_options(myapp PRIVATE
-    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
-    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp-sbom.spdx.json"
-    "LINKER:--plugin-opt=format:spdx"
-)
-
-# Enable debug information for DWARF extraction
-target_compile_options(myapp PRIVATE -g)
 ```
 
-### Complex Project with Dependencies and DWARF
+### Complex Project with Dependencies
 
 ```bash
-# Build with multiple libraries using LLD and DWARF support with CycloneDX 1.6 (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:complex-app-sbom.json \
-       --plugin-opt=format:cyclonedx \
-       --plugin-opt=verbose \
-       main.o libmath.a libutils.so -o complex-app
+# Build with multiple libraries using LLD (wrapper approach)
+g++ -fuse-ld=lld main.o libmath.a libutils.so -o complex-app
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so complex-app --format spdx --output complex-app.spdx
 
-# Build with multiple libraries using LLD and SPDX 3.0 JSON (default)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:complex-app-sbom.spdx.json \
-       --plugin-opt=format:spdx \
-       --plugin-opt=verbose \
-       main.o libmath.a libutils.so -o complex-app
-
-# Build with multiple libraries using Gold and DWARF support (Linux only)
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=complex-app-sbom.json \
-        --plugin-opt format=cyclonedx \
-        --plugin-opt verbose \
-        main.o libmath.a libutils.so -o complex-app
+# Build with multiple libraries using Gold (plugin interface)
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=complex-app.spdx \
+    -Wl,--plugin-opt=verbose \
+    main.o libmath.a libutils.so -o complex-app
 ```
 
 ## API Reference
@@ -760,10 +503,6 @@ struct ComponentInfo {
     FileType fileType;
     std::vector<SymbolInfo> symbols;
     std::vector<std::string> dependencies;
-    std::vector<std::string> sourceFiles;   // DWARF source files
-    std::vector<std::string> functions;     // DWARF function names
-    std::vector<std::string> compileUnits;  // DWARF compile units
-    bool containsDebugInfo;                 // DWARF debug info flag
 };
 ```
 
@@ -776,10 +515,7 @@ public:
     void generateSBOM();
     void setOutputPath(const std::string& path);
     void setFormat(const std::string& format);
-    void setCycloneDXVersion(const std::string& version);  // 1.4, 1.5, 1.6
-    void setSPDXVersion(const std::string& version);       // 2.3, 3.0
     size_t getComponentCount() const;
-    void printStatistics() const;
 };
 ```
 
@@ -792,44 +528,25 @@ public:
     bool extractVersionInfo(ComponentInfo& component);
     bool extractLicenseInfo(ComponentInfo& component);
     bool extractSymbolInfo(ComponentInfo& component);
-    bool extractDebugInfo(ComponentInfo& component);  // DWARF extraction
-    void setExtractDebugInfo(bool extract);
-    void setVerbose(bool verbose);
 };
 ```
 
-### DWARFExtractor
+### Compatibility Layer
 
 ```cpp
-class DWARFExtractor {
-public:
-    bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles);
-    bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
-    bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
-    bool hasDWARFInfo(const std::string& filePath);
-};
-```
+#include "compat/compatibility.hpp"
 
-### SBOMValidator
+using namespace heimdall::compat;
 
-```cpp
-class SBOMValidator {
-public:
-    bool validateCycloneDX(const std::string& filePath);
-    bool validateSPDX(const std::string& filePath);
-    std::string getValidationErrors() const;
-};
-```
+// Works across all C++ standards
+optional<int> opt(42);
+string_view sv("hello");
+fs::path p("file.txt");
+variant<int, std::string> v(100);
 
-### SBOMComparator
-
-```cpp
-class SBOMComparator {
-public:
-    bool compareSBOMs(const std::string& sbom1, const std::string& sbom2);
-    bool mergeSBOMs(const std::vector<std::string>& sboms, const std::string& output);
-    std::string generateDiffReport(const std::string& sbom1, const std::string& sbom2);
-};
+// Utility functions
+string_view result = utils::to_string_view(42);
+int val = utils::get_optional_value(opt, 0);
 ```
 
 ## Troubleshooting
@@ -879,30 +596,32 @@ public:
    ```
    Solution: The core library will still build successfully. Install LLVM/LLD or Gold linker development packages if you need the respective plugins.
 
-8. **SBOM consistency tests failing on Ubuntu**
+8. **C++ Standard compatibility issues**
    ```
-   Error: OpenSSL libraries not found in SBOM
-   Error: System C library not found in SBOM
+   Error: 'std::filesystem' is not a member of 'std'
    ```
-   Solution: This issue has been fixed in the latest version. The plugins now properly detect Ubuntu-specific library paths (`/usr/lib/x86_64-linux-gnu`). Ensure you're using the latest version of Heimdall.
+   Solution: Use the compatibility layer with `heimdall::compat::fs` or build with `--cpp11-14 --no-boost` for older standards.
 
-9. **DWARF extraction not working**
+9. **SCL activation required**
    ```
-   Warning: No DWARF debug information found
+   Error: Your system GCC version (11.5.0) is not compatible with C++23
    ```
-   Solution: Ensure you're compiling with debug information (`-g` flag) and using LLVM 19+ for best DWARF support.
+   Solution: Activate the appropriate SCL toolset:
+   ```bash
+   scl enable gcc-toolset-14 bash
+   ./scripts/build.sh --standard 23 --compiler gcc --tests
+   ```
 
 ### Platform-Specific Issues
 
 #### macOS
 - **Gold plugin not built**: This is expected behavior. Gold is not available on macOS.
 - **LLD path issues**: Ensure LLVM is properly installed via Homebrew and PATH is set correctly.
-- **DWARF support**: Full DWARF support available with Homebrew LLVM.
 
 #### Linux
 - **Gold not found**: Install `binutils-gold` package for your distribution.
 - **Plugin loading errors**: Ensure Gold was built with plugin support enabled.
-- **DWARF support**: Full DWARF support available with LLVM 19+.
+- **SCL toolsets**: For C++20/23, you may need to activate SCL toolsets on RHEL/Rocky/CentOS.
 
 ### Debug Mode
 
@@ -937,51 +656,73 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development
 
 ### Documentation
 
-For detailed information about LLD integration rationale, see [docs/lld-integration-rationale.md](docs/lld-integration-rationale.md).
+For detailed information about linker integration rationale and technical approaches, see [docs/rationale.md](docs/rationale.md).
 
-For information about DWARF support and limitations, see [docs/heimdall-limitations.md](docs/heimdall-limitations.md).
+For comprehensive multi-standard C++ support documentation, see [docs/multi-standard-support.md](docs/multi-standard-support.md).
 
 ### Development Setup
 
 ```bash
 # Clone with submodules
-git clone --recursive https://github.com/heimdall-sbom/heimdall.git
+git clone --recursive https://github.com/your-org/heimdall.git
 cd heimdall
 
 # Build in debug mode
-./build.sh --debug
+./scripts/build.sh --standard 17 --compiler gcc --tests
 
-# Run tests
-cd build && make test
+# Test all C++ standards
+for std in 11 14 17 20 23; do
+    echo "Testing C++$std..."
+    ./scripts/build.sh --standard $std --compiler gcc --tests
+done
 
-# Clean for check-in (removes all build artifacts)
-./clean.sh
+# Test with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
 ```
 
-### Code Style
+## CMake Module Integration
 
-- Follow the existing C++ style
-- Use meaningful variable and function names
-- Add comments for complex logic
-- Include unit tests for new features
+Heimdall provides a CMake module for seamless SBOM generation in C++ projects. This module supports:
+- Executables and libraries (static/shared/interface)
+- Multi-target and installable projects
+- Automatic linker detection (LLD/Gold)
 
-## License
+### Quick Integration
 
-Licensed under the Apache License 2.0 - see [LICENSE](LICENSE) for details.
+1. Add the `cmake/` directory to your `CMAKE_MODULE_PATH`:
+   ```cmake
+   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+   ```
+2. Include the Heimdall modules:
+   ```cmake
+   include(HeimdallConfig)
+   include(HeimdallSBOM)
+   ```
+3. Add your targets and enable SBOM generation:
+   ```cmake
+   add_executable(myapp main.cpp)
+   heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
+   ```
 
-## Documentation Generation
+See [`cmake/templates/cmake-sbom-template.cmake`](cmake/templates/cmake-sbom-template.cmake) for a ready-to-use template.
 
-To generate HTML and PDF versions of the user and developer guides, you must have [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live) installed:
+### Advanced Example Projects
 
-```sh
-sudo dnf install -y pandoc texlive
+| Example Directory | Description |
+|-------------------|-------------|
+| `heimdall-cmake-module-example` | Multi-target (executable + static lib) |
+| `heimdall-cmake-sharedlib-example` | Shared library + executable |
+| `heimdall-cmake-interface-example` | Interface (header-only) + implementation + executable |
+| `heimdall-cmake-install-example` | Installable static lib + executable + headers |
+
+To build and test an example:
+```bash
+cd examples/<example-dir>
+mkdir build && cd build
+export HEIMDALL_ROOT="$(pwd)/../../../build"  # Adjust if needed
+cmake ..
+make
 ```
 
-Once installed, you can use the following CMake targets:
-
-- `make docs-html` – Generates HTML versions of the guides in the `docs/` directory
-- `make docs-pdf` – Generates PDF versions of the guides in the `docs/` directory
-
-The generated `.html` and `.pdf` files are not checked into version control (see `.gitignore`).
-
+For troubleshooting and advanced options, see [`docs/usage.md`](docs/usage.md) and the comments in the template file.
 

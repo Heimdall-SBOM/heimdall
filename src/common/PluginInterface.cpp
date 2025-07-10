@@ -28,6 +28,7 @@ limitations under the License.
 #include <regex>
 #include <sstream>
 #include "Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -35,7 +36,7 @@ namespace heimdall {
  * @brief Default constructor
  */
 PluginInterface::PluginInterface()
-    : sbomGenerator(std::make_unique<SBOMGenerator>()),
+    : sbomGenerator(heimdall::compat::make_unique<SBOMGenerator>()),
       verbose(false),
       extractDebugInfo(true),
       includeSystemLibraries(false) {}

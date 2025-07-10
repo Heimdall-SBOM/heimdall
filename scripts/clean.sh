@@ -69,12 +69,13 @@ while [[ $# -gt 0 ]]; do
             echo "  --help, -h           Show this help message"
             echo ""
             echo "This script removes all build artifacts including:"
-            echo "  - Build directory and all contents"
-            echo "  - Install directory and all contents"
-            echo "  - CMake cache files"
-            echo "  - Compiled binaries and libraries"
-            echo "  - Test outputs"
-            echo "  - Example build artifacts"
+echo "  - Build directory and all contents"
+echo "  - C++ standard-specific build directories (build-cpp11, build-cpp14, etc.)"
+echo "  - Install directory and all contents"
+echo "  - CMake cache files"
+echo "  - Compiled binaries and libraries"
+echo "  - Test outputs"
+echo "  - Example build artifacts (all heimdall-usage-* examples)"
             echo ""
             exit 0
             ;;
@@ -102,6 +103,19 @@ else
     print_warning "Build directory not found: $BUILD_DIR"
 fi
 
+# Clean C++ standard-specific build directories (both naming conventions)
+CXX_BUILD_DIRS=(
+    "build_cpp11" "build_cpp14" "build_cpp17" "build_cpp20" "build_cpp23"  # Old naming
+    "build-cpp11" "build-cpp14" "build-cpp17" "build-cpp20" "build-cpp23"  # New naming
+)
+for dir in "${CXX_BUILD_DIRS[@]}"; do
+    if [[ -d "$dir" ]]; then
+        print_status "Removing C++ build directory: $dir"
+        rm -rf "$dir"
+        print_success "C++ build directory removed: $dir"
+    fi
+done
+
 # Clean install directory
 if [[ -d "$INSTALL_DIR" ]]; then
     print_status "Removing install directory: $INSTALL_DIR"
@@ -112,10 +126,40 @@ else
 fi
 
 # Clean example build artifacts
+print_status "Cleaning example build artifacts..."
+
+# Clean openssl_pthread_demo example
 if [[ -d "examples/openssl_pthread_demo/build" ]]; then
-    print_status "Removing example build directory"
+    print_status "Removing openssl_pthread_demo build directory"
     rm -rf "examples/openssl_pthread_demo/build"
-    print_success "Example build directory removed"
+    print_success "openssl_pthread_demo build directory removed"
+fi
+
+# Clean heimdall-usage-example artifacts
+if [[ -d "examples/heimdall-usage-example" ]]; then
+    print_status "Cleaning heimdall-usage-example artifacts..."
+    cd examples/heimdall-usage-example
+    rm -f *.o app-* *.json *.spdx *.cyclonedx.json 2>/dev/null || true
+    cd ../..
+    print_success "heimdall-usage-example artifacts cleaned"
+fi
+
+# Clean heimdall-usage-spdx-example artifacts
+if [[ -d "examples/heimdall-usage-spdx-example" ]]; then
+    print_status "Cleaning heimdall-usage-spdx-example artifacts..."
+    cd examples/heimdall-usage-spdx-example
+    rm -f *.o app-* *.spdx 2>/dev/null || true
+    cd ../..
+    print_success "heimdall-usage-spdx-example artifacts cleaned"
+fi
+
+# Clean heimdall-usage-cyclonedx-example artifacts
+if [[ -d "examples/heimdall-usage-cyclonedx-example" ]]; then
+    print_status "Cleaning heimdall-usage-cyclonedx-example artifacts..."
+    cd examples/heimdall-usage-cyclonedx-example
+    rm -f *.o app-* *.cyclonedx.json 2>/dev/null || true
+    cd ../..
+    print_success "heimdall-usage-cyclonedx-example artifacts cleaned"
 fi
 
 # Clean test outputs
@@ -159,12 +203,18 @@ find . -name "Makefile" -not -path "./Makefile" -delete 2>/dev/null || true
 # Remove any CMakeFiles directories in subdirectories
 find . -name "CMakeFiles" -type d -exec rm -rf {} + 2>/dev/null || true
 
+# Clean any build directories that match our new naming pattern
+print_status "Cleaning any remaining build directories..."
+find . -maxdepth 1 -type d -name "build-cpp*" -exec rm -rf {} + 2>/dev/null || true
+find . -maxdepth 1 -type d -name "build_cpp*" -exec rm -rf {} + 2>/dev/null || true
+
 print_success "All build artifacts cleaned successfully!"
 
 print_status "Cleanup summary:"
 echo "  ✓ Build directory removed"
+echo "  ✓ C++ standard-specific build directories removed"
 echo "  ✓ Install directory removed"
-echo "  ✓ Example build artifacts removed"
+echo "  ✓ All example build artifacts removed (heimdall-usage-*, openssl_pthread_demo)"
 echo "  ✓ Test outputs removed"
 echo "  ✓ Stray object files and libraries removed"
 echo "  ✓ Generated SBOM files removed"

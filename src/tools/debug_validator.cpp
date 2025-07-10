@@ -1,4 +1,4 @@
-#include "src/common/SBOMValidator.hpp"
+#include "../common/SBOMValidator.hpp"
 #include <iostream>
 
 int main() {
