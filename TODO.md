@@ -59,6 +59,18 @@ This document tracks all missing implementation tasks and planned features for t
 - ✅ **Documentation Updates**: Updated README, usage.md, and created comprehensive rationale.md
 - ✅ **Linker Integration Clarity**: Documented LLD wrapper approach and Gold plugin approach with technical rationale
 
+### ✅ CMake Module and Advanced Examples (2025-07-10)
+- [x] Heimdall CMake module (FindHeimdall.cmake, HeimdallConfig.cmake, HeimdallSBOM.cmake)
+- [x] User-facing CMake usage template
+- [x] Multi-target example (executable + static lib)
+- [x] Shared library example
+- [x] Interface library example
+- [x] Installable project example
+- [x] Documentation updates in usage.md, README.md, cmake_module.md
+- [x] Troubleshooting and integration instructions
+- [ ] CI integration for CMake module examples (planned)
+- [ ] Windows support for CMake module (planned)
+
 ## Critical Missing Components
 
 ### 🚨 **DWARF Data Utilization in SBOM Formats (HIGH PRIORITY)**

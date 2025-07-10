@@ -77,21 +77,65 @@ g++ -fuse-ld=lld file.cpp -o file
 heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so file --format spdx --output file.spdx
 ```
 
-## Method 4: Using CMake (if you have a CMake project)
+## Method 4: Using CMake (Recommended for Modern Projects)
 
-```cmake
-# In your CMakeLists.txt
-find_library(HEIMDALL_LLD heimdall-lld REQUIRED)
+Heimdall provides a powerful CMake module for seamless SBOM generation. This module supports:
+- Executables and libraries (static/shared/interface)
+- Multi-target projects
+- Installable projects
+- Automatic linker detection (LLD/Gold)
 
-add_executable(myapp file.cpp)
+### Quick Integration
 
-# Add SBOM generation as post-build step
-add_custom_command(TARGET myapp POST_BUILD
-    COMMAND heimdall-sbom ${HEIMDALL_LLD} $<TARGET_FILE:myapp> 
-            --format spdx --output ${CMAKE_BINARY_DIR}/myapp.spdx
-    COMMENT "Generating SBOM for myapp"
-)
+1. Add the `cmake/` directory to your `CMAKE_MODULE_PATH`:
+   ```cmake
+   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+   ```
+2. Include the Heimdall modules:
+   ```cmake
+   include(HeimdallConfig)
+   include(HeimdallSBOM)
+   ```
+3. Add your targets and enable SBOM generation:
+   ```cmake
+   add_executable(myapp main.cpp)
+   heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
+   ```
+
+See [`cmake/templates/cmake-sbom-template.cmake`](../cmake/templates/cmake-sbom-template.cmake) for a ready-to-use template.
+
+### Advanced CMake Examples
+
+Heimdall includes advanced CMake module examples:
+
+| Example Directory | Description |
+|-------------------|-------------|
+| `heimdall-cmake-module-example` | Multi-target (executable + static lib) |
+| `heimdall-cmake-sharedlib-example` | Shared library + executable |
+| `heimdall-cmake-interface-example` | Interface (header-only) + implementation + executable |
+| `heimdall-cmake-install-example` | Installable static lib + executable + headers |
+
+To build and test an example:
+```bash
+cd examples/<example-dir>
+mkdir build && cd build
+export HEIMDALL_ROOT="$(pwd)/../../../build"  # Adjust if needed
+cmake ..
+make
 ```
+
+### Troubleshooting CMake Module Integration
+
+- **heimdall-sbom tool not found:**
+  - Set `HEIMDALL_ROOT` to your build directory before running CMake:
+    ```bash
+    export HEIMDALL_ROOT="$(pwd)/../../../build"
+    ```
+  - Or install Heimdall system-wide.
+- **Plugin not found:**
+  - Ensure you built the plugins and set `HEIMDALL_ROOT` correctly.
+- **SBOM not generated:**
+  - Check build output for errors and ensure post-build steps ran.
 
 ## heimdall-sbom Tool Options
 

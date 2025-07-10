@@ -680,3 +680,49 @@ done
 ./scripts/build.sh --standard 17 --compiler clang --tests
 ```
 
+## CMake Module Integration
+
+Heimdall provides a CMake module for seamless SBOM generation in C++ projects. This module supports:
+- Executables and libraries (static/shared/interface)
+- Multi-target and installable projects
+- Automatic linker detection (LLD/Gold)
+
+### Quick Integration
+
+1. Add the `cmake/` directory to your `CMAKE_MODULE_PATH`:
+   ```cmake
+   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+   ```
+2. Include the Heimdall modules:
+   ```cmake
+   include(HeimdallConfig)
+   include(HeimdallSBOM)
+   ```
+3. Add your targets and enable SBOM generation:
+   ```cmake
+   add_executable(myapp main.cpp)
+   heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
+   ```
+
+See [`cmake/templates/cmake-sbom-template.cmake`](cmake/templates/cmake-sbom-template.cmake) for a ready-to-use template.
+
+### Advanced Example Projects
+
+| Example Directory | Description |
+|-------------------|-------------|
+| `heimdall-cmake-module-example` | Multi-target (executable + static lib) |
+| `heimdall-cmake-sharedlib-example` | Shared library + executable |
+| `heimdall-cmake-interface-example` | Interface (header-only) + implementation + executable |
+| `heimdall-cmake-install-example` | Installable static lib + executable + headers |
+
+To build and test an example:
+```bash
+cd examples/<example-dir>
+mkdir build && cd build
+export HEIMDALL_ROOT="$(pwd)/../../../build"  # Adjust if needed
+cmake ..
+make
+```
+
+For troubleshooting and advanced options, see [`docs/usage.md`](docs/usage.md) and the comments in the template file.
+
