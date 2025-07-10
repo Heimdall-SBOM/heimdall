@@ -289,10 +289,23 @@ std::string formatJsonArray(const std::vector<std::string>& array);
 std::string detectLicenseFromName(const std::string& componentName);
 
 /**
+ * @brief Resolve a library name to its full path
+ * @param libraryName The library name (e.g., "libssl.so.3")
+ * @return The full path to the library, or empty string if not found
+ */
+std::string resolveLibraryPath(const std::string& libraryName);
+
+/**
  * @brief Detect license based on file path
  * @param filePath The path to the file
  * @return The detected license, or empty if not detected
  */
 std::string detectLicenseFromPath(const std::string& filePath);
+
+/**
+ * @brief Generate a UUID v4 string
+ * @return A UUID v4 string in the format "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+ */
+std::string generateUUID();
 
 }  // namespace heimdall::Utils

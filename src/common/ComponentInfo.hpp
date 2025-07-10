@@ -37,7 +37,8 @@ enum class FileType : std::uint8_t {
     Object,         ///< Object file (.o, .obj)
     StaticLibrary,  ///< Static library (.a, .lib)
     SharedLibrary,  ///< Shared library (.so, .dylib, .dll)
-    Executable      ///< Executable file
+    Executable,     ///< Executable file
+    Source          ///< Source file (.c, .cpp, .h, etc.)
 };
 
 /**
@@ -94,6 +95,8 @@ struct ComponentInfo {
     std::vector<SectionInfo> sections;      ///< List of sections
     std::vector<std::string> dependencies;  ///< List of dependencies
     std::vector<std::string> sourceFiles;   ///< List of source files
+    std::vector<std::string> functions;     ///< List of function names from DWARF
+    std::vector<std::string> compileUnits;  ///< List of compile units from DWARF
 
     bool wasProcessed = false;                    ///< Whether the component has been processed
     std::string processingError;                  ///< Error message if processing failed

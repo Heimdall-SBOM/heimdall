@@ -52,13 +52,15 @@ static int internal_function() {
         test_executable = test_dir / "test_program";
         std::string compile_cmd =
             "gcc -g -o " + test_executable.string() + " " + test_source.string() + " 2>/dev/null";
-        system(compile_cmd.c_str());
+        int compile_result = system(compile_cmd.c_str());
+        (void)compile_result; // Suppress unused variable warning
 
         // Create a simple object file with debug info
         test_object = test_dir / "testlib.o";
         std::string obj_compile_cmd =
             "gcc -c -g -o " + test_object.string() + " " + test_source.string() + " 2>/dev/null";
-        system(obj_compile_cmd.c_str());
+        int obj_compile_result = system(obj_compile_cmd.c_str());
+        (void)obj_compile_result; // Suppress unused variable warning
 
         // Fallback to dummy files if compilation fails
         if (!std::filesystem::exists(test_executable)) {

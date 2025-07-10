@@ -29,6 +29,7 @@ limitations under the License.
 #include "DWARFExtractor.hpp"
 #include <algorithm>
 #include <atomic>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -206,13 +207,15 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath,
                 extractFunctionsFromDie(unit->getUnitDIE(), functions);
             }
         }
-        return !functions.empty();
+        if (!functions.empty()) {
+            return true;
+        }
     }
-    // Fallback to heuristic if LLVM fails
+    // Fallback to symbol table extraction if LLVM DWARF fails
 #endif
-    (void)filePath;
-    (void)functions;
-    return false;
+    
+    // Fallback: Extract functions from symbol table
+    return extractFunctionsFromSymbolTable(filePath, functions);
 }
 
 /**
@@ -341,8 +344,14 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
         try {
             auto newContext = llvm::DWARFContext::create(
                 *g_objectFile, llvm::DWARFContext::ProcessDebugRelocations::Process, nullptr, "",
-                [](llvm::Error) {},  // RecoverableErrorHandler - ignore errors
-                [](llvm::Error) {},  // WarningHandler - ignore warnings
+                [](llvm::Error) {
+                    // Intentionally empty: Ignore recoverable DWARF parsing errors
+                    // to continue processing even with malformed debug information
+                },
+                [](llvm::Error) {
+                    // Intentionally empty: Ignore DWARF parsing warnings
+                    // to avoid cluttering output with non-critical debug info issues
+                },
                 false);              // ThreadSafe - single-threaded for now
 
             // Additional safety check - ensure the context is valid
@@ -382,8 +391,6 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 #endif
         return nullptr;
     }
-
-    return nullptr;
 }
 
 /**
@@ -617,6 +624,90 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath,
 #else
     (void)filePath;
     (void)sourceFiles;
+    return false;
+#endif
+}
+
+/**
+ * @brief Fallback function extraction using symbol table
+ *
+ * Extracts function names from the ELF symbol table when DWARF extraction fails.
+ * This is less comprehensive than DWARF extraction but provides basic function information.
+ *
+ * @param filePath Path to the ELF file
+ * @param functions Output vector for function names
+ * @return true if any functions were found, false otherwise
+ */
+bool DWARFExtractor::extractFunctionsFromSymbolTable(const std::string& filePath,
+                                                     std::vector<std::string>& functions) {
+#ifdef __linux__
+    elf_version(EV_CURRENT);
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        return false;
+    }
+
+    Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
+    if (!elf) {
+        close(fd);
+        return false;
+    }
+
+    Elf_Scn* scn = nullptr;
+    Elf64_Shdr* shdr = nullptr;
+    bool found = false;
+
+    while ((scn = elf_nextscn(elf, scn)) != nullptr) {
+        shdr = elf64_getshdr(scn);
+        if (!shdr) {
+            continue;
+        }
+
+        if (shdr->sh_type == SHT_SYMTAB) {
+            Elf_Data* data = elf_getdata(scn, nullptr);
+            if (!data) {
+                continue;
+            }
+
+            Elf64_Sym* syms = (Elf64_Sym*)data->d_buf;
+            int num_syms = data->d_size / sizeof(Elf64_Sym);
+
+            for (int i = 0; i < num_syms; i++) {
+                Elf64_Sym& sym = syms[i];
+                
+                // Check if this is a function symbol (STT_FUNC)
+                if (ELF64_ST_TYPE(sym.st_info) == STT_FUNC) {
+                    // Get symbol name
+                    char* name = elf_strptr(elf, shdr->sh_link, sym.st_name);
+                    if (name && strlen(name) > 0) {
+                        std::string funcName(name);
+                        
+                        // Filter out common system functions and internal symbols
+                        if (!funcName.empty() && 
+                            funcName[0] != '_' && 
+                            funcName.find("__") == std::string::npos &&
+                            funcName.find("_start") == std::string::npos &&
+                            funcName.find("_fini") == std::string::npos &&
+                            funcName.find("_init") == std::string::npos) {
+                            
+                            if (std::find(functions.begin(), functions.end(), funcName) == functions.end()) {
+                                functions.push_back(funcName);
+                                found = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    elf_end(elf);
+    close(fd);
+
+    return found;
+#else
+    (void)filePath;
+    (void)functions;
     return false;
 #endif
 }

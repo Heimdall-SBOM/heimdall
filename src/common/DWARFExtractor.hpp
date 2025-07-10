@@ -69,6 +69,26 @@ public:
     DWARFExtractor();
 
     /**
+     * @brief Copy constructor - deleted due to non-copyable LLVM resources
+     */
+    DWARFExtractor(const DWARFExtractor&) = delete;
+
+    /**
+     * @brief Copy assignment operator - deleted due to non-copyable LLVM resources
+     */
+    DWARFExtractor& operator=(const DWARFExtractor&) = delete;
+
+    /**
+     * @brief Move constructor
+     */
+    DWARFExtractor(DWARFExtractor&&) noexcept = default;
+
+    /**
+     * @brief Move assignment operator
+     */
+    DWARFExtractor& operator=(DWARFExtractor&&) noexcept = default;
+
+    /**
      * @brief Destructor
      */
     ~DWARFExtractor();
@@ -134,6 +154,16 @@ private:
      */
     bool extractSourceFilesHeuristic(const std::string& filePath,
                                      std::vector<std::string>& sourceFiles);
+
+    /**
+     * @brief Fallback function extraction using symbol table
+     *
+     * @param filePath Path to the ELF file
+     * @param functions Output vector for function names
+     * @return true if any functions were found, false otherwise
+     */
+    bool extractFunctionsFromSymbolTable(const std::string& filePath,
+                                         std::vector<std::string>& functions);
 
 private:
 #ifdef LLVM_DWARF_AVAILABLE

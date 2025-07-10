@@ -55,12 +55,14 @@ const char* test_license = "MIT";
         // Compile shared library
         std::string compile_cmd = "gcc -shared -fPIC -g -o " + test_lib.string() + " " +
                                   test_source.string() + " 2>/dev/null";
-        system(compile_cmd.c_str());
+        int compile_result = system(compile_cmd.c_str());
+        (void)compile_result; // Suppress unused variable warning
 
         // Create archive file
         std::string archive_cmd =
             "ar rcs " + test_archive.string() + " " + test_lib.string() + " 2>/dev/null";
-        system(archive_cmd.c_str());
+        int archive_result = system(archive_cmd.c_str());
+        (void)archive_result; // Suppress unused variable warning
 
         // Create dummy files for other formats
         std::ofstream(test_pe_file) << "dummy PE file";

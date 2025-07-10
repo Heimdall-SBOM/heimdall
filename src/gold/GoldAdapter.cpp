@@ -38,6 +38,7 @@ bool GoldAdapter::Impl::initialize() {
     includeSystemLibraries = false;
     outputPath = "heimdall-gold-sbom.json";
     format = "spdx";
+    cyclonedxVersion = "1.6";
     return true;
 }
 
@@ -90,6 +91,15 @@ void GoldAdapter::Impl::setFormat(const std::string& fmt) {
     sbomGenerator->setFormat(fmt);
 }
 
+void GoldAdapter::Impl::setCycloneDXVersion(const std::string& version) {
+    cyclonedxVersion = version;
+    sbomGenerator->setCycloneDXVersion(version);
+}
+
+void GoldAdapter::Impl::setSPDXVersion(const std::string& version) {
+    sbomGenerator->setSPDXVersion(version);
+}
+
 void GoldAdapter::Impl::generateSBOM() {
     sbomGenerator->setOutputPath(outputPath);
     sbomGenerator->setFormat(format);
@@ -136,6 +146,12 @@ void GoldAdapter::setOutputPath(const std::string& path) {
 }
 void GoldAdapter::setFormat(const std::string& format) {
     pImpl->setFormat(format);
+}
+void GoldAdapter::setCycloneDXVersion(const std::string& version) {
+    pImpl->setCycloneDXVersion(version);
+}
+void GoldAdapter::setSPDXVersion(const std::string& version) {
+    pImpl->setSPDXVersion(version);
 }
 void GoldAdapter::generateSBOM() {
     pImpl->generateSBOM();

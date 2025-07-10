@@ -94,6 +94,19 @@ public:
     virtual void setFormat(const std::string& format) = 0;
 
     /**
+     * @brief Set the CycloneDX specification version
+     * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
+     * @note Only applies when format is "cyclonedx"
+     */
+    virtual void setCycloneDXVersion(const std::string& version);
+
+    /**
+     * @brief Set the SPDX specification version
+     * @param version The SPDX version (e.g., "2.3", "3.0")
+     */
+    virtual void setSPDXVersion(const std::string& version);
+
+    /**
      * @brief Generate the SBOM
      */
     virtual void generateSBOM() = 0;
@@ -170,6 +183,8 @@ protected:
 struct PluginConfig {
     std::string outputPath = "heimdall-sbom.json";  ///< Output file path
     std::string format = "spdx";                    ///< Output format
+    std::string cyclonedxVersion = "1.6";           ///< CycloneDX specification version
+    std::string spdxVersion = "3.0";                ///< SPDX specification version
     bool verbose = false;                           ///< Verbose output flag
     bool extractDebugInfo = true;                   ///< Debug info extraction flag
     bool includeSystemLibraries = false;            ///< System library inclusion flag

@@ -177,40 +177,46 @@ char* concatenate_strings(const char* str1, const char* str2) {
         std::string math_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                    math_object.string() + " " + math_source.string() +
                                    " 2>/dev/null";
-        system(math_obj_cmd.c_str());
+        int math_obj_result = system(math_obj_cmd.c_str());
+        (void)math_obj_result; // Suppress unused variable warning
 
         string_object = test_dir / "string_utils.o";
         std::string string_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                      string_object.string() + " " + string_source.string() +
                                      " 2>/dev/null";
-        system(string_obj_cmd.c_str());
+        int string_obj_result = system(string_obj_cmd.c_str());
+        (void)string_obj_result; // Suppress unused variable warning
 
         // Compile main executable
         main_executable = test_dir / "integration_test";
         std::string main_cmd = "gcc -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                main_executable.string() + " " + main_source.string() + " " +
                                math_object.string() + " " + string_object.string() + " 2>/dev/null";
-        system(main_cmd.c_str());
+        int main_result = system(main_cmd.c_str());
+        (void)main_result; // Suppress unused variable warning
 
         // Create shared library
         math_library = test_dir / "libmath_utils.so";
         std::string math_lib_cmd =
             "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
             math_library.string() + " " + math_source.string() + " 2>/dev/null";
-        system(math_lib_cmd.c_str());
+        int math_lib_result = system(math_lib_cmd.c_str());
+        (void)math_lib_result; // Suppress unused variable warning
 
         string_library = test_dir / "libstring_utils.so";
         std::string string_lib_cmd =
             "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
             string_library.string() + " " + string_source.string() + " 2>/dev/null";
-        system(string_lib_cmd.c_str());
+        int string_lib_result = system(string_lib_cmd.c_str());
+        (void)string_lib_result; // Suppress unused variable warning
 
         // Create static library
         static_library = test_dir / "libutils.a";
         std::string static_lib_cmd = "ar rcs " + static_library.string() + " " +
                                      math_object.string() + " " + string_object.string() +
                                      " 2>/dev/null";
-        system(static_lib_cmd.c_str());
+        int static_lib_result = system(static_lib_cmd.c_str());
+        (void)static_lib_result; // Suppress unused variable warning
 
         // Fallback to dummy files if compilation fails
         if (!std::filesystem::exists(main_executable)) {

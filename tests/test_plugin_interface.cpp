@@ -84,6 +84,18 @@ public:
         }
     }
 
+    void setCycloneDXVersion(const std::string& version) override {
+        if (sbomGenerator) {
+            sbomGenerator->setCycloneDXVersion(version);
+        }
+    }
+
+    void setSPDXVersion(const std::string& version) override {
+        if (sbomGenerator) {
+            sbomGenerator->setSPDXVersion(version);
+        }
+    }
+
     void generateSBOM() override {
         if (sbomGenerator) {
             sbomGenerator->generateSBOM();
@@ -255,6 +267,21 @@ TEST_F(PluginInterfaceTest, SetFormat) {
     plugin->setFormat("cyclonedx");
     // Test that the method doesn't crash
     EXPECT_NO_THROW(plugin->setFormat("json"));
+}
+
+TEST_F(PluginInterfaceTest, SetCycloneDXVersion) {
+    plugin->setCycloneDXVersion("1.4");
+    plugin->setCycloneDXVersion("1.5");
+    plugin->setCycloneDXVersion("1.6");
+    // Test that the method doesn't crash
+    EXPECT_NO_THROW(plugin->setCycloneDXVersion("2.0"));
+}
+
+TEST_F(PluginInterfaceTest, SetSPDXVersion) {
+    plugin->setSPDXVersion("2.3");
+    plugin->setSPDXVersion("3.0");
+    // Test that the method doesn't crash
+    EXPECT_NO_THROW(plugin->setSPDXVersion("2.4"));
 }
 
 TEST_F(PluginInterfaceTest, SetVerbose) {

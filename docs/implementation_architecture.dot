@@ -1,0 +1,103 @@
+digraph ImplementationArchitecture {
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=9];
+    
+    // Build Configuration
+    subgraph cluster_build_config {
+        label="Build Configuration";
+        style=filled;
+        color=lightblue;
+        
+        build_script [label="build.sh\n--cpp11/--cpp14/--cpp17", fillcolor=lightcyan];
+        cmake_config [label="CMakeLists.txt\nC++ Standard Detection", fillcolor=lightcyan];
+        feature_detection [label="Feature Detection\nMacros", fillcolor=lightcyan];
+    }
+    
+    // Compatibility Layer
+    subgraph cluster_compatibility {
+        label="Compatibility Layer";
+        style=filled;
+        color=lightgreen;
+        
+        optional_impl [label="optional.hpp\nC++11/14 Implementation", fillcolor=lightyellow];
+        string_view_impl [label="string_view.hpp\nC++11/14 Implementation", fillcolor=lightyellow];
+        filesystem_impl [label="filesystem.hpp\nC++11/14 Wrapper", fillcolor=lightyellow];
+        variant_impl [label="variant.hpp\nC++11/14 Implementation", fillcolor=lightyellow];
+    }
+    
+    // LLVM Abstraction
+    subgraph cluster_llvm_abstraction {
+        label="LLVM Version Abstraction";
+        style=filled;
+        color=lightcoral;
+        
+        llvm_detector [label="LLVMDetector\nVersion Detection", fillcolor=lightpink];
+        dwarf_cpp17 [label="DWARF C++17\nFull Implementation", fillcolor=lightgreen];
+        dwarf_cpp14 [label="DWARF C++14\nBasic Implementation", fillcolor=lightyellow];
+        dwarf_cpp11 [label="DWARF C++11\nNo Implementation", fillcolor=lightcoral];
+    }
+    
+    // Core Implementation
+    subgraph cluster_core_impl {
+        label="Core Implementation";
+        style=filled;
+        color=lightgray;
+        
+        component_info [label="ComponentInfo.cpp\nUses Compatibility Layer", fillcolor=white];
+        metadata_extractor [label="MetadataExtractor.cpp\nConditional DWARF", fillcolor=white];
+        sbom_generator [label="SBOMGenerator.cpp\nStandard-Agnostic", fillcolor=white];
+        utils [label="Utils.cpp\nCompatibility Wrapper", fillcolor=white];
+    }
+    
+    // Conditional Compilation
+    subgraph cluster_conditional {
+        label="Conditional Compilation";
+        style=filled;
+        color=lightsteelblue;
+        
+        cpp11_build [label="C++11 Build\nLimited Features", fillcolor=lightcoral];
+        cpp14_build [label="C++14 Build\nBasic Features", fillcolor=lightyellow];
+        cpp17_build [label="C++17+ Build\nFull Features", fillcolor=lightgreen];
+    }
+    
+    // Build flow
+    build_script -> cmake_config [label="Passes Options"];
+    cmake_config -> feature_detection [label="Sets Macros"];
+    feature_detection -> optional_impl [label="Conditional Include"];
+    feature_detection -> string_view_impl [label="Conditional Include"];
+    feature_detection -> filesystem_impl [label="Conditional Include"];
+    feature_detection -> variant_impl [label="Conditional Include"];
+    
+    // LLVM detection flow
+    cmake_config -> llvm_detector [label="Detects Version"];
+    llvm_detector -> dwarf_cpp17 [label="If LLVM 19+"];
+    llvm_detector -> dwarf_cpp14 [label="If LLVM 7-10"];
+    llvm_detector -> dwarf_cpp11 [label="If No LLVM"];
+    
+    // Core implementation dependencies
+    component_info -> optional_impl [label="Uses"];
+    component_info -> string_view_impl [label="Uses"];
+    metadata_extractor -> dwarf_cpp17 [label="Conditional"];
+    metadata_extractor -> dwarf_cpp14 [label="Conditional"];
+    metadata_extractor -> dwarf_cpp11 [label="Conditional"];
+    sbom_generator -> filesystem_impl [label="Uses"];
+    utils -> variant_impl [label="Uses"];
+    
+    // Build outputs
+    component_info -> cpp11_build [label="Compiles"];
+    component_info -> cpp14_build [label="Compiles"];
+    component_info -> cpp17_build [label="Compiles"];
+    
+    metadata_extractor -> cpp11_build [label="No DWARF"];
+    metadata_extractor -> cpp14_build [label="Basic DWARF"];
+    metadata_extractor -> cpp17_build [label="Full DWARF"];
+    
+    sbom_generator -> cpp11_build [label="Core Features"];
+    sbom_generator -> cpp14_build [label="Core Features"];
+    sbom_generator -> cpp17_build [label="All Features"];
+    
+    utils -> cpp11_build [label="Limited"];
+    utils -> cpp14_build [label="Basic"];
+    utils -> cpp17_build [label="Full"];
+}

@@ -87,21 +87,24 @@ int main() {
         std::string elf_cmd = "gcc -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                               test_elf_executable.string() + " " + test_source.string() +
                               " 2>/dev/null";
-        system(elf_cmd.c_str());
+        int elf_result = system(elf_cmd.c_str());
+        (void)elf_result; // Suppress unused variable warning
 
         // Linux ELF shared library
         test_elf_library = test_dir / "libtest_elf.so";
         std::string elf_lib_cmd =
             "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
             test_elf_library.string() + " " + test_source.string() + " 2>/dev/null";
-        system(elf_lib_cmd.c_str());
+        int elf_lib_result = system(elf_lib_cmd.c_str());
+        (void)elf_lib_result; // Suppress unused variable warning
 
         // Linux ELF object file
         test_elf_object = test_dir / "test_elf.o";
         std::string elf_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                   test_elf_object.string() + " " + test_source.string() +
                                   " 2>/dev/null";
-        system(elf_obj_cmd.c_str());
+        int elf_obj_result = system(elf_obj_cmd.c_str());
+        (void)elf_obj_result; // Suppress unused variable warning
 
         // Create dummy files for other platforms
         test_macho_executable = test_dir / "test_macho";

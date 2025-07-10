@@ -89,8 +89,10 @@ extractor.extractSourceFiles("file2.elf", sourceFiles2);
 
 ### **Compiler Requirements**
 
-- **C++17** or later required
-- **GCC 7+** or **Clang 6+** recommended
+- **C++11** minimum (basic functionality)
+- **C++14/17/23** recommended (enhanced features)
+- **GCC 4.8+** or **Clang 3.3+** for C++11
+- **GCC 7+** or **Clang 6+** recommended for C++17+
 - **MSVC 2019+** for Windows builds
 
 ## Performance Limitations

@@ -47,6 +47,26 @@ PluginInterface::PluginInterface()
 PluginInterface::~PluginInterface() = default;
 
 /**
+ * @brief Default implementation for setting CycloneDX version
+ * @param version The CycloneDX version
+ */
+void PluginInterface::setCycloneDXVersion(const std::string& version) {
+    if (sbomGenerator) {
+        sbomGenerator->setCycloneDXVersion(version);
+    }
+}
+
+/**
+ * @brief Default implementation for setting SPDX version
+ * @param version The SPDX version
+ */
+void PluginInterface::setSPDXVersion(const std::string& version) {
+    if (sbomGenerator) {
+        sbomGenerator->setSPDXVersion(version);
+    }
+}
+
+/**
  * @brief Add a component to the processed list
  * @param component The component to add
  */
