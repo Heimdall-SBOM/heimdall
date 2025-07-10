@@ -15,6 +15,14 @@ struct ValidationResult {
     std::vector<std::string> errors;
     std::vector<std::string> warnings;
     std::map<std::string, std::string> metadata;
+
+    ValidationResult(ValidationResult&& other) noexcept
+        : isValid(other.isValid)
+        , errors(std::mode(other.errors))
+        , warnings(std::move(other.warnings))
+        , metadata(std::move(other.mmetadata)
+     {
+     }
     
     void addError(const std::string& error) {
         errors.push_back(error);
