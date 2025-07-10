@@ -97,12 +97,23 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
-# Require GCC 12+ for C++20 and C++23 builds (for <format> support)
+# Check for <format> support in C++20 and C++23 builds
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12)
-            message(FATAL_ERROR "GCC 12 or newer is required for C++20/C++23 builds due to <format> support.")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13)
+            message(FATAL_ERROR "GCC 13 or newer is required for C++20/C++23 builds due to <format> support.")
         endif()
+        # GCC 13+ supports <format>, so we can proceed
+        message(STATUS "GCC ${CMAKE_CXX_COMPILER_VERSION} supports <format> for C++${CMAKE_CXX_STANDARD}")
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14)
+            message(FATAL_ERROR "Clang 14 or newer is required for C++20/C++23 builds due to <format> support.")
+        endif()
+        # Clang 14+ supports <format>, so we can proceed
+        message(STATUS "Clang ${CMAKE_CXX_COMPILER_VERSION} supports <format> for C++${CMAKE_CXX_STANDARD}")
+    else()
+        # For other compilers, let them try and fail gracefully if needed
+        message(STATUS "Using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION} for C++${CMAKE_CXX_STANDARD}")
     endif()
 endif()
 

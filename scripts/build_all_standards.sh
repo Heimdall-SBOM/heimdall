@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Build and test all supported C++ standards
-set -e
+# set -e  # Removed to allow manual error handling
 
 # Colors for output
 RED='\033[0;31m'
@@ -48,20 +48,43 @@ print_status "Building and testing all C++ standards: ${STANDARDS[*]}"
 for standard in "${STANDARDS[@]}"; do
     print_status "Building C++${standard}..."
     
+    # Select LLVM version based on C++ standard
+    print_status "Selecting LLVM version for C++${standard}..."
+    LLVM_ENV=$(./scripts/llvm_version_manager.sh --quiet "$standard")
+    if [ $? -ne 0 ] || [ -z "$LLVM_ENV" ]; then
+        print_warning "No compatible LLVM version found for C++${standard}, skipping..."
+        continue
+    fi
+    
+    # Select compiler based on C++ standard
+    print_status "Selecting compiler for C++${standard}..."
+    COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$standard")
+    if [ $? -ne 0 ] || [ -z "$COMPILER_ENV" ]; then
+        print_warning "No compatible compiler found for C++${standard}, skipping..."
+        continue
+    fi
+    
     # Create build directory
     BUILD_DIR="build-cpp${standard}"
     rm -rf "${BUILD_DIR}"
     mkdir -p "${BUILD_DIR}"
-    
-    # Configure and build
     cd "${BUILD_DIR}"
+    set -e
+    
+    # Source the LLVM environment variables
+    eval "$LLVM_ENV"
+    
+    # Source the compiler environment variables
+    eval "$COMPILER_ENV"
+    
+    print_status "Using compiler: $CXX_VERSION for C++${standard}"
     
     if [[ "${standard}" == "11" || "${standard}" == "14" ]]; then
         # Use compatibility mode for C++11/14
-        cmake .. -DCMAKE_CXX_STANDARD="${standard}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DHEIMDALL_CXX11_14_MODE=ON
+        cmake .. -DCMAKE_CXX_STANDARD="${standard}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DHEIMDALL_CXX11_14_MODE=ON -DLLVM_CONFIG="$LLVM_CONFIG" -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX"
     else
         # Standard build for C++17+
-        cmake .. -DCMAKE_CXX_STANDARD="${standard}" -DCMAKE_CXX_STANDARD_REQUIRED=ON
+        cmake .. -DCMAKE_CXX_STANDARD="${standard}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DLLVM_CONFIG="$LLVM_CONFIG" -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX"
     fi
     
     make -j$(nproc)
@@ -75,6 +98,7 @@ for standard in "${STANDARDS[@]}"; do
     ../scripts/generate_build_sboms.sh .
     
     cd ..
+    set +e
     
     print_success "C++${standard} build, test, and SBOM generation completed"
     echo ""

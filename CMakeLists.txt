@@ -79,6 +79,12 @@ if(USE_BOOST_FILESYSTEM)
 endif()
 
 # LLVM dependency
+if(DEFINED LLVM_CONFIG)
+    # Use specific LLVM config if provided
+    set(LLVM_CONFIG_EXECUTABLE "${LLVM_CONFIG}")
+    message(STATUS "Using LLVM config: ${LLVM_CONFIG_EXECUTABLE}")
+endif()
+
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 add_definitions(${LLVM_DEFINITIONS})

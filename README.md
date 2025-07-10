@@ -22,6 +22,37 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **Multi-Standard C++ Support**: Robust compatibility layer supporting C++11, C++14, C++17, C++20, and C++23
 - **Enhanced Compatibility**: Automatic feature detection and standard library compatibility
 
+## Build System and Compatibility
+
+Heimdall now features a robust build system that automatically selects the correct compiler and LLVM version for each C++ standard. The build scripts in `scripts/` ensure seamless compatibility and provide clear diagnostics if your system is missing required tools.
+
+- **Automatic Compiler/LLVM Selection:**
+  - The build scripts detect all available GCC and Clang versions, as well as all installed LLVM versions.
+  - For each C++ standard, the build system picks the best available compiler and LLVM version.
+  - If a required version is missing (e.g., GCC 13+ for C++20/23), the build is skipped and a clear message is shown.
+
+- **Compatibility Checker:**
+  - Run `./scripts/show_build_compatibility.sh` to see which C++ standards you can build, what is missing, and how to install it.
+
+- **Build and Clean Commands:**
+  - Build all compatible standards: `./scripts/build_all_standards.sh`
+  - Build a specific standard: `./scripts/build.sh --standard 17 --all`
+  - Clean all build artifacts: `./scripts/clean.sh`
+
+## C++ Standard Support
+
+Heimdall supports multiple C++ standards with a robust compatibility layer that ensures consistent behavior across different compiler versions and standard library implementations:
+
+| C++ Standard | LLVM Version | GCC Version | Clang Version | Features | Status |
+|--------------|--------------|-------------|---------------|----------|--------|
+| C++11        | 7-18         | 4.8+        | 3.3+          | Basic + Compatibility | ✅ Working |
+| C++14        | 7-18         | 6+          | 3.4+          | Enhanced + Compatibility | ✅ Working |
+| C++17        | 11+          | 7+          | 5+            | Full Standard Library | ✅ Working |
+| C++20        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+| C++23        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+
+> **Note:** C++20/23 require GCC 13+ or Clang 14+ for `<format>` support. The build system will skip these standards if your compiler is too old.
+
 ## Quick Start
 
 ### Installation
@@ -29,7 +60,23 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 ```bash
 git clone https://github.com/your-org/heimdall.git
 cd heimdall
-./build.sh
+./scripts/build.sh --standard 17 --all
+```
+
+### Usage
+
+```bash
+# Build all compatible standards
+your-org/heimdall/scripts/build_all_standards.sh
+
+# Build a specific standard (with tests and SBOMs)
+./scripts/build.sh --standard 20 --all
+
+# Clean all build artifacts
+./scripts/clean.sh
+
+# Check compatibility
+./scripts/show_build_compatibility.sh
 ```
 
 ### Usage
@@ -318,27 +365,6 @@ sudo make install
 # Verify installation
 /usr/local/bin/ld.gold --version
 ```
-
-### Cleaning Build Artifacts
-
-For a complete clean checkout (removes all build artifacts):
-
-```bash
-# Comprehensive clean (recommended for check-in)
-./clean.sh
-
-# Or with custom directories
-./clean.sh --build-dir mybuild --install-dir myinstall
-```
-
-For incremental clean (removes only object files and binaries):
-
-```bash
-cd build
-make clean
-```
-
-**Note**: `make clean` only removes compiled objects and binaries but leaves CMake cache files, installed files, and build configuration. Use `./clean.sh` for a complete clean checkout.
 
 ## Testing
 

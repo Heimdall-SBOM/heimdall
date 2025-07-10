@@ -1,3 +1,17 @@
+# NOTE: Modern Build System and Compatibility (2024)
+
+> **Heimdall now features a modern build system with automatic compiler and LLVM selection.**
+>
+> - All build scripts are in the `scripts/` directory.
+> - The build system automatically detects and selects the best available compiler (GCC/Clang) and LLVM version for each C++ standard.
+> - C++20/23 builds require GCC 13+ or Clang 14+ for `<format>` support.
+> - Use `./scripts/show_build_compatibility.sh` to check which standards you can build and get installation instructions for missing components.
+> - Build all compatible standards: `./scripts/build_all_standards.sh`
+> - Build a specific standard: `./scripts/build.sh --standard 20 --all`
+> - Clean all build artifacts: `./scripts/clean.sh`
+>
+> If a required version is missing, the build is skipped and a clear message is shown.
+
 # LLVM Compatibility Guide for Heimdall
 
 ## Overview

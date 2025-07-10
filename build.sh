@@ -53,6 +53,7 @@ Options:
     --coverage               Enable coverage reporting
     --no-boost                Disable Boost.Filesystem requirement
     --all-standards          Build all C++ standards (11, 14, 17, 20, 23)
+    --show-llvm-versions     Show available LLVM versions and compatibility
     --help                   Show this help message
 
 Examples:
@@ -64,11 +65,16 @@ Examples:
     $0 --all-standards                    # Build all C++ standards
 
 C++ Standard Compatibility:
-    C++11: Requires LLVM 7-18, Boost.Filesystem
-    C++14: Requires LLVM 7-18, Boost.Filesystem  
-    C++17: Requires LLVM 11+, standard library
-    C++20: Requires LLVM 19+, standard library
-    C++23: Requires LLVM 19+, standard library
+    C++11: Requires LLVM 7-18, Boost.Filesystem (auto-selected)
+    C++14: Requires LLVM 7-18, Boost.Filesystem (auto-selected)
+    C++17: Requires LLVM 11+, standard library (auto-selected)
+    C++20: Requires LLVM 19+, standard library (auto-selected)
+    C++23: Requires LLVM 19+, standard library (auto-selected)
+
+LLVM Version Management:
+    The build system automatically selects the appropriate LLVM version
+    based on the C++ standard. Use --show-llvm-versions to see available
+    versions and their compatibility.
 
 EOF
 }
@@ -161,6 +167,10 @@ while [[ $# -gt 0 ]]; do
             BUILD_ALL_STANDARDS="ON"
             shift
             ;;
+        --show-llvm-versions)
+            print_status "Showing available LLVM versions..."
+            exec ./scripts/show_llvm_versions.sh
+            ;;
         --help|-h)
             show_help
             exit 0
@@ -199,6 +209,18 @@ fi
 BUILD_DIR="build-cpp${CXX_STANDARD}"
 print_status "Creating build directory: $BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+
+# Configure LLVM version based on C++ standard
+print_status "Selecting LLVM version for C++${CXX_STANDARD}..."
+LLVM_ENV=$(./scripts/llvm_version_manager.sh --quiet "$CXX_STANDARD")
+if [ $? -ne 0 ]; then
+    print_error "Failed to select LLVM version"
+    exit 1
+fi
+
+# Source the LLVM environment variables
+eval "$LLVM_ENV"
+
 cd "$BUILD_DIR"
 
 # Configure with CMake
@@ -209,6 +231,8 @@ print_status "  Tests: $ENABLE_TESTS"
 print_status "  Coverage: $ENABLE_COVERAGE"
 print_status "  C++11/14 Mode: $ENABLE_CPP11_14"
 print_status "  Use Boost.Filesystem: $USE_BOOST_FILESYSTEM"
+print_status "  LLVM Version: $LLVM_VERSION"
+print_status "  LLVM Config: $LLVM_CONFIG"
 
 cmake .. \
     -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
@@ -216,7 +240,8 @@ cmake .. \
     -DENABLE_TESTS="$ENABLE_TESTS" \
     -DENABLE_COVERAGE="$ENABLE_COVERAGE" \
     -DENABLE_CPP11_14="$ENABLE_CPP11_14" \
-    -DUSE_BOOST_FILESYSTEM="$USE_BOOST_FILESYSTEM"
+    -DUSE_BOOST_FILESYSTEM="$USE_BOOST_FILESYSTEM" \
+    -DLLVM_CONFIG="$LLVM_CONFIG"
 
 if [ $? -eq 0 ]; then
     print_success "Configuration completed successfully"
