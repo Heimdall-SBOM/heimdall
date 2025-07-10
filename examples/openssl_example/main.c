@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     
     // Initialize SHA256 context
     SHA256_Init(&sha256);
-    SHA256_Update(&sha256, input, strlen(input));
+    SHA256_Update(&sha256, input, sizeof hash);
     SHA256_Final(hash, &sha256);
 
     printf("SHA256 hash of '%s':\n", input);
