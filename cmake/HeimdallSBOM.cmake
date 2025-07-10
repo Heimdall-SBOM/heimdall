@@ -6,6 +6,11 @@
 
 include(CMakeParseArguments)
 
+# Only call find_package(Heimdall REQUIRED) once per project
+if(NOT TARGET Heimdall::SBOMTool)
+    find_package(Heimdall REQUIRED)
+endif()
+
 # Main function to enable SBOM generation for a target
 function(heimdall_enable_sbom target)
     cmake_parse_arguments(HEIMDALL_SBOM
@@ -19,9 +24,6 @@ function(heimdall_enable_sbom target)
     if(NOT TARGET ${target})
         message(FATAL_ERROR "Target ${target} does not exist")
     endif()
-    
-    # Find Heimdall
-    find_package(Heimdall REQUIRED)
     
     # Set target properties from arguments
     if(HEIMDALL_SBOM_FORMAT)
@@ -76,7 +78,7 @@ function(heimdall_enable_sbom target)
     heimdall_detect_linkers()
     
     # Configure SBOM generation based on available linkers
-    heimdall_configure_sbom_generation(${target} ${HEIMDALL_SBOM_LINKER})
+    heimdall_configure_sbom_generation(${target})
     
     # Create output directory
     heimdall_create_sbom_output_dir()
@@ -113,23 +115,23 @@ function(heimdall_detect_linkers)
 endfunction()
 
 # Function to configure SBOM generation for a target
-function(heimdall_configure_sbom_generation target preferred_linker)
+function(heimdall_configure_sbom_generation target)
+    set(format "")
+    set(output "")
+    set(verbose "")
+    set(include_system_libs "")
+    set(name "")
     # Get target SBOM properties
     heimdall_get_target_sbom_properties(${target} format output verbose include_system_libs name)
     
     # Determine which linker to use
     set(linker_to_use "auto")
-    if(preferred_linker)
-        set(linker_to_use ${preferred_linker})
-    elseif(HEIMDALL_PREFERRED_LINKER STREQUAL "auto")
-        # Auto-detect based on availability
-        if(HEIMDALL_GOLD_AVAILABLE)
-            set(linker_to_use "gold")
-        elseif(HEIMDALL_LLD_AVAILABLE)
-            set(linker_to_use "lld")
-        endif()
-    else()
+    if(HEIMDALL_PREFERRED_LINKER AND NOT HEIMDALL_PREFERRED_LINKER STREQUAL "auto")
         set(linker_to_use ${HEIMDALL_PREFERRED_LINKER})
+    elseif(HEIMDALL_GOLD_AVAILABLE)
+        set(linker_to_use "gold")
+    elseif(HEIMDALL_LLD_AVAILABLE)
+        set(linker_to_use "lld")
     endif()
     
     message(STATUS "Configuring SBOM generation for ${target} with ${linker_to_use} linker")
@@ -156,8 +158,7 @@ endfunction()
 # Function to configure Gold plugin approach
 function(heimdall_configure_gold_plugin target format output verbose include_system_libs name)
     if(NOT HEIMDALL_GOLD_PLUGIN)
-        message(WARNING "Gold plugin not found, falling back to wrapper approach")
-        heimdall_configure_lld_wrapper(${target} ${format} ${output} ${verbose} ${include_system_libs} ${name})
+        message(WARNING "Gold plugin not found, skipping SBOM generation for target ${target}.")
         return()
     endif()
     
@@ -192,7 +193,12 @@ endfunction()
 # Function to configure LLD wrapper approach
 function(heimdall_configure_lld_wrapper target format output verbose include_system_libs name)
     if(NOT HEIMDALL_SBOM_TOOL)
-        message(FATAL_ERROR "heimdall-sbom tool not found")
+        message(WARNING "heimdall-sbom tool not found, skipping SBOM generation for target ${target}.")
+        return()
+    endif()
+    if(NOT HEIMDALL_LLD_PLUGIN)
+        message(WARNING "LLD plugin not found, skipping SBOM generation for target ${target}.")
+        return()
     endif()
     
     message(STATUS "Configuring LLD wrapper for ${target}")

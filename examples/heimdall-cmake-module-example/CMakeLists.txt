@@ -23,10 +23,6 @@ heimdall_enable_sbom(greeter FORMAT spdx-2.3 VERBOSE ON)
 # Enable SBOM generation for the main executable (multi-target)
 heimdall_enable_sbom(heimdall-cmake-module-example FORMAT cyclonedx-1.6 VERBOSE ON)
 
-# To force Gold or LLD, use:
-# heimdall_enable_sbom(heimdall-cmake-module-example FORMAT cyclonedx-1.6 LINKER gold)
-# heimdall_enable_sbom(greeter FORMAT spdx LINKER lld)
-
 # To generate multiple formats for a target:
 # heimdall_enable_sbom(heimdall-cmake-module-example FORMAT spdx)
 # heimdall_enable_sbom(heimdall-cmake-module-example FORMAT cyclonedx) 

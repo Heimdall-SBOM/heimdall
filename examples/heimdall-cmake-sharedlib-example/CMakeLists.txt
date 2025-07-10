@@ -14,6 +14,5 @@ target_include_directories(shared_greeter PUBLIC .)
 add_executable(sharedlib-main main.cpp)
 target_link_libraries(sharedlib-main PRIVATE shared_greeter)
 
-auto
 heimdall_enable_sbom(shared_greeter FORMAT spdx-2.3 VERBOSE ON)
 heimdall_enable_sbom(sharedlib-main FORMAT cyclonedx-1.6 VERBOSE ON) 
