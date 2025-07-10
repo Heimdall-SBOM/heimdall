@@ -654,7 +654,7 @@ std::string SBOMComparator::getCurrentTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
-    ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
+    ss << std::put_time(std::gmtime_r(&time_t), "%Y-%m-%dT%H:%M:%SZ");
     return ss.str();
 }
 
