@@ -30,19 +30,19 @@ The example includes:
 
 ### Manual SBOM Generation
 
-You can also generate SBOMs manually using the `sbom_loader` tool:
+You can also generate SBOMs manually using the `heimdall-sbom` tool:
 
 ```bash
 # Generate SPDX 2.3 SBOM
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so openssl_c_example_lld \
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so openssl_c_example_lld \
   --format spdx-2.3 --output openssl_c_example.spdx.json
 
 # Generate SPDX 3.0 SBOM
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so openssl_c_example_lld \
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so openssl_c_example_lld \
   --format spdx-3.0 --output openssl_c_example.spdx3.json
 
 # Generate CycloneDX 1.6 SBOM
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so openssl_c_example_lld \
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so openssl_c_example_lld \
   --format cyclonedx-1.6 --output openssl_c_example.cyclonedx.json
 ```
 
@@ -122,17 +122,17 @@ You can customize SBOM generation with additional options:
 
 ```bash
 # Generate with custom SPDX version
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so binary \
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so binary \
   --format spdx-3.0.1 --spdx-version 3.0.1 --output custom.spdx.json
 
 # Generate with custom CycloneDX version
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so binary \
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so binary \
   --format cyclonedx-1.4 --cyclonedx-version 1.4 --output custom.cyclonedx.json
 ```
 
 ### Plugin Configuration
 
-The sbom_loader tool supports various plugin configuration options:
+The heimdall-sbom tool supports various plugin configuration options:
 
 - `--format`: SBOM format (spdx, cyclonedx, etc.)
 - `--output`: Output file path

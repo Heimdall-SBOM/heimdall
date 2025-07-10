@@ -1,4 +1,4 @@
-// Minimal C++ SBOM loader for Heimdall plugins
+// Minimal C++ SBOM generator for Heimdall plugins (heimdall-sbom)
 #include <dlfcn.h>
 #include <iostream>
 #include <string>
@@ -84,7 +84,7 @@ int generate_sbom(const char* plugin_path, const char* binary_path, const char* 
 
 int main(int argc, char* argv[]) {
     if (argc < 5) {
-        std::cerr << "Usage: " << argv[0] << " <plugin_path> <binary_path> --format <format> --output <output_path> [--cyclonedx-version <version>] [--spdx-version <version>]" << std::endl;
+        std::cerr << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output <output_path> [--cyclonedx-version <version>] [--spdx-version <version>]" << std::endl;
         std::cerr << "  Supported formats: spdx, spdx-2.3, spdx-3.0, spdx-3.0.0, spdx-3.0.1, cyclonedx, cyclonedx-1.4, cyclonedx-1.6" << std::endl;
         std::cerr << "  Default versions: cyclonedx-1.6, spdx-2.3" << std::endl;
         return 1;

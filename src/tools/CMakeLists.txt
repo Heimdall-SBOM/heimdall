@@ -21,9 +21,9 @@ set_target_properties(llvm_symbols PROPERTIES
     CXX_VISIBILITY_PRESET default
 )
 
-add_executable(sbom_loader sbom_loader.cpp)
-target_link_libraries(sbom_loader PRIVATE llvm_symbols ${OPENSSL_LIBRARIES} ${ELF_LIBRARY})
-target_include_directories(sbom_loader PRIVATE ${CMAKE_SOURCE_DIR}/src ${OPENSSL_INCLUDE_DIR})
+add_executable(heimdall-sbom sbom_loader.cpp)
+target_link_libraries(heimdall-sbom PRIVATE llvm_symbols ${OPENSSL_LIBRARIES} ${ELF_LIBRARY})
+target_include_directories(heimdall-sbom PRIVATE ${CMAKE_SOURCE_DIR}/src ${OPENSSL_INCLUDE_DIR})
 
 install(TARGETS debug_validator heimdall-validate
     RUNTIME DESTINATION bin

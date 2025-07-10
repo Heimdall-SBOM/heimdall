@@ -1,3 +1,5 @@
+# Heimdall
+
 <img src="https://github.com/bakkertj/heimdall/blob/18e0ce7fc630923f15e6e29e94059e40b7d1af99/docs/images/logo_w_text.png" width="400">
 
 A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries.
@@ -21,55 +23,34 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **Comprehensive Testing**: Full unit test suite with real shared library testing
 - **Multi-Standard C++ Support**: Robust compatibility layer supporting C++11, C++14, C++17, C++20, and C++23
 - **Enhanced Compatibility**: Automatic feature detection and standard library compatibility
+- **Multi-Compiler Support**: Automatic detection and selection of GCC and Clang versions
+- **SCL Integration**: Support for Software Collections (SCL) on RHEL/Rocky/CentOS
 
 ## Build System and Compatibility
 
-Heimdall now features a robust build system that automatically selects the correct compiler and LLVM version for each C++ standard. The build scripts in `scripts/` ensure seamless compatibility and provide clear diagnostics if your system is missing required tools.
+Heimdall features a robust build system that automatically selects the correct compiler and LLVM version for each C++ standard. The build scripts in `scripts/` ensure seamless compatibility and provide clear diagnostics if your system is missing required tools.
 
-- **Automatic Compiler/LLVM Selection:**
-  - The build scripts detect all available GCC and Clang versions, as well as all installed LLVM versions.
-  - For each C++ standard, the build system picks the best available compiler and LLVM version.
-  - If a required version is missing (e.g., GCC 13+ for C++20/23), the build is skipped and a clear message is shown.
+### Key Features
 
-- **Compatibility Checker:**
-  - Run `./scripts/show_build_compatibility.sh` to see which C++ standards you can build, what is missing, and how to install it.
+- **Automatic Compiler/LLVM Selection**: Detects all available GCC and Clang versions, as well as all installed LLVM versions
+- **Multi-Compiler Support**: Choose between GCC and Clang with the `--compiler` option
+- **SCL Integration**: Automatic detection and guidance for SCL toolsets on RHEL/Rocky/CentOS
+- **Compatibility Checker**: Run `./scripts/show_build_compatibility.sh` to see which C++ standards you can build
+- **Clear Error Messages**: Specific instructions when SCL activation is needed
 
-- **Build and Clean Commands:**
-  - Build all compatible standards: `./scripts/build_all_standards.sh`
-  - Build a specific standard: `./scripts/build.sh --standard 17 --all`
-  - Clean all build artifacts: `./scripts/clean.sh`
-
-## C++ Standard Support
-
-Heimdall supports multiple C++ standards with a robust compatibility layer that ensures consistent behavior across different compiler versions and standard library implementations:
-
-| C++ Standard | LLVM Version | GCC Version | Clang Version | Features | Status |
-|--------------|--------------|-------------|---------------|----------|--------|
-| C++11        | 7-18         | 4.8+        | 3.3+          | Basic + Compatibility | ✅ Working |
-| C++14        | 7-18         | 6+          | 3.4+          | Enhanced + Compatibility | ✅ Working |
-| C++17        | 11+          | 7+          | 5+            | Full Standard Library | ✅ Working |
-| C++20        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
-| C++23        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
-
-> **Note:** C++20/23 require GCC 13+ or Clang 14+ for `<format>` support. The build system will skip these standards if your compiler is too old.
-
-## Quick Start
-
-### Installation
-
-```bash
-git clone https://github.com/your-org/heimdall.git
-cd heimdall
-./scripts/build.sh --standard 17 --all
-```
-
-### Usage
+### Build Commands
 
 ```bash
 # Build all compatible standards
-your-org/heimdall/scripts/build_all_standards.sh
+./scripts/build_all_standards.sh
 
-# Build a specific standard (with tests and SBOMs)
+# Build a specific standard with GCC (default)
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Build a specific standard with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
+
+# Build with tests and SBOM generation
 ./scripts/build.sh --standard 20 --all
 
 # Clean all build artifacts
@@ -79,18 +60,272 @@ your-org/heimdall/scripts/build_all_standards.sh
 ./scripts/show_build_compatibility.sh
 ```
 
-### Usage
+## C++ Standard Support
+
+Heimdall supports multiple C++ standards with automatic compiler and LLVM version selection:
+
+| C++ Standard | LLVM Version | GCC Version | Clang Version | Features | Status |
+|--------------|--------------|-------------|---------------|----------|--------|
+| C++11        | 7+           | 4.8+        | 3.3+          | Basic + Compatibility | ✅ Working |
+| C++14        | 7+           | 6+          | 3.4+          | Enhanced + Compatibility | ✅ Working |
+| C++17        | 11+          | 7+          | 5+            | Full Standard Library | ✅ Working |
+| C++20        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+| C++23        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+
+> **Note:** C++20/23 require GCC 13+ or Clang 14+ for `<format>` support. The build system will provide clear guidance if your compiler is too old.
+
+## Quick Start
+
+### Prerequisites
+
+- **Linux**: GCC 4.8+ or Clang 3.3+, CMake 3.16+, LLVM development libraries
+- **macOS**: Xcode Command Line Tools, CMake 3.16+, LLVM (via Homebrew)
+- **SCL Support**: On RHEL/Rocky/CentOS, SCL toolsets are automatically detected
+
+### Installation
 
 ```bash
-# Using LLD (macOS/Linux)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:myapp.json \
-       main.o -o myapp
+git clone https://github.com/your-org/heimdall.git
+cd heimdall
 
-# Using Gold (Linux only)
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=myapp.json \
-        main.o -o myapp
+# Build with default settings (GCC, C++17)
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Or build all compatible standards
+./scripts/build_all_standards.sh
+```
+
+### Usage Examples
+
+```bash
+# Build C++11 with system GCC
+./scripts/build.sh --standard 11 --compiler gcc --tests
+
+# Build C++17 with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
+
+# Build C++23 with GCC (requires SCL activation on RHEL/Rocky/CentOS)
+scl enable gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
+
+# Build with tests and SBOM generation
+./scripts/build.sh --standard 20 --all
+
+# Check what you can build on your system
+./scripts/show_build_compatibility.sh
+```
+
+### Using Heimdall as a Linker Plugin
+
+Once built, you can use Heimdall to generate SBOMs during compilation. See the complete usage guide in [`docs/usage.md`](docs/usage.md) and try the examples:
+
+**Format-Specific Examples:**
+```bash
+# SPDX-only example
+cd examples/heimdall-usage-spdx-example
+./run_example.sh
+
+# CycloneDX-only example  
+cd examples/heimdall-usage-cyclonedx-example
+./run_example.sh
+
+# General example with multiple formats
+cd examples/heimdall-usage-example
+./run_example.sh
+./advanced_example.sh
+```
+
+**Quick Example:**
+```bash
+# Navigate to the example directory
+cd examples/heimdall-usage-example
+
+# Run the automated example
+./run_example.sh
+
+# Or try the advanced example with different SBOM formats
+./advanced_example.sh
+```
+
+## Building from Source
+
+### Linux Setup
+
+#### Ubuntu/Debian
+```bash
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    llvm-dev \
+    liblld-dev \
+    binutils-gold \
+    libssl-dev \
+    pkg-config
+
+# Build Heimdall
+./scripts/build.sh --standard 17 --compiler gcc --tests
+```
+
+#### Fedora/RHEL/CentOS
+```bash
+# Install dependencies
+sudo yum install -y \
+    gcc-c++ \
+    cmake \
+    ninja-build \
+    llvm-devel \
+    lld-devel \
+    binutils-gold \
+    openssl-devel \
+    pkgconfig
+
+# For C++20/23, you may need SCL toolsets
+sudo yum install -y gcc-toolset-14
+
+# Build with system GCC
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Or activate SCL for C++20/23
+scl enable gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
+```
+
+#### Arch Linux
+```bash
+# Install dependencies
+sudo pacman -S \
+    base-devel \
+    cmake \
+    ninja \
+    llvm \
+    lld \
+    binutils \
+    openssl \
+    pkgconf
+
+# Build Heimdall
+./scripts/build.sh --standard 17 --compiler gcc --tests
+```
+
+### macOS Setup
+
+```bash
+# Install LLVM and other dependencies
+brew install llvm cmake ninja openssl
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+# Build Heimdall (LLD plugin only)
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Or use Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
+```
+
+### Build Options
+
+```bash
+# Build with specific C++ standard
+./scripts/build.sh --standard 20 --compiler gcc --tests
+
+# Build with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
+
+# Build with tests and SBOM generation
+./scripts/build.sh --standard 23 --all
+
+# Clean build directory before building
+./scripts/build.sh --standard 17 --compiler gcc --clean --tests
+
+# Custom build directory
+./scripts/build.sh --standard 17 --compiler gcc --build-dir mybuild --tests
+```
+
+### SCL Integration (RHEL/Rocky/CentOS)
+
+For C++20/23 on RHEL/Rocky/CentOS systems:
+
+```bash
+# Check available SCL toolsets
+scl --list
+
+# Activate GCC 14 toolset
+scl enable gcc-toolset-14 bash
+
+# Build C++23
+./scripts/build.sh --standard 23 --compiler gcc --tests
+```
+
+The build system will automatically detect if you need SCL and provide clear instructions.
+
+## Testing
+
+The project includes a comprehensive test suite that validates compatibility across all supported C++ standards:
+
+```bash
+# Test with default settings
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Test specific C++ standard with Clang
+./scripts/build.sh --standard 20 --compiler clang --tests
+
+# Test all compatible standards
+./scripts/build_all_standards.sh
+```
+
+The test suite validates:
+- C++11/14/17/20/23 feature compatibility
+- Multi-compiler support (GCC and Clang)
+- LLVM detection and compatibility
+- Filesystem operations across standards
+- SCL integration on supported platforms
+
+## Usage
+
+### Using LLD (macOS/Linux) - Wrapper Approach
+```bash
+# Step 1: Link normally with LLD
+g++ -fuse-ld=lld main.o utils.o math.o -o myapp
+
+# Step 2: Generate SBOM using wrapper tool
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so myapp --format spdx --output myapp.spdx
+```
+
+### Using Gold (Linux only) - Plugin Interface
+```bash
+# Direct plugin integration (requires dependencies)
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=myapp.spdx \
+    main.o utils.o math.o -o myapp
+
+# Or use wrapper approach if plugin fails
+g++ -fuse-ld=gold main.o utils.o math.o -o myapp
+heimdall-sbom ../../build-cpp23/lib/heimdall-gold.so myapp --format spdx --output myapp.spdx
+```
+
+### Plugin Compatibility
+
+**Important:** Heimdall uses different approaches for different linkers:
+
+- **LLVM LLD:** Uses wrapper approach with `heimdall-sbom` tool (works with all LLVM versions)
+- **LLVM 19+:** Plugin interface completely changed - wrapper approach is the only reliable method
+- **GNU Gold:** Uses native plugin interface with `--plugin` and `--plugin-opt` (requires dependencies)
+
+**Current Status:** Heimdall provides universal compatibility through the wrapper approach for LLD and plugin interface for Gold with automatic fallback.
+
+For detailed technical rationale and compatibility information, see [docs/rationale.md](docs/rationale.md).
+
+**Quick compatibility check:**
+```bash
+# Check your system
+ld.lld --version
+ld.gold --version
+
+# Test with the example
+cd examples/heimdall-usage-example
+./run_example.sh
 ```
 
 ### Build System Integration
@@ -145,333 +380,6 @@ Heimdall consists of several key components:
 | Linux (ARM64) | ✅ | ✅ | Fully Supported |
 
 **Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
-
-## C++ Standard Support
-
-Heimdall supports multiple C++ standards with a robust compatibility layer that ensures consistent behavior across different compiler versions and standard library implementations:
-
-| C++ Standard | LLVM Version | Features | Dependencies | Status |
-|--------------|--------------|----------|--------------|--------|
-| C++11        | 7-18         | Basic + Compatibility | Optional Boost.Filesystem | ✅ Working |
-| C++14        | 7-18         | Enhanced + Compatibility | Optional Boost.Filesystem | ✅ Working |
-| C++17        | 11+          | Full Standard Library | Standard library | ✅ Working |
-| C++20        | 19+          | Full + {fmt} Library | {fmt} library | ✅ Working |
-| C++23        | 19+          | Full + std::format | Standard library | ✅ Working |
-
-### Compatibility Layer Features
-
-- **Namespace Safety**: Standard library includes outside namespaces to prevent pollution
-- **Type Compatibility**: `heimdall::compat::optional`, `string_view`, `variant`, `span`
-- **Filesystem Support**: `heimdall::compat::fs` namespace alias
-- **Utility Functions**: Common utilities in `heimdall::compat::utils`
-- **Automatic Detection**: Feature detection based on C++ standard
-- **Conditional Compilation**: Standard-specific optimizations and implementations
-
-### Build Commands by Standard
-
-```bash
-# C++11 (with compatibility mode)
-./build.sh --cxx-standard 11 --tests --cpp11-14 --no-boost
-
-# C++14 (with compatibility mode)
-./build.sh --cxx-standard 14 --tests --cpp11-14 --no-boost
-
-# C++17 (standard library)
-./build.sh --cxx-standard 17 --tests
-
-# C++20 (with {fmt} library)
-./build.sh --cxx-standard 20 --tests
-
-# C++23 (with std::format)
-./build.sh --cxx-standard 23 --tests
-```
-
-## Building from Source
-
-### Prerequisites
-
-- C++11+ compatible compiler (GCC 4.8+, Clang 3.3+)
-- CMake 3.16+
-- LLVM/LLD development libraries
-- GNU Gold linker (Linux only, optional for Gold plugin)
-- OpenSSL development libraries
-- Optional: Boost.Filesystem (for C++11/14 compatibility)
-
-### macOS Setup
-
-```bash
-# Install LLVM/LLD and other dependencies
-brew install llvm cmake ninja openssl
-export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-
-# Build Heimdall (LLD plugin only)
-./build.sh
-
-# Build with specific C++ standard
-./build.sh --cxx-standard 17 --tests
-
-# Build with C++11 compatibility mode
-./build.sh --cxx-standard 11 --tests --cpp11-14 --no-boost
-```
-
-### Linux Setup
-
-#### Ubuntu/Debian
-```bash
-# Install all dependencies including Gold linker
-sudo apt-get update
-sudo apt-get install -y \
-    build-essential \
-    cmake \
-    ninja-build \
-    llvm-dev \
-    liblld-dev \
-    binutils-gold \
-    libssl-dev \
-    pkg-config
-
-# Build Heimdall with both LLD and Gold plugins
-./build.sh
-
-# Build with specific C++ standard
-./build.sh --cxx-standard 20 --tests
-
-# Build with C++11 compatibility mode
-./build.sh --cxx-standard 11 --tests --cpp11-14 --no-boost
-```
-
-#### Fedora/RHEL/CentOS
-```bash
-# Install dependencies (required for build and tests)
-sudo yum install -y \
-    gcc-c++ \
-    cmake \
-    ninja-build \
-    llvm-devel \
-    lld-devel \
-    binutils-gold \
-    openssl-devel \
-    pkgconfig \
-    zlib-devel \
-    llvm-googletest \
-    binutils-devel
-
-# Build Heimdall
-./build.sh
-
-# Build with specific C++ standard
-./build.sh --cxx-standard 23 --tests
-```
-
-**Note**: The `binutils-devel` package provides the BFD headers required for the Gold plugin. Without this package, the Gold plugin will not be built, but the LLD plugin and core library will still work.
-
-#### Arch Linux
-```bash
-# Install dependencies
-sudo pacman -S \
-    base-devel \
-    cmake \
-    ninja \
-    llvm \
-    lld \
-    binutils \
-    openssl \
-    pkgconf
-
-# Build Heimdall
-./build.sh
-```
-
-### Build Options
-
-```bash
-# Debug build with sanitizers
-./build.sh --debug --sanitizers
-
-# Build only LLD plugin (macOS default)
-./build.sh --no-gold
-
-# Build only Gold plugin (Linux only)
-./build.sh --no-lld
-
-# Custom build directory
-./build.sh --build-dir mybuild --install-dir myinstall
-
-# Force build both plugins (Linux only)
-./build.sh --force-gold
-
-# Build with specific C++ standard
-./build.sh --cxx-standard 17 --tests
-
-# Build with compatibility mode (C++11/14)
-./build.sh --cxx-standard 14 --tests --cpp11-14 --no-boost
-```
-
-### Installing GNU Gold Linker
-
-For detailed installation instructions, see [docs/gold-installation.md](docs/gold-installation.md).
-
-#### Linux (Recommended)
-
-GNU Gold is the default linker on most modern Linux distributions. If not available:
-
-**Ubuntu/Debian:**
-```bash
-sudo apt-get install binutils-gold
-```
-
-**Fedora/RHEL/CentOS:**
-```bash
-sudo yum install binutils-gold
-```
-
-**Arch Linux:**
-```bash
-sudo pacman -S binutils
-```
-
-**Verify Gold installation:**
-```bash
-ld.gold --version
-```
-
-#### macOS (Not Supported)
-
-GNU Gold is not available on macOS because:
-- Gold is designed for ELF format binaries (Linux)
-- macOS uses Mach-O format binaries
-- Apple's linker ecosystem is different from Linux
-
-**Alternative on macOS:**
-- Use LLVM LLD linker (fully supported)
-- LLD provides similar performance benefits to Gold
-- LLD has better macOS integration
-
-#### Building Gold from Source (Linux only)
-
-If you need a specific version of Gold:
-
-```bash
-# Download and build binutils with Gold
-wget https://ftp.gnu.org/gnu/binutils/binutils-2.44.tar.gz
-tar xf binutils-2.44.tar.gz
-cd binutils-2.44
-
-# Configure with Gold enabled
-./configure --enable-gold --enable-plugins --prefix=/usr/local
-make -j$(nproc)
-sudo make install
-
-# Verify installation
-/usr/local/bin/ld.gold --version
-```
-
-## Testing
-
-The project includes a comprehensive test suite using Google Test that validates compatibility across all supported C++ standards. To run the tests:
-
-```bash
-# Build and run tests with default C++ standard
-./build.sh --tests
-
-# Test specific C++ standard
-./build.sh --cxx-standard 17 --tests
-
-# Test all C++ standards
-for std in 11 14 17 20 23; do
-    echo "Testing C++$std..."
-    ./build.sh --cxx-standard $std --tests --cpp11-14 --no-boost
-done
-```
-
-The test suite validates:
-- C++11/14/17/20/23 feature compatibility
-- `heimdall::compat` namespace functionality
-- Standard library integration
-- LLVM detection and compatibility
-- Filesystem operations across standards
-
-For more detailed test information, see [tests/README.md](tests/README.md).
-
-## Code Coverage
-
-The project supports code coverage analysis using gcov and lcov. Coverage reports help identify untested code paths and ensure comprehensive testing.
-
-### Enabling Coverage
-
-To enable code coverage, build with the `ENABLE_COVERAGE` option:
-
-```bash
-# From project root
-mkdir -p build
-cd build
-cmake -DENABLE_COVERAGE=ON ..
-make -j$(nproc)
-```
-
-### Running Coverage Analysis
-
-#### Using the Coverage Script (Recommended)
-
-```bash
-# From project root
-./tests/coverage.sh
-```
-
-This script will:
-- Automatically enable coverage if not already enabled
-- Build the project with coverage instrumentation
-- Run all tests to generate coverage data
-- Generate both text and HTML coverage reports
-- Display a summary of coverage results
-
-#### Using the Simple Coverage Script
-
-For basic coverage information:
-
-```bash
-# From project root
-./tests/simple_coverage.sh
-```
-
-#### Using CMake Targets
-
-```bash
-# From build directory
-make coverage        # Run tests and generate coverage
-make coverage-clean  # Clean coverage data
-```
-
-### Coverage Reports
-
-Coverage reports are generated in the `build/coverage/` directory:
-
-- `coverage_summary.txt`: Text summary of coverage statistics
-- `basic_coverage_report.txt`: Basic coverage information
-- `coverage.info`: lcov coverage data file
-- `html/`: HTML coverage report (if lcov is available)
-
-### Current Coverage
-
-The current test suite provides:
-- **Line Coverage**: ~45.2%
-- **Function Coverage**: ~50.7%
-
-### Coverage Requirements
-
-- **GCC/G++**: Coverage instrumentation is built into GCC
-- **lcov** (optional): For HTML coverage reports
-  - Ubuntu/Debian: `sudo apt-get install lcov`
-  - CentOS/RHEL: `sudo yum install lcov`
-  - macOS: `brew install lcov`
-
-### Coverage Best Practices
-
-1. **Regular Coverage Runs**: Run coverage analysis regularly during development
-2. **Coverage Goals**: Aim for high coverage (>80%) on critical code paths
-3. **Coverage Gaps**: Use coverage reports to identify untested code
-4. **Coverage Cleanup**: Clean coverage data between runs for accurate results
-5. **CI Integration**: Include coverage analysis in continuous integration
 
 ## Configuration
 
@@ -539,18 +447,17 @@ Heimdall generates CycloneDX 1.4 compliant documents with:
 # Compile with SBOM generation
 gcc -c main.c -o main.o
 
-# Using LLD (macOS/Linux)
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:main-sbom.json \
-       main.o -o main
+# Using LLD (macOS/Linux) - Wrapper approach
+g++ -fuse-ld=lld main.o -o main
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so main --format spdx --output main.spdx
 
-# Using Gold (Linux only)
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=main-sbom.json \
-        main.o -o main
+# Using Gold (Linux only) - Plugin interface
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=main.spdx \
+    main.o -o main
 
 # View generated SBOM
-cat main-sbom.json
+cat main.spdx
 ```
 
 ### CMake Project
@@ -559,28 +466,26 @@ cat main-sbom.json
 # Find Heimdall
 find_library(HEIMDALL_LLD heimdall-lld REQUIRED)
 
-# Add SBOM generation to target
-target_link_options(myapp PRIVATE
-    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
-    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp-sbom.json"
-    "LINKER:--plugin-opt=format:cyclonedx"
+# Add SBOM generation to target (LLD wrapper approach)
+add_custom_command(TARGET myapp POST_BUILD
+    COMMAND heimdall-sbom ${HEIMDALL_LLD} $<TARGET_FILE:myapp> 
+            --format spdx --output ${CMAKE_BINARY_DIR}/myapp.spdx
+    COMMENT "Generating SBOM for myapp"
 )
 ```
 
 ### Complex Project with Dependencies
 
 ```bash
-# Build with multiple libraries using LLD
-ld.lld --plugin-opt=load:./heimdall-lld.dylib \
-       --plugin-opt=sbom-output:complex-app-sbom.json \
-       --plugin-opt=verbose \
-       main.o libmath.a libutils.so -o complex-app
+# Build with multiple libraries using LLD (wrapper approach)
+g++ -fuse-ld=lld main.o libmath.a libutils.so -o complex-app
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so complex-app --format spdx --output complex-app.spdx
 
-# Build with multiple libraries using Gold (Linux only)
-ld.gold --plugin ./heimdall-gold.so \
-        --plugin-opt sbom-output=complex-app-sbom.json \
-        --plugin-opt verbose \
-        main.o libmath.a libutils.so -o complex-app
+# Build with multiple libraries using Gold (plugin interface)
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=complex-app.spdx \
+    -Wl,--plugin-opt=verbose \
+    main.o libmath.a libutils.so -o complex-app
 ```
 
 ## API Reference
@@ -697,6 +602,16 @@ int val = utils::get_optional_value(opt, 0);
    ```
    Solution: Use the compatibility layer with `heimdall::compat::fs` or build with `--cpp11-14 --no-boost` for older standards.
 
+9. **SCL activation required**
+   ```
+   Error: Your system GCC version (11.5.0) is not compatible with C++23
+   ```
+   Solution: Activate the appropriate SCL toolset:
+   ```bash
+   scl enable gcc-toolset-14 bash
+   ./scripts/build.sh --standard 23 --compiler gcc --tests
+   ```
+
 ### Platform-Specific Issues
 
 #### macOS
@@ -706,6 +621,7 @@ int val = utils::get_optional_value(opt, 0);
 #### Linux
 - **Gold not found**: Install `binutils-gold` package for your distribution.
 - **Plugin loading errors**: Ensure Gold was built with plugin support enabled.
+- **SCL toolsets**: For C++20/23, you may need to activate SCL toolsets on RHEL/Rocky/CentOS.
 
 ### Debug Mode
 
@@ -740,7 +656,7 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development
 
 ### Documentation
 
-For detailed information about LLD integration rationale, see [docs/lld-integration-rationale.md](docs/lld-integration-rationale.md).
+For detailed information about linker integration rationale and technical approaches, see [docs/rationale.md](docs/rationale.md).
 
 For comprehensive multi-standard C++ support documentation, see [docs/multi-standard-support.md](docs/multi-standard-support.md).
 
@@ -752,11 +668,15 @@ git clone --recursive https://github.com/your-org/heimdall.git
 cd heimdall
 
 # Build in debug mode
-./build.sh --debug
+./scripts/build.sh --standard 17 --compiler gcc --tests
 
 # Test all C++ standards
 for std in 11 14 17 20 23; do
-    ./build.sh --cxx-standard $std --tests --cpp11-14 --no-boost
+    echo "Testing C++$std..."
+    ./scripts/build.sh --standard $std --compiler gcc --tests
 done
+
+# Test with Clang
+./scripts/build.sh --standard 17 --compiler clang --tests
 ```
 

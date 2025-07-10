@@ -78,7 +78,7 @@ Heimdall relies on LLVM libraries for DWARF debug information extraction and LLD
 
 ### 4. Wrapper Script Approach
 - If you need to generate SBOMs with LLD but are limited by LLVM/C++ version compatibility, use a wrapper script to run SBOM generation as a post-link step instead of as a plugin.
-- See `docs/lld-integration-rationale.md` for details.
+- See `docs/rationale.md` for details.
 
 ---
 
@@ -101,7 +101,7 @@ Heimdall relies on LLVM libraries for DWARF debug information extraction and LLD
 - [LLVM Releases](https://releases.llvm.org/)
 - [Heimdall Multi-Standard Support](./multi-standard-support.md)
 - [Heimdall Limitations](./heimdall-limitations.md)
-- [LLD Integration Rationale](./lld-integration-rationale.md)
+- [Linker Integration Rationale](./rationale.md)
 - [Gold Plugin API](https://sourceware.org/binutils/docs-2.39/gold/Plugin.html)
 
 ---

@@ -29,6 +29,7 @@ target_include_directories(heimdall-core PUBLIC
 
 target_link_libraries(heimdall-core PUBLIC
     ${LLVM_LIBRARIES}
+    ${ELF_LIBRARY}
 )
 
 target_compile_definitions(heimdall-core PRIVATE

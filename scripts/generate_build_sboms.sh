@@ -101,8 +101,8 @@ else
 fi
 
 # Check if the C++ SBOM loader is available
-check_sbom_loader() {
-    local loader_path="${BUILD_DIR}/src/tools/sbom_loader"
+check_heimdall_sbom() {
+    local loader_path="${BUILD_DIR}/src/tools/heimdall-sbom"
     if [[ ! -f "${loader_path}" ]]; then
         print_error "SBOM loader not found: ${loader_path}"
         print_error "Please ensure the build completed successfully"
@@ -124,7 +124,7 @@ generate_sbom_with_plugin() {
     print_status "Generating ${plugin_name} ${format} SBOM: ${output_file}"
     
     # Build the command with correct argument order and flags
-    local cmd=("${BUILD_DIR}/src/tools/sbom_loader" "${plugin_path}" "${binary_path}" --format "${format}" --output "${output_file}")
+    local cmd=("${BUILD_DIR}/src/tools/heimdall-sbom" "${plugin_path}" "${binary_path}" --format "${format}" --output "${output_file}")
     if [[ "${format}" == cyclonedx* ]]; then
         cmd+=(--cyclonedx-version "${cyclonedx_version}")
     fi
@@ -159,7 +159,7 @@ generate_cyclonedx_versions() {
 }
 
 # Check if the SBOM loader is available
-check_sbom_loader
+check_heimdall_sbom
 
 # Generate all SBOMs
 print_status "Starting SBOM generation..."

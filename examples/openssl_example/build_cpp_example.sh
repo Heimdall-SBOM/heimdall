@@ -31,15 +31,15 @@ echo "[SUCCESS] Generated LLD binary: openssl_cpp_example_lld"
 
 # Generate SBOMs using LLD plugin
 echo "[INFO] Generating SPDX 2.3 SBOM using LLD plugin..."
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so openssl_cpp_example_lld --format spdx-2.3 --output openssl_cpp_example.spdx.json
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so openssl_cpp_example_lld --format spdx-2.3 --output openssl_cpp_example.spdx.json
 echo "[SUCCESS] Generated SPDX SBOM: openssl_cpp_example.spdx.json"
 
 echo "[INFO] Generating SPDX 3.0 SBOM using LLD plugin..."
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so openssl_cpp_example_lld --format spdx-3.0 --output openssl_cpp_example.spdx3.json
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so openssl_cpp_example_lld --format spdx-3.0 --output openssl_cpp_example.spdx3.json
 echo "[SUCCESS] Generated SPDX 3.0 SBOM: openssl_cpp_example.spdx3.json"
 
 echo "[INFO] Generating CycloneDX 1.6 SBOM using LLD plugin..."
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-lld.so openssl_cpp_example_lld --format cyclonedx-1.6 --output openssl_cpp_example.cyclonedx.json
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-lld.so openssl_cpp_example_lld --format cyclonedx-1.6 --output openssl_cpp_example.cyclonedx.json
 echo "[SUCCESS] Generated CycloneDX SBOM: openssl_cpp_example.cyclonedx.json"
 
 # Build with Gold
@@ -49,7 +49,7 @@ echo "[SUCCESS] Generated Gold binary: openssl_cpp_example_gold"
 
 # Generate SBOM using Gold plugin
 echo "[INFO] Generating SBOM using Gold plugin..."
-../../build/src/tools/sbom_loader ../../build/lib/heimdall-gold.so openssl_cpp_example_gold --format spdx-2.3 --output openssl_cpp_example_gold.json
+../../build/src/tools/heimdall-sbom ../../build/lib/heimdall-gold.so openssl_cpp_example_gold --format spdx-2.3 --output openssl_cpp_example_gold.json
 echo "[SUCCESS] Generated Gold SBOM: openssl_cpp_example_gold.json"
 
 # Test the binaries

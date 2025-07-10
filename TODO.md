@@ -2,22 +2,24 @@
 
 This document tracks all missing implementation tasks and planned features for the Heimdall SBOM generator.
 
-## Current Status (Updated 2025-01-05)
+## Current Status (Updated 2025-07-10)
 
-- ✅ **macOS (ARM64/x86_64)**: LLD plugin working, Mach-O support implemented, cross-platform build working
-- ✅ **Linux (x86_64/ARM64)**: LLD plugin working, Gold plugin fully integrated, cross-platform build working
+- ✅ **macOS (ARM64/x86_64)**: LLD wrapper approach working, Mach-O support implemented, cross-platform build working
+- ✅ **Linux (x86_64/ARM64)**: LLD wrapper and Gold plugin approaches working, cross-platform build working
 - ❌ **Windows**: No support implemented
 - ✅ **Core Library**: Basic functionality implemented with cross-platform support
 - ✅ **Test Suite**: 157/166 tests passing (94.6% success rate) with comprehensive coverage
 - ✅ **Code Coverage**: 76.23% overall line coverage (1,864 total lines)
-- ✅ **Documentation**: Markdown-based documentation including thread-safety limitations
+- ✅ **Documentation**: Comprehensive documentation including rationale.md and format-specific examples
 - ✅ **Package Manager Integration (Linux/Mac)**: RPM, DEB, Pacman, Conan, vcpkg, Spack implemented
 - ⚠️ **Archive File Support**: Partially working, some test failures on macOS
 - ✅ **DWARF Support**: Fully working with LLVM 19.1, thread-safety limitations documented
 - ✅ **Gold Plugin Integration**: Fully integrated with heimdall-core, consistent SBOM generation
 - ✅ **Debug Output Standardization**: All debug prints use Utils::debugPrint with HEIMDALL_DEBUG_ENABLED
+- ✅ **Format-Specific Examples**: SPDX and CycloneDX examples created and tested
+- ✅ **Linker Integration Rationale**: Comprehensive documentation of LLD wrapper and Gold plugin approaches
 
-## Recent Progress (2025-01-05)
+## Recent Progress (2025-07-10)
 
 - ✅ **Test Results**: 157/166 tests passing (94.6% success rate) - 9 expected skips for package managers/archives
 - ✅ **Code Coverage**: Achieved 76.23% overall line coverage across core components
@@ -53,6 +55,9 @@ This document tracks all missing implementation tasks and planned features for t
 - ✅ **Enhanced LLVM Detection**: Improved LLVM detection to prefer Homebrew LLVM for DWARF support
 - ✅ **Platform Macros**: Added `HEIMDALL_PLATFORM_LINUX`, `HEIMDALL_PLATFORM_MACOS`, `HEIMDALL_PLATFORM_WINDOWS`
 - ✅ **DWARF Support**: Fully operational with LLVM 19.1, all extraction methods working
+- ✅ **Format-Specific Examples**: Created and tested SPDX-only and CycloneDX-only examples
+- ✅ **Documentation Updates**: Updated README, usage.md, and created comprehensive rationale.md
+- ✅ **Linker Integration Clarity**: Documented LLD wrapper approach and Gold plugin approach with technical rationale
 
 ## Critical Missing Components
 

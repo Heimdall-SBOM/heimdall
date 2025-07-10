@@ -89,6 +89,14 @@ find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 add_definitions(${LLVM_DEFINITIONS})
 
+# ELF library dependency (for Gold plugin)
+find_library(ELF_LIBRARY NAMES elf)
+if(ELF_LIBRARY)
+    message(STATUS "Found ELF library: ${ELF_LIBRARY}")
+else()
+    message(WARNING "ELF library not found. Gold plugin may not work correctly.")
+endif()
+
 # LLVM version compatibility check
 if(ENABLE_CPP11_14)
     # For C++11/14, we need LLVM 7-18
