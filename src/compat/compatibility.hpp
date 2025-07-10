@@ -10,28 +10,36 @@
 #include <type_traits>
 #include <utility>
 
-// Feature detection macros
-#if __cplusplus >= 202302L
-    #define HEIMDALL_CPP23_AVAILABLE 1
-    #define HEIMDALL_CPP20_AVAILABLE 1
-    #define HEIMDALL_CPP17_AVAILABLE 1
-    #define HEIMDALL_FULL_DWARF 1
-    #define HEIMDALL_MODERN_FEATURES 1
-#elif __cplusplus >= 202002L
-    #define HEIMDALL_CPP20_AVAILABLE 1
-    #define HEIMDALL_CPP17_AVAILABLE 1
-    #define HEIMDALL_FULL_DWARF 1
-    #define HEIMDALL_MODERN_FEATURES 1
-#elif __cplusplus >= 201703L
-    #define HEIMDALL_CPP17_AVAILABLE 1
-    #define HEIMDALL_FULL_DWARF 1
-#elif __cplusplus >= 201402L
-    #define HEIMDALL_CPP14_AVAILABLE 1
-    #define HEIMDALL_BASIC_DWARF 1
-#elif __cplusplus >= 201103L
-    #define HEIMDALL_CPP11_AVAILABLE 1
-    #define HEIMDALL_NO_DWARF 1
-#else
+// Feature detection constants
+namespace heimdall {
+namespace compat {
+namespace detail {
+    constexpr bool cpp23_available = __cplusplus >= 202302L;
+    constexpr bool cpp20_available = __cplusplus >= 202002L;
+    constexpr bool cpp17_available = __cplusplus >= 201703L;
+    constexpr bool cpp14_available = __cplusplus >= 201402L;
+    constexpr bool cpp11_available = __cplusplus >= 201103L;
+    
+    constexpr bool full_dwarf_available = cpp17_available;
+    constexpr bool basic_dwarf_available = cpp14_available;
+    constexpr bool no_dwarf_available = cpp11_available;
+    constexpr bool modern_features_available = cpp20_available;
+}
+}
+}
+
+// Feature detection constants for backward compatibility
+constexpr bool HEIMDALL_CPP23_AVAILABLE = heimdall::compat::detail::cpp23_available;
+constexpr bool HEIMDALL_CPP20_AVAILABLE = heimdall::compat::detail::cpp20_available;
+constexpr bool HEIMDALL_CPP17_AVAILABLE = heimdall::compat::detail::cpp17_available;
+constexpr bool HEIMDALL_CPP14_AVAILABLE = heimdall::compat::detail::cpp14_available;
+constexpr bool HEIMDALL_CPP11_AVAILABLE = heimdall::compat::detail::cpp11_available;
+constexpr bool HEIMDALL_FULL_DWARF = heimdall::compat::detail::full_dwarf_available;
+constexpr bool HEIMDALL_BASIC_DWARF = heimdall::compat::detail::basic_dwarf_available;
+constexpr bool HEIMDALL_NO_DWARF = heimdall::compat::detail::no_dwarf_available;
+constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_features_available;
+
+#if !HEIMDALL_CPP11_AVAILABLE
     #error "C++11 or later required"
 #endif
 

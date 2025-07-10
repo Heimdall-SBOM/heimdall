@@ -23,6 +23,21 @@ struct SBOMComponent {
     std::map<std::string, std::string> properties;
     std::vector<std::string> dependencies;
     
+    // Default constructor
+    SBOMComponent() = default;
+    
+    // Move constructor
+    SBOMComponent(SBOMComponent&& other) noexcept = default;
+    
+    // Move assignment operator
+    SBOMComponent& operator=(SBOMComponent&& other) noexcept = default;
+    
+    // Copy constructor
+    SBOMComponent(const SBOMComponent& other) = default;
+    
+    // Copy assignment operator
+    SBOMComponent& operator=(const SBOMComponent& other) = default;
+    
     // Hash for comparison
     std::string getHash() const;
     
@@ -46,7 +61,22 @@ struct SBOMDifference {
     SBOMComponent component;
     heimdall::compat::optional<SBOMComponent> oldComponent;
     
+    // Default constructor
     SBOMDifference() = default;
+    
+    // Move constructor
+    SBOMDifference(SBOMDifference&& other) noexcept = default;
+    
+    // Move assignment operator
+    SBOMDifference& operator=(SBOMDifference&& other) noexcept = default;
+    
+    // Copy constructor
+    SBOMDifference(const SBOMDifference& other) = default;
+    
+    // Copy assignment operator
+    SBOMDifference& operator=(const SBOMDifference& other) = default;
+    
+    // Parameterized constructors
     SBOMDifference(Type t, const SBOMComponent& comp) : type(t), component(comp) {}
     SBOMDifference(Type t, const SBOMComponent& comp, const SBOMComponent& oldComp) 
         : type(t), component(comp), oldComponent(oldComp) {}
