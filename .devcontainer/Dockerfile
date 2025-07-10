@@ -12,7 +12,6 @@ RUN yum update -y \
     openssl-devel \
     pkgconfig \
     zlib-devel \
-    pandoc \
     llvm-googletest 
 
     RUN dnf install -y binutils-devel \
