@@ -746,4 +746,38 @@ std::string detectLicenseFromPath(const std::string& filePath) {
     return "NOASSERTION";
 }
 
+/**
+ * @brief Resolve a library name to its full path
+ * @param libraryName The name of the library to resolve
+ * @return The full path to the library, or the original name if not found
+ */
+std::string resolveLibraryPath(const std::string& libraryName) {
+    // If it's already an absolute path, return as is
+    if (!libraryName.empty() && libraryName[0] == '/') {
+        return libraryName;
+    }
+    
+    // Get library search paths
+    std::vector<std::string> searchPaths = getLibrarySearchPaths();
+    
+    // Try to find the library in search paths
+    for (const auto& path : searchPaths) {
+        std::string fullPath = path + "/" + libraryName;
+        if (fileExists(fullPath)) {
+            return fullPath;
+        }
+        
+        // Try with .so extension if not present
+        if (libraryName.find(".so") == std::string::npos) {
+            std::string soPath = path + "/" + libraryName + ".so";
+            if (fileExists(soPath)) {
+                return soPath;
+            }
+        }
+    }
+    
+    // If not found, return the original name
+    return libraryName;
+}
+
 }  // namespace heimdall::Utils

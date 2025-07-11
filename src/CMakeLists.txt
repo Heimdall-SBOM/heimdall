@@ -65,6 +65,7 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
     target_link_libraries(heimdall-lld PRIVATE
         heimdall-core
         ${LLVM_LIBRARIES}
+        LLVM-19
     )
 endif()
 
