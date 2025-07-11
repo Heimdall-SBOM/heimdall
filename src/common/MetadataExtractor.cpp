@@ -326,6 +326,9 @@ bool MetadataExtractor::extractSectionInfo(ComponentInfo& component) {
 }
 
 bool MetadataExtractor::extractDebugInfo(ComponentInfo& component) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("MetadataExtractor: extractDebugInfo called for " + component.filePath);
+#endif
     return MetadataHelpers::extractDebugInfo(component.filePath, component);
 }
 
@@ -1650,17 +1653,30 @@ bool extractArchiveSymbols(const std::string& filePath,
 }
 
 bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& component) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("MetadataHelpers: Starting extractDebugInfo for " + filePath);
+#endif
     // Use the new robust DWARF extractor
     heimdall::DWARFExtractor dwarfExtractor;
     bool hasDebugInfo = false;
 
     // Try to extract source files from debug info
     std::vector<std::string> sourceFiles;
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("MetadataHelpers: Calling extractSourceFiles");
+#endif
     if (dwarfExtractor.extractSourceFiles(filePath, sourceFiles)) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("MetadataHelpers: extractSourceFiles returned true, found " + std::to_string(sourceFiles.size()) + " source files");
+#endif
         for (const auto& sourceFile : sourceFiles) {
             component.addSourceFile(sourceFile);
         }
         hasDebugInfo = true;
+    } else {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("MetadataHelpers: extractSourceFiles returned false");
+#endif
     }
 
     // Try to extract compile units
@@ -1683,9 +1699,15 @@ bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& comp
 
     if (hasDebugInfo) {
         component.setContainsDebugInfo(true);
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("MetadataHelpers: Setting containsDebugInfo to true");
+#endif
         return true;
     }
 
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("MetadataHelpers: No debug info found, returning false");
+#endif
     return false;
 }
 

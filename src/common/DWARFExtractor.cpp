@@ -134,20 +134,50 @@ DWARFExtractor::~DWARFExtractor() {
  */
 bool DWARFExtractor::extractSourceFiles(const std::string& filePath,
                                         std::vector<std::string>& sourceFiles) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("DWARFExtractor: Starting extractSourceFiles for " + filePath);
+#ifdef LLVM_DWARF_AVAILABLE
+    heimdall::Utils::debugPrint("DWARFExtractor: LLVM_DWARF_AVAILABLE is defined");
+#else
+    heimdall::Utils::debugPrint("DWARFExtractor: LLVM_DWARF_AVAILABLE is NOT defined");
+#endif
+#endif
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context created successfully");
+#endif
         auto numUnits = context->getNumCompileUnits();
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: Number of compile units: " + std::to_string(numUnits));
+#endif
         for (uint32_t i = 0; i < numUnits; ++i) {
             auto unit = context->getUnitAtIndex(i);
             if (unit) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+                heimdall::Utils::debugPrint("DWARFExtractor: Extracting source files from unit " + std::to_string(i));
+#endif
                 extractSourceFilesFromDie(unit->getUnitDIE(), sourceFiles);
             }
         }
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: Total source files found: " + std::to_string(sourceFiles.size()));
+        for (const auto& file : sourceFiles) {
+            heimdall::Utils::debugPrint("DWARFExtractor: Source file: " + file);
+        }
+#endif
         return !sourceFiles.empty();
+    } else {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context creation failed, falling back to heuristic");
+#endif
     }
     // Fallback to heuristic if LLVM fails
+#endif
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("DWARFExtractor: Using heuristic extraction");
 #endif
     return extractSourceFilesHeuristic(filePath, sourceFiles);
 }
@@ -416,6 +446,9 @@ void DWARFExtractor::extractSourceFilesFromDie(const llvm::DWARFDie& die,
                 if (!fileName.empty() && std::find(sourceFiles.begin(), sourceFiles.end(),
                                                    fileName) == sourceFiles.end()) {
                     sourceFiles.push_back(fileName);
+#ifdef HEIMDALL_DEBUG_ENABLED
+                    heimdall::Utils::debugPrint("DWARFExtractor: Found source file in DIE: " + fileName);
+#endif
                 }
             }
         }
@@ -527,11 +560,15 @@ void DWARFExtractor::extractFunctionsFromDie(const llvm::DWARFDie& die,
  */
 bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath,
                                                  std::vector<std::string>& sourceFiles) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("DWARFExtractor: Using heuristic source file extraction for " + filePath);
+#endif
 #ifdef __linux__
     elf_version(EV_CURRENT);
     int fd = open(filePath.c_str(), O_RDONLY);
-    if (fd < 0)
+    if (fd < 0) {
         return false;
+    }
 
     Elf* elf = elf_begin(fd, ELF_C_READ, nullptr);
     if (!elf) {
@@ -549,7 +586,7 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath,
             continue;
 
         if (shdr->sh_type == SHT_PROGBITS) {
-            // Look for .debug_line section
+            // Look for .debug_info section
             std::string sectionName;
             {
                 Elf64_Ehdr* ehdr = elf64_getehdr(elf);
@@ -572,36 +609,49 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath,
                 sectionName = shstrtab + shdr->sh_name;
             }
 
-            if (sectionName == ".debug_line") {
+            if (sectionName == ".debug_info") {
                 Elf_Data* data = elf_getdata(scn, nullptr);
-                if (!data)
+                if (!data) {
                     continue;
+                }
 
                 const char* buf = static_cast<const char*>(data->d_buf);
                 size_t sz = data->d_size;
 
-                // Scan for null-terminated strings that look like file paths
-                for (size_t i = 0; i + 2 < sz;) {
-                    if (isprint(buf[i]) && (buf[i] == '/' || isalpha(buf[i]))) {
+                // Look for strings that contain file paths
+                for (size_t i = 0; i < sz; i++) {
+                    // Look for strings that start with '/' and contain file extensions
+                    if (buf[i] == '/' && i > 0) {
                         size_t start = i;
-                        while (i < sz && isprint(buf[i]) && buf[i] != '\0')
-                            ++i;
-                        if (i < sz && buf[i] == '\0') {
-                            std::string s(buf + start, buf + i);
+                        size_t end = i;
+                        
+                        // Find the end of the string
+                        while (end < sz && buf[end] != '\0' && isprint(buf[end])) {
+                            end++;
+                        }
+                        
+                        if (end < sz && buf[end] == '\0' && end > start) {
+                            std::string s(buf + start, buf + end);
+                            
+                            // Check if it looks like a source file path
                             if ((s.find(".c") != std::string::npos ||
                                  s.find(".h") != std::string::npos ||
-                                 s.find(".cpp") != std::string::npos) &&
+                                 s.find(".cpp") != std::string::npos ||
+                                 s.find(".cc") != std::string::npos ||
+                                 s.find(".cxx") != std::string::npos) &&
                                 s.find('/') != std::string::npos) {
+                                
                                 if (std::find(sourceFiles.begin(), sourceFiles.end(), s) ==
                                     sourceFiles.end()) {
                                     sourceFiles.push_back(s);
                                     found = true;
+#ifdef HEIMDALL_DEBUG_ENABLED
+                                    heimdall::Utils::debugPrint("DWARFExtractor: Heuristic found source file: " + s);
+#endif
                                 }
                             }
                         }
-                        ++i;
-                    } else {
-                        ++i;
+                        i = end; // Skip to end of string
                     }
                 }
             }
@@ -613,10 +663,12 @@ bool DWARFExtractor::extractSourceFilesHeuristic(const std::string& filePath,
 
 #ifdef HEIMDALL_DEBUG_ENABLED
     if (found) {
-        std::cout << "DWARFExtractor: Heuristic parser found " << sourceFiles.size()
-                  << " source files" << std::endl;
+        heimdall::Utils::debugPrint("DWARFExtractor: Heuristic parser found " + std::to_string(sourceFiles.size()) + " source files");
+        for (const auto& file : sourceFiles) {
+            heimdall::Utils::debugPrint("DWARFExtractor: Heuristic source file: " + file);
+        }
     } else {
-        std::cout << "DWARFExtractor: Heuristic parser found no source files" << std::endl;
+        heimdall::Utils::debugPrint("DWARFExtractor: Heuristic parser found no source files");
     }
 #endif
 

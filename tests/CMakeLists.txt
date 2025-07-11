@@ -69,6 +69,9 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
         )
     endif()
 
+    # Always enable debug output for tests
+    target_compile_definitions(heimdall-tests PRIVATE HEIMDALL_DEBUG_ENABLED=1)
+
     # Add Boost if needed
     if(USE_BOOST_FILESYSTEM)
         target_link_libraries(heimdall-tests PRIVATE
