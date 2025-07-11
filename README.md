@@ -6,7 +6,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
-[![Tests](https://img.shields.io/badge/tests-193%20passed-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-190%20passed-brightgreen.svg)](#testing)
 [![C++ Standards](https://img.shields.io/badge/C%2B%2B-11%2F14%2F17%2F20%2F23-blue.svg)](#c-standard-support)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=bugs)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
