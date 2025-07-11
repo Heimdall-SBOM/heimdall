@@ -1,4 +1,4 @@
-# Heimdall
+# Heimdall-SBOM
 
 <img src="https://github.com/bakkertj/heimdall/blob/18e0ce7fc630923f15e6e29e94059e40b7d1af99/docs/images/logo_w_text.png" width="400">
 
