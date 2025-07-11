@@ -257,9 +257,22 @@ namespace compat {
         size_t size_;
     public:
         string_view() : data_(nullptr), size_(0) {}
-        string_view(const char* str) : data_(str), size_(str ? strlen(str) : 0) {}
-        string_view(const std::string& str) : data_(str.data()), size_(str.size()) {}
+        // Safe constructor for null-terminated strings
+        string_view(const char* str) : data_(str), size_(str ? std::strlen(str) : 0) {}
+        // Safe constructor for strings with known length (preferred for non-null-terminated strings)
         string_view(const char* data, size_t size) : data_(data), size_(size) {}
+        // Safe constructor for potentially non-null-terminated strings with max length
+        string_view(const char* data, size_t max_len, bool find_null) : data_(data), size_(0) {
+            if (data && max_len > 0) {
+                if (find_null) {
+                    size_ = strnlen(data, max_len);
+                } else {
+                    size_ = max_len;
+                }
+            }
+        }
+        // Constructor from std::string (always safe)
+        string_view(const std::string& str) : data_(str.data()), size_(str.size()) {}
         const char* data() const { return data_; }
         size_t size() const { return size_; }
         size_t length() const { return size_; }
@@ -383,6 +396,23 @@ namespace utils {
 #else
         return std::to_string(static_cast<typename std::underlying_type<Enum>::type>(e));
 #endif
+    }
+    
+    // Safe string utilities to avoid strlen issues with non-null-terminated strings
+    inline size_t safe_strlen(const char* str, size_t max_len = SIZE_MAX) {
+        if (!str) return 0;
+        return strnlen(str, max_len);
+    }
+    
+    inline bool is_null_terminated(const char* str, size_t max_len = SIZE_MAX) {
+        if (!str) return false;
+        size_t len = strnlen(str, max_len);
+        return len < max_len; // If we found a null byte before max_len
+    }
+    
+    // Safe string_view constructor for potentially non-null-terminated strings
+    inline string_view safe_string_view(const char* data, size_t max_len) {
+        return string_view(data, max_len, true); // Use strnlen internally
     }
 } // namespace utils
 
