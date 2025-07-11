@@ -25,9 +25,9 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include "ComponentInfo.hpp"
-#include "PluginInterface.hpp"
-#include "SBOMGenerator.hpp"
+#include "common/ComponentInfo.hpp"
+#include "common/PluginInterface.hpp"
+#include "common/SBOMGenerator.hpp"
 
 namespace heimdall {
 namespace test {

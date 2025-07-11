@@ -16,7 +16,7 @@ limitations under the License.
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
-#include "ComponentInfo.hpp"
+#include "common/ComponentInfo.hpp"
 
 using namespace heimdall;
 

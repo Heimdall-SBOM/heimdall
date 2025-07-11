@@ -18,8 +18,8 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include "DWARFExtractor.hpp"
-#include "Utils.hpp"
+#include "common/DWARFExtractor.hpp"
+#include "common/Utils.hpp"
 
 using namespace heimdall;
 

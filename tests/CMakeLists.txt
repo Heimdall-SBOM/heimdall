@@ -20,8 +20,9 @@ find_library(ELF_LIBRARY NAMES elf)
 
 # Test executable and test setup only for C++17+
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+    file(GLOB TEST_SOURCES "*.cpp")
     add_executable(heimdall-tests
-        test_cyclonedx_all_versions_cpp.cpp
+        ${TEST_SOURCES}
     )
 
     # Set properties

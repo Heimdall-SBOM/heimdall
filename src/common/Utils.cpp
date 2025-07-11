@@ -30,6 +30,7 @@ limitations under the License.
 #include <iostream>
 #include <sstream>
 #include "../compat/compatibility.hpp"
+#include <filesystem>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -43,87 +44,147 @@ limitations under the License.
 
 namespace heimdall::Utils {
 
-#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE) || (defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM)
 std::string getFileName(const std::string& filePath) {
-    heimdall::compat::fs::path path(filePath);
-    return path.filename().string();
+    if (filePath.empty()) {
+        return "";
+    }
+    
+    // Manual filename extraction
+    size_t last_slash = filePath.find_last_of('/');
+    if (last_slash == std::string::npos) {
+        return filePath;
+    }
+    
+    if (last_slash == filePath.size() - 1) {
+        // Path ends with slash, return empty
+        return "";
+    }
+    
+    std::string filename = filePath.substr(last_slash + 1);
+    
+    // Handle edge case where filename() returns "." for empty paths
+    if (filename == "." && filePath.empty()) {
+        return "";
+    }
+    
+    return filename;
 }
 std::string getFileExtension(const std::string& filePath) {
-    heimdall::compat::fs::path path(filePath);
+    std::filesystem::path path(filePath);
     return path.extension().string();
 }
 std::string getDirectory(const std::string& filePath) {
-    heimdall::compat::fs::path path(filePath);
-    return path.parent_path().string();
+    if (filePath.empty()) {
+        return "";
+    }
+    
+    // Manual directory extraction
+    size_t last_slash = filePath.find_last_of('/');
+    if (last_slash == std::string::npos) {
+        // No slash found, no directory
+        return "";
+    }
+    
+    if (last_slash == 0) {
+        // Root directory
+        return "/";
+    }
+    
+    std::string directory = filePath.substr(0, last_slash);
+    
+    // Handle edge case where parent_path() returns "." for relative paths
+    if (directory == "." && !filePath.empty() && filePath.find('/') == std::string::npos) {
+        return "";
+    }
+    
+    return directory;
 }
 std::string normalizePath(const std::string& path) {
-    heimdall::compat::fs::path fsPath(path);
-    return fsPath.lexically_normal().string();
+    if (path.empty()) return "";
+
+    std::vector<std::string> stack;
+    bool is_absolute = !path.empty() && path[0] == '/';
+    size_t i = 0, n = path.size();
+
+    while (i < n) {
+        // Skip consecutive slashes
+        while (i < n && path[i] == '/') ++i;
+        size_t start = i;
+        while (i < n && path[i] != '/') ++i;
+        std::string part = path.substr(start, i - start);
+        if (part == "" || part == ".") continue;
+        if (part == "..") {
+            if (!stack.empty() && stack.back() != "..") stack.pop_back();
+            else if (!is_absolute) stack.push_back("..");
+        } else {
+            stack.push_back(part);
+        }
+    }
+
+    std::string result = is_absolute ? "/" : "";
+    for (size_t j = 0; j < stack.size(); ++j) {
+        if (j > 0) result += "/";
+        result += stack[j];
+    }
+    if (result.empty()) result = is_absolute ? "/" : "";
+    // Preserve trailing slash if present in input (except for root)
+    if (path.size() > 1 && path.back() == '/' && result.size() > 1 && result.back() != '/')
+        result += '/';
+    return result;
 }
 std::vector<std::string> splitPath(const std::string& path) {
     std::vector<std::string> result;
-    heimdall::compat::fs::path fsPath(path);
-    for (const auto& part : fsPath) {
-        if (!part.empty() && part.string() != "." && part.string() != "..") {
-            result.push_back(part.string());
-        }
+    
+    if (path.empty()) {
+        return result;
     }
+    
+    // Handle root directory specially
+    if (path == "/" || path == "\\") {
+        result.push_back("/");
+        return result;
+    }
+    
+    // Manual path splitting
+    size_t start = 0;
+    if (path[0] == '/') {
+        result.push_back("/");
+        start = 1;
+    }
+    
+    while (start < path.size()) {
+        size_t end = path.find('/', start);
+        if (end == std::string::npos) {
+            end = path.size();
+        }
+        
+        if (end > start) {
+            std::string part = path.substr(start, end - start);
+            result.push_back(part);
+        }
+        
+        start = end + 1;
+    }
+    
+    // For absolute paths, ensure we have at least root and one component
+    if (path[0] == '/' && result.size() == 1 && result[0] == "/") {
+        // This is just "/", which is correct
+    } else if (path[0] == '/' && result.size() == 1) {
+        // This is "/something", which is correct
+    }
+    
     return result;
 }
 bool fileExists(const std::string& filePath) {
-    return heimdall::compat::fs::exists(filePath);
+    return std::filesystem::exists(filePath);
 }
 uint64_t getFileSize(const std::string& filePath) {
     if (!fileExists(filePath)) {
         return 0;
     }
-    heimdall::compat::fs::path path(filePath);
-    return heimdall::compat::fs::file_size(path);
+    std::filesystem::path path(filePath);
+    return std::filesystem::file_size(path);
 }
-#else
-#include <libgen.h>
-#include <sys/stat.h>
-std::string getFileName(const std::string& filePath) {
-    char* pathCopy = strdup(filePath.c_str());
-    std::string fileName = basename(pathCopy);
-    free(pathCopy);
-    return fileName;
-}
-std::string getFileExtension(const std::string& filePath) {
-    size_t dot = filePath.find_last_of('.');
-    if (dot == std::string::npos) return "";
-    return filePath.substr(dot);
-}
-std::string getDirectory(const std::string& filePath) {
-    char* pathCopy = strdup(filePath.c_str());
-    std::string dirName = dirname(pathCopy);
-    free(pathCopy);
-    return dirName;
-}
-std::string normalizePath(const std::string& path) {
-    // Just return the input for C++11/14 minimal stub
-    return path;
-}
-std::vector<std::string> splitPath(const std::string& path) {
-    std::vector<std::string> result;
-    size_t start = 0, end = 0;
-    while ((end = path.find('/', start)) != std::string::npos) {
-        if (end != start) result.push_back(path.substr(start, end - start));
-        start = end + 1;
-    }
-    if (start < path.size()) result.push_back(path.substr(start));
-    return result;
-}
-bool fileExists(const std::string& filePath) {
-    struct stat buffer;
-    return (stat(filePath.c_str(), &buffer) == 0);
-}
-uint64_t getFileSize(const std::string& filePath) {
-    struct stat buffer;
-    if (stat(filePath.c_str(), &buffer) != 0) return 0;
-    return buffer.st_size;
-}
-#endif
 
 /**
  * @brief Calculate SHA256 checksum of a file
@@ -441,6 +502,9 @@ std::string extractVersionFromPath(const std::string& filePath) {
  * @return The extracted package name, or empty if not found
  */
 std::string extractPackageName(const std::string& filePath) {
+    if (filePath.empty()) {
+        return "";
+    }
     std::string fileName = getFileName(filePath);
 
     // Remove common prefixes and suffixes

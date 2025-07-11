@@ -33,7 +33,7 @@ std::string format = "spdx";
 bool verbose = false;
 std::vector<std::string> processedFiles;
 std::vector<std::string> processedLibraries;
-const std::string cyclonedxVersion = "1.6"; // NEW: store requested CycloneDX version
+std::string cyclonedxVersion = "1.6"; // NEW: store requested CycloneDX version
 
 // Simple utility functions to avoid heimdall-core dependencies
 std::string getFileName(const std::string& path) {

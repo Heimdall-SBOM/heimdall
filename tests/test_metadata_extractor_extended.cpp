@@ -17,9 +17,9 @@ limitations under the License.
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include "ComponentInfo.hpp"
-#include "MetadataExtractor.hpp"
-#include "Utils.hpp"
+#include "common/ComponentInfo.hpp"
+#include "common/MetadataExtractor.hpp"
+#include "common/Utils.hpp"
 
 using namespace heimdall;
 

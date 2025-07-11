@@ -39,7 +39,7 @@ constexpr bool HEIMDALL_BASIC_DWARF = heimdall::compat::detail::basic_dwarf_avai
 constexpr bool HEIMDALL_NO_DWARF = heimdall::compat::detail::no_dwarf_available;
 constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_features_available;
 
-#if !HEIMDALL_CPP11_AVAILABLE
+#if __cplusplus < 201103L
     #error "C++11 or later required"
 #endif
 
@@ -333,6 +333,14 @@ namespace compat {
 
 // Utility functions that work across all C++ standards
 namespace utils {
+    // Overload for const char*
+    inline string_view to_string_view(const char* value) {
+        return string_view(value);
+    }
+    // Overload for std::string
+    inline string_view to_string_view(const std::string& value) {
+        return string_view(value);
+    }
     template<typename T>
     string_view to_string_view(const T& value) {
 #if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)

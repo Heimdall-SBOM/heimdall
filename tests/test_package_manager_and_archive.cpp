@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <filesystem>
-#include "ComponentInfo.hpp"
-#include "MetadataExtractor.hpp"
+#include "common/ComponentInfo.hpp"
+#include "common/MetadataExtractor.hpp"
 #include "gtest/gtest.h"
 
 using namespace heimdall;

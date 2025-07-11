@@ -694,7 +694,14 @@ std::string SBOMGenerator::Impl::getCurrentTimestamp() {
     auto time_t = std::chrono::system_clock::to_time_t(now);
 
     std::stringstream ss;
-    ss << std::put_time(std::gmtime_r(&time_t), "%Y-%m-%dT%H:%M:%SZ");
+#if defined(_POSIX_VERSION)
+    struct tm tm_buf;
+    gmtime_r(&time_t, &tm_buf);
+    ss << std::put_time(&tm_buf, "%Y-%m-%dT%H:%M:%SZ");
+#else
+    // Fallback: not thread-safe
+    ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
+#endif
     return ss.str();
 }
 

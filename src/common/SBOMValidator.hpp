@@ -16,13 +16,22 @@ struct ValidationResult {
     std::vector<std::string> warnings;
     std::map<std::string, std::string> metadata;
 
+    // Default constructor
+    ValidationResult() = default;
+    // Copy constructor
+    ValidationResult(const ValidationResult&) = default;
+    // Copy assignment
+    ValidationResult& operator=(const ValidationResult&) = default;
+    // Move constructor
     ValidationResult(ValidationResult&& other) noexcept
         : isValid(other.isValid)
-        , errors(std::mode(other.errors))
+        , errors(std::move(other.errors))
         , warnings(std::move(other.warnings))
-        , metadata(std::move(other.mmetadata)
+        , metadata(std::move(other.metadata))
      {
      }
+    // Move assignment
+    ValidationResult& operator=(ValidationResult&& other) noexcept = default;
     
     void addError(const std::string& error) {
         errors.push_back(error);

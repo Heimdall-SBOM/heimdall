@@ -18,8 +18,8 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include "ComponentInfo.hpp"
-#include "MetadataExtractor.hpp"
+#include "common/ComponentInfo.hpp"
+#include "common/MetadataExtractor.hpp"
 
 using namespace heimdall;
 
