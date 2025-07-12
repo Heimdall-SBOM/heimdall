@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the implementation plan for **heimdall-build**, a centralized build server hosted on Linode that will provide automated building and verification of the Heimdall project across multiple compiler configurations and platforms.
+This document outlines the implementation plan for **heimdall-build**, a centralized build server hosted on Linode that will provide automated building and verification of the Heimdall project across multiple compiler configurations and platforms. This is the primary and only build infrastructure solution, as GitHub Actions are not available for this project.
 
 ## Goals
 
@@ -11,7 +11,7 @@ This document outlines the implementation plan for **heimdall-build**, a central
 - **Multi-Standard Support**: C++11, C++14, C++17, C++20, and C++23
 - **Automated Verification**: Build, test, and validate each configuration
 - **Scalable Architecture**: Docker-based containerization for isolation and scalability
-- **CI/CD Integration**: Seamless integration with existing development workflows
+- **CI/CD Integration**: Seamless integration with existing development workflows and Git hooks
 
 ## Architecture
 
@@ -387,6 +387,8 @@ echo "  LLVM_CONFIG: $LLVM_CONFIG"
 - Artifact download
 - Build configuration management
 - System status and metrics
+- **Git integration status** (since GitHub Actions unavailable)
+- **Local development build triggers**
 
 #### 6.2 REST API
 **Endpoints**:
@@ -403,6 +405,10 @@ GET    /api/v1/builds/{id}/artifacts     # List artifacts
 GET    /api/v1/builds/{id}/artifacts/{file} # Download artifact
 GET    /api/v1/builds/{id}/sboms         # Get SBOMs
 
+# Build Status (for local development)
+GET    /api/v1/builds/{id}/status        # Get build status
+GET    /api/v1/builds/latest/{commit}    # Get latest build for commit
+
 # Configuration
 GET    /api/v1/configurations            # List build configurations
 POST   /api/v1/configurations            # Create configuration
@@ -413,63 +419,191 @@ DELETE /api/v1/configurations/{id}       # Delete configuration
 GET    /api/v1/status                    # System status
 GET    /api/v1/metrics                   # System metrics
 GET    /api/v1/queue                     # Build queue status
+
+# Git Integration (since GitHub Actions unavailable)
+POST   /api/v1/git/trigger               # Trigger build from Git hook
+GET    /api/v1/git/status/{commit}       # Get Git commit build status
 ```
 
-### Phase 7: CI/CD Integration (Week 13-14)
+### Phase 7: Git Integration and Automation (Week 13-14)
 
-#### 7.1 GitHub Actions Integration
-```yaml
-# .github/workflows/build-server.yml
-name: Build Server Integration
+#### 7.1 Git Hooks Integration
+Since GitHub Actions are not available, we'll implement Git hooks for automated build triggering:
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+**Pre-commit Hook** (`scripts/git-hooks/pre-commit`):
+```bash
+#!/bin/bash
+# Pre-commit hook to trigger builds
 
-jobs:
-  build-server:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Submit to Build Server
-        run: |
-          curl -X POST https://heimdall-build.linode.com/api/v1/builds \
-            -H "Content-Type: application/json" \
-            -d '{
-              "repository": "${{ github.repository }}",
-              "branch": "${{ github.ref_name }}",
-              "commit": "${{ github.sha }}",
-              "configurations": [
-                {"platform": "linux", "compiler": "gcc", "version": "11", "cxx_standard": "17"},
-                {"platform": "linux", "compiler": "clang", "version": "15", "cxx_standard": "20"},
-                {"platform": "macos", "compiler": "clang", "version": "15", "cxx_standard": "20"},
-                {"platform": "windows", "compiler": "msvc", "version": "2022", "cxx_standard": "20"}
-              ]
-            }'
+# Get repository information
+REPO_URL=$(git config --get remote.origin.url)
+BRANCH=$(git branch --show-current)
+COMMIT=$(git rev-parse HEAD)
+
+# Submit build request to heimdall-build server
+curl -X POST https://heimdall-build.linode.com/api/v1/builds \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${BUILD_SERVER_TOKEN}" \
+  -d "{
+    \"repository\": \"${REPO_URL}\",
+    \"branch\": \"${BRANCH}\",
+    \"commit\": \"${COMMIT}\",
+    \"trigger\": \"pre-commit\",
+    \"configurations\": [
+      {\"platform\": \"linux\", \"compiler\": \"gcc\", \"version\": \"11\", \"cxx_standard\": \"17\"},
+      {\"platform\": \"linux\", \"compiler\": \"clang\", \"version\": \"15\", \"cxx_standard\": \"20\"}
+    ]
+  }"
+
+echo "Build request submitted to heimdall-build server"
+```
+
+**Post-commit Hook** (`scripts/git-hooks/post-commit`):
+```bash
+#!/bin/bash
+# Post-commit hook for build status reporting
+
+COMMIT=$(git rev-parse HEAD)
+BRANCH=$(git branch --show-current)
+
+# Wait for build completion and report status
+sleep 30  # Allow time for build to start
+
+# Check build status
+BUILD_STATUS=$(curl -s https://heimdall-build.linode.com/api/v1/builds/latest/${COMMIT} \
+  -H "Authorization: Bearer ${BUILD_SERVER_TOKEN}" | jq -r '.status')
+
+case $BUILD_STATUS in
+  "success")
+    echo "✅ Build completed successfully"
+    ;;
+  "failed")
+    echo "❌ Build failed - check heimdall-build server for details"
+    exit 1
+    ;;
+  "running")
+    echo "⏳ Build is still running - check heimdall-build server for progress"
+    ;;
+  *)
+    echo "⚠️  Build status unknown"
+    ;;
+esac
 ```
 
 #### 7.2 Build Status Reporting
 ```python
-# Webhook handler for build completion
-@app.route('/webhooks/build-complete', methods=['POST'])
-def build_complete_webhook():
-    data = request.json
+# Build status notification system
+@app.route('/api/v1/builds/<build_id>/status', methods=['GET'])
+def get_build_status(build_id):
+    """Get build status for integration with local development"""
+    build = get_build_by_id(build_id)
+    if not build:
+        return jsonify({'error': 'Build not found'}), 404
     
-    # Update GitHub commit status
-    update_github_status(
-        repo=data['repository'],
-        commit=data['commit'],
-        state=data['status'],
-        description=f"Build {data['build_id']} completed"
-    )
+    return jsonify({
+        'build_id': build_id,
+        'status': build.status,
+        'progress': build.progress,
+        'artifacts': build.artifacts,
+        'logs_url': f"/api/v1/builds/{build_id}/logs"
+    })
+
+@app.route('/api/v1/builds/latest/<commit_hash>', methods=['GET'])
+def get_latest_build_for_commit(commit_hash):
+    """Get latest build status for a specific commit"""
+    build = get_latest_build_by_commit(commit_hash)
+    if not build:
+        return jsonify({'error': 'No build found for commit'}), 404
     
-    # Send notifications
-    send_notifications(data)
+    return jsonify({
+        'build_id': build.id,
+        'status': build.status,
+        'commit': commit_hash,
+        'branch': build.branch
+    })
+```
+
+#### 7.3 Local Development Integration
+**Build Client Script** (`scripts/build-client.sh`):
+```bash
+#!/bin/bash
+# Local build client for development integration
+
+# Configuration
+BUILD_SERVER_URL="https://heimdall-build.linode.com"
+BUILD_SERVER_TOKEN="${BUILD_SERVER_TOKEN}"
+
+# Submit build request
+submit_build() {
+    local configs="$1"
+    local branch=$(git branch --show-current)
+    local commit=$(git rev-parse HEAD)
+    local repo_url=$(git config --get remote.origin.url)
     
-    return jsonify({'status': 'success'})
+    echo "Submitting build request..."
+    response=$(curl -s -X POST "${BUILD_SERVER_URL}/api/v1/builds" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer ${BUILD_SERVER_TOKEN}" \
+        -d "{
+            \"repository\": \"${repo_url}\",
+            \"branch\": \"${branch}\",
+            \"commit\": \"${commit}\",
+            \"configurations\": ${configs}
+        }")
+    
+    build_id=$(echo "$response" | jq -r '.build_id')
+    echo "Build submitted with ID: ${build_id}"
+    echo "Monitor at: ${BUILD_SERVER_URL}/builds/${build_id}"
+    
+    return $build_id
+}
+
+# Monitor build progress
+monitor_build() {
+    local build_id="$1"
+    
+    while true; do
+        status=$(curl -s "${BUILD_SERVER_URL}/api/v1/builds/${build_id}/status" \
+            -H "Authorization: Bearer ${BUILD_SERVER_TOKEN}" | jq -r '.status')
+        
+        case $status in
+            "success")
+                echo "✅ Build completed successfully"
+                break
+                ;;
+            "failed")
+                echo "❌ Build failed"
+                exit 1
+                ;;
+            "running")
+                echo "⏳ Build is running..."
+                sleep 30
+                ;;
+            *)
+                echo "⚠️  Unknown build status: $status"
+                sleep 30
+                ;;
+        esac
+    done
+}
+
+# Main execution
+case "$1" in
+    "submit")
+        submit_build "$2"
+        ;;
+    "monitor")
+        monitor_build "$2"
+        ;;
+    "full")
+        build_id=$(submit_build "$2")
+        monitor_build "$build_id"
+        ;;
+    *)
+        echo "Usage: $0 {submit|monitor|full} [configurations]"
+        exit 1
+        ;;
+esac
 ```
 
 ### Phase 8: Monitoring and Maintenance (Week 15-16)
@@ -645,14 +779,50 @@ volumes:
 
 ## Conclusion
 
-The heimdall-build server will provide a robust, scalable, and secure build infrastructure that supports the project's multi-platform and multi-compiler requirements. The phased implementation approach ensures steady progress while maintaining system stability and quality.
+The heimdall-build server will provide a robust, scalable, and secure build infrastructure that supports the project's multi-platform and multi-compiler requirements. Since GitHub Actions are not available, this solution provides the primary and only automated build infrastructure for the project.
 
-The server will integrate seamlessly with existing development workflows while providing comprehensive monitoring, reporting, and artifact management capabilities. The Docker-based architecture ensures consistency across all build environments and simplifies maintenance and scaling.
+The server will integrate seamlessly with existing development workflows through Git hooks and local build client scripts, while providing comprehensive monitoring, reporting, and artifact management capabilities. The Docker-based architecture ensures consistency across all build environments and simplifies maintenance and scaling.
+
+**Key Advantages of This Approach:**
+- **Complete Control**: Full control over build environment and infrastructure
+- **No External Dependencies**: No reliance on GitHub Actions or other external CI/CD services
+- **Custom Integration**: Tailored Git hooks and local development tools
+- **Scalability**: Can scale resources based on project needs
+- **Security**: All build data and artifacts remain within your infrastructure
+
+## Alternative Integration Methods (Since GitHub Actions Unavailable)
+
+### Git Hooks Setup
+```bash
+# Install git hooks in the Heimdall repository
+cp scripts/git-hooks/* .git/hooks/
+chmod +x .git/hooks/*
+
+# Configure build server token
+echo 'export BUILD_SERVER_TOKEN="your-token-here"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Manual Build Triggers
+```bash
+# Trigger builds manually using the build client
+./scripts/build-client.sh full '[
+  {"platform": "linux", "compiler": "gcc", "version": "11", "cxx_standard": "17"},
+  {"platform": "linux", "compiler": "clang", "version": "15", "cxx_standard": "20"}
+]'
+```
+
+### Scheduled Builds
+```bash
+# Set up cron job for regular builds
+# Add to crontab: 0 */6 * * * /path/to/heimdall/scripts/scheduled-build.sh
+```
 
 ## Next Steps
 
 1. **Infrastructure Setup**: Begin with Phase 1 server provisioning
-2. **Team Training**: Provide training on Docker and container orchestration
-3. **Pilot Testing**: Start with a subset of build configurations
-4. **Gradual Migration**: Migrate existing CI/CD pipelines to the new system
-5. **Continuous Improvement**: Monitor metrics and optimize performance
+2. **Git Hooks Configuration**: Set up automated build triggers via Git hooks
+3. **Team Training**: Provide training on Docker, container orchestration, and build client usage
+4. **Pilot Testing**: Start with a subset of build configurations
+5. **Local Integration**: Configure build client scripts for all developers
+6. **Continuous Improvement**: Monitor metrics and optimize performance
