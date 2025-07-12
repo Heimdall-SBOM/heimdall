@@ -106,11 +106,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
         target_link_libraries(heimdall-tests PRIVATE fmt::fmt)
     endif()
 
-    # Add test
-    add_test(NAME heimdall-tests COMMAND heimdall-tests)
-
     # Enable CTest integration
     enable_testing()
+    include(GoogleTest)
+    gtest_discover_tests(heimdall-tests)
 
     # Link stdc++fs for C++17
     if(CMAKE_CXX_STANDARD EQUAL 17)
