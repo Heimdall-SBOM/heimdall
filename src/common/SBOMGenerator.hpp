@@ -79,6 +79,12 @@ public:
     void setCycloneDXVersion(const std::string& version);
 
     /**
+     * @brief Set whether to suppress warnings (for test mode)
+     * @param suppress true to suppress warnings
+     */
+    void setSuppressWarnings(bool suppress);
+
+    /**
      * @brief Get the number of components in the SBOM
      * @return Number of components
      */

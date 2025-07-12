@@ -45,6 +45,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
     if(TARGET GTest::gtest_main)
         target_link_libraries(heimdall-tests PRIVATE
             heimdall-core
+            heimdall-gold
+            heimdall-lld
             GTest::gtest
             GTest::gtest_main
             ${OPENSSL_LIBRARIES}
@@ -53,6 +55,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
     elseif(TARGET gtest_main)
         target_link_libraries(heimdall-tests PRIVATE
             heimdall-core
+            heimdall-gold
+            heimdall-lld
             gtest
             gtest_main
             ${OPENSSL_LIBRARIES}

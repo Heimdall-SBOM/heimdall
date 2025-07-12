@@ -25,6 +25,7 @@ limitations under the License.
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace heimdall {
 
@@ -50,8 +51,9 @@ public:
 
     /**
      * @brief Initialize the LLD adapter
+     * @return true if initialization was successful
      */
-    void initialize();
+    bool initialize();
 
     /**
      * @brief Process an input file with full metadata extraction
@@ -113,6 +115,56 @@ public:
      * @param include Whether to include system libraries in SBOM
      */
     void setIncludeSystemLibraries(bool include);
+
+    /**
+     * @brief Process a symbol with metadata extraction
+     * @param symbolName The name of the symbol
+     * @param address The symbol address
+     * @param size The symbol size
+     */
+    void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size);
+
+    /**
+     * @brief Get the list of processed files
+     * @return Vector of processed file paths
+     */
+    std::vector<std::string> getProcessedFiles() const;
+
+    /**
+     * @brief Get the list of processed libraries
+     * @return Vector of processed library paths
+     */
+    std::vector<std::string> getProcessedLibraries() const;
+
+    /**
+     * @brief Get the list of processed symbols
+     * @return Vector of processed symbol names
+     */
+    std::vector<std::string> getProcessedSymbols() const;
+
+    /**
+     * @brief Check if a file should be processed
+     * @param filePath The file path to check
+     * @return true if the file should be processed
+     */
+    bool shouldProcessFile(const std::string& filePath) const;
+
+    /**
+     * @brief Extract component name from file path
+     * @param filePath The file path
+     * @return The extracted component name
+     */
+    std::string extractComponentName(const std::string& filePath) const;
+
+    /**
+     * @brief Clean up resources
+     */
+    void cleanup();
+
+    /**
+     * @brief Generate the SBOM
+     */
+    void generateSBOM();
 
     /**
      * @brief Get the number of components processed

@@ -249,27 +249,41 @@ TEST_F(SBOMValidationTest, SupportedFormats) {
     EXPECT_NE(std::find(formats.begin(), formats.end(), "cyclonedx"), formats.end());
 }
 
+// Helper function to create SBOMComponent with values
+SBOMComponent createComponent(const std::string& id, const std::string& name, 
+                            const std::string& version, const std::string& type,
+                            const std::string& purl, const std::string& license) {
+    SBOMComponent comp;
+    comp.id = id;
+    comp.name = name;
+    comp.version = version;
+    comp.type = type;
+    comp.purl = purl;
+    comp.license = license;
+    return comp;
+}
+
 // Enhanced SBOMComparator Tests
 
 TEST_F(SBOMValidationTest, SBOMComponentEquality) {
-    SBOMComponent comp1{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
-    SBOMComponent comp2{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
-    SBOMComponent comp3{"id2", "name2", "2.0.0", "library", "purl2", "MIT", {}, {}};
+    SBOMComponent comp1 = createComponent("id1", "name1", "1.0.0", "library", "purl1", "MIT");
+    SBOMComponent comp2 = createComponent("id1", "name1", "1.0.0", "library", "purl1", "MIT");
+    SBOMComponent comp3 = createComponent("id2", "name2", "2.0.0", "library", "purl2", "MIT");
     
     EXPECT_EQ(comp1, comp2);
     EXPECT_NE(comp1, comp3);
 }
 
 TEST_F(SBOMValidationTest, SBOMComponentHash) {
-    SBOMComponent comp1{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
-    SBOMComponent comp2{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
+    SBOMComponent comp1 = createComponent("id1", "name1", "1.0.0", "library", "purl1", "MIT");
+    SBOMComponent comp2 = createComponent("id1", "name1", "1.0.0", "library", "purl1", "MIT");
     
     EXPECT_EQ(comp1.getHash(), comp2.getHash());
 }
 
 TEST_F(SBOMValidationTest, SBOMComponentHashDifferentComponents) {
-    SBOMComponent comp1{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
-    SBOMComponent comp2{"id2", "name2", "2.0.0", "library", "purl2", "MIT", {}, {}};
+    SBOMComponent comp1 = createComponent("id1", "name1", "1.0.0", "library", "purl1", "MIT");
+    SBOMComponent comp2 = createComponent("id2", "name2", "2.0.0", "library", "purl2", "MIT");
     
     EXPECT_NE(comp1.getHash(), comp2.getHash());
 }
@@ -346,10 +360,10 @@ TEST_F(SBOMValidationTest, DiffStatistics) {
     SBOMComparator comparator;
     std::vector<SBOMDifference> differences;
     
-    SBOMComponent comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
-    SBOMComponent comp2{"comp2", "Component2", "1.0.0", "library", "", "", {}, {}};
-    SBOMComponent comp3_old{"comp3", "Component3", "1.0.0", "library", "", "", {}, {}};
-    SBOMComponent comp3_new{"comp3", "Component3", "2.0.0", "library", "", "", {}, {}};
+    SBOMComponent comp1 = createComponent("comp1", "Component1", "1.0.0", "library", "", "");
+    SBOMComponent comp2 = createComponent("comp2", "Component2", "1.0.0", "library", "", "");
+    SBOMComponent comp3_old = createComponent("comp3", "Component3", "1.0.0", "library", "", "");
+    SBOMComponent comp3_new = createComponent("comp3", "Component3", "2.0.0", "library", "", "");
     
     differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
     differences.emplace_back(SBOMDifference::Type::REMOVED, comp2);

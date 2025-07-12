@@ -1,3 +1,46 @@
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/**
+ * @file SBOMComparator.hpp
+ * @brief SBOM comparison, merging, and diff generation functionality
+ * @author Trevor Bakker
+ * @date 2025
+ * 
+ * This file provides comprehensive functionality for comparing, merging, and
+ * analyzing Software Bill of Materials (SBOM) documents. It includes:
+ * 
+ * - SBOM component representation and comparison
+ * - Abstract parser interface for different SBOM formats
+ * - Concrete implementations for SPDX and CycloneDX parsers
+ * - SBOM comparison and difference detection
+ * - SBOM merging capabilities
+ * - Diff report generation in multiple formats
+ * - Factory pattern for creating parsers
+ * 
+ * Supported SBOM Formats:
+ * - SPDX 2.3 and 3.0
+ * - CycloneDX 1.4, 1.5, and 1.6
+ * 
+ * Output Formats:
+ * - Text reports
+ * - JSON reports
+ * - CSV reports
+ */
+
 #pragma once
 
 #include <string>
@@ -37,6 +80,28 @@ struct SBOMComponent {
     
     // Copy assignment operator
     SBOMComponent& operator=(const SBOMComponent& other) = default;
+    
+    /**
+     * @brief Construct a new SBOMComponent with all fields
+     * @param id The component ID
+     * @param name The component name
+     * @param version The component version
+     * @param type The component type
+     * @param purl The package URL
+     * @param license The license
+     * @param properties Additional properties
+     * @param dependencies List of dependencies
+     */
+    SBOMComponent(const std::string& id,
+                  const std::string& name,
+                  const std::string& version,
+                  const std::string& type,
+                  const std::string& purl,
+                  const std::string& license,
+                  const std::map<std::string, std::string>& properties = {},
+                  const std::vector<std::string>& dependencies = {})
+        : id(id), name(name), version(version), type(type), purl(purl), license(license),
+          properties(properties), dependencies(dependencies) {}
     
     // Hash for comparison
     std::string getHash() const;
@@ -198,9 +263,10 @@ private:
     std::vector<SBOMDifference> compareComponents(const std::vector<SBOMComponent>& oldComponents,
                                                  const std::vector<SBOMComponent>& newComponents);
     std::string mergeComponents(const std::vector<std::vector<SBOMComponent>>& componentLists,
-                               const std::string& outputFormat, const std::string& outputVersion);
+                               const std::string& outputFormat, 
+                               const std::string& outputVersion);
     std::string generateSPDXOutput(const std::vector<SBOMComponent>& components, 
-                                  const std::string& version);
+                                   const std::string& version);
     std::string generateCycloneDXOutput(const std::vector<SBOMComponent>& components, 
                                        const std::string& version);
     std::string generateJSONReport(const std::vector<SBOMDifference>& differences);
@@ -211,20 +277,20 @@ private:
 };
 
 /**
- * @brief Factory for creating SBOM parsers
+ * @brief Factory class for creating SBOM parsers
  */
 class SBOMParserFactory {
 public:
     /**
-     * @brief Create parser for given format
+     * @brief Create a parser for the given format
      * @param format SBOM format ("spdx" or "cyclonedx")
-     * @return Parser instance
+     * @return Unique pointer to the created parser, or nullptr if format is not supported
      */
     static std::unique_ptr<SBOMParser> createParser(const std::string& format);
     
     /**
-     * @brief Get supported formats
-     * @return List of supported formats
+     * @brief Get list of supported SBOM formats
+     * @return Vector of supported format names
      */
     static std::vector<std::string> getSupportedFormats();
 };

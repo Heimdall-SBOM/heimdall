@@ -47,6 +47,11 @@ public:
     size_t getComponentCount() const;
     void printStatistics() const;
 
+    // Getter methods for accessing private members
+    const std::vector<std::string>& getProcessedFiles() const { return processedFiles; }
+    const std::vector<std::string>& getProcessedLibraries() const { return processedLibraries; }
+    bool isInitialized() const { return initialized; }
+
 private:
     std::vector<std::string> processedFiles;
     std::vector<std::string> processedLibraries;
@@ -153,6 +158,10 @@ void LLDAdapter::Impl::processLibrary(const std::string& libraryPath) {
 
 void LLDAdapter::Impl::finalize() {
     if (initialized) {
+        // Debug: Print component count before generation
+        logProcessing("Finalizing with " + std::to_string(sbomGenerator->getComponentCount()) + " components");
+        logProcessing("Format: " + format + ", Output: " + outputPath);
+        
         // Generate the final SBOM
         sbomGenerator->setOutputPath(outputPath);
         sbomGenerator->setFormat(format);
@@ -213,8 +222,9 @@ LLDAdapter::LLDAdapter() : pImpl(heimdall::compat::make_unique<Impl>()) {}
 
 LLDAdapter::~LLDAdapter() = default;
 
-void LLDAdapter::initialize() {
+bool LLDAdapter::initialize() {
     pImpl->initialize();
+    return true;
 }
 
 void LLDAdapter::processInputFile(const std::string& filePath) {
@@ -255,6 +265,96 @@ void LLDAdapter::setExtractDebugInfo(bool extract) {
 
 void LLDAdapter::setIncludeSystemLibraries(bool include) {
     pImpl->setIncludeSystemLibraries(include);
+}
+
+void LLDAdapter::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) {
+    // Store symbol information for SBOM generation
+    // This could be extended to store symbol metadata
+}
+
+std::vector<std::string> LLDAdapter::getProcessedFiles() const {
+    return pImpl->getProcessedFiles();
+}
+
+std::vector<std::string> LLDAdapter::getProcessedLibraries() const {
+    return pImpl->getProcessedLibraries();
+}
+
+std::vector<std::string> LLDAdapter::getProcessedSymbols() const {
+    // Return empty vector for now - symbol processing not fully implemented
+    return std::vector<std::string>();
+}
+
+bool LLDAdapter::shouldProcessFile(const std::string& filePath) const {
+    if (filePath.empty()) {
+        return false;
+    }
+    
+    // Check if file exists
+    if (!Utils::fileExists(filePath)) {
+        return false;
+    }
+    
+    // Check file extension
+    std::string extension = Utils::getFileExtension(filePath);
+    return extension == ".o" || extension == ".obj" || 
+           extension == ".a" || extension == ".so" || 
+           extension == ".dylib" || extension == ".dll" ||
+           extension == ".exe" || extension.empty(); // Accept files without extension (Linux executables)
+}
+
+std::string LLDAdapter::extractComponentName(const std::string& filePath) const {
+    std::string fileName = Utils::getFileName(filePath);
+    
+    // Remove common prefixes and extensions
+    if (fileName.substr(0, 3) == "lib") {
+        fileName = fileName.substr(3);
+    }
+    
+    std::string extension = Utils::getFileExtension(fileName);
+    if (!extension.empty()) {
+        fileName = fileName.substr(0, fileName.length() - extension.length());
+    }
+    
+    // Remove version numbers and suffixes (e.g., -1.2.3, _debug)
+    size_t dashPos = fileName.find('-');
+    if (dashPos != std::string::npos) {
+        // Check if what follows is a version number (contains digits and dots)
+        std::string suffix = fileName.substr(dashPos + 1);
+        bool isVersion = false;
+        bool hasDigit = false;
+        for (char c : suffix) {
+            if (std::isdigit(c)) {
+                hasDigit = true;
+            } else if (c != '.' && c != '-') {
+                isVersion = false;
+                break;
+            }
+        }
+        if (hasDigit && suffix.find('.') != std::string::npos) {
+            fileName = fileName.substr(0, dashPos);
+        }
+    }
+    
+    // Remove _debug, _release, etc. suffixes
+    size_t underscorePos = fileName.find('_');
+    if (underscorePos != std::string::npos) {
+        std::string suffix = fileName.substr(underscorePos + 1);
+        if (suffix == "debug" || suffix == "release" || suffix == "static" || 
+            suffix == "shared" || suffix == "dll" || suffix == "so") {
+            fileName = fileName.substr(0, underscorePos);
+        }
+    }
+    
+    return fileName;
+}
+
+void LLDAdapter::cleanup() {
+    pImpl->finalize();
+}
+
+void LLDAdapter::generateSBOM() {
+    pImpl->finalize();
 }
 
 size_t LLDAdapter::getComponentCount() const {

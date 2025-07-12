@@ -56,6 +56,7 @@ void GoldAdapter::Impl::processInputFile(const std::string& filePath) {
     ComponentInfo component(Utils::getFileName(filePath), filePath);
     component.setDetectedBy(LinkerType::Gold);
     MetadataExtractor extractor;
+    extractor.setSuppressWarnings(suppressWarnings);
     extractor.extractMetadata(component);
     sbomGenerator->processComponent(component);
 }
@@ -71,6 +72,7 @@ void GoldAdapter::Impl::processLibrary(const std::string& libraryPath) {
     component.setDetectedBy(LinkerType::Gold);
     component.fileType = FileType::SharedLibrary;
     MetadataExtractor extractor;
+    extractor.setSuppressWarnings(suppressWarnings);
     extractor.extractMetadata(component);
     sbomGenerator->processComponent(component);
 }
@@ -117,6 +119,12 @@ void GoldAdapter::Impl::setExtractDebugInfo(bool extract) {
 void GoldAdapter::Impl::setIncludeSystemLibraries(bool include) {
     includeSystemLibraries = include;
 }
+void GoldAdapter::Impl::setSuppressWarnings(bool suppress) {
+    suppressWarnings = suppress;
+    if (sbomGenerator) {
+        sbomGenerator->setSuppressWarnings(suppress);
+    }
+}
 size_t GoldAdapter::Impl::getComponentCount() const {
     return sbomGenerator->getComponentCount();
 }
@@ -125,7 +133,11 @@ void GoldAdapter::Impl::printStatistics() const {
 }
 
 GoldAdapter::GoldAdapter() : pImpl(heimdall::compat::make_unique<Impl>()) {}
-GoldAdapter::~GoldAdapter() = default;
+GoldAdapter::~GoldAdapter() {
+    if (pImpl) {
+        pImpl->cleanup();
+    }
+}
 bool GoldAdapter::initialize() {
     return pImpl->initialize();
 }
@@ -165,11 +177,95 @@ void GoldAdapter::setExtractDebugInfo(bool extract) {
 void GoldAdapter::setIncludeSystemLibraries(bool include) {
     pImpl->setIncludeSystemLibraries(include);
 }
+void GoldAdapter::setSuppressWarnings(bool suppress) {
+    pImpl->setSuppressWarnings(suppress);
+}
 size_t GoldAdapter::getComponentCount() const {
     return pImpl->getComponentCount();
 }
 void GoldAdapter::printStatistics() const {
     pImpl->printStatistics();
+}
+
+void GoldAdapter::finalize() {
+    pImpl->generateSBOM();
+}
+
+std::vector<std::string> GoldAdapter::getProcessedFiles() const {
+    return pImpl->getProcessedFiles();
+}
+
+std::vector<std::string> GoldAdapter::getProcessedLibraries() const {
+    return pImpl->getProcessedLibraries();
+}
+
+std::vector<std::string> GoldAdapter::getProcessedSymbols() const {
+    // Return empty vector for now - symbol processing not fully implemented
+    return std::vector<std::string>();
+}
+
+bool GoldAdapter::shouldProcessFile(const std::string& filePath) const {
+    if (filePath.empty()) {
+        return false;
+    }
+    
+    // Check if file exists
+    if (!Utils::fileExists(filePath)) {
+        return false;
+    }
+    
+    // Check file extension
+    std::string extension = Utils::getFileExtension(filePath);
+    return extension == ".o" || extension == ".obj" || 
+           extension == ".a" || extension == ".so" || 
+           extension == ".dylib" || extension == ".dll" ||
+           extension == ".exe" || extension.empty(); // Accept files without extension (Linux executables)
+}
+
+std::string GoldAdapter::extractComponentName(const std::string& filePath) const {
+    std::string fileName = Utils::getFileName(filePath);
+    
+    // Remove common prefixes and extensions
+    if (fileName.substr(0, 3) == "lib") {
+        fileName = fileName.substr(3);
+    }
+    
+    std::string extension = Utils::getFileExtension(fileName);
+    if (!extension.empty()) {
+        fileName = fileName.substr(0, fileName.length() - extension.length());
+    }
+    
+    // Remove version numbers and suffixes (e.g., -1.2.3, _debug)
+    size_t dashPos = fileName.find('-');
+    if (dashPos != std::string::npos) {
+        // Check if what follows is a version number (contains digits and dots)
+        std::string suffix = fileName.substr(dashPos + 1);
+        bool isVersion = false;
+        bool hasDigit = false;
+        for (char c : suffix) {
+            if (std::isdigit(c)) {
+                hasDigit = true;
+            } else if (c != '.' && c != '-') {
+                isVersion = false;
+                break;
+            }
+        }
+        if (hasDigit && suffix.find('.') != std::string::npos) {
+            fileName = fileName.substr(0, dashPos);
+        }
+    }
+    
+    // Remove _debug, _release, etc. suffixes
+    size_t underscorePos = fileName.find('_');
+    if (underscorePos != std::string::npos) {
+        std::string suffix = fileName.substr(underscorePos + 1);
+        if (suffix == "debug" || suffix == "release" || suffix == "static" || 
+            suffix == "shared" || suffix == "dll" || suffix == "so") {
+            fileName = fileName.substr(0, underscorePos);
+        }
+    }
+    
+    return fileName;
 }
 
 }  // namespace heimdall

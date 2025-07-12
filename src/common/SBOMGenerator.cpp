@@ -318,6 +318,16 @@ void SBOMGenerator::setCycloneDXVersion(const std::string& version) {
 }
 
 /**
+ * @brief Set suppress warnings flag for metadata extraction
+ * @param suppress True to suppress warnings, false to show them
+ */
+void SBOMGenerator::setSuppressWarnings(bool suppress) {
+    if (pImpl && pImpl->metadataExtractor) {
+        pImpl->metadataExtractor->setSuppressWarnings(suppress);
+    }
+}
+
+/**
  * @brief Get the number of components in the SBOM
  * @return Number of components
  */

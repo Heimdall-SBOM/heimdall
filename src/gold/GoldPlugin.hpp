@@ -15,10 +15,14 @@ limitations under the License.
 */
 
 /**
- * @file GoldAdapter.hpp
- * @brief GNU Gold linker plugin adapter
+ * @file GoldPlugin.hpp
+ * @brief GNU Gold linker plugin interface
  * @author Trevor Bakker
  * @date 2025
+ * 
+ * This file provides the interface for the GNU Gold linker plugin,
+ * which integrates with the Gold linker to extract component information
+ * during the linking process.
  */
 
 #pragma once
@@ -26,39 +30,35 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <vector>
-#include "../common/ComponentInfo.hpp"
-#include "../common/MetadataExtractor.hpp"
-#include "../common/SBOMGenerator.hpp"
-#include "../common/Utils.hpp"
 
 namespace heimdall {
 
 /**
- * @brief GNU Gold linker plugin adapter
- *
- * This class provides basic file processing capabilities for the GNU Gold linker,
- * without using LLVM-dependent heimdall-core classes.
+ * @brief GNU Gold linker plugin class
+ * 
+ * This class provides the interface for the Gold linker plugin,
+ * implementing the plugin interface required by the Gold linker.
  */
-class GoldAdapter {
+class GoldPlugin {
 public:
     /**
      * @brief Default constructor
      */
-    GoldAdapter();
+    GoldPlugin();
 
     /**
      * @brief Destructor
      */
-    ~GoldAdapter();
+    ~GoldPlugin();
 
     /**
-     * @brief Initialize the Gold adapter
+     * @brief Initialize the plugin
      * @return true if initialization was successful
      */
     bool initialize();
 
     /**
-     * @brief Clean up Gold adapter resources
+     * @brief Clean up plugin resources
      */
     void cleanup();
 
@@ -104,7 +104,6 @@ public:
     /**
      * @brief Set the SPDX specification version
      * @param version The SPDX version (e.g., "2.3", "3.0")
-     * @note Only applies when format is "spdx"
      */
     void setSPDXVersion(const std::string& version);
 
@@ -132,26 +131,10 @@ public:
     void setIncludeSystemLibraries(bool include);
 
     /**
-     * @brief Set whether to suppress warnings (for test mode)
-     * @param suppress true to suppress warnings
-     */
-    void setSuppressWarnings(bool suppress);
-
-    /**
      * @brief Get the number of components processed
      * @return Number of components
      */
     [[nodiscard]] size_t getComponentCount() const;
-
-    /**
-     * @brief Print statistics about the Gold adapter
-     */
-    void printStatistics() const;
-
-    /**
-     * @brief Finalize the Gold adapter
-     */
-    void finalize();
 
     /**
      * @brief Get the list of processed files
@@ -172,58 +155,25 @@ public:
     [[nodiscard]] std::vector<std::string> getProcessedSymbols() const;
 
     /**
-     * @brief Check if a file should be processed
-     * @param filePath The file path to check
-     * @return true if the file should be processed
+     * @brief Print statistics about the plugin
      */
-    [[nodiscard]] bool shouldProcessFile(const std::string& filePath) const;
+    void printStatistics() const;
 
     /**
-     * @brief Extract component name from file path
-     * @param filePath The file path
-     * @return The extracted component name
+     * @brief Get plugin version
+     * @return Version string
      */
-    [[nodiscard]] std::string extractComponentName(const std::string& filePath) const;
+    [[nodiscard]] std::string getVersion() const;
+
+    /**
+     * @brief Get plugin description
+     * @return Description string
+     */
+    [[nodiscard]] std::string getDescription() const;
 
 private:
-    class Impl {
-    public:
-        Impl();
-        ~Impl();
-        bool initialize();
-        void cleanup();
-        void processInputFile(const std::string& filePath);
-        void processLibrary(const std::string& libraryPath);
-        void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size);
-        void setOutputPath(const std::string& path);
-        void setFormat(const std::string& fmt);
-        void setCycloneDXVersion(const std::string& version);
-        void setSPDXVersion(const std::string& version);
-        void generateSBOM();
-        void setVerbose(bool verbose);
-        void setExtractDebugInfo(bool extract);
-        void setIncludeSystemLibraries(bool include);
-        void setSuppressWarnings(bool suppress);
-        [[nodiscard]] size_t getComponentCount() const;
-        void printStatistics() const;
-
-        // Getter methods for accessing private members
-        const std::vector<std::string>& getProcessedFiles() const { return processedFiles; }
-        const std::vector<std::string>& getProcessedLibraries() const { return processedLibraries; }
-
-    private:
-        std::unique_ptr<SBOMGenerator> sbomGenerator;
-        std::vector<std::string> processedFiles;
-        std::vector<std::string> processedLibraries;
-        std::string outputPath;
-        std::string format;
-        std::string cyclonedxVersion;
-        bool verbose = false;
-        bool extractDebugInfo = true;
-        bool includeSystemLibraries = false;
-        bool suppressWarnings = false;
-    };
+    class Impl;
     std::unique_ptr<Impl> pImpl;
 };
 
-}  // namespace heimdall
+} // namespace heimdall 

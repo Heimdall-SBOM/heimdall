@@ -179,6 +179,12 @@ public:
      */
     void setExtractDebugInfo(bool extract);
 
+    /**
+     * @brief Set whether to suppress warnings (for test mode)
+     * @param suppress true to suppress warnings
+     */
+    void setSuppressWarnings(bool suppress);
+
 private:
     class Impl;
     std::unique_ptr<Impl> pImpl;

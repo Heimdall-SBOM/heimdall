@@ -81,6 +81,7 @@ class MetadataExtractor::Impl {
 public:
     bool verbose = false;          ///< Enable verbose output for debugging
     bool extractDebugInfo = true;  ///< Whether to extract debug information
+    bool suppressWarnings = false;
 
     /**
      * @brief Detect the file format of the given binary file
@@ -102,7 +103,7 @@ public:
  * Debug information extraction is enabled by default, and verbose output
  * is disabled.
  */
-MetadataExtractor::MetadataExtractor() : pImpl(heimdall::compat::make_unique<Impl>()) {}
+MetadataExtractor::MetadataExtractor() : pImpl(std::make_unique<Impl>()) {}
 
 /**
  * @brief Destructor for MetadataExtractor
@@ -159,8 +160,10 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
 
         // Detect file format
         if (!pImpl->detectFileFormat(component.filePath)) {
-            heimdall::Utils::warningPrint("Could not detect file format for: " +
+            if (!pImpl->suppressWarnings) {
+                heimdall::Utils::warningPrint("Could not detect file format for: " +
                                           component.filePath);
+            }
         }
 
         bool success = true;
@@ -492,6 +495,10 @@ void MetadataExtractor::setVerbose(bool verbose) {
 
 void MetadataExtractor::setExtractDebugInfo(bool extract) {
     pImpl->extractDebugInfo = extract;
+}
+
+void MetadataExtractor::setSuppressWarnings(bool suppress) {
+    pImpl->suppressWarnings = suppress;
 }
 
 bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath) {
