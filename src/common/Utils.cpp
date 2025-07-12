@@ -30,7 +30,7 @@ limitations under the License.
 #include <iostream>
 #include <sstream>
 #include "../compat/compatibility.hpp"
-#include <filesystem>
+#include "compat/compatibility.hpp"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -70,8 +70,21 @@ std::string getFileName(const std::string& filePath) {
     return filename;
 }
 std::string getFileExtension(const std::string& filePath) {
-    std::filesystem::path path(filePath);
-    return path.extension().string();
+    if (filePath.empty()) {
+        return "";
+    }
+    
+    size_t last_dot = filePath.find_last_of('.');
+    if (last_dot == std::string::npos || last_dot == 0) {
+        return "";
+    }
+    
+    // Check if the dot is not the last character
+    if (last_dot == filePath.length() - 1) {
+        return "";
+    }
+    
+    return filePath.substr(last_dot);
 }
 std::string getDirectory(const std::string& filePath) {
     if (filePath.empty()) {
@@ -176,14 +189,27 @@ std::vector<std::string> splitPath(const std::string& path) {
     return result;
 }
 bool fileExists(const std::string& filePath) {
-    return std::filesystem::exists(filePath);
+    if (filePath.empty()) {
+        return false;
+    }
+    
+    std::ifstream file(filePath);
+    return file.good();
 }
 uint64_t getFileSize(const std::string& filePath) {
     if (!fileExists(filePath)) {
         return 0;
     }
-    std::filesystem::path path(filePath);
-    return std::filesystem::file_size(path);
+    
+    std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) {
+        return 0;
+    }
+    
+    std::streampos end = file.tellg();
+    file.close();
+    
+    return static_cast<uint64_t>(end);
 }
 
 /**

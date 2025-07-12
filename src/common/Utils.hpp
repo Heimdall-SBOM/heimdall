@@ -25,7 +25,7 @@ limitations under the License.
 
 #include <algorithm>
 #include <cctype>
-#include <filesystem>
+#include "compat/compatibility.hpp"
 #include <fstream>
 #include <regex>
 #include <sstream>
