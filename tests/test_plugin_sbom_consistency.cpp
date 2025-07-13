@@ -460,6 +460,10 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginSPDXGeneration) {
     
     if (!hasPthread && !hasLibc && !hasOpenSSL) {
         ADD_FAILURE() << "Neither pthread, libc, nor OpenSSL libraries found in SPDX";
+    } else if (!hasPthread && hasLibc) {
+        std::cerr << "[INFO] Pthread library not found in SPDX (merged with libc on modern Linux)" << std::endl;
+    } else if (hasOpenSSL) {
+        std::cerr << "[INFO] OpenSSL libraries found in SPDX (macOS)" << std::endl;
     }
     // Should have at least 3 components (main binary + 2+ libraries)
     EXPECT_GE(spdxData.components.size(), 3) << "LLD SPDX has insufficient components";
@@ -516,10 +520,10 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
     
     if (!hasPthreadCdx && !hasLibcCdx && !hasOpenSSLCdx) {
         ADD_FAILURE() << "Neither pthread, libc, nor OpenSSL libraries found in CycloneDX";
+    } else if (!hasPthreadCdx && hasLibcCdx) {
+        std::cerr << "[INFO] Pthread library not found in CycloneDX (merged with libc on modern Linux)" << std::endl;
     } else if (hasOpenSSLCdx) {
         std::cerr << "[INFO] OpenSSL libraries found in CycloneDX (macOS)" << std::endl;
-    } else if (hasLibcCdx) {
-        std::cerr << "[WARN] Pthread library not found in CycloneDX (may be merged with libc on this system)" << std::endl;
     }
     // Should have at least 3 components (main binary + 2+ libraries)
     EXPECT_GE(cyclonedxData.components.size(), 3) << "LLD CycloneDX has insufficient components";
@@ -550,7 +554,7 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginSPDXGeneration) {
                         spdxData.components.find("libc.so.6") != spdxData.components.end());
     if (!hasPthreadGold) {
         if (hasLibcGold) {
-            std::cerr << "[WARN] Pthread library not found in SPDX (may be merged with libc on this system)" << std::endl;
+            std::cerr << "[INFO] Pthread library not found in SPDX (merged with libc on modern Linux)" << std::endl;
         } else {
             ADD_FAILURE() << "Neither pthread nor libc found in SPDX";
         }
@@ -610,7 +614,7 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
                            cyclonedxData.components.find("libc.so.6") != cyclonedxData.components.end());
     if (!hasPthreadGoldCdx) {
         if (hasLibcGoldCdx) {
-            std::cerr << "[WARN] Pthread library not found in CycloneDX (may be merged with libc on this system)" << std::endl;
+            std::cerr << "[INFO] Pthread library not found in CycloneDX (merged with libc on modern Linux)" << std::endl;
         } else {
             ADD_FAILURE() << "Neither pthread nor libc found in CycloneDX";
         }
@@ -695,14 +699,14 @@ TEST_F(PluginSBOMConsistencyTest, PluginConsistency) {
                         goldSpdxData.components.find("libc.so.6") != goldSpdxData.components.end());
     if (!lldHasPthread) {
         if (lldHasLibc) {
-            std::cerr << "[WARN] LLD plugin missing pthread library (may be merged with libc)" << std::endl;
+            std::cerr << "[INFO] LLD plugin missing pthread library (merged with libc on modern Linux)" << std::endl;
         } else {
             ADD_FAILURE() << "LLD plugin missing both pthread and libc";
         }
     }
     if (!goldHasPthread) {
         if (goldHasLibc) {
-            std::cerr << "[WARN] Gold plugin missing pthread library (may be merged with libc)" << std::endl;
+            std::cerr << "[INFO] Gold plugin missing pthread library (merged with libc on modern Linux)" << std::endl;
         } else {
             ADD_FAILURE() << "Gold plugin missing both pthread and libc";
         }
