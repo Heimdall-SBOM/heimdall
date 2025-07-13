@@ -21,6 +21,7 @@ add_library(heimdall-core SHARED
     common/PluginInterface.cpp
     common/SBOMValidator.cpp
     common/SBOMComparator.cpp
+    common/Profiler.cpp
 )
 
 set_target_properties(heimdall-core PROPERTIES

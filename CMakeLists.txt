@@ -10,6 +10,8 @@ option(BUILD_EXAMPLES "Build example projects" ON)
 option(ENABLE_DEBUG "Enable debug output" OFF)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
+option(ENABLE_PROFILING "Enable performance profiling" OFF)
+option(ENABLE_BENCHMARKS "Enable performance benchmarks" OFF)
 
 # Set default C++ standard
 if(NOT DEFINED CMAKE_CXX_STANDARD)
@@ -116,6 +118,20 @@ if(ENABLE_COVERAGE)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
+# Profiling
+if(ENABLE_PROFILING)
+    add_definitions(-DENABLE_PROFILING=1)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    endif()
+endif()
+
+# Benchmarks
+if(ENABLE_BENCHMARKS)
+    add_definitions(-DENABLE_BENCHMARKS=1)
+endif()
+
 # Include directories
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(include)
@@ -139,6 +155,8 @@ message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Enable Tests: ${ENABLE_TESTS}")
 message(STATUS "  Enable Coverage: ${ENABLE_COVERAGE}")
+message(STATUS "  Enable Profiling: ${ENABLE_PROFILING}")
+message(STATUS "  Enable Benchmarks: ${ENABLE_BENCHMARKS}")
 message(STATUS "  C++11/14 Mode: ${ENABLE_CPP11_14}")
 message(STATUS "  Use Boost.Filesystem: ${USE_BOOST_FILESYSTEM}")
 message(STATUS "  LLVM Version: ${LLVM_PACKAGE_VERSION}")

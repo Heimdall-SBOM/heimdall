@@ -53,6 +53,8 @@ show_usage() {
     echo "  --clean                 Clean build directory before building"
     echo "  --tests                 Run tests after building"
     echo "  --sboms                 Generate SBOMs after building"
+    echo "  --profiling             Enable performance profiling"
+    echo "  --benchmarks            Enable performance benchmarks"
     echo "  --all                   Build, test, and generate SBOMs"
     echo "  --help                  Show this help message"
     echo ""
@@ -71,6 +73,8 @@ BUILD_DIR=""
 CLEAN=false
 TESTS=false
 SBOMS=false
+PROFILING=false
+BENCHMARKS=false
 ALL=false
 
 while [[ $# -gt 0 ]]; do
@@ -97,6 +101,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --sboms)
             SBOMS=true
+            shift
+            ;;
+        --profiling)
+            PROFILING=true
+            shift
+            ;;
+        --benchmarks)
+            BENCHMARKS=true
             shift
             ;;
         --all)
@@ -216,13 +228,27 @@ print_status "Using compiler: $CXX_VERSION"
 
 # Configure with CMake
 print_status "Configuring with CMake..."
+
+# Build CMake options
+CMAKE_OPTS="-DCMAKE_CXX_STANDARD=${STANDARD} -DCMAKE_CXX_STANDARD_REQUIRED=ON -DLLVM_CONFIG=$LLVM_CONFIG -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX"
+
+# Add compatibility mode for C++11/14
 if [[ "${STANDARD}" == "11" || "${STANDARD}" == "14" ]]; then
-    # Use compatibility mode for C++11/14
-    cmake .. -DCMAKE_CXX_STANDARD="${STANDARD}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DHEIMDALL_CXX11_14_MODE=ON -DLLVM_CONFIG="$LLVM_CONFIG" -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX"
-else
-    # Standard build for C++17+
-    cmake .. -DCMAKE_CXX_STANDARD="${STANDARD}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DLLVM_CONFIG="$LLVM_CONFIG" -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX"
+    CMAKE_OPTS="$CMAKE_OPTS -DHEIMDALL_CXX11_14_MODE=ON"
 fi
+
+# Add profiling options
+if [ "$PROFILING" = true ]; then
+    CMAKE_OPTS="$CMAKE_OPTS -DENABLE_PROFILING=ON"
+    print_status "Profiling enabled"
+fi
+
+if [ "$BENCHMARKS" = true ]; then
+    CMAKE_OPTS="$CMAKE_OPTS -DENABLE_BENCHMARKS=ON"
+    print_status "Benchmarks enabled"
+fi
+
+cmake .. $CMAKE_OPTS
 
 # Build
 print_status "Building Heimdall..."

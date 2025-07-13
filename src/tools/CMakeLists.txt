@@ -25,6 +25,17 @@ add_executable(heimdall-sbom sbom_loader.cpp)
 target_link_libraries(heimdall-sbom PRIVATE llvm_symbols ${OPENSSL_LIBRARIES} ${ELF_LIBRARY})
 target_include_directories(heimdall-sbom PRIVATE ${CMAKE_SOURCE_DIR}/src ${OPENSSL_INCLUDE_DIR})
 
+# Performance benchmark tool (only build if profiling is enabled)
+if(ENABLE_BENCHMARKS)
+    add_executable(heimdall-benchmark PerformanceBenchmark.cpp)
+    target_link_libraries(heimdall-benchmark PRIVATE heimdall-core ${OPENSSL_LIBRARIES} ${ELF_LIBRARY})
+    target_include_directories(heimdall-benchmark PRIVATE ${CMAKE_SOURCE_DIR}/src ${OPENSSL_INCLUDE_DIR})
+    
+    install(TARGETS heimdall-benchmark
+        RUNTIME DESTINATION bin
+    )
+endif()
+
 install(TARGETS debug_validator heimdall-validate
     RUNTIME DESTINATION bin
 ) 
