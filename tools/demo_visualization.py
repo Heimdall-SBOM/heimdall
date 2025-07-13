@@ -81,7 +81,7 @@ def run_demo(binary_path=None):
     
     # Step 1: Run benchmark
     benchmark_cmd = [
-        "./heimdall-benchmark",
+        "src/tools/heimdall-benchmark",
         "--iterations", "3",
         "--output", "demo_results.json",
         binary_path
