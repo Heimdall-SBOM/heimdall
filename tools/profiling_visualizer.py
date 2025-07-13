@@ -192,12 +192,31 @@ class ProfilingVisualizer:
         
         # Create pivot table for metrics
         metrics_data = self.df[['session_name'] + metric_columns].copy()
+        
+        # Filter out non-numeric columns to avoid aggregation errors
+        numeric_columns = []
+        for col in metric_columns:
+            converted = pd.to_numeric(metrics_data[col], errors='coerce')
+            # Only include if at least one value is not NaN and all non-NaN values are numeric
+            if not converted.isnull().all():
+                # If all non-NaN values are numeric, include
+                if converted.notnull().all():
+                    numeric_columns.append(col)
+        
+        if not numeric_columns:
+            print("No numeric metrics found in the data.")
+            return
+        
+        # Group by session_name and calculate mean only for numeric columns
+        metrics_data = metrics_data[['session_name'] + numeric_columns].copy()
+        for col in numeric_columns:
+            metrics_data[col] = pd.to_numeric(metrics_data[col], errors='coerce')
         metrics_data = metrics_data.groupby('session_name').mean()
         
         # Remove 'metric_' prefix from column names
         metrics_data.columns = [col.replace('metric_', '') for col in metrics_data.columns]
         
-        plt.figure(figsize=(max(8, len(metric_columns) * 2), max(6, len(metrics_data) * 0.8)))
+        plt.figure(figsize=(max(8, len(numeric_columns) * 2), max(6, len(metrics_data) * 0.8)))
         
         # Create heatmap
         sns.heatmap(metrics_data, annot=True, fmt='.2f', cmap='YlOrRd', 
