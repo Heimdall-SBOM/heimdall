@@ -24,6 +24,8 @@ limitations under the License.
 #include "LLDPlugin.hpp"
 #include "../compat/compatibility.hpp"
 
+// Only include LLVM headers if we have C++17+ (LLVM 20 requires C++17+)
+#if __cplusplus >= 201703L
 #ifdef LLVM_AVAILABLE
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
@@ -35,8 +37,9 @@ limitations under the License.
 #include "llvm/Support/raw_ostream.h"
 #endif
 
-// LLD Plugin Interface - Simplified
+// LLD Plugin Interface - Only include if C++17+
 #include "lld/Common/Driver.h"
+#endif
 
 namespace {
 std::unique_ptr<heimdall::LLDAdapter> globalAdapter;
@@ -275,7 +278,8 @@ int heimdall_lld_set_plugin_option(const char* option) {
 
 }  // extern "C"
 
-// LLVM Pass Plugin Interface (Legacy Pass Manager)
+// LLVM Pass Plugin Interface (Legacy Pass Manager) - Only compile if C++17+
+#if __cplusplus >= 201703L
 #ifdef LLVM_AVAILABLE
 namespace {
 class HeimdallPass : public llvm::ModulePass {
@@ -332,6 +336,7 @@ void heimdall_register_pass() {
     std::cout << "Heimdall: LLVM Pass registered\n";
 }
 }
+#endif
 #endif
 
 // LLD Plugin Interface - Working Implementation
