@@ -20,7 +20,22 @@ find_library(ELF_LIBRARY NAMES elf)
 
 # Test executable and test setup only for C++17+
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
-    file(GLOB TEST_SOURCES "*.cpp")
+    # Select test files conditionally
+    if(UNIX AND NOT APPLE)
+        # On Linux, include all test files including Gold tests
+        file(GLOB TEST_SOURCES "*.cpp")
+    else()
+        # On macOS and other platforms, exclude Gold-related tests
+        file(GLOB ALL_TEST_SOURCES "*.cpp")
+        set(TEST_SOURCES "")
+        foreach(source ${ALL_TEST_SOURCES})
+            get_filename_component(filename ${source} NAME)
+            if(NOT filename STREQUAL "test_gold_plugin.cpp" AND NOT filename STREQUAL "test_integration_gold.cpp")
+                list(APPEND TEST_SOURCES ${source})
+            endif()
+        endforeach()
+    endif()
+    
     add_executable(heimdall-tests
         ${TEST_SOURCES}
     )
@@ -43,25 +58,47 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
     # Link libraries
     # Support both system and FetchContent GTest targets
     if(TARGET GTest::gtest_main)
-        target_link_libraries(heimdall-tests PRIVATE
-            heimdall-core
-            heimdall-gold
-            heimdall-lld
-            GTest::gtest
-            GTest::gtest_main
-            ${OPENSSL_LIBRARIES}
-            ${ELF_LIBRARY}
-        )
+        if(UNIX AND NOT APPLE)
+            target_link_libraries(heimdall-tests PRIVATE
+                heimdall-core
+                heimdall-gold
+                heimdall-lld
+                GTest::gtest
+                GTest::gtest_main
+                ${OPENSSL_LIBRARIES}
+                ${ELF_LIBRARY}
+            )
+        else()
+            target_link_libraries(heimdall-tests PRIVATE
+                heimdall-core
+                heimdall-lld
+                GTest::gtest
+                GTest::gtest_main
+                ${OPENSSL_LIBRARIES}
+                ${ELF_LIBRARY}
+            )
+        endif()
     elseif(TARGET gtest_main)
-        target_link_libraries(heimdall-tests PRIVATE
-            heimdall-core
-            heimdall-gold
-            heimdall-lld
-            gtest
-            gtest_main
-            ${OPENSSL_LIBRARIES}
-            ${ELF_LIBRARY}
-        )
+        if(UNIX AND NOT APPLE)
+            target_link_libraries(heimdall-tests PRIVATE
+                heimdall-core
+                heimdall-gold
+                heimdall-lld
+                gtest
+                gtest_main
+                ${OPENSSL_LIBRARIES}
+                ${ELF_LIBRARY}
+            )
+        else()
+            target_link_libraries(heimdall-tests PRIVATE
+                heimdall-core
+                heimdall-lld
+                gtest
+                gtest_main
+                ${OPENSSL_LIBRARIES}
+                ${ELF_LIBRARY}
+            )
+        endif()
     else()
         message(FATAL_ERROR "No suitable GTest target found!")
     endif()
@@ -111,8 +148,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
     include(GoogleTest)
     gtest_discover_tests(heimdall-tests)
 
-    # Link stdc++fs for C++17
-    if(CMAKE_CXX_STANDARD EQUAL 17)
+    # Link stdc++fs for C++17 on Linux only
+    if(CMAKE_CXX_STANDARD EQUAL 17 AND UNIX AND NOT APPLE)
         target_link_libraries(heimdall-tests PRIVATE stdc++fs)
     endif()
 endif()

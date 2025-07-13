@@ -185,6 +185,16 @@ main() {
     if [ ${#available_versions[@]} -eq 0 ]; then
         if [[ $quiet -eq 0 ]]; then
             print_error "No LLVM versions found"
+            if [[ "$(uname)" == "Darwin" ]]; then
+                echo -e "${YELLOW}[MACOS BUILD HELP]${NC} If you are on macOS, you likely need to install LLVM via Homebrew:"
+                echo -e "    brew install llvm"
+                echo -e "Then add this to your shell profile (e.g., ~/.zshrc or ~/.bash_profile):"
+                echo -e "    export PATH=\"/opt/homebrew/opt/llvm/bin:\$PATH\"   # Apple Silicon (M1/M2)"
+                echo -e "    export PATH=\"/usr/local/opt/llvm/bin:\$PATH\"      # Intel Mac"
+                echo -e "Then restart your terminal and try again."
+            else
+                echo -e "${YELLOW}[BUILD HELP]${NC} Please install LLVM (version 17 or higher) and ensure 'llvm-config' is in your PATH."
+            fi
         fi
         exit 1
     fi

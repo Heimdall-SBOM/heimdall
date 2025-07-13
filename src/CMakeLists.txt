@@ -1,5 +1,16 @@
 # Source directory CMakeLists.txt
 
+# Find OpenSSL (required for Utils.cpp)
+if(APPLE)
+    # Try Homebrew OpenSSL@3 first
+    if(EXISTS "/opt/homebrew/opt/openssl@3")
+        set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl@3")
+    elseif(EXISTS "/usr/local/opt/openssl@3")
+        set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl@3")
+    endif()
+endif()
+find_package(OpenSSL REQUIRED)
+
 # Core library (shared)
 add_library(heimdall-core SHARED
     common/SBOMGenerator.cpp
@@ -25,11 +36,13 @@ set_target_properties(heimdall-core PROPERTIES
 target_include_directories(heimdall-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 target_link_libraries(heimdall-core PUBLIC
     ${LLVM_LIBRARIES}
     ${ELF_LIBRARY}
+    ${OPENSSL_LIBRARIES}
 )
 
 target_compile_definitions(heimdall-core PRIVATE
@@ -38,6 +51,10 @@ target_compile_definitions(heimdall-core PRIVATE
 
 # LLD Plugin (only for C++17+ due to LLVM 19 compatibility)
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+    set(LLD_INCLUDE_DIR "")
+    if(APPLE)
+        set(LLD_INCLUDE_DIR "/opt/homebrew/opt/lld/include")
+    endif()
     add_library(heimdall-lld SHARED
         lld/LLDAdapter.cpp
         lld/LLDAdapter.hpp
@@ -60,12 +77,29 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/..
         ${LLVM_INCLUDE_DIRS}
+        ${LLD_INCLUDE_DIR}
     )
+
+    target_compile_definitions(heimdall-lld PRIVATE LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
+
+    # Try to get LLD libraries from llvm-config if available
+    find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config)
+    if(LLVM_CONFIG_EXECUTABLE)
+        execute_process(
+            COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs lld
+            OUTPUT_VARIABLE LLD_LIBS_RAW
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        string(REPLACE "\n" " " LLD_LIBS "${LLD_LIBS_RAW}")
+        separate_arguments(LLD_LIBS)
+    else()
+        set(LLD_LIBS "")
+    endif()
 
     target_link_libraries(heimdall-lld PRIVATE
         heimdall-core
         ${LLVM_LIBRARIES}
-        LLVM-19
+        ${LLD_LIBS}
     )
 endif()
 

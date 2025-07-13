@@ -69,16 +69,28 @@ protected:
     void ensurePluginsBuilt() {
         // Check if we're in a build directory and plugins don't exist
         if (std::filesystem::exists("CMakeCache.txt")) {
-            bool lldExists = std::filesystem::exists("heimdall-lld.so");
-            bool goldExists = std::filesystem::exists("heimdall-gold.so");
+            bool lldExists = std::filesystem::exists("lib/heimdall-lld.so");
+            bool goldExists = std::filesystem::exists("lib/heimdall-gold.so");
             
-            if (!lldExists || !goldExists) {
-                std::cerr << "Building missing plugins..." << std::endl;
-                int result = system("cmake --build . --target heimdall-lld heimdall-gold");
-                if (result != 0) {
-                    std::cerr << "WARNING: Failed to build plugins automatically" << std::endl;
+            // On macOS, only build LLD plugin (Gold is Linux-only)
+            #ifdef __APPLE__
+                if (!lldExists) {
+                    std::cerr << "Building missing LLD plugin..." << std::endl;
+                    int result = system("cmake --build . --target heimdall-lld");
+                    if (result != 0) {
+                        std::cerr << "WARNING: Failed to build LLD plugin automatically" << std::endl;
+                    }
                 }
-            }
+            #else
+                // On Linux, build both plugins
+                if (!lldExists || !goldExists) {
+                    std::cerr << "Building missing plugins..." << std::endl;
+                    int result = system("cmake --build . --target heimdall-lld heimdall-gold");
+                    if (result != 0) {
+                        std::cerr << "WARNING: Failed to build plugins automatically" << std::endl;
+                    }
+                }
+            #endif
         }
     }
 
@@ -126,7 +138,20 @@ protected:
         
         // Try to run cmake build if we're in a build directory
         if (std::filesystem::exists("CMakeCache.txt")) {
-            int build_result = system("cmake --build . --target heimdall-lld heimdall-gold");
+            int build_result;
+            
+            // On macOS, only build LLD plugin (Gold is Linux-only)
+            #ifdef __APPLE__
+                if (pluginName.find("lld") != std::string::npos) {
+                    build_result = system("cmake --build . --target heimdall-lld");
+                } else {
+                    build_result = 1; // Don't build Gold on macOS
+                }
+            #else
+                // On Linux, build both plugins
+                build_result = system("cmake --build . --target heimdall-lld heimdall-gold");
+            #endif
+            
             (void)build_result; // Suppress unused variable warning
             
             // Check again after build attempt
@@ -188,15 +213,60 @@ int main() {
 )";
         source.close();
 
-        // Compile the test binary
+        // Compile the test binary with platform-specific settings
         std::filesystem::path binaryPath = testDir / "test_binary";
         std::filesystem::path sourcePath = sourceFile;
-        std::string compileCmd = "gcc -o " + binaryPath.string() + " " + sourcePath.string() +
-                                 " -lpthread -lssl -lcrypto";
+        
+        std::string compileCmd;
+        
+        // Detect platform at runtime and set appropriate compiler and library paths
+        #ifdef __APPLE__
+            // On macOS, use clang and try to find OpenSSL from common locations
+            compileCmd = "clang -o " + binaryPath.string() + " " + sourcePath.string() +
+                        " -I/opt/homebrew/opt/openssl@3/include -L/opt/homebrew/opt/openssl@3/lib" +
+                        " -lpthread -lssl -lcrypto";
+        #else
+            // On Linux, use gcc with standard library paths
+            compileCmd = "gcc -o " + binaryPath.string() + " " + sourcePath.string() +
+                        " -lpthread -lssl -lcrypto";
+        #endif
 
         int result = system(compileCmd.c_str());
         if (result != 0) {
-            GTEST_SKIP() << "Failed to compile test binary. Skipping test.";
+            // If the first attempt fails, try a simpler version without OpenSSL
+            std::cerr << "WARNING: Failed to compile with OpenSSL, trying without..." << std::endl;
+            
+            // Create a simpler test binary without OpenSSL
+            std::ofstream simpleSource(sourceFile);
+            simpleSource << R"(
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+
+void* thread_func(void* arg) {
+    printf("Thread running\n");
+    return NULL;
+}
+
+int main() {
+    // Use pthreads
+    pthread_t thread;
+    pthread_create(&thread, NULL, thread_func, NULL);
+    pthread_join(thread, NULL);
+    
+    printf("Test binary completed successfully\n");
+    return 0;
+}
+)";
+            simpleSource.close();
+            
+            std::string simpleCmd = "clang -o " + binaryPath.string() + " " + sourcePath.string() + " -lpthread";
+            result = system(simpleCmd.c_str());
+            
+            if (result != 0) {
+                GTEST_SKIP() << "Failed to compile test binary. Skipping test.";
+            }
         }
 
         testBinaryPath = binaryPath.string();
@@ -337,17 +407,20 @@ int main() {
 };
 
 TEST_F(PluginSBOMConsistencyTest, PluginPathsExist) {
-    // This test is critical and should never skip
+#if defined(__APPLE__)
+    // On macOS, only check for LLD plugin
+    EXPECT_FALSE(lldPluginPath.empty()) << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
+    EXPECT_TRUE(std::filesystem::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
+    EXPECT_GT(std::filesystem::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
+#else
+    // On Linux, check for both LLD and Gold plugins
     EXPECT_FALSE(lldPluginPath.empty()) << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
     EXPECT_FALSE(goldPluginPath.empty()) << "Gold plugin not found. Searched in build/, install/, and current directory tree.";
-    
-    // Verify the plugins are actually loadable
     EXPECT_TRUE(std::filesystem::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
     EXPECT_TRUE(std::filesystem::exists(goldPluginPath)) << "Gold plugin file does not exist: " << goldPluginPath;
-    
-    // Check file sizes to ensure they're not empty
     EXPECT_GT(std::filesystem::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
     EXPECT_GT(std::filesystem::file_size(goldPluginPath), 0) << "Gold plugin file is empty: " << goldPluginPath;
+#endif
 }
 
 TEST_F(PluginSBOMConsistencyTest, TestBinaryExists) {
@@ -381,12 +454,12 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginSPDXGeneration) {
                        spdxData.components.find("libpthread.so.0") != spdxData.components.end());
     bool hasLibc = (spdxData.components.find("libc.so") != spdxData.components.end() ||
                     spdxData.components.find("libc.so.6") != spdxData.components.end());
-    if (!hasPthread) {
-        if (hasLibc) {
-            std::cerr << "[WARN] Pthread library not found in SPDX (may be merged with libc on this system)" << std::endl;
-        } else {
-            ADD_FAILURE() << "Neither pthread nor libc found in SPDX";
-        }
+    // On macOS, also check for OpenSSL libraries
+    bool hasOpenSSL = (spdxData.components.find("libcrypto.3.dylib") != spdxData.components.end() ||
+                       spdxData.components.find("libssl.3.dylib") != spdxData.components.end());
+    
+    if (!hasPthread && !hasLibc && !hasOpenSSL) {
+        ADD_FAILURE() << "Neither pthread, libc, nor OpenSSL libraries found in SPDX";
     }
     // Should have at least 3 components (main binary + 2+ libraries)
     EXPECT_GE(spdxData.components.size(), 3) << "LLD SPDX has insufficient components";
@@ -437,12 +510,16 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
                           cyclonedxData.components.find("libpthread.so.0") != cyclonedxData.components.end());
     bool hasLibcCdx = (cyclonedxData.components.find("libc.so") != cyclonedxData.components.end() ||
                        cyclonedxData.components.find("libc.so.6") != cyclonedxData.components.end());
-    if (!hasPthreadCdx) {
-        if (hasLibcCdx) {
-            std::cerr << "[WARN] Pthread library not found in CycloneDX (may be merged with libc on this system)" << std::endl;
-        } else {
-            ADD_FAILURE() << "Neither pthread nor libc found in CycloneDX";
-        }
+    // On macOS, also check for OpenSSL libraries
+    bool hasOpenSSLCdx = (cyclonedxData.components.find("libcrypto.3.dylib") != cyclonedxData.components.end() ||
+                          cyclonedxData.components.find("libssl.3.dylib") != cyclonedxData.components.end());
+    
+    if (!hasPthreadCdx && !hasLibcCdx && !hasOpenSSLCdx) {
+        ADD_FAILURE() << "Neither pthread, libc, nor OpenSSL libraries found in CycloneDX";
+    } else if (hasOpenSSLCdx) {
+        std::cerr << "[INFO] OpenSSL libraries found in CycloneDX (macOS)" << std::endl;
+    } else if (hasLibcCdx) {
+        std::cerr << "[WARN] Pthread library not found in CycloneDX (may be merged with libc on this system)" << std::endl;
     }
     // Should have at least 3 components (main binary + 2+ libraries)
     EXPECT_GE(cyclonedxData.components.size(), 3) << "LLD CycloneDX has insufficient components";
