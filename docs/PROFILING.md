@@ -152,6 +152,40 @@ The `profiling_example` demonstrates various profiling techniques:
 ./profiling_example --comprehensive /path/to/binary
 ```
 
+### 3. Profiling Visualizer
+
+The Python-based `profiling_visualizer.py` tool generates graphical representations of profiling data:
+
+```bash
+# Install dependencies
+python tools/install_visualizer.py
+
+# Generate all charts
+python tools/profiling_visualizer.py results.json
+
+# Generate specific chart types
+python tools/profiling_visualizer.py results.json --chart-type time
+python tools/profiling_visualizer.py results.json --chart-type memory
+python tools/profiling_visualizer.py results.json --chart-type metrics
+python tools/profiling_visualizer.py results.json --chart-type timeline
+python tools/profiling_visualizer.py results.json --chart-type summary
+
+# Show charts interactively
+python tools/profiling_visualizer.py results.json --show
+
+# Custom output directory
+python tools/profiling_visualizer.py results.json --output-dir my_charts
+```
+
+The visualizer generates:
+- **Execution Time Charts**: Bar charts with error bars showing min/max times
+- **Memory Usage Charts**: Mean and peak memory usage per session
+- **Metrics Heatmaps**: Custom metrics visualization across sessions
+- **Timeline Charts**: Session execution order and duration
+- **Performance Summary**: Comprehensive dashboard with multiple charts
+
+For detailed usage instructions, see `tools/README.md`.
+
 ## Integration Examples
 
 ### Profiling SBOM Generation
@@ -259,6 +293,37 @@ Results are exported in JSON format:
   }
 }
 ```
+
+### Visualization Workflow
+
+The complete profiling workflow includes graphical analysis:
+
+1. **Run Benchmarks**: Generate profiling data
+   ```bash
+   ./heimdall-benchmark /path/to/binary
+   ```
+
+2. **Generate Charts**: Create visual representations
+   ```bash
+   python tools/profiling_visualizer.py heimdall_benchmark_results.json
+   ```
+
+3. **Analyze Results**: Review both console and graphical output
+   - Console output provides detailed statistics
+   - Charts show trends and patterns
+   - Performance summary gives overview
+
+4. **Custom Analysis**: Use specific chart types for focused analysis
+   ```bash
+   # Focus on execution times
+   python tools/profiling_visualizer.py results.json --chart-type time
+   
+   # Analyze memory patterns
+   python tools/profiling_visualizer.py results.json --chart-type memory
+   
+   # Compare custom metrics
+   python tools/profiling_visualizer.py results.json --chart-type metrics
+   ```
 
 ## Performance Tips
 
