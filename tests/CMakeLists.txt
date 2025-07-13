@@ -18,23 +18,52 @@ endif()
 find_package(OpenSSL REQUIRED)
 find_library(ELF_LIBRARY NAMES elf)
 
-# Test executable and test setup only for C++17+
-if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+# Test executable and test setup for C++11+
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     # Select test files conditionally
-    if(UNIX AND NOT APPLE)
-        # On Linux, include all test files including Gold tests
-        file(GLOB TEST_SOURCES "*.cpp")
-    else()
-        # On macOS and other platforms, exclude Gold-related tests
-        file(GLOB ALL_TEST_SOURCES "*.cpp")
-        set(TEST_SOURCES "")
-        foreach(source ${ALL_TEST_SOURCES})
-            get_filename_component(filename ${source} NAME)
-            if(NOT filename STREQUAL "test_gold_plugin.cpp" AND NOT filename STREQUAL "test_integration_gold.cpp")
-                list(APPEND TEST_SOURCES ${source})
+    file(GLOB ALL_TEST_SOURCES "*.cpp")
+    set(TEST_SOURCES "")
+    
+    foreach(source ${ALL_TEST_SOURCES})
+        get_filename_component(filename ${source} NAME)
+        
+        # For C++11/14 builds, exclude tests that use C++17+ features
+        if(CMAKE_CXX_STANDARD LESS 17)
+            # Exclude tests that use std::filesystem or other C++17+ features
+            if(filename STREQUAL "test_sbom_validation.cpp" OR
+               filename STREQUAL "test_metadata_extractor_extended.cpp" OR
+               filename STREQUAL "test_sbom_generator.cpp" OR
+               filename STREQUAL "test_integration_gold.cpp" OR
+               filename STREQUAL "test_integration_lld.cpp" OR
+               filename STREQUAL "test_dwarf_advanced.cpp" OR
+               filename STREQUAL "test_dwarf_cross_platform.cpp" OR
+               filename STREQUAL "test_dwarf_integration.cpp" OR
+               filename STREQUAL "test_plugin_sbom_consistency.cpp" OR
+               filename STREQUAL "test_component_info.cpp" OR
+               filename STREQUAL "test_dwarf_extractor.cpp" OR
+               filename STREQUAL "test_linux_support.cpp" OR
+               filename STREQUAL "test_gold_plugin.cpp" OR
+               filename STREQUAL "test_utils.cpp" OR
+               filename STREQUAL "test_metadata_extractor.cpp" OR
+               filename STREQUAL "test_lld_plugin.cpp" OR
+               filename STREQUAL "test_package_manager_and_archive.cpp" OR
+               filename STREQUAL "test_plugin_interface.cpp" OR
+               filename STREQUAL "test_utils_extended.cpp")
+                # Skip these files for C++11/14
+                continue()
             endif()
-        endforeach()
-    endif()
+        endif()
+        
+        # Platform-specific exclusions
+        if(APPLE)
+            # On macOS, exclude Gold-related tests
+            if(filename STREQUAL "test_gold_plugin.cpp" OR filename STREQUAL "test_integration_gold.cpp")
+                continue()
+            endif()
+        endif()
+        
+        list(APPEND TEST_SOURCES ${source})
+    endforeach()
     
     add_executable(heimdall-tests
         ${TEST_SOURCES}
