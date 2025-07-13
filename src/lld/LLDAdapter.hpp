@@ -26,6 +26,7 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace heimdall {
 

@@ -52,6 +52,7 @@ limitations under the License.
 #include <type_traits>
 #include <utility>
 #include <sstream>
+#include <cstdint>
 
 /**
  * @namespace heimdall::compat::detail
