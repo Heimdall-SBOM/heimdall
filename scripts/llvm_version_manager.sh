@@ -35,15 +35,21 @@ detect_llvm_versions() {
     # Check for system-installed LLVM versions (e.g., llvm-config-19)
     for version in {7..25}; do
         if command -v "llvm-config-${version}" >/dev/null 2>&1; then
-            local llvm_version=$("llvm-config-${version}" --version | head -n1 | cut -d' ' -f3)
-            versions+=("${version}:${llvm_version}")
+            # Use timeout to prevent hanging
+            local llvm_version=$(timeout 5 "llvm-config-${version}" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
+                versions+=("${version}:${llvm_version}")
+            fi
         fi
     done
     
     # Check for default llvm-config
     if command -v "llvm-config" >/dev/null 2>&1; then
-        local default_version=$("llvm-config" --version | head -n1 | cut -d' ' -f3)
-        versions+=("default:${default_version}")
+        # Use timeout to prevent hanging
+        local default_version=$(timeout 5 "llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+        if [ $? -eq 0 ] && [ -n "$default_version" ]; then
+            versions+=("default:${default_version}")
+        fi
     fi
     
     echo "${versions[@]}"
@@ -120,18 +126,18 @@ select_llvm_version() {
             return 1
             ;;
         20|23)
-            # C++20/23 requires LLVM 19+
+            # C++20/23 requires LLVM 18+ (LLVM 18 is compatible with C++20/23)
             for version_info in "${available_versions[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_llvm_major_version "$version_number")
                 
-                if [ "$major_version" -ge 19 ]; then
+                if [ "$major_version" -ge 18 ]; then
                     echo "$version_name"
                     return 0
                 fi
             done
-            print_error "No compatible LLVM version (19+) found for C++${cxx_standard}"
+            print_error "No compatible LLVM version (18+) found for C++${cxx_standard}"
             return 1
             ;;
         *)
