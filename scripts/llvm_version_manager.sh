@@ -59,7 +59,35 @@ get_llvm_major_version() {
 select_llvm_version() {
     local cxx_standard="$1"
     local available_versions=("${@:2}")
-    
+
+    # On macOS, prefer llvm@18 for C++11/14 if available
+    if [[ "$(uname)" == "Darwin" ]]; then
+        if [[ "$cxx_standard" == "11" || "$cxx_standard" == "14" ]]; then
+            # Prefer llvm-config-18 if available
+            for version_info in "${available_versions[@]}"; do
+                local version_name=$(echo "$version_info" | cut -d':' -f1)
+                local version_number=$(echo "$version_info" | cut -d':' -f2)
+                local major_version=$(get_llvm_major_version "$version_number")
+                if [[ "$major_version" == "18" ]]; then
+                    echo "$version_name"
+                    return 0
+                fi
+            done
+            # Fallback to any compatible version >=7
+            for version_info in "${available_versions[@]}"; do
+                local version_name=$(echo "$version_info" | cut -d':' -f1)
+                local version_number=$(echo "$version_info" | cut -d':' -f2)
+                local major_version=$(get_llvm_major_version "$version_number")
+                if [ "$major_version" -ge 7 ]; then
+                    echo "$version_name"
+                    return 0
+                fi
+            done
+            print_error "No compatible LLVM version (7+) found for C++${cxx_standard}"
+            return 1
+        fi
+    fi
+
     case $cxx_standard in
         11|14)
             # C++11/14 requires LLVM 7+ (LLVM 19 is backward compatible)
@@ -185,6 +213,16 @@ main() {
     if [ ${#available_versions[@]} -eq 0 ]; then
         if [[ $quiet -eq 0 ]]; then
             print_error "No LLVM versions found"
+            if [[ "$(uname)" == "Darwin" ]]; then
+                echo -e "${YELLOW}[MACOS BUILD HELP]${NC} If you are on macOS, you likely need to install LLVM via Homebrew:"
+                echo -e "    brew install llvm"
+                echo -e "Then add this to your shell profile (e.g., ~/.zshrc or ~/.bash_profile):"
+                echo -e "    export PATH=\"/opt/homebrew/opt/llvm/bin:\$PATH\"   # Apple Silicon (M1/M2)"
+                echo -e "    export PATH=\"/usr/local/opt/llvm/bin:\$PATH\"      # Intel Mac"
+                echo -e "Then restart your terminal and try again."
+            else
+                echo -e "${YELLOW}[BUILD HELP]${NC} Please install LLVM (version 17 or higher) and ensure 'llvm-config' is in your PATH."
+            fi
         fi
         exit 1
     fi

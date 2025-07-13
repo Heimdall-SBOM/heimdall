@@ -218,7 +218,7 @@ sudo pacman -S \
 
 ```bash
 # Install LLVM and other dependencies
-brew install llvm cmake ninja openssl
+brew install llvm cmake ninja openssl llvm@18
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 
 # Build Heimdall (LLD plugin only)
