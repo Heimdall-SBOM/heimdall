@@ -226,7 +226,13 @@ fi
 
 # Build
 print_status "Building Heimdall..."
-make -j$(nproc)
+# Cross-platform CPU count
+if command -v nproc >/dev/null 2>&1; then
+    JOBS=$(nproc)
+else
+    JOBS=$(sysctl -n hw.ncpu)
+fi
+make -j$JOBS
 
 print_success "Build completed successfully!"
 

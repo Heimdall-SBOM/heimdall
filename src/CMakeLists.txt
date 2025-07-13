@@ -49,8 +49,8 @@ target_compile_definitions(heimdall-core PRIVATE
     ${LLVM_DEFINITIONS}
 )
 
-# LLD Plugin (only for C++17+ due to LLVM 19 compatibility)
-if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+# LLD Plugin (compatible with C++11+)
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     set(LLD_INCLUDE_DIR "")
     if(APPLE)
         set(LLD_INCLUDE_DIR "/opt/homebrew/opt/lld/include")
@@ -163,7 +163,7 @@ install(TARGETS heimdall-core
     RUNTIME DESTINATION bin
 )
 
-if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     install(TARGETS heimdall-lld
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
