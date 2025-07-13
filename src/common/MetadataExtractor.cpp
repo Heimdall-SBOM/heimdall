@@ -103,7 +103,7 @@ public:
  * Debug information extraction is enabled by default, and verbose output
  * is disabled.
  */
-MetadataExtractor::MetadataExtractor() : pImpl(std::make_unique<Impl>()) {}
+MetadataExtractor::MetadataExtractor() : pImpl(heimdall::compat::make_unique<Impl>()) {}
 
 /**
  * @brief Destructor for MetadataExtractor

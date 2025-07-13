@@ -68,7 +68,7 @@ private:
 };
 
 // LLDAdapter::Impl implementation
-LLDAdapter::Impl::Impl() : sbomGenerator(std::make_unique<SBOMGenerator>()) {}
+LLDAdapter::Impl::Impl() : sbomGenerator(heimdall::compat::make_unique<SBOMGenerator>()) {}
 
 void LLDAdapter::Impl::initialize() {
     if (!initialized) {

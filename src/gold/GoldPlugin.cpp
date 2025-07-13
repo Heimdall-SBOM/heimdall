@@ -96,7 +96,7 @@ namespace heimdall {
 
 class GoldPlugin::Impl {
 public:
-    Impl() : adapter(std::make_unique<GoldAdapter>()), verbose(false) {}
+    Impl() : adapter(heimdall::compat::make_unique<GoldAdapter>()), verbose(false) {}
     
     std::unique_ptr<GoldAdapter> adapter;
     std::vector<std::string> processedFiles;
@@ -111,7 +111,7 @@ public:
     bool includeSystemLibraries = false;
 };
 
-GoldPlugin::GoldPlugin() : pImpl(std::make_unique<Impl>()) {}
+GoldPlugin::GoldPlugin() : pImpl(heimdall::compat::make_unique<Impl>()) {}
 
 GoldPlugin::~GoldPlugin() = default;
 
