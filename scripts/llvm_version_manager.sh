@@ -31,6 +31,7 @@ print_error() {
 # Function to detect available LLVM versions
 detect_llvm_versions() {
     local versions=()
+    local found_versioned=0
     
     # Check for system-installed LLVM versions (e.g., llvm-config-19)
     for version in {7..25}; do
@@ -39,6 +40,7 @@ detect_llvm_versions() {
             local llvm_version=$(timeout 5 "llvm-config-${version}" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
             if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
                 versions+=("${version}:${llvm_version}")
+                found_versioned=1
             fi
         fi
     done
@@ -48,7 +50,10 @@ detect_llvm_versions() {
         # Use timeout to prevent hanging
         local default_version=$(timeout 5 "llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
         if [ $? -eq 0 ] && [ -n "$default_version" ]; then
-            versions+=("default:${default_version}")
+            # Only add unversioned if no versioned found, or if on OpenSUSE
+            if [ $found_versioned -eq 0 ] || grep -qi 'opensuse' /etc/os-release 2>/dev/null; then
+                versions+=("default:${default_version}")
+            fi
         fi
     fi
     
