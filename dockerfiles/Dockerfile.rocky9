@@ -1,0 +1,53 @@
+FROM rockylinux:9
+
+ARG GCC_VERSION=11
+ARG LLVM_VERSION=16
+ARG LLVM_TAG=llvmorg-18.1.8
+
+# Install prerequisites
+RUN dnf install -y epel-release && \
+    dnf update -y && \
+    dnf install -y \
+      wget \
+      unzip \
+      gcc \
+      gcc-c++ \
+      cmake \
+      python3 \
+      python3-pip \
+      git \
+      binutils \
+      openssl-devel \
+      elfutils-libelf-devel \
+      pkgconfig \
+      boost-devel \
+      boost-filesystem \
+      boost-system
+
+# Install Ninja manually (static binary)
+RUN curl -L -o /tmp/ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip && \
+    unzip /tmp/ninja.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/ninja && \
+    rm /tmp/ninja.zip
+
+# Enable CRB repository for newer GCC versions if needed
+RUN if [ "$GCC_VERSION" = "13" ]; then \
+      dnf config-manager --set-enabled crb && \
+      dnf install -y gcc-toolset-13; \
+    fi
+
+# Set GCC alternatives based on version
+RUN if [ "$GCC_VERSION" = "13" ]; then \
+      ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/gcc /usr/bin/gcc && \
+      ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/g++ /usr/bin/g++; \
+    fi
+
+# Install requested LLVM version from Rocky/EPEL/CRB repos
+# Install both llvm16-devel (for headers/libs) and llvm-devel (for CMake config files)
+RUN dnf install -y \
+      llvm${LLVM_VERSION}-devel \
+      llvm-devel \
+      lld-devel
+
+# Create default symlinks for LLVM
+RUN ln -sf /usr/bin/llvm-config-${LLVM_VERSION} /usr/bin/llvm-config 
