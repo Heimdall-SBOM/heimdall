@@ -86,11 +86,16 @@ Heimdall supports multiple C++ standards with automatic compiler and LLVM versio
 - **macOS**: Xcode Command Line Tools, CMake 3.16+, LLVM (via Homebrew)
 - **SCL Support**: On RHEL/Rocky/CentOS, SCL toolsets are automatically detected
 
-### Installation
+### Automatic Setup (Recommended)
+
+We provide an automated setup script that detects your Linux distribution and installs all necessary dependencies:
 
 ```bash
 git clone https://github.com/your-org/heimdall.git
 cd heimdall
+
+# Run the automated setup script
+sudo ./setup.sh
 
 # Build with default settings (GCC, C++17)
 ./scripts/build.sh --standard 17 --compiler gcc --tests
@@ -98,6 +103,41 @@ cd heimdall
 # Or build all compatible standards
 ./scripts/build_all_standards.sh
 ```
+
+#### Setup Script Options
+
+```bash
+# Show what would be installed without actually installing
+sudo ./setup.sh --dry-run
+
+# Install with verbose output
+sudo ./setup.sh --verbose
+
+# Skip LLVM installation (use system LLVM if available)
+sudo ./setup.sh --skip-llvm
+
+# Skip GCC installation (use system GCC)
+sudo ./setup.sh --skip-gcc
+
+# Show help
+./setup.sh --help
+```
+
+#### Supported Distributions
+
+The setup script automatically supports:
+- **Ubuntu 22.04+**: GCC 11, 13 + LLVM 18
+- **Debian Bookworm**: GCC 11, 12 + LLVM 18
+- **Debian Testing**: GCC 12, 13, 14 + LLVM 18
+- **CentOS Stream 9**: GCC 11, 13, 14 + LLVM 20
+- **Fedora Latest**: GCC 15 + LLVM 18
+- **Arch Linux**: GCC 14, 15 + LLVM 18
+- **OpenSUSE Tumbleweed**: GCC 11, 13 + LLVM 18
+- **Rocky Linux 9**: GCC 11, 13 + LLVM 16
+
+### Manual Installation
+
+If you prefer to install dependencies manually or the setup script doesn't support your distribution:
 
 ### Usage Examples
 
@@ -154,6 +194,11 @@ cd examples/heimdall-usage-example
 ## Building from Source
 
 ### Linux Setup
+
+**Recommended**: Use the automated setup script for easy installation:
+```bash
+sudo ./setup.sh
+```
 
 #### Ubuntu/Debian
 ```bash
