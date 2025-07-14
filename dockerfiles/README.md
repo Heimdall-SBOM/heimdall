@@ -1,6 +1,6 @@
-# Jenkins Image Mapping
+# Dockerfile Image Mapping
 
-This document describes the mapping between Jenkins Docker image names, compiler (GCC) versions, and C++ standards for each supported Linux distribution.
+This document describes the mapping between Heimdall Docker image names, compiler (GCC) versions, and C++ standards for each supported Linux distribution.
 
 ## Ubuntu
 | C++ Standard | GCC Version | Image Name                |
