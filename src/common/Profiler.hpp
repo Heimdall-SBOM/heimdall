@@ -362,7 +362,13 @@ public:
     
     ~ScopedProfilerSession() {
         if (session_) {
-            Profiler::get_instance().end_session(name_);
+            try {
+                Profiler::get_instance().end_session(name_);
+            } catch (const std::exception& e) {
+                // Optionally log: std::cerr << "Profiler exception: " << e.what() << std::endl;
+            } catch (...) {
+                // Optionally log: std::cerr << "Unknown exception in Profiler" << std::endl;
+            }
         }
     }
     
