@@ -84,4 +84,5 @@ else
     exit 1
 fi
 
-print_success "All steps completed successfully!" 
+print_success "All steps completed successfully!"
+
