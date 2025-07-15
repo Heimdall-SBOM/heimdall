@@ -23,7 +23,7 @@ make -j
 1. Ensure Heimdall is built (see main repo README).
 2. Run the build script:
    ```bash
-   ../build_and_generate_sbom.sh
+   ./build_and_generate_sbom.sh
    ```
    This will build with debug info and generate `taskmgr.cyclonedx.json`.
 
@@ -56,6 +56,5 @@ make -j
 ./taskmgr
 ```
 
----
 
 This example is designed to maximize DWARF debug info for SBOM demonstration.
