@@ -25,6 +25,8 @@ EXAMPLE_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$EXAMPLE_DIR/build"
 BINARY_NAME="taskmgr"
 SBOM_NAME="taskmgr.cyclonedx.json"
+PLUGIN_PATH="$EXAMPLE_DIR/../../build-cpp17/lib/heimdall-lld.so"
+SBOM_TOOL_PATH="$EXAMPLE_DIR/../../build-cpp17/src/tools/heimdall-sbom"
 
 # Clean previous builds
 print_info "Cleaning previous build artifacts..."
@@ -39,7 +41,6 @@ cmake --build "$BUILD_DIR" -- -j$(nproc)
 # Find the binary
 BINARY_PATH="$BUILD_DIR/$BINARY_NAME"
 if [ ! -f "$BINARY_PATH" ]; then
-    # Try to find the binary by searching the build dir
     BINARY_PATH=$(find "$BUILD_DIR" -type f -executable -name "$BINARY_NAME" | head -n 1)
 fi
 if [ ! -f "$BINARY_PATH" ]; then
@@ -54,24 +55,27 @@ print_info "Running the example binary (output below):"
 "$BINARY_PATH" || print_warning "Binary exited with nonzero status (this may be expected for a demo)"
 echo
 
-# Locate Heimdall
-HEIMDALL_BIN=""
-if [ -f "$EXAMPLE_DIR/../../build-cpp17/src/heimdall" ]; then
-    HEIMDALL_BIN="$EXAMPLE_DIR/../../build-cpp17/src/heimdall"
-elif command -v heimdall &>/dev/null; then
-    HEIMDALL_BIN="heimdall"
-elif [ -f "$EXAMPLE_DIR/../../src/heimdall" ]; then
-    HEIMDALL_BIN="$EXAMPLE_DIR/../../src/heimdall"
-fi
-if [ -z "$HEIMDALL_BIN" ]; then
-    print_error "Heimdall binary not found. Please build Heimdall and ensure it is in your PATH or in ../../build-cpp17/src/heimdall."
+# Locate heimdall-sbom tool
+if [ -x "$SBOM_TOOL_PATH" ]; then
+    SBOM_TOOL="$SBOM_TOOL_PATH"
+elif command -v heimdall-sbom &>/dev/null; then
+    SBOM_TOOL="heimdall-sbom"
+else
+    print_error "heimdall-sbom tool not found. Please build Heimdall and ensure heimdall-sbom is in ../../build-cpp17/src/tools/ or in your PATH."
     exit 1
 fi
-print_success "Using Heimdall: $HEIMDALL_BIN"
+print_success "Using heimdall-sbom: $SBOM_TOOL"
+
+# Locate plugin
+if [ ! -f "$PLUGIN_PATH" ]; then
+    print_error "Heimdall LLD plugin not found at $PLUGIN_PATH. Please build Heimdall."
+    exit 1
+fi
+print_success "Using plugin: $PLUGIN_PATH"
 
 # Generate CycloneDX SBOM with DWARF info
 print_info "Generating CycloneDX SBOM with DWARF debug info..."
-"$HEIMDALL_BIN" --input "$BINARY_PATH" --format cyclonedx --output "$SBOM_NAME" --extract-debug-info --verbose
+"$SBOM_TOOL" "$PLUGIN_PATH" "$BINARY_PATH" --format cyclonedx --output "$SBOM_NAME" --extract-debug-info --verbose
 
 if [ -f "$SBOM_NAME" ]; then
     print_success "SBOM generated: $SBOM_NAME"
