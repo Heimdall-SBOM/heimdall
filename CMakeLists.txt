@@ -40,34 +40,35 @@ if(CMAKE_CXX_STANDARD LESS 17)
             message(FATAL_ERROR "C++11 or later is required")
         endif()
         # C++11 mode
-        set(HEIMDALL_CPP11_AVAILABLE 1)
-        set(HEIMDALL_NO_DWARF 1)
-        set(ENABLE_CPP11_14 ON)
+        set(HEIMDALL_CPP11_AVAILABLE 1 CACHE INTERNAL "C++11 available")
+        set(ENABLE_CPP11_14 ON CACHE INTERNAL "Enable C++11/14 mode")
+        message(STATUS "C++11 mode: HEIMDALL_NO_DWARF set to: ${HEIMDALL_NO_DWARF}")
         if(NOT DEFINED USE_BOOST_FILESYSTEM)
-            set(USE_BOOST_FILESYSTEM ON)
+            set(USE_BOOST_FILESYSTEM ON CACHE INTERNAL "Use Boost.Filesystem")
         endif()
     else()
         # C++14 mode
-        set(HEIMDALL_CPP14_AVAILABLE 1)
-        set(HEIMDALL_BASIC_DWARF 1)
-        set(ENABLE_CPP11_14 ON)
+        set(HEIMDALL_CPP14_AVAILABLE 1 CACHE INTERNAL "C++14 available")
+        set(ENABLE_CPP11_14 ON CACHE INTERNAL "Enable C++11/14 mode")
+        message(STATUS "C++14 mode: HEIMDALL_BASIC_DWARF set to: ${HEIMDALL_BASIC_DWARF}")
         if(NOT DEFINED USE_BOOST_FILESYSTEM)
-            set(USE_BOOST_FILESYSTEM ON)
+            set(USE_BOOST_FILESYSTEM ON CACHE INTERNAL "Use Boost.Filesystem")
         endif()
     endif()
 else()
     # C++17+ mode
-    set(HEIMDALL_CPP17_AVAILABLE 1)
-    set(HEIMDALL_FULL_DWARF 1)
+    set(HEIMDALL_CPP17_AVAILABLE 1 CACHE INTERNAL "C++17 available")
+    set(HEIMDALL_FULL_DWARF 1 CACHE INTERNAL "Full DWARF support")
+    message(STATUS "C++17+ mode: HEIMDALL_FULL_DWARF set to: ${HEIMDALL_FULL_DWARF}")
     
     # C++20+ features
     if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
-        set(HEIMDALL_CPP20_AVAILABLE 1)
+        set(HEIMDALL_CPP20_AVAILABLE 1 CACHE INTERNAL "C++20 available")
     endif()
     
     # C++23+ features
     if(CMAKE_CXX_STANDARD GREATER_EQUAL 23)
-        set(HEIMDALL_CPP23_AVAILABLE 1)
+        set(HEIMDALL_CPP23_AVAILABLE 1 CACHE INTERNAL "C++23 available")
     endif()
 endif()
 
@@ -90,6 +91,51 @@ endif()
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 add_definitions(${LLVM_DEFINITIONS})
+
+# Detect available LLVM targets
+execute_process(
+    COMMAND llvm-config --components
+    OUTPUT_VARIABLE LLVM_AVAILABLE_COMPONENTS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+string(REPLACE "\n" " " LLVM_AVAILABLE_COMPONENTS "${LLVM_AVAILABLE_COMPONENTS}")
+foreach(target IN ITEMS x86 arm aarch64 mips powerpc systemz sparc hexagon lanai avr msp430 loongarch riscv ve amdgpu bpf webassembly nvptx xcore)
+    string(FIND "${LLVM_AVAILABLE_COMPONENTS}" "${target}" _found)
+    if(NOT _found EQUAL -1)
+        string(TOUPPER "${target}" _target_upper)
+        set(HAVE_LLVM_TARGET_${_target_upper} 1)
+        message(STATUS "LLVM target available: ${target}")
+    endif()
+endforeach()
+
+# Update DWARF support based on LLVM version for C++11/14
+if(CMAKE_CXX_STANDARD LESS 17)
+    if(CMAKE_CXX_STANDARD LESS 14)
+        if(CMAKE_CXX_STANDARD LESS 11)
+            # Already handled above
+        else()
+            # C++11 mode - update DWARF support based on LLVM version
+            if(LLVM_VERSION_MAJOR GREATER_EQUAL 18 AND LLVM_VERSION_MAJOR LESS_EQUAL 19)
+                set(HEIMDALL_BASIC_DWARF 1 CACHE INTERNAL "Basic DWARF support for C++11" FORCE)
+                unset(HEIMDALL_NO_DWARF CACHE)
+                message(STATUS "C++11 mode with LLVM ${LLVM_VERSION_MAJOR}: HEIMDALL_BASIC_DWARF enabled")
+            else()
+                set(HEIMDALL_NO_DWARF 1 CACHE INTERNAL "No DWARF support for C++11" FORCE)
+                unset(HEIMDALL_BASIC_DWARF CACHE)
+                message(STATUS "C++11 mode with LLVM ${LLVM_VERSION_MAJOR}: HEIMDALL_NO_DWARF enabled")
+            endif()
+        endif()
+    else()
+        # C++14 mode - update DWARF support based on LLVM version
+        if(LLVM_VERSION_MAJOR GREATER_EQUAL 18 AND LLVM_VERSION_MAJOR LESS_EQUAL 19)
+            set(HEIMDALL_BASIC_DWARF 1 CACHE INTERNAL "Basic DWARF support for C++14" FORCE)
+            message(STATUS "C++14 mode with LLVM ${LLVM_VERSION_MAJOR}: HEIMDALL_BASIC_DWARF enabled")
+        else()
+            set(HEIMDALL_BASIC_DWARF 1 CACHE INTERNAL "Basic DWARF support" FORCE)
+            message(STATUS "C++14 mode with LLVM ${LLVM_VERSION_MAJOR}: HEIMDALL_BASIC_DWARF enabled")
+        endif()
+    endif()
+endif()
 
 # ELF library dependency (for Gold plugin)
 find_library(ELF_LIBRARY NAMES elf)
