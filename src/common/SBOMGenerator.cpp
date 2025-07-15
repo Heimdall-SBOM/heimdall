@@ -694,6 +694,32 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     if (cyclonedxVersion == "1.6") {
         ss << ",\n" << generateEvidenceField(component);
     }
+
+    // Add DWARF/source info for all CycloneDX versions
+    if (!component.sourceFiles.empty()) {
+        ss << ",\n      \"sourceFiles\": [";
+        for (size_t i = 0; i < component.sourceFiles.size(); ++i) {
+            ss << Utils::formatJsonValue(component.sourceFiles[i]);
+            if (i + 1 < component.sourceFiles.size()) ss << ", ";
+        }
+        ss << "]";
+    }
+    if (!component.functions.empty()) {
+        ss << ",\n      \"functions\": [";
+        for (size_t i = 0; i < component.functions.size(); ++i) {
+            ss << Utils::formatJsonValue(component.functions[i]);
+            if (i + 1 < component.functions.size()) ss << ", ";
+        }
+        ss << "]";
+    }
+    if (!component.compileUnits.empty()) {
+        ss << ",\n      \"compileUnits\": [";
+        for (size_t i = 0; i < component.compileUnits.size(); ++i) {
+            ss << Utils::formatJsonValue(component.compileUnits[i]);
+            if (i + 1 < component.compileUnits.size()) ss << ", ";
+        }
+        ss << "]";
+    }
     
     ss << "\n    }";
     return ss.str();
