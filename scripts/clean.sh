@@ -125,42 +125,19 @@ else
     print_warning "Install directory not found: $INSTALL_DIR"
 fi
 
-# Clean example build artifacts
-print_status "Cleaning example build artifacts..."
-
-# Clean openssl_pthread_demo example
-if [[ -d "examples/openssl_pthread_demo/build" ]]; then
-    print_status "Removing openssl_pthread_demo build directory"
-    rm -rf "examples/openssl_pthread_demo/build"
-    print_success "openssl_pthread_demo build directory removed"
-fi
-
-# Clean heimdall-usage-example artifacts
-if [[ -d "examples/heimdall-usage-example" ]]; then
-    print_status "Cleaning heimdall-usage-example artifacts..."
-    cd examples/heimdall-usage-example
-    rm -f *.o app-* *.json *.spdx *.cyclonedx.json 2>/dev/null || true
-    cd ../..
-    print_success "heimdall-usage-example artifacts cleaned"
-fi
-
-# Clean heimdall-usage-spdx-example artifacts
-if [[ -d "examples/heimdall-usage-spdx-example" ]]; then
-    print_status "Cleaning heimdall-usage-spdx-example artifacts..."
-    cd examples/heimdall-usage-spdx-example
-    rm -f *.o app-* *.spdx 2>/dev/null || true
-    cd ../..
-    print_success "heimdall-usage-spdx-example artifacts cleaned"
-fi
-
-# Clean heimdall-usage-cyclonedx-example artifacts
-if [[ -d "examples/heimdall-usage-cyclonedx-example" ]]; then
-    print_status "Cleaning heimdall-usage-cyclonedx-example artifacts..."
-    cd examples/heimdall-usage-cyclonedx-example
-    rm -f *.o app-* *.cyclonedx.json 2>/dev/null || true
-    cd ../..
-    print_success "heimdall-usage-cyclonedx-example artifacts cleaned"
-fi
+# Clean example build artifacts (generic, all subdirectories)
+print_status "Cleaning all example build artifacts generically..."
+for exdir in examples/*/; do
+    if [[ -d "$exdir" ]]; then
+        print_status "Cleaning $exdir..."
+        rm -rf "$exdir/build" "$exdir/CMakeFiles" 2>/dev/null || true
+        rm -f "$exdir/CMakeCache.txt" "$exdir/Makefile" 2>/dev/null || true
+        find "$exdir" -maxdepth 1 -type f \( -name "*.o" -o -name "*.so" -o -name "*.a" -o -name "*.dylib" -o -name "*.spdx" -o -name "*.cyclonedx.json" -o -name "*sbom*.json" -o -name "*.json" \) -delete 2>/dev/null || true
+        # Remove executables (files with execute permission, not directories)
+        find "$exdir" -maxdepth 1 -type f -executable -exec rm -f {} + 2>/dev/null || true
+    fi
+    print_success "Cleaned $exdir"
+done
 
 # Clean test outputs
 if [[ -d "tests/temp" ]]; then
