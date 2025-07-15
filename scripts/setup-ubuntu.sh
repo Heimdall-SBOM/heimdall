@@ -3,7 +3,6 @@
 # Heimdall Ubuntu Setup Script
 # This script installs all necessary dependencies for building Heimdall on Ubuntu
 # Based on dockerfiles/Dockerfile.ubuntu
-
 set -e
 
 # Colors for output
@@ -23,9 +22,9 @@ VERBOSE=false
 DRY_RUN=false
 SKIP_LLVM=false
 SKIP_GCC=false
-LLVM_VERSION="18"
-LLVM_TAG="llvmorg-18.1.8"
-
+LLVM_VERSION="19"
+LLVM_TAG="llvmorg-19.1.7"
+echo "TJB ${LLVM_TAG}"
 # Function to print colored output
 print_status() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -65,11 +64,11 @@ OPTIONS:
     -d, --dry-run          Show what would be installed without actually installing
     --skip-llvm            Skip LLVM installation (use system LLVM if available)
     --skip-gcc             Skip GCC installation (use system GCC)
-    --llvm-version VERSION Set LLVM version to install (default: 18)
+    --llvm-version VERSION Set LLVM version to install (default: 19)
     --version              Show version information
 
 SUPPORTED UBUNTU VERSIONS:
-    Ubuntu 22.04+          - GCC 11, 13 + LLVM 18
+    Ubuntu 22.04+          - GCC 11, 13 + LLVM 18, 19
 
 C++ STANDARDS SUPPORT:
     C++11  - Requires GCC 4.8+ or Clang 3.3+
@@ -87,7 +86,7 @@ EXAMPLES:
 DEPENDENCIES INSTALLED:
     - Build tools (make, cmake, ninja)
     - GCC compilers (11, 13)
-    - LLVM/Clang toolchain (18)
+    - LLVM/Clang toolchain (19)
     - Development libraries (OpenSSL, ELF, Boost)
     - Python 3 and pip
     - Git
