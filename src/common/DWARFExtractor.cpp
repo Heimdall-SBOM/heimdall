@@ -71,8 +71,83 @@ std::unique_ptr<llvm::DWARFContext> g_context;
 static std::once_flag llvm_init_flag;
 void DWARFExtractor::ensureLLVMInitialized() {
     std::call_once(llvm_init_flag, []() {
-        llvm::InitializeAllTargetInfos();
-        llvm::InitializeAllTargets();
+        // Only initialize available targets
+#ifdef HAVE_LLVM_TARGET_X86
+        LLVMInitializeX86TargetInfo();
+        LLVMInitializeX86Target();
+#endif
+#ifdef HAVE_LLVM_TARGET_ARM
+        LLVMInitializeARMTargetInfo();
+        LLVMInitializeARMTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_AARCH64
+        LLVMInitializeAArch64TargetInfo();
+        LLVMInitializeAArch64Target();
+#endif
+#ifdef HAVE_LLVM_TARGET_MIPS
+        LLVMInitializeMipsTargetInfo();
+        LLVMInitializeMipsTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_POWERPC
+        LLVMInitializePowerPCTargetInfo();
+        LLVMInitializePowerPCTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_SYSTEMZ
+        LLVMInitializeSystemZTargetInfo();
+        LLVMInitializeSystemZTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_SPARC
+        LLVMInitializeSparcTargetInfo();
+        LLVMInitializeSparcTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_HEXAGON
+        LLVMInitializeHexagonTargetInfo();
+        LLVMInitializeHexagonTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_LANAI
+        LLVMInitializeLanaiTargetInfo();
+        LLVMInitializeLanaiTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_AVR
+        LLVMInitializeAVRTargetInfo();
+        LLVMInitializeAVRTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_MSP430
+        LLVMInitializeMSP430TargetInfo();
+        LLVMInitializeMSP430Target();
+#endif
+#ifdef HAVE_LLVM_TARGET_LOONGARCH
+        LLVMInitializeLoongArchTargetInfo();
+        LLVMInitializeLoongArchTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_RISCV
+        LLVMInitializeRISCVTargetInfo();
+        LLVMInitializeRISCVTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_VE
+        LLVMInitializeVETargetInfo();
+        LLVMInitializeVETarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_AMDGPU
+        LLVMInitializeAMDGPUTargetInfo();
+        LLVMInitializeAMDGPUTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_BPF
+        LLVMInitializeBPFTargetInfo();
+        LLVMInitializeBPFTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_WEBASSEMBLY
+        LLVMInitializeWebAssemblyTargetInfo();
+        LLVMInitializeWebAssemblyTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_NVPTX
+        LLVMInitializeNVPTXTargetInfo();
+        LLVMInitializeNVPTXTarget();
+#endif
+#ifdef HAVE_LLVM_TARGET_XCORE
+        LLVMInitializeXCoreTargetInfo();
+        LLVMInitializeXCoreTarget();
+#endif
     });
 }
 #endif

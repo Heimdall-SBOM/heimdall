@@ -12,6 +12,7 @@ endif()
 find_package(OpenSSL REQUIRED)
 
 # Core library (shared)
+message(STATUS "LLVM_LIBRARIES: ${LLVM_LIBRARIES}")
 add_library(heimdall-core SHARED
     common/SBOMGenerator.cpp
     common/ComponentInfo.cpp
@@ -41,7 +42,7 @@ target_include_directories(heimdall-core PUBLIC
 )
 
 target_link_libraries(heimdall-core PUBLIC
-    ${LLVM_LIBRARIES}
+    LLVM-19
     ${ELF_LIBRARY}
     ${OPENSSL_LIBRARIES}
 )
@@ -49,6 +50,13 @@ target_link_libraries(heimdall-core PUBLIC
 target_compile_definitions(heimdall-core PRIVATE
     ${LLVM_DEFINITIONS}
 )
+
+# Add DWARF support definitions
+if(HEIMDALL_FULL_DWARF)
+    target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
+elseif(HEIMDALL_BASIC_DWARF)
+    target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
+endif()
 
 # LLD Plugin (compatible with C++11+)
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
@@ -82,6 +90,12 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     )
 
     target_compile_definitions(heimdall-lld PRIVATE LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
+
+    if(HEIMDALL_FULL_DWARF)
+        target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+    elseif(HEIMDALL_BASIC_DWARF)
+        target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+    endif()
 
     # Try to get LLD libraries from llvm-config if available
     find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config)
