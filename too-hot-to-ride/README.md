@@ -138,4 +138,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## ⚠️ Disclaimer
 
 This app provides general guidance based on weather conditions. Always use personal judgment and consider other factors when deciding whether conditions are safe for riding. The heat index calculation is a simplified formula and may not account for all environmental factors affecting comfort and safety.
-
