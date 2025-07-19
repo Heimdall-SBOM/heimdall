@@ -246,15 +246,20 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath,
         return !sourceFiles.empty();
     } else {
 #ifdef HEIMDALL_DEBUG_ENABLED
-        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context creation failed, falling back to heuristic");
+        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context creation failed, falling back to lightweight parser");
 #endif
     }
+    // Fallback to lightweight parser if LLVM fails
+#endif
+
+#ifdef LLVM_DWARF_AVAILABLE
     // Fallback to heuristic if LLVM fails
-#endif
-#ifdef HEIMDALL_DEBUG_ENABLED
-    heimdall::Utils::debugPrint("DWARFExtractor: Using heuristic extraction");
-#endif
     return extractSourceFilesHeuristic(filePath, sourceFiles);
+#else
+    // Use lightweight DWARF parser for C++14 compatibility
+    LightweightDWARFParser parser;
+    return parser.extractSourceFiles(filePath, sourceFiles);
+#endif
 }
 
 /**
@@ -282,16 +287,21 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath,
         }
         return !compileUnits.empty();
     }
-    // Fallback to heuristic if LLVM fails
+    // Fallback to lightweight parser if LLVM fails
 #endif
-    
+
+#ifdef LLVM_DWARF_AVAILABLE
     // Heuristic fallback: If we have debug info, assume at least one compile unit
     if (hasDWARFInfo(filePath)) {
         compileUnits.push_back("main");
         return true;
     }
-    
     return false;
+#else
+    // Use lightweight DWARF parser for C++14 compatibility
+    LightweightDWARFParser parser;
+    return parser.extractCompileUnits(filePath, compileUnits);
+#endif
 }
 
 /**
@@ -321,11 +331,17 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath,
             return true;
         }
     }
-    // Fallback to symbol table extraction if LLVM DWARF fails
+    // Fallback to lightweight parser if LLVM DWARF fails
 #endif
-    
+
+#ifdef LLVM_DWARF_AVAILABLE
     // Fallback: Extract functions from symbol table
     return extractFunctionsFromSymbolTable(filePath, functions);
+#else
+    // Use lightweight DWARF parser for C++14 compatibility
+    LightweightDWARFParser parser;
+    return parser.extractFunctions(filePath, functions);
+#endif
 }
 
 /**
@@ -901,6 +917,104 @@ bool DWARFExtractor::extractFunctionsFromSymbolTable(const std::string& filePath
     (void)filePath;
     (void)functions;
     return false;
+#endif
+}
+
+/**
+ * @brief Extract all debug information using a single DWARF context
+ *
+ * This method creates one DWARF context and extracts all debug information
+ * (source files, compile units, functions) in a single pass, avoiding
+ * the overhead of creating multiple contexts.
+ *
+ * @param filePath Path to the ELF file containing DWARF info
+ * @param sourceFiles Output vector to store extracted source file paths
+ * @param compileUnits Output vector to store extracted compile unit names
+ * @param functions Output vector to store extracted function names
+ * @return true if extraction was successful, false otherwise
+ */
+bool DWARFExtractor::extractAllDebugInfo(const std::string& filePath,
+                                         std::vector<std::string>& sourceFiles,
+                                         std::vector<std::string>& compileUnits,
+                                         std::vector<std::string>& functions) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+    heimdall::Utils::debugPrint("DWARFExtractor: Starting extractAllDebugInfo for " + filePath);
+#endif
+
+#ifdef LLVM_DWARF_AVAILABLE
+    ensureLLVMInitialized();
+    auto context = createDWARFContext(filePath);
+    if (context) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context created successfully for extractAllDebugInfo");
+#endif
+        auto numUnits = context->getNumCompileUnits();
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: Number of compile units: " + std::to_string(numUnits));
+#endif
+        
+        // Extract all information in a single pass through the DWARF data
+        for (uint32_t i = 0; i < numUnits; ++i) {
+            auto unit = context->getUnitAtIndex(i);
+            if (unit) {
+                auto die = unit->getUnitDIE();
+                if (die.isValid()) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+                    heimdall::Utils::debugPrint("DWARFExtractor: Processing unit " + std::to_string(i));
+#endif
+                    
+                    // Extract source files from this unit
+                    extractSourceFilesFromDie(die, sourceFiles);
+                    
+                    // Extract compile unit information
+                    extractCompileUnitFromDie(die, compileUnits);
+                    
+                    // Extract functions from this unit
+                    extractFunctionsFromDie(die, functions);
+                }
+            }
+        }
+        
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: extractAllDebugInfo completed");
+        heimdall::Utils::debugPrint("DWARFExtractor: Source files found: " + std::to_string(sourceFiles.size()));
+        heimdall::Utils::debugPrint("DWARFExtractor: Compile units found: " + std::to_string(compileUnits.size()));
+        heimdall::Utils::debugPrint("DWARFExtractor: Functions found: " + std::to_string(functions.size()));
+#endif
+        
+        return !sourceFiles.empty() || !compileUnits.empty() || !functions.empty();
+    } else {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context creation failed in extractAllDebugInfo");
+#endif
+    }
+    // Fallback to lightweight parser if LLVM fails
+#endif
+
+#ifdef LLVM_DWARF_AVAILABLE
+    // Fallback to heuristic extraction
+    bool hasDebugInfo = false;
+    
+    // Try heuristic source file extraction
+    if (extractSourceFilesHeuristic(filePath, sourceFiles)) {
+        hasDebugInfo = true;
+    }
+    
+    // Try heuristic function extraction
+    if (extractFunctionsFromSymbolTable(filePath, functions)) {
+        hasDebugInfo = true;
+    }
+    
+    // Add a default compile unit if we found any debug info
+    if (hasDebugInfo && compileUnits.empty()) {
+        compileUnits.push_back("main");
+    }
+    
+    return hasDebugInfo;
+#else
+    // Use lightweight DWARF parser for C++14 compatibility
+    LightweightDWARFParser parser;
+    return parser.extractAllDebugInfo(filePath, sourceFiles, compileUnits, functions);
 #endif
 }
 

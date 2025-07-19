@@ -39,6 +39,9 @@ limitations under the License.
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/Error.h>
 #include <llvm/Support/MemoryBuffer.h>
+#else
+// Use lightweight DWARF parser for C++14 compatibility
+#include "LightweightDWARFParser.hpp"
 #endif
 
 namespace heimdall {
@@ -136,6 +139,24 @@ public:
      * @return true if DWARF info is present, false otherwise
      */
     bool hasDWARFInfo(const std::string& filePath);
+
+    /**
+     * @brief Extract all debug information using a single DWARF context
+     *
+     * This method creates one DWARF context and extracts all debug information
+     * (source files, compile units, functions) in a single pass, avoiding
+     * the overhead of creating multiple contexts.
+     *
+     * @param filePath Path to the ELF file containing DWARF info
+     * @param sourceFiles Output vector to store extracted source file paths
+     * @param compileUnits Output vector to store extracted compile unit names
+     * @param functions Output vector to store extracted function names
+     * @return true if extraction was successful, false otherwise
+     */
+    bool extractAllDebugInfo(const std::string& filePath,
+                            std::vector<std::string>& sourceFiles,
+                            std::vector<std::string>& compileUnits,
+                            std::vector<std::string>& functions);
 
 #ifdef LLVM_DWARF_AVAILABLE
     /**

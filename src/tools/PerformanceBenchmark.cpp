@@ -11,9 +11,12 @@
 #include "common/Profiler.hpp"
 #include "common/SBOMGenerator.hpp"
 #include "common/MetadataExtractor.hpp"
-#include "common/DWARFExtractor.hpp"
 #include "common/Utils.hpp"
 #include "common/ComponentInfo.hpp"
+
+#if LLVM_DWARF_AVAILABLE
+#include "common/DWARFExtractor.hpp"
+#endif
 
 using namespace heimdall;
 
