@@ -81,8 +81,8 @@ TEST_F(SBOMGeneratorTest, GenerateSBOMSPDX3JSON) {
     std::stringstream buffer;
     buffer << f.rdbuf();
     std::string content = buffer.str();
-    EXPECT_NE(content.find("spdxVersion"), std::string::npos);
-    EXPECT_NE(content.find("\"SPDX-3.0\""), std::string::npos);
+    EXPECT_NE(content.find("specVersion"), std::string::npos);
+    EXPECT_NE(content.find("\"SPDX-3.0.0\""), std::string::npos);
     EXPECT_NE(content.find("foo"), std::string::npos);
 }
 

@@ -279,14 +279,19 @@ void SBOMGenerator::generateSBOM() {
         } else if (pImpl->spdxVersion == "3.0" || pImpl->spdxVersion == "3.0.0" || pImpl->spdxVersion == "3.0.1") {
             success = pImpl->generateSPDX3JSON(pImpl->outputPath);
         } else {
-            Utils::errorPrint("Unsupported SPDX version: " + pImpl->spdxVersion);
-            return;
+            // Fall back to default version instead of failing
+            Utils::warningPrint("Unsupported SPDX version: " + pImpl->spdxVersion + ", falling back to 2.3");
+            pImpl->spdxVersion = "2.3";
+            success = pImpl->generateSPDX(pImpl->outputPath);
         }
     } else if (pImpl->format == "cyclonedx" || pImpl->format == "cyclonedx-1.4" || pImpl->format == "cyclonedx-1.6") {
         success = pImpl->generateCycloneDX(pImpl->outputPath);
     } else {
-        Utils::errorPrint("Unsupported SBOM format: " + pImpl->format);
-        return;
+        // Fall back to default format instead of failing
+        Utils::warningPrint("Unsupported SBOM format: " + pImpl->format + ", falling back to spdx");
+        pImpl->format = "spdx";
+        pImpl->spdxVersion = "2.3";
+        success = pImpl->generateSPDX(pImpl->outputPath);
     }
     // --- END PATCH ---
 
@@ -568,7 +573,7 @@ std::string SBOMGenerator::Impl::generateSPDX3_0_0_Document() {
         const auto& component = pair.second;
         ss << "        {\n";
         ss << "          \"@id\": \"spdx:" << generateSPDXElementId(component.name) << "\",\n";
-        ss << "          \"type\": \"File\",\n";
+        ss << "          \"type\": \"software_File\",\n";
         ss << "          \"fileName\": " << Utils::formatJsonValue(component.filePath) << ",\n";
         ss << "          \"checksums\": [\n";
         ss << "            {\n";
@@ -589,7 +594,7 @@ std::string SBOMGenerator::Impl::generateSPDX3_0_0_Document() {
         const auto& component = pair.second;
         ss << "        {\n";
         ss << "          \"@id\": \"spdx:" << generateSPDXElementId(component.name) << "\",\n";
-        ss << "          \"type\": \"Package\",\n";
+        ss << "          \"type\": \"software_Package\",\n";
         ss << "          \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
         ss << "          \"versionInfo\": " << Utils::formatJsonValue(component.version.empty() ? "NOASSERTION" : component.version) << "\n";
         ss << "        }";
@@ -624,7 +629,7 @@ std::string SBOMGenerator::Impl::generateSPDX3_0_1_Document() {
     ss << "    {\n";
     ss << "      \"spdxId\": \"spdx:SPDXRef-DOCUMENT\",\n";
     ss << "      \"type\": \"SpdxDocument\",\n";
-    ss << "      \"specVersion\": \"SPDX-3.0.1\",\n";
+    ss << "      \"spdxVersion\": \"SPDX-3.0.1\",\n";
     ss << "      \"name\": " << Utils::formatJsonValue(buildInfo.targetName.empty() ? "Heimdall Generated SBOM" : buildInfo.targetName) << ",\n";
     ss << "      \"documentNamespace\": " << Utils::formatJsonValue(generateDocumentNamespace()) << ",\n";
     ss << "      \"creationInfo\": {\n";

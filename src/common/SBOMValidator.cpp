@@ -252,11 +252,23 @@ ValidationResult SPDXValidator::validateSPDX3_0(const std::string& content) {
     try {
         nlohmann::json sbom = nlohmann::json::parse(content);
         std::string version = "3.0";
-        if (sbom.contains("spdxVersion")) {
+        
+        // Check for specVersion in the @graph array (JSON-LD format)
+        if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
+            auto first_obj = sbom["@graph"][0];
+            if (first_obj.contains("specVersion")) {
+                std::string v = first_obj["specVersion"].get<std::string>();
+                if (v == "SPDX-3.0.1") version = "3.0.1";
+                else if (v == "SPDX-3.0.0" || v == "SPDX-3.0") version = "3.0.0";
+            }
+        }
+        // Fallback: check for spdxVersion (legacy format)
+        else if (sbom.contains("spdxVersion")) {
             std::string v = sbom["spdxVersion"].get<std::string>();
             if (v == "SPDX-3.0.1") version = "3.0.1";
             else if (v == "SPDX-3.0.0" || v == "SPDX-3.0") version = "3.0.0";
         }
+        
         std::string schema_path = "./schema/spdx-bom-3.0.0.schema.json";
         if (version == "3.0.1") schema_path = "./schema/spdx-bom-3.0.1.schema.json";
         std::ifstream schema_file(schema_path);
@@ -270,14 +282,18 @@ ValidationResult SPDXValidator::validateSPDX3_0(const std::string& content) {
         validator.set_root_schema(schema);
         try {
             validator.validate(sbom);
+            // If we get here, validation passed
+            result.addMetadata("format", "SPDX 3.0");
+            result.addMetadata("version", version);
+            std::cerr << "[DEBUG] SPDX 3.0 validation passed, setting metadata: format=SPDX 3.0, version=" << version << std::endl;
         } catch (const std::exception& e) {
             result.addError(std::string("SPDX 3.x schema validation failed: ") + e.what());
+            std::cerr << "[DEBUG] SPDX 3.0 validation failed: " << e.what() << std::endl;
             return result;
         }
-        result.addMetadata("format", "SPDX 3.0");
-        result.addMetadata("version", version);
     } catch (const std::exception& e) {
         result.addError(std::string("SPDX 3.x JSON parse error: ") + e.what());
+        std::cerr << "[DEBUG] SPDX 3.0 JSON parse error: " << e.what() << std::endl;
     }
     return result;
 }
