@@ -73,13 +73,6 @@ A clear and concise description of what actually happened.
 # If applicable, paste debug output with HEIMDALL_DEBUG_ENABLED=1
 ```
 
-## Additional Context
-
-### Files Involved
-- **Input Files**: [List any input files that trigger the issue]
-- **Output Files**: [List any output files that show the problem]
-- **Configuration**: [Any relevant configuration files]
-
 ### Related Issues
 - **Previous Issues**: [Link to any related issues]
 - **Similar Problems**: [Describe any similar problems you've encountered]
@@ -111,15 +104,6 @@ Please attach any relevant files:
 - [ ] Input files that trigger the issue
 - [ ] Output files that show the problem
 - [ ] Screenshots (if applicable)
-
-## Checklist
-
-- [ ] I have searched existing issues to avoid duplicates
-- [ ] I have provided all required information
-- [ ] I have tested with the latest development version
-- [ ] I have included relevant error messages and logs
-- [ ] I have described the expected vs actual behavior
-- [ ] I have provided steps to reproduce the issue
 
 ---
 
