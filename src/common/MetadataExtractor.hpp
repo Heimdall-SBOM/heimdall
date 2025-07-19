@@ -27,6 +27,8 @@ limitations under the License.
 #include <string>
 #include <vector>
 #include "ComponentInfo.hpp"
+#include "LazySymbolExtractor.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
@@ -185,6 +187,17 @@ public:
      */
     void setSuppressWarnings(bool suppress);
 
+    /**
+     * @brief Extract metadata from multiple files with optimal batching
+     * @param filePaths Vector of file paths to process
+     * @param components Output vector for extracted components
+     * @param batch_size Size of processing batches (0 for auto)
+     * @return true if extraction was successful
+     */
+    bool extractMetadataBatched(const std::vector<std::string>& filePaths,
+                               std::vector<ComponentInfo>& components,
+                               size_t batch_size = 0);
+
 private:
     class Impl;
     std::unique_ptr<Impl> pImpl;
@@ -201,6 +214,20 @@ namespace MetadataHelpers {
  * @return true if the file is in ELF format
  */
 bool isELF(const std::string& filePath);
+
+/**
+ * @brief Check if a file is in PE format
+ * @param filePath The path to the file
+ * @return true if the file is in PE format
+ */
+bool isPE(const std::string& filePath);
+
+/**
+ * @brief Check if a file is an archive
+ * @param filePath The path to the file
+ * @return true if the file is an archive
+ */
+bool isArchive(const std::string& filePath);
 
 /**
  * @brief Extract symbols from an ELF file

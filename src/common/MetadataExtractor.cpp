@@ -51,9 +51,12 @@ limitations under the License.
 #include <iostream>
 #include <regex>
 #include "ComponentInfo.hpp"
-#include "DWARFExtractor.hpp"
 #include "Utils.hpp"
 #include "../compat/compatibility.hpp"
+
+#if LLVM_DWARF_AVAILABLE
+#include "DWARFExtractor.hpp"
+#endif
 
 #ifdef __linux__
 #include <elf.h>
@@ -290,18 +293,13 @@ bool MetadataExtractor::extractLicenseInfo(ComponentInfo& component) {
 }
 
 bool MetadataExtractor::extractSymbolInfo(ComponentInfo& component) {
-    if (isELF(component.filePath)) {
-        return MetadataHelpers::extractELFSymbols(component.filePath, component.symbols);
-    } else if (isMachO(component.filePath)) {
-        return MetadataHelpers::extractMachOSymbols(component.filePath, component.symbols);
-    } else if (isPE(component.filePath)) {
-        return MetadataHelpers::extractPESymbols(component.filePath, component.symbols);
-    } else if (isArchive(component.filePath)) {
-        // Extract archive symbols
-        bool symbolsExtracted =
-            MetadataHelpers::extractArchiveSymbols(component.filePath, component.symbols);
-
-        // Also extract archive members for additional metadata
+    // Use lazy symbol extraction with caching
+    static LazySymbolExtractor lazyExtractor;
+    
+    component.symbols = lazyExtractor.getSymbols(component.filePath);
+    
+    // Handle archive members for additional metadata
+    if (isArchive(component.filePath)) {
         std::vector<std::string> members;
         if (MetadataHelpers::extractArchiveMembers(component.filePath, members)) {
             for (const auto& member : members) {
@@ -309,11 +307,9 @@ bool MetadataExtractor::extractSymbolInfo(ComponentInfo& component) {
             }
             Utils::debugPrint("Extracted " + std::to_string(members.size()) + " archive members");
         }
-
-        return symbolsExtracted;
     }
-
-    return false;
+    
+    return !component.symbols.empty();
 }
 
 bool MetadataExtractor::extractSectionInfo(ComponentInfo& component) {
@@ -501,6 +497,29 @@ void MetadataExtractor::setSuppressWarnings(bool suppress) {
     pImpl->suppressWarnings = suppress;
 }
 
+bool MetadataExtractor::extractMetadataBatched(const std::vector<std::string>& filePaths,
+                                              std::vector<ComponentInfo>& components,
+                                              size_t batch_size) {
+    try {
+        // Serial fallback: process files one by one
+        components.clear();
+        size_t total = filePaths.size();
+        size_t completed = 0;
+        for (const auto& filePath : filePaths) {
+            ComponentInfo component;
+            component.filePath = filePath;
+            extractMetadata(component);
+            components.push_back(std::move(component));
+            ++completed;
+        }
+        return !components.empty();
+    } catch (const std::exception& e) {
+        heimdall::Utils::errorPrint("Batched metadata extraction failed: " + std::string(e.what()));
+        return false;
+    }
+}
+
+
 bool MetadataExtractor::Impl::detectFileFormat(const std::string& filePath) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
@@ -604,6 +623,38 @@ bool isMachO([[maybe_unused]] const std::string& filePath) {
 #else
     return false;
 #endif
+}
+
+bool isPE(const std::string& filePath) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
+        return false;
+    }
+
+    // Check for PE magic number (MZ)
+    char magic[2] = {0};  // Initialize to zero
+    file.read(magic, 2);
+    if (file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z') {
+        return true;
+    }
+
+    return false;
+}
+
+bool isArchive(const std::string& filePath) {
+    std::ifstream file;
+    if (!openFileSafely(filePath, file)) {
+        return false;
+    }
+
+    // Check for Unix archive magic number (!<arch>)
+    char magic[8] = {0};  // Initialize to zero
+    file.read(magic, 8);
+    if (file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0) {
+        return true;
+    }
+
+    return false;
 }
 
 bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols) {
@@ -1663,54 +1714,56 @@ bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& comp
 #ifdef HEIMDALL_DEBUG_ENABLED
     heimdall::Utils::debugPrint("MetadataHelpers: Starting extractDebugInfo for " + filePath);
 #endif
-    // Use the new robust DWARF extractor
-    heimdall::DWARFExtractor dwarfExtractor;
-    bool hasDebugInfo = false;
 
-    // Try to extract source files from debug info
+#if LLVM_DWARF_AVAILABLE
+    // Use the new robust DWARF extractor with optimized single-context extraction
+    heimdall::DWARFExtractor dwarfExtractor;
+    
+    // Extract all debug information using a single DWARF context
     std::vector<std::string> sourceFiles;
+    std::vector<std::string> compileUnits;
+    std::vector<std::string> functions;
+    
 #ifdef HEIMDALL_DEBUG_ENABLED
-    heimdall::Utils::debugPrint("MetadataHelpers: Calling extractSourceFiles");
+    heimdall::Utils::debugPrint("MetadataHelpers: Calling extractAllDebugInfo (optimized single-context extraction)");
 #endif
-    if (dwarfExtractor.extractSourceFiles(filePath, sourceFiles)) {
+    
+    if (dwarfExtractor.extractAllDebugInfo(filePath, sourceFiles, compileUnits, functions)) {
 #ifdef HEIMDALL_DEBUG_ENABLED
-        heimdall::Utils::debugPrint("MetadataHelpers: extractSourceFiles returned true, found " + std::to_string(sourceFiles.size()) + " source files");
+        heimdall::Utils::debugPrint("MetadataHelpers: extractAllDebugInfo returned true");
+        heimdall::Utils::debugPrint("MetadataHelpers: Found " + std::to_string(sourceFiles.size()) + " source files");
+        heimdall::Utils::debugPrint("MetadataHelpers: Found " + std::to_string(compileUnits.size()) + " compile units");
+        heimdall::Utils::debugPrint("MetadataHelpers: Found " + std::to_string(functions.size()) + " functions");
 #endif
+        
+        // Add source files to component
         for (const auto& sourceFile : sourceFiles) {
             component.addSourceFile(sourceFile);
         }
-        hasDebugInfo = true;
-    } else {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        heimdall::Utils::debugPrint("MetadataHelpers: extractSourceFiles returned false");
-#endif
-    }
-
-    // Try to extract compile units
-    std::vector<std::string> compileUnits;
-    if (dwarfExtractor.extractCompileUnits(filePath, compileUnits)) {
+        
+        // Add compile units to component
         for (const auto& unit : compileUnits) {
             component.compileUnits.push_back(unit);
         }
-        hasDebugInfo = true;
-    }
-
-    // Try to extract function names
-    std::vector<std::string> functions;
-    if (dwarfExtractor.extractFunctions(filePath, functions)) {
+        
+        // Add functions to component
         for (const auto& function : functions) {
             component.functions.push_back(function);
         }
-        hasDebugInfo = true;
-    }
-
-    if (hasDebugInfo) {
+        
         component.setContainsDebugInfo(true);
 #ifdef HEIMDALL_DEBUG_ENABLED
         heimdall::Utils::debugPrint("MetadataHelpers: Setting containsDebugInfo to true");
 #endif
         return true;
+    } else {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        heimdall::Utils::debugPrint("MetadataHelpers: extractAllDebugInfo returned false");
+#endif
     }
+#else
+    heimdall::Utils::debugPrint("MetadataHelpers: DWARF support not available, skipping debug info extraction");
+#endif
 
 #ifdef HEIMDALL_DEBUG_ENABLED
     heimdall::Utils::debugPrint("MetadataHelpers: No debug info found, returning false");
@@ -1719,15 +1772,25 @@ bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& comp
 }
 
 bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) {
+#if LLVM_DWARF_AVAILABLE
     // Use the new robust DWARF extractor
     heimdall::DWARFExtractor dwarfExtractor;
     return dwarfExtractor.extractSourceFiles(filePath, sourceFiles);
+#else
+    heimdall::Utils::debugPrint("MetadataHelpers: DWARF support not available, skipping source file extraction");
+    return false;
+#endif
 }
 
 bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& units) {
+#if LLVM_DWARF_AVAILABLE
     // Use the new robust DWARF extractor
     heimdall::DWARFExtractor dwarfExtractor;
     return dwarfExtractor.extractCompileUnits(filePath, units);
+#else
+    heimdall::Utils::debugPrint("MetadataHelpers: DWARF support not available, skipping compile unit extraction");
+    return false;
+#endif
 }
 
 std::string detectLicenseFromFile(const std::string& filePath) {

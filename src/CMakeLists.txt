@@ -13,17 +13,32 @@ find_package(OpenSSL REQUIRED)
 
 # Core library (shared)
 message(STATUS "LLVM_LIBRARIES: ${LLVM_LIBRARIES}")
-add_library(heimdall-core SHARED
+
+# Define source files
+set(HEIMDALL_CORE_SOURCES
     common/SBOMGenerator.cpp
     common/ComponentInfo.cpp
     common/MetadataExtractor.cpp
-    common/DWARFExtractor.cpp
+    common/LazySymbolExtractor.cpp
+    common/LightweightDWARFParser.cpp
     common/Utils.cpp
     common/PluginInterface.cpp
     common/SBOMValidator.cpp
     common/SBOMComparator.cpp
     common/Profiler.cpp
 )
+
+# Conditionally add DWARFExtractor.cpp
+if(HEIMDALL_FULL_DWARF)
+    list(APPEND HEIMDALL_CORE_SOURCES common/DWARFExtractor.cpp)
+elseif(HEIMDALL_BASIC_DWARF)
+    # For C++14, don't include DWARFExtractor.cpp (use lightweight parser instead)
+    if(NOT CMAKE_CXX_STANDARD EQUAL 14)
+        list(APPEND HEIMDALL_CORE_SOURCES common/DWARFExtractor.cpp)
+    endif()
+endif()
+
+add_library(heimdall-core SHARED ${HEIMDALL_CORE_SOURCES})
 
 set_target_properties(heimdall-core PROPERTIES
     CXX_STANDARD ${CMAKE_CXX_STANDARD}
@@ -51,6 +66,11 @@ target_compile_definitions(heimdall-core PRIVATE
     ${LLVM_DEFINITIONS}
 )
 
+# Add debug support if enabled
+if(ENABLE_DEBUG)
+    target_compile_definitions(heimdall-core PRIVATE HEIMDALL_DEBUG_ENABLED=1)
+endif()
+
 target_link_libraries(heimdall-core PRIVATE nlohmann_json_schema_validator)
 
 
@@ -58,7 +78,15 @@ target_link_libraries(heimdall-core PRIVATE nlohmann_json_schema_validator)
 if(HEIMDALL_FULL_DWARF)
     target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
 elseif(HEIMDALL_BASIC_DWARF)
-    target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
+    # For C++14, use lightweight parser instead of LLVM
+    if(CMAKE_CXX_STANDARD EQUAL 14)
+        target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=0)
+    else()
+        target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
+    endif()
+elseif(HEIMDALL_NO_DWARF)
+    # Explicitly disable DWARF support
+    target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=0)
 endif()
 
 # LLD Plugin (compatible with C++11+)
@@ -97,7 +125,15 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     if(HEIMDALL_FULL_DWARF)
         target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
     elseif(HEIMDALL_BASIC_DWARF)
-        target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+        # For C++14, use lightweight parser instead of LLVM
+        if(CMAKE_CXX_STANDARD EQUAL 14)
+            target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
+        else()
+            target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+        endif()
+    elseif(HEIMDALL_NO_DWARF)
+        # Explicitly disable DWARF support
+        target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
     endif()
 
     # Try to get LLD libraries from llvm-config if available
