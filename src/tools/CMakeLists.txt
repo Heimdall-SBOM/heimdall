@@ -5,8 +5,10 @@ find_package(OpenSSL REQUIRED)
 find_library(ELF_LIBRARY NAMES elf)
 find_package(LLVM REQUIRED CONFIG)
 
+
 # Build validation tools
 add_executable(debug_validator debug_validator.cpp)
+target_link_libraries(debug_validator PRIVATE nlohmann_json_schema_validator)
 target_link_libraries(debug_validator PRIVATE heimdall-core ${OPENSSL_LIBRARIES} ${ELF_LIBRARY})
 target_include_directories(debug_validator PRIVATE ${CMAKE_SOURCE_DIR}/src ${OPENSSL_INCLUDE_DIR})
 

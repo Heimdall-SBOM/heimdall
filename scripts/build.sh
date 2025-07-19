@@ -55,6 +55,7 @@ show_usage() {
     echo "  --sboms                 Generate SBOMs after building"
     echo "  --profiling             Enable performance profiling"
     echo "  --benchmarks            Enable performance benchmarks"
+    echo "  --examples              Build examples after main build"
     echo "  --all                   Build, test, and generate SBOMs"
     echo "  --help                  Show this help message"
     echo ""
@@ -62,6 +63,7 @@ show_usage() {
     echo "  $0 --standard 17 --compiler clang           # Build C++17 with Clang"
     echo "  $0 --standard 20 --compiler gcc --all       # Build C++20 with GCC, tests, and SBOMs"
     echo "  $0 --standard 17 --clean --tests            # Clean build C++17 with tests (default: gcc)"
+    echo "  $0 --standard 17 --examples                 # Build C++17 with examples"
     echo ""
     echo "Available standards: 11, 14, 17, 20, 23"
 }
@@ -76,6 +78,7 @@ SBOMS=false
 PROFILING=false
 BENCHMARKS=false
 ALL=false
+EXAMPLES=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -109,6 +112,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --benchmarks)
             BENCHMARKS=true
+            shift
+            ;;
+        --examples)
+            EXAMPLES=true
             shift
             ;;
         --all)
@@ -274,6 +281,40 @@ if [ "$SBOMS" = true ] || [ "$ALL" = true ]; then
     print_status "Generating SBOMs..."
     ../scripts/generate_build_sboms.sh .
     print_success "SBOM generation completed!"
+fi
+
+# Build examples if requested
+if [ "$EXAMPLES" = true ]; then
+    print_status "Building examples..."
+
+    # Save the absolute path to the build directory
+    BUILD_DIR_ABS="$(pwd)"
+
+    # Go back to project root to find standalone examples
+    cd ../..
+
+    # Find all example directories with CMakeLists.txt
+    for example_dir in examples/*/; do
+        if [ -d "$example_dir" ] && [ -f "${example_dir}CMakeLists.txt" ]; then
+            print_status "Building example: $example_dir"
+            cd "$example_dir"
+
+            # Create build directory
+            mkdir -p build
+            cd build
+
+            # Configure and build
+            cmake ..
+            make -j$JOBS
+
+            print_success "Built example: $example_dir"
+            cd ../..
+        fi
+    done
+
+    print_success "All examples built successfully!"
+    # Go back to original build directory
+    cd "$BUILD_DIR_ABS"
 fi
 
 cd ..

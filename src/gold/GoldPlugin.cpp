@@ -409,6 +409,14 @@ int heimdall_set_cyclonedx_version(const char* version) {
     return -1;
 }
 
+int heimdall_set_spdx_version(const char* version) {
+    if (globalAdapter && version) {
+        globalAdapter->setSPDXVersion(std::string(version));
+        return 0;
+    }
+    return -1;
+}
+
 // Plugin cleanup and finalization
 void heimdall_finalize() {
     if (globalAdapter) {
@@ -469,7 +477,9 @@ int heimdall_gold_set_plugin_option(const char* option) {
         return heimdall_set_cyclonedx_version(version.c_str());
     } else if (opt.find("--plugin-opt=spdx-version=") == 0) {
         std::string version = opt.substr(24); // Remove "--plugin-opt=spdx-version="
-        // Note: SPDX version setting not implemented in C interface yet
+        if (globalAdapter) {
+            globalAdapter->setSPDXVersion(version);
+        }
         return 0;
     }
 

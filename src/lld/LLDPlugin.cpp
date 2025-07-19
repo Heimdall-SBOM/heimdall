@@ -217,6 +217,14 @@ int heimdall_set_cyclonedx_version(const char* version) {
     return -1;
 }
 
+int heimdall_set_spdx_version(const char* version) {
+    if (globalAdapter && version) {
+        globalAdapter->setSPDXVersion(std::string(version));
+        return 0;
+    }
+    return -1;
+}
+
 // LLD plugin option handler
 int heimdall_lld_set_plugin_option(const char* option) {
     if (!option) {

@@ -243,18 +243,39 @@ bool ComponentInfo::hasSection(const std::string& sectionName) const {
  * @brief Get the file type as a string
  * @return String representation of the file type
  */
-std::string ComponentInfo::getFileTypeString() const {
-    switch (fileType) {
-        case FileType::Object:
-            return "Object";
-        case FileType::StaticLibrary:
-            return "StaticLibrary";
-        case FileType::SharedLibrary:
-            return "SharedLibrary";
-        case FileType::Executable:
-            return "Executable";
-        default:
-            return "Unknown";
+std::string ComponentInfo::getFileTypeString(const std::string& spdxVersion) const {
+    // For SPDX 2.3, SharedLibrary must be mapped to BINARY
+    if (spdxVersion == "2.3") {
+        switch (fileType) {
+            case FileType::Object:
+                return "SOURCE"; // or "OBJECT" if you want to be more specific, but SPDX 2.3 uses SOURCE
+            case FileType::StaticLibrary:
+                return "ARCHIVE";
+            case FileType::SharedLibrary:
+                return "BINARY";
+            case FileType::Executable:
+                return "APPLICATION";
+            case FileType::Source:
+                return "SOURCE";
+            default:
+                return "OTHER";
+        }
+    } else {
+        // Old behavior for other versions
+        switch (fileType) {
+            case FileType::Object:
+                return "Object";
+            case FileType::StaticLibrary:
+                return "StaticLibrary";
+            case FileType::SharedLibrary:
+                return "SharedLibrary";
+            case FileType::Executable:
+                return "Executable";
+            case FileType::Source:
+                return "Source";
+            default:
+                return "Unknown";
+        }
     }
 }
 

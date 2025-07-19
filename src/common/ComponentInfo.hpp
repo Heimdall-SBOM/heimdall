@@ -232,9 +232,10 @@ struct ComponentInfo {
 
     /**
      * @brief Get the file type as a string
+     * @param spdxVersion The SPDX version (optional, default empty)
      * @return String representation of the file type
      */
-    [[nodiscard]] std::string getFileTypeString() const;
+    [[nodiscard]] std::string getFileTypeString(const std::string& spdxVersion = "") const;
 
     /**
      * @brief Get the linker type as a string

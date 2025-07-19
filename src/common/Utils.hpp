@@ -85,6 +85,20 @@ uint64_t getFileSize(const std::string& filePath);
 std::string getFileChecksum(const std::string& filePath);
 
 /**
+ * @brief Calculate SHA1 checksum of a file
+ * @param filePath The path to the file
+ * @return The SHA1 hash as a hexadecimal string
+ */
+std::string getFileSHA1Checksum(const std::string& filePath);
+
+/**
+ * @brief Calculate SHA1 checksum of a string
+ * @param input The input string to hash
+ * @return The SHA1 hash as a hexadecimal string
+ */
+std::string getStringSHA1Checksum(const std::string& input);
+
+/**
  * @brief Check if a file is an object file (.o, .obj)
  * @param filePath The path to the file
  * @return true if the file is an object file

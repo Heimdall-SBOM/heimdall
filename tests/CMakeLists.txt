@@ -183,6 +183,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     include(GoogleTest)
     gtest_discover_tests(heimdall-tests)
 
+    target_link_libraries(heimdall-tests PRIVATE nlohmann_json_schema_validator)
+
     # Link stdc++fs for C++17 on Linux only
     if(CMAKE_CXX_STANDARD EQUAL 17 AND UNIX AND NOT APPLE)
         target_link_libraries(heimdall-tests PRIVATE stdc++fs)

@@ -51,6 +51,9 @@ target_compile_definitions(heimdall-core PRIVATE
     ${LLVM_DEFINITIONS}
 )
 
+target_link_libraries(heimdall-core PRIVATE nlohmann_json_schema_validator)
+
+
 # Add DWARF support definitions
 if(HEIMDALL_FULL_DWARF)
     target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)

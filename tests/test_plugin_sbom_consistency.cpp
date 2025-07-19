@@ -36,7 +36,9 @@ limitations under the License.
 #include <sstream>
 #include <string>
 #include <vector>
-#include "nlohmann_json.hpp"
+// #include "external/nlohmann_json.hpp"
+// #include "external/json-schema-validator.hpp"
+#include <nlohmann/json-schema.hpp>
 
 // Plugin function typedefs
 typedef int (*init_func_t)(void*);

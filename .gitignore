@@ -32,6 +32,7 @@ Makefile
 *.spdx
 *.cyclonedx.json
 *.json
+!schema/*.json
 *.log
 *.xml
 examples/*/build/

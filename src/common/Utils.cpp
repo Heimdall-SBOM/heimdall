@@ -262,6 +262,82 @@ std::string getFileChecksum(const std::string& filePath) {
     return ss.str();
 }
 
+std::string getFileSHA1Checksum(const std::string& filePath) {
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        return "";
+    }
+
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    if (!mdctx) {
+        return "";
+    }
+    const EVP_MD* md = EVP_sha1();
+    if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+
+    char buffer[4096];
+    while (file.read(buffer, sizeof(buffer))) {
+        if (EVP_DigestUpdate(mdctx, buffer, file.gcount()) != 1) {
+            EVP_MD_CTX_free(mdctx);
+            return "";
+        }
+    }
+    if (file.gcount() > 0) {
+        if (EVP_DigestUpdate(mdctx, buffer, file.gcount()) != 1) {
+            EVP_MD_CTX_free(mdctx);
+            return "";
+        }
+    }
+
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int hash_len = 0;
+    if (EVP_DigestFinal_ex(mdctx, hash, &hash_len) != 1) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+    EVP_MD_CTX_free(mdctx);
+
+    std::stringstream ss;
+    for (unsigned int i = 0; i < hash_len; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+    }
+    return ss.str();
+}
+
+std::string getStringSHA1Checksum(const std::string& input) {
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    if (!mdctx) {
+        return "";
+    }
+    const EVP_MD* md = EVP_sha1();
+    if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+
+    if (EVP_DigestUpdate(mdctx, input.c_str(), input.length()) != 1) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int hash_len = 0;
+    if (EVP_DigestFinal_ex(mdctx, hash, &hash_len) != 1) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+    EVP_MD_CTX_free(mdctx);
+
+    std::stringstream ss;
+    for (unsigned int i = 0; i < hash_len; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+    }
+    return ss.str();
+}
+
 /**
  * @brief Convert a string to lowercase
  * @param str The string to convert

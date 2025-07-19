@@ -178,6 +178,14 @@ int main(int argc, char* argv[]) {
     for (int i = 3; i < argc; i++) {
         if (strcmp(argv[i], "--format") == 0 && i + 1 < argc) {
             format = argv[++i];
+            // Extract version from format string for SPDX
+            if (strncmp(format, "spdx-", 5) == 0) {
+                spdx_version = format + 5; // Skip "spdx-" prefix
+            }
+            // Extract version from format string for CycloneDX
+            if (strncmp(format, "cyclonedx-", 10) == 0) {
+                cyclonedx_version = format + 10; // Skip "cyclonedx-" prefix
+            }
         } else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) {
             output_path = argv[++i];
         } else if (strcmp(argv[i], "--cyclonedx-version") == 0 && i + 1 < argc) {

@@ -7,6 +7,10 @@
 #include <filesystem>
 #include "Utils.hpp"
 #include "../compat/compatibility.hpp"
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json-schema.hpp>
+#include <iostream>
 
 namespace heimdall {
 
@@ -45,12 +49,118 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
         // SPDX 2.3 tag-value format
         return validateSPDX2_3(content);
     } else if (content.find("\"spdxVersion\"") != std::string::npos) {
-        // SPDX 3.0 JSON format
+        // SPDX 3.0 classic JSON format
         return validateSPDX3_0(content);
-    } else {
-        result.addError("Cannot determine SPDX format");
+    } else if (content.find("@context") != std::string::npos && content.find("@graph") != std::string::npos) {
+        // SPDX 3.0 JSON-LD format
+        try {
+            auto sbom = nlohmann::json::parse(content);
+            std::string schema_path;
+            if (sbom.contains("@context")) {
+                std::string context = sbom["@context"];
+                if (context == "https://spdx.org/rdf/3.0.1/spdx-context.jsonld") {
+                    schema_path = "./schema/spdx-bom-3.0.1.schema.json";
+                } else if (context == "https://spdx.org/rdf/3.0.0/spdx-context.jsonld") {
+                    schema_path = "./schema/spdx-bom-3.0.0.schema.json";
+                } else {
+                    std::cerr << "[WARN] Unknown SPDX @context: '" << context << "', defaulting to 3.0.0 schema.\n";
+                    schema_path = "./schema/spdx-bom-3.0.0.schema.json";
+                }
+            } else {
+                std::cerr << "[WARN] No @context found in SPDX JSON-LD, defaulting to 3.0.0 schema.\n";
+                schema_path = "./schema/spdx-bom-3.0.0.schema.json";
+            }
+            std::cerr << "[DEBUG] SPDX JSON-LD: schema_path=" << schema_path << std::endl;
+            if (sbom.contains("@context")) {
+                std::cerr << "[DEBUG] SPDX JSON-LD: sbom['@context']='" << sbom["@context"] << "'" << std::endl;
+            } else {
+                std::cerr << "[DEBUG] SPDX JSON-LD: sbom['@context'] not found" << std::endl;
+            }
+            std::cerr << "[DEBUG] SPDX JSON-LD: first 100 chars of content: '" << content.substr(0, 100) << "'" << std::endl;
+            // Debug: print first object in @graph and its keys
+            if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
+                const auto& doc = sbom["@graph"][0];
+                std::cerr << "[DEBUG] First @graph object: " << doc.dump(2) << std::endl;
+                std::cerr << "[DEBUG] Keys in first @graph object:";
+                for (auto it = doc.begin(); it != doc.end(); ++it) {
+                    std::cerr << " " << it.key();
+                }
+                std::cerr << std::endl;
+            }
+            // --- END DEBUG PRINTS ---
+            std::ifstream schema_file(schema_path);
+            if (!schema_file.is_open()) {
+                result.addError("Could not open SPDX schema file: " + schema_path);
+                return result;
+            }
+            nlohmann::json schema;
+            schema_file >> schema;
+            nlohmann::json_schema::json_validator validator;
+            validator.set_root_schema(schema);
+            try {
+                validator.validate(sbom);
+                result.isValid = true;
+            } catch (const std::exception& e) {
+                result.isValid = false;
+                result.errors.push_back(std::string("SPDX 3.x schema validation failed: ") + e.what());
+            }
+            // Extract SPDX version from @graph (schema-compliant style)
+            std::string version = "3.0.x";
+            if (sbom.contains("@graph") && sbom["@graph"].is_array()) {
+                for (const auto& obj : sbom["@graph"]) {
+                    if (obj.contains("type") && obj["type"].is_string() &&
+                        obj["type"] == "SpdxDocument") {
+                        if (obj.contains("specVersion")) {
+                            version = obj["specVersion"].get<std::string>();
+                        }
+                        break;
+                    }
+                }
+            }
+            // Set format based on version
+            std::string format = "SPDX 3.0";
+            if (version == "SPDX-3.0.1") format = "SPDX 3.0.1";
+            else if (version == "SPDX-3.0") format = "SPDX 3.0";
+            result.addMetadata("format", format);
+            result.addMetadata("version", version);
+        } catch (const std::exception& e) {
+            result.addError(std::string("SPDX 3.x JSON-LD parse error: ") + e.what());
+        }
         return result;
+    } else {
+        // Try classic SPDX 3.0.1 JSON (no @context, no @graph)
+        try {
+            auto sbom = nlohmann::json::parse(content);
+            if (sbom.contains("spdxId") && sbom.contains("type") && sbom["type"] == "SpdxDocument" && sbom.contains("specVersion")) {
+                std::string schema_path = "./schema/spdx-bom-3.0.1.schema.json";
+                std::cerr << "[DEBUG] SPDX classic 3.0.1: schema_path=" << schema_path << std::endl;
+                std::cerr << "[DEBUG] SPDX classic 3.0.1: first 100 chars of content: '" << content.substr(0, 100) << "'" << std::endl;
+                std::string version = sbom["specVersion"].get<std::string>();
+                std::string format = (version == "SPDX-3.0.1") ? "SPDX 3.0.1" : "SPDX 3.0";
+                result.addMetadata("format", format);
+                result.addMetadata("version", version);
+                std::ifstream schema_file(schema_path);
+                nlohmann::json schema_json;
+                schema_file >> schema_json;
+                nlohmann::json_schema::json_validator validator;
+                validator.set_root_schema(schema_json);
+                try {
+                    validator.validate(sbom);
+                    result.isValid = true;
+                } catch (const std::exception& e) {
+                    result.isValid = false;
+                    result.errors.push_back(std::string("SPDX 3.x schema validation failed: ") + e.what());
+                }
+                return result;
+            }
+        } catch (const std::exception& e) {
+            result.isValid = false;
+            result.errors.push_back(std::string("SPDX 3.x parse failed: ") + e.what());
+            return result;
+        }
     }
+    result.addError("Cannot determine SPDX format");
+    return result;
 }
 
 ValidationResult SPDXValidator::validateContent(const std::string& content, const std::string& version) {
@@ -139,27 +249,36 @@ ValidationResult SPDXValidator::validateSPDX2_3(const std::string& content) {
 
 ValidationResult SPDXValidator::validateSPDX3_0(const std::string& content) {
     ValidationResult result;
-    // Basic SPDX 3.0 JSON validation
-    if (content.find("\"spdxVersion\"") == std::string::npos) {
-        result.addError("Missing spdxVersion field");
+    try {
+        nlohmann::json sbom = nlohmann::json::parse(content);
+        std::string version = "3.0";
+        if (sbom.contains("spdxVersion")) {
+            std::string v = sbom["spdxVersion"].get<std::string>();
+            if (v == "SPDX-3.0.1") version = "3.0.1";
+            else if (v == "SPDX-3.0.0" || v == "SPDX-3.0") version = "3.0.0";
+        }
+        std::string schema_path = "./schema/spdx-bom-3.0.0.schema.json";
+        if (version == "3.0.1") schema_path = "./schema/spdx-bom-3.0.1.schema.json";
+        std::ifstream schema_file(schema_path);
+        if (!schema_file.is_open()) {
+            result.addError("Could not open SPDX schema file: " + schema_path);
+            return result;
+        }
+        nlohmann::json schema;
+        schema_file >> schema;
+        nlohmann::json_schema::json_validator validator;
+        validator.set_root_schema(schema);
+        try {
+            validator.validate(sbom);
+        } catch (const std::exception& e) {
+            result.addError(std::string("SPDX 3.x schema validation failed: ") + e.what());
+            return result;
+        }
+        result.addMetadata("format", "SPDX 3.0");
+        result.addMetadata("version", version);
+    } catch (const std::exception& e) {
+        result.addError(std::string("SPDX 3.x JSON parse error: ") + e.what());
     }
-    if (content.find("\"dataLicense\"") == std::string::npos) {
-        result.addError("Missing dataLicense field");
-    }
-    if (content.find("\"SPDXID\"") == std::string::npos) {
-        result.addError("Missing SPDXID field");
-    }
-    if (content.find("\"name\"") == std::string::npos) {
-        result.addError("Missing name field");
-    }
-    if (content.find("\"documentNamespace\"") == std::string::npos) {
-        result.addError("Missing documentNamespace field");
-    }
-    if (content.find("\"creationInfo\"") == std::string::npos) {
-        result.addError("Missing creationInfo field");
-    }
-    result.addMetadata("format", "SPDX 3.0");
-    result.addMetadata("version", "3.0");
     return result;
 }
 

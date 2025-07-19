@@ -22,6 +22,7 @@ typedef int (*set_format_func_t)(const char*);
 typedef int (*set_output_path_func_t)(const char*);
 typedef int (*process_input_file_func_t)(const char*);
 typedef void (*finalize_func_t)(void);
+typedef int (*set_spdx_version_func_t)(const char*);
 
 int main() {
     void* handle = dlopen("../../build/heimdall-lld.so", RTLD_LAZY);
@@ -35,8 +36,9 @@ int main() {
     set_output_path_func_t set_output_path = (set_output_path_func_t)dlsym(handle, "heimdall_set_output_path");
     process_input_file_func_t process_input_file = (process_input_file_func_t)dlsym(handle, "heimdall_process_input_file");
     finalize_func_t finalize = (finalize_func_t)dlsym(handle, "heimdall_finalize");
+    set_spdx_version_func_t set_spdx_version = (set_spdx_version_func_t)dlsym(handle, "heimdall_set_spdx_version");
     
-    if (!onload || !set_format || !set_output_path || !process_input_file || !finalize) {
+    if (!onload || !set_format || !set_output_path || !process_input_file || !finalize || !set_spdx_version) {
         fprintf(stderr, "Failed to get function symbols: %s\n", dlerror());
         dlclose(handle);
         return 1;
@@ -51,6 +53,12 @@ int main() {
     
     if (set_format("spdx") != 0) {
         fprintf(stderr, "Failed to set output format\n");
+        dlclose(handle);
+        return 1;
+    }
+    // Set SPDX version to 3.0 (or change as needed)
+    if (set_spdx_version("3.0") != 0) {
+        fprintf(stderr, "Failed to set SPDX version\n");
         dlclose(handle);
         return 1;
     }

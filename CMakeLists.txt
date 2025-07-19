@@ -178,16 +178,42 @@ if(ENABLE_BENCHMARKS)
     add_definitions(-DENABLE_BENCHMARKS=1)
 endif()
 
+# Ensure json-schema-validator public header is in the expected include path
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp
+        ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
+    DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp
+    COMMENT "Copying json-schema.hpp to include directory"
+)
+
+add_custom_target(copy_json_schema_header ALL
+    DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
+)
+
 # Include directories
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(include)
+include_directories(${CMAKE_SOURCE_DIR}/external/json/include)
+include_directories(${CMAKE_SOURCE_DIR}/external/json-schema-validator/include)
 include_directories(src)
+# Add external directory for shared headers
+include_directories(${CMAKE_SOURCE_DIR}/external)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Add for external json validation library
+add_subdirectory(external/json)
+add_subdirectory(external/json-schema-validator)
 
 # Add src directory
 add_subdirectory(src)
 
 # Add examples directory (for test binary)
 add_subdirectory(examples)
+
 
 # Add tests if enabled
 if(BUILD_TESTS)
