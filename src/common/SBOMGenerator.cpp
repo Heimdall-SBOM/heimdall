@@ -172,6 +172,7 @@ public:
      * @return The debug properties as a string
      */
     std::string generateDebugProperties(const ComponentInfo& component);
+    std::string generateAllProperties(const ComponentInfo& component);
 
     /**
      * @brief Generate evidence field for CycloneDX 1.6+ component
@@ -518,13 +519,30 @@ std::string SBOMGenerator::Impl::generateSPDX2_3_Document() {
         ss << "LicenseConcluded: " << generateSPDXLicenseId(component.license) << "\n";
         ss << "LicenseInfoInFile: " << generateSPDXLicenseId(component.license) << "\n";
         ss << "FileCopyrightText: NOASSERTION\n";
+        // Build enhanced comment with source files and Ada properties
+        std::stringstream comment;
         if (!component.sourceFiles.empty()) {
-            ss << "FileComment: Source files: ";
+            comment << "Source files: ";
             for (size_t i = 0; i < component.sourceFiles.size(); ++i) {
-                ss << component.sourceFiles[i];
-                if (i + 1 < component.sourceFiles.size()) ss << ", ";
+                comment << component.sourceFiles[i];
+                if (i + 1 < component.sourceFiles.size()) comment << ", ";
             }
-            ss << "\n";
+        }
+        
+        // Add enhanced Ada properties to comment
+        if (!component.properties.empty()) {
+            if (!comment.str().empty()) comment << "; ";
+            comment << "Enhanced metadata: ";
+            bool first = true;
+            for (const auto& [key, value] : component.properties) {
+                if (!first) comment << ", ";
+                comment << key << "=" << value;
+                first = false;
+            }
+        }
+        
+        if (!comment.str().empty()) {
+            ss << "FileComment: " << comment.str() << "\n";
         } else {
             ss << "FileComment: " << component.getFileTypeString("2.3") << " file\n";
         }
@@ -828,9 +846,9 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "        }\n";
     ss << "      ]";
     
-    // Add debug properties if available
-    if (component.containsDebugInfo) {
-        ss << ",\n" << generateDebugProperties(component);
+    // Add all component properties (including enhanced Ada metadata)
+    if (!component.properties.empty() || component.containsDebugInfo) {
+        ss << ",\n" << generateAllProperties(component);
     }
     
     // Add evidence field for CycloneDX 1.6+
@@ -989,6 +1007,46 @@ std::string SBOMGenerator::Impl::generateDebugProperties(const ComponentInfo& co
     ss << "          \"value\": \"" << (component.isSystemLibrary ? "true" : "false") << "\"\n";
     ss << "        }\n";
     ss << "      ]";
+    return ss.str();
+}
+
+std::string SBOMGenerator::Impl::generateAllProperties(const ComponentInfo& component) {
+    std::stringstream ss;
+    ss << "      \"properties\": [\n";
+    
+    // Add enhanced Ada properties first
+    bool firstProperty = true;
+    for (const auto& [key, value] : component.properties) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": " << Utils::formatJsonValue(key) << ",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(value) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    // Add debug properties if available
+    if (component.containsDebugInfo) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"debug_info\",\n";
+        ss << "          \"value\": \"" << (component.containsDebugInfo ? "true" : "false") << "\"\n";
+        ss << "        },\n";
+        ss << "        {\n";
+        ss << "          \"name\": \"stripped\",\n";
+        ss << "          \"value\": \"" << (component.isStripped ? "true" : "false") << "\"\n";
+        ss << "        },\n";
+        ss << "        {\n";
+        ss << "          \"name\": \"system_library\",\n";
+        ss << "          \"value\": \"" << (component.isSystemLibrary ? "true" : "false") << "\"\n";
+        ss << "        }";
+    }
+    
+    ss << "\n      ]";
     return ss.str();
 }
 

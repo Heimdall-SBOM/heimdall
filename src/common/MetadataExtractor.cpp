@@ -44,6 +44,7 @@ limitations under the License.
  * @see DWARFExtractor.hpp
  */
 #include "MetadataExtractor.hpp"
+#include "AdaExtractor.hpp"
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
@@ -225,6 +226,29 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
                 extractVcpkgMetadata(component);
             } else if (packageManager == "system") {
                 extractSystemMetadata(component);
+            }
+        }
+
+        // Try Ada metadata extraction (always attempt, regardless of other package managers)
+        std::filesystem::path filePath(component.filePath);
+        std::vector<std::string> aliFiles;
+        
+        // Try multiple search paths for ALI files
+        std::vector<std::string> searchPaths = {
+            filePath.parent_path().string(),
+            filePath.parent_path().parent_path().string(),
+            std::filesystem::current_path().string()
+        };
+        
+        for (const auto& searchPath : searchPaths) {
+            if (findAdaAliFiles(searchPath, aliFiles)) {
+                if (extractAdaMetadata(component, aliFiles)) {
+                    if (!packageManagerDetected) {
+                        packageManagerDetected = true;
+                    }
+                    heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " + searchPath);
+                    break;
+                }
             }
         }
 
@@ -495,6 +519,36 @@ void MetadataExtractor::setExtractDebugInfo(bool extract) {
 
 void MetadataExtractor::setSuppressWarnings(bool suppress) {
     pImpl->suppressWarnings = suppress;
+}
+
+bool MetadataExtractor::extractAdaMetadata(ComponentInfo& component,
+                                          const std::vector<std::string>& aliFiles) {
+    AdaExtractor adaExtractor;
+    adaExtractor.setVerbose(pImpl->verbose);
+    adaExtractor.setExtractEnhancedMetadata(true);  // Enable enhanced metadata extraction
+    return adaExtractor.extractAdaMetadata(component, aliFiles);
+}
+
+bool MetadataExtractor::isAdaAliFile(const std::string& filePath) {
+    return filePath.length() > 4 && 
+           filePath.substr(filePath.length() - 4) == ".ali";
+}
+
+bool MetadataExtractor::findAdaAliFiles(const std::string& directory, 
+                                       std::vector<std::string>& aliFiles) {
+    try {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
+            if (entry.is_regular_file() && isAdaAliFile(entry.path().string())) {
+                aliFiles.push_back(entry.path().string());
+            }
+        }
+        return true;
+    } catch (const std::exception& e) {
+        if (pImpl->verbose) {
+            std::cerr << "Error searching for ALI files: " << e.what() << std::endl;
+        }
+        return false;
+    }
 }
 
 bool MetadataExtractor::extractMetadataBatched(const std::vector<std::string>& filePaths,
@@ -2165,6 +2219,33 @@ bool detectSpackMetadata(heimdall::ComponentInfo& component) {
     }
 
     return false;
+}
+
+bool isAdaAliFile(const std::string& filePath) {
+    return filePath.length() > 4 && 
+           filePath.substr(filePath.length() - 4) == ".ali";
+}
+
+bool findAdaAliFiles(const std::string& directory, 
+                    std::vector<std::string>& aliFiles) {
+    try {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
+            if (entry.is_regular_file() && isAdaAliFile(entry.path().string())) {
+                aliFiles.push_back(entry.path().string());
+            }
+        }
+        return true;
+    } catch (const std::exception& e) {
+        std::cerr << "Error searching for ALI files: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool extractAdaMetadata(const std::vector<std::string>& aliFiles, 
+                       heimdall::ComponentInfo& component) {
+    heimdall::AdaExtractor adaExtractor;
+    adaExtractor.setExtractEnhancedMetadata(true);  // Enable enhanced metadata extraction
+    return adaExtractor.extractAdaMetadata(component, aliFiles);
 }
 
 std::vector<std::string> detectDependencies(const std::string& filePath) {

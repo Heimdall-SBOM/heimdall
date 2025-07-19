@@ -1,0 +1,22 @@
+V "GNAT Lib v11"
+P ZX
+
+RN
+
+U math_lib%b		math_lib.adb		454172bf NE OO PK
+
+U math_lib%s		math_lib.ads		bba0fc27 EE NE OO PK
+
+D math_lib.ads		20250719161451 bba0fc27 math_lib%s
+D math_lib.adb		20250719161454 fee18e98 math_lib%b
+D system.ads		20240719072205 a2da961d system%s
+G a e
+G c Z s b [factorial math_lib 2 13 none]
+X 1 math_lib.ads
+1K9*Math_Lib 3l5 3e13 2|1b14 10l5 10t13
+2V13*Factorial{integer} 2>24 2|2b13 9l8 9t17
+2i24 N{integer} 2|2b24 5r21
+X 2 math_lib.adb
+3i7 Result{integer} 6m10 6r20 8r14
+5i11 I{integer} 6r29
+

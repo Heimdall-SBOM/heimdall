@@ -1,0 +1,41 @@
+V "GNAT Lib v11"
+P SS ZX
+
+RN
+RV NO_SECONDARY_STACK
+RV NO_DYNAMIC_SIZED_OBJECTS
+
+U string_utils%b	string_utils.adb	1904be8b NE OO PK
+W ada%s			ada.ads			ada.ali
+W ada.characters%s	a-charac.ads		a-charac.ali
+W ada.characters.handling%s  a-chahan.adb	a-chahan.ali
+Z system.secondary_stack%s  s-secsta.adb	s-secsta.ali
+
+U string_utils%s	string_utils.ads	ab23535f EE NE OO PK
+
+D ada.ads		20240719072205 76789da1 ada%s
+D a-charac.ads		20240719072205 2d3ec45b ada.characters%s
+D a-chahan.ads		20240719072205 0ce1b450 ada.characters.handling%s
+D string_utils.ads	20250719161501 ab23535f string_utils%s
+D string_utils.adb	20250719161505 bec65984 string_utils%b
+D system.ads		20240719072205 a2da961d system%s
+D s-parame.ads		20240719072205 4752c4cb system.parameters%s
+D s-secsta.ads		20240719072205 9b3ab94b system.secondary_stack%s
+D s-stoele.ads		20240719072205 2dc34a04 system.storage_elements%s
+G a e
+G c Z s b [to_upper string_utils 2 13 none]
+X 1 ada.ads
+16K9*Ada 20e8 5|1r6 8r24
+X 2 a-charac.ads
+16K13*Characters 18e19 5|1r10 8r28
+X 3 a-chahan.ads
+36K24*Handling 160e28 5|1w21 8r39
+68V13*To_Upper{character} 5|8s48
+X 4 string_utils.ads
+1K9*String_Utils 3l5 3e17 5|3b14 12l5 12t17
+2V13*To_Upper{string} 2>23 5|4b13 11l8 11t16
+2a23 S{string} 5|4b23 5r24 7r16 8r58
+X 5 string_utils.adb
+5a7 Result{string} 8m10 10r14
+7i11 I{integer} 8r18 8r61
+

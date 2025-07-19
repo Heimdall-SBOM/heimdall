@@ -19,6 +19,7 @@ set(HEIMDALL_CORE_SOURCES
     common/SBOMGenerator.cpp
     common/ComponentInfo.cpp
     common/MetadataExtractor.cpp
+    common/AdaExtractor.cpp
     common/LazySymbolExtractor.cpp
     common/LightweightDWARFParser.cpp
     common/Utils.cpp

@@ -198,6 +198,31 @@ public:
                                std::vector<ComponentInfo>& components,
                                size_t batch_size = 0);
 
+    /**
+     * @brief Extract Ada metadata from ALI files
+     * @param component The component to extract metadata from
+     * @param aliFiles Vector of ALI file paths to parse
+     * @return true if extraction was successful
+     */
+    bool extractAdaMetadata(ComponentInfo& component, 
+                          const std::vector<std::string>& aliFiles);
+
+    /**
+     * @brief Check if a file is an Ada ALI file
+     * @param filePath Path to the file
+     * @return true if the file is an ALI file
+     */
+    bool isAdaAliFile(const std::string& filePath);
+
+    /**
+     * @brief Find ALI files in a directory
+     * @param directory Directory to search
+     * @param aliFiles Output vector of ALI file paths
+     * @return true if search was successful
+     */
+    bool findAdaAliFiles(const std::string& directory, 
+                        std::vector<std::string>& aliFiles);
+
 private:
     class Impl;
     std::unique_ptr<Impl> pImpl;
@@ -490,6 +515,31 @@ bool detectVcpkgMetadata(ComponentInfo& component);
  * @return true if Spack metadata was detected
  */
 bool detectSpackMetadata(ComponentInfo& component);
+
+/**
+ * @brief Check if a file is an Ada ALI file
+ * @param filePath Path to the file
+ * @return true if the file is an ALI file
+ */
+bool isAdaAliFile(const std::string& filePath);
+
+/**
+ * @brief Find ALI files in a directory
+ * @param directory Directory to search
+ * @param aliFiles Output vector of ALI file paths
+ * @return true if search was successful
+ */
+bool findAdaAliFiles(const std::string& directory, 
+                    std::vector<std::string>& aliFiles);
+
+/**
+ * @brief Extract Ada metadata from ALI files
+ * @param aliFiles Vector of ALI file paths
+ * @param component The component to store metadata in
+ * @return true if extraction was successful
+ */
+bool extractAdaMetadata(const std::vector<std::string>& aliFiles, 
+                       ComponentInfo& component);
 
 }  // namespace MetadataHelpers
 

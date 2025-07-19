@@ -195,6 +195,25 @@ void ComponentInfo::setDetectedBy(LinkerType linker) {
 }
 
 /**
+ * @brief Add a property to the component
+ * @param key The property key
+ * @param value The property value
+ */
+void ComponentInfo::addProperty(const std::string& key, const std::string& value) {
+    properties[key] = value;
+}
+
+/**
+ * @brief Get a property value
+ * @param key The property key
+ * @return The property value, or empty string if not found
+ */
+std::string ComponentInfo::getProperty(const std::string& key) const {
+    auto it = properties.find(key);
+    return (it != properties.end()) ? it->second : "";
+}
+
+/**
  * @brief Mark the component as a system library
  */
 void ComponentInfo::markAsSystemLibrary() {

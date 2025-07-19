@@ -1,0 +1,66 @@
+V "GNAT Lib v11"
+P SS ZX
+
+RN
+RV NO_EXCEPTION_HANDLERS
+RV NO_EXCEPTIONS
+RV NO_IO
+RV NO_SECONDARY_STACK
+RV NO_DEFAULT_INITIALIZATION
+RV NO_DYNAMIC_SIZED_OBJECTS
+
+U data_reader%b		data_reader.adb		24759053 NE OO PK
+W ada%s			ada.ads			ada.ali
+W ada.text_io%s		a-textio.adb		a-textio.ali
+Z system.concat_2%s	s-conca2.adb		s-conca2.ali
+Z system.secondary_stack%s  s-secsta.adb	s-secsta.ali
+
+U data_reader%s		data_reader.ads		b2efb2f5 EE NE OO PK
+
+D ada.ads		20240719072205 76789da1 ada%s
+D a-except.ads		20240719072205 449c9b65 ada.exceptions%s
+D a-ioexce.ads		20240719072205 e4a01f64 ada.io_exceptions%s
+D a-stream.ads		20240719072205 119b8fb3 ada.streams%s
+D a-tags.ads		20240719072205 9eaa38c6 ada.tags%s
+D a-textio.ads		20240719072205 aef4d56d ada.text_io%s
+D a-unccon.ads		20240719072205 0e9b276f ada.unchecked_conversion%s
+D data_reader.ads	20250719161512 b2efb2f5 data_reader%s
+D data_reader.adb	20250719161516 386ef7cb data_reader%b
+D interfac.ads		20240719072205 edec285f interfaces%s
+D i-cstrea.ads		20240719072205 e53d8b8e interfaces.c_streams%s
+D system.ads		20240719072205 a2da961d system%s
+D s-conca2.ads		20240719072205 02a0d7d0 system.concat_2%s
+D s-crtl.ads		20240719072205 0ebbdb71 system.crtl%s
+D s-exctab.ads		20240719072205 54135002 system.exception_table%s
+D s-ficobl.ads		20240719072205 078245e4 system.file_control_block%s
+D s-parame.ads		20240719072205 4752c4cb system.parameters%s
+D s-secsta.ads		20240719072205 9b3ab94b system.secondary_stack%s
+D s-soflin.ads		20240719072205 a7318a92 system.soft_links%s
+D s-stache.ads		20240719072205 a37c21ec system.stack_checking%s
+D s-stalib.ads		20240719072205 0f2d51ff system.standard_library%s
+D s-stoele.ads		20240719072205 2dc34a04 system.storage_elements%s
+D s-stoele.adb		20240719072205 ed88f8fb system.storage_elements%b
+D s-traent.ads		20240719072205 26a8d361 system.traceback_entries%s
+D s-wchcon.ads		20240719072205 1b7d22d2 system.wch_con%s
+G a e
+G c Z s b [read_data_file data_reader 2 13 none]
+X 1 ada.ads
+16K9*Ada 20e8 9|1r6 1r23
+X 6 a-textio.ads
+58K13*Text_IO 728e16 9|1w10 1r27
+65P9*File_Type 9|5r14
+67n23*In_File{67E9} 9|10r19
+115U14*Open 9|10s7
+130U14*Close 9|15s7
+313V13*End_Of_File{boolean} 9|11s17
+472U14*Get_Line 9|12s10
+X 8 data_reader.ads
+1K9*Data_Reader 3l5 3e16 9|3b14 21l5 21t16
+2V13*Read_Data_File{string} 2>29 9|4b13 20l8 20t22
+2a29 File_Name{string} 9|4b29 10r28
+X 9 data_reader.adb
+5p7 File{6|65P9} 10m13 10r13 11r30 12r20 15m14 15r14
+6a7 Line{string} 12m26 13r29
+7i7 Last{natural} 12m32 13r40
+8a7 Result{string} 13m10 13r20 16r14
+

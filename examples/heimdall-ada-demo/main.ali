@@ -1,0 +1,75 @@
+V "GNAT Lib v11"
+M P W=b
+P SS ZX
+
+RN
+RV NO_IO
+RV NO_SECONDARY_STACK
+RV NO_STANDARD_STORAGE_POOLS
+RV NO_DYNAMIC_SIZED_OBJECTS
+
+U main%b		main.adb		fca68f6f NE OO SU
+W ada%s			ada.ads			ada.ali
+Z ada.tags%s		a-tags.adb		a-tags.ali
+W ada.text_io%s		a-textio.adb		a-textio.ali
+W data_reader%s		data_reader.adb		data_reader.ali
+W math_lib%s		math_lib.adb		math_lib.ali
+W string_utils%s	string_utils.adb	string_utils.ali
+Z system.concat_2%s	s-conca2.adb		s-conca2.ali
+Z system.img_int%s	s-imgint.ads		s-imgint.ali
+Z system.secondary_stack%s  s-secsta.adb	s-secsta.ali
+
+D ada.ads		20240719072205 76789da1 ada%s
+D a-except.ads		20240719072205 449c9b65 ada.exceptions%s
+D a-ioexce.ads		20240719072205 e4a01f64 ada.io_exceptions%s
+D a-stream.ads		20240719072205 119b8fb3 ada.streams%s
+D a-tags.ads		20240719072205 9eaa38c6 ada.tags%s
+D a-textio.ads		20240719072205 aef4d56d ada.text_io%s
+D a-unccon.ads		20240719072205 0e9b276f ada.unchecked_conversion%s
+D data_reader.ads	20250719161512 b2efb2f5 data_reader%s
+D interfac.ads		20240719072205 edec285f interfaces%s
+D i-cstrea.ads		20240719072205 e53d8b8e interfaces.c_streams%s
+D main.adb		20250719161443 f03e478f main%b
+D math_lib.ads		20250719161451 bba0fc27 math_lib%s
+D string_utils.ads	20250719161501 ab23535f string_utils%s
+D system.ads		20240719072205 a2da961d system%s
+D s-conca2.ads		20240719072205 02a0d7d0 system.concat_2%s
+D s-crtl.ads		20240719072205 0ebbdb71 system.crtl%s
+D s-exctab.ads		20240719072205 54135002 system.exception_table%s
+D s-ficobl.ads		20240719072205 078245e4 system.file_control_block%s
+D s-imagei.ads		20240719072205 0d3f86a7 system.image_i%s
+D s-imgint.ads		20240719072205 bdb6f5ec system.img_int%s
+D s-parame.ads		20240719072205 4752c4cb system.parameters%s
+D s-secsta.ads		20240719072205 9b3ab94b system.secondary_stack%s
+D s-soflin.ads		20240719072205 a7318a92 system.soft_links%s
+D s-stache.ads		20240719072205 a37c21ec system.stack_checking%s
+D s-stalib.ads		20240719072205 0f2d51ff system.standard_library%s
+D s-stoele.ads		20240719072205 2dc34a04 system.storage_elements%s
+D s-stoele.adb		20240719072205 ed88f8fb system.storage_elements%b
+D s-traent.ads		20240719072205 26a8d361 system.traceback_entries%s
+D s-wchcon.ads		20240719072205 1b7d22d2 system.wch_con%s
+G a e
+G c Z b b [main standard 6 11 none]
+G r c none [main standard 6 11 none] [read_data_file data_reader 2 13 none]
+G r c none [main standard 6 11 none] [factorial math_lib 2 13 none]
+G r c none [main standard 6 11 none] [to_upper string_utils 2 13 none]
+X 1 ada.ads
+16K9*Ada 20e8 11|1r6 1r23
+X 6 a-textio.ads
+58K13*Text_IO 728e16 11|1w10 1r27
+509U14*Put_Line 11|11s4 12s4 13s4 14s4
+X 8 data_reader.ads
+1K9*Data_Reader 3e16 11|4w6 7r21
+2V13*Read_Data_File{string} 11|7s33
+X 11 main.adb
+6U11*Main 6b11 15l5 15t9
+7a4 Data{string} 14r39
+8i4 Result{integer} 12r61
+9a4 Upper{string} 13r55
+X 12 math_lib.ads
+1K9*Math_Lib 11|2w6 8r24 12|3e13
+2V13*Factorial{integer} 11|8s33
+X 13 string_utils.ads
+1K9*String_Utils 11|3w6 9r22 13|3e17
+2V13*To_Upper{string} 11|9s35
+
