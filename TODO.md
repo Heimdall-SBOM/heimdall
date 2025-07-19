@@ -504,10 +504,7 @@ This document tracks all missing implementation tasks and planned features for t
 - [ ] **Parallel Processing (Non-DWARF)**
   ```cpp
   // src/common/ParallelProcessor.hpp
-  class ParallelProcessor {
-      void processFilesParallel(const std::vector<std::string>& files);
-      void processComponentsParallel(std::vector<ComponentInfo>& components);
-  };
+  // ParallelProcessor: Old implementation removed. Clean reimplementation planned per https://github.com/Heimdall-SBOM/heimdall/issues/38
   ```
   - [ ] Implement parallel file processing (excluding DWARF operations)
   - [ ] Thread pool for metadata extraction

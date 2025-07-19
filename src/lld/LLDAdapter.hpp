@@ -178,6 +178,12 @@ public:
      */
     void printStatistics() const;
 
+    /**
+     * @brief Process multiple files in parallel
+     * @param filePaths Vector of file paths to process
+     */
+    void processFilesParallel(const std::vector<std::string>& filePaths);
+
 private:
     /**
      * @brief Implementation class for LLD adapter

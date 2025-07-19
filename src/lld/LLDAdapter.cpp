@@ -25,6 +25,7 @@ limitations under the License.
 #include "../common/SBOMGenerator.hpp"
 #include "../common/Utils.hpp"
 #include "../compat/compatibility.hpp"
+#include "../common/ParallelProcessor.hpp"
 
 namespace heimdall {
 
@@ -51,6 +52,7 @@ public:
     const std::vector<std::string>& getProcessedFiles() const { return processedFiles; }
     const std::vector<std::string>& getProcessedLibraries() const { return processedLibraries; }
     bool isInitialized() const { return initialized; }
+    void processFilesParallel(const std::vector<std::string>& filePaths); // Add this line
 
 private:
     std::vector<std::string> processedFiles;
@@ -154,6 +156,23 @@ void LLDAdapter::Impl::processLibrary(const std::string& libraryPath) {
     
     // Add to SBOM generator
     sbomGenerator->processComponent(component);
+}
+
+void LLDAdapter::Impl::processFilesParallel(const std::vector<std::string>& filePaths) {
+    // DWARF/LLVM debug info extraction is disabled for parallel runs (thread-safety).
+    auto processFile = [this](const std::string& filePath) -> ComponentInfo {
+        ComponentInfo component(Utils::getFileName(filePath), filePath);
+        component.setDetectedBy(LinkerType::LLD);
+        MetadataExtractor extractor;
+        extractor.setSuppressWarnings(false); // Use default for now
+        extractor.setExtractDebugInfo(false); // Disable DWARF for parallel
+        extractor.extractMetadata(component);
+        return component;
+    };
+    auto results = ParallelProcessor::process(filePaths, processFile);
+    for (auto& component : results) {
+        sbomGenerator->processComponent(component);
+    }
 }
 
 void LLDAdapter::Impl::finalize() {

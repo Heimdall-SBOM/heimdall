@@ -24,6 +24,7 @@ limitations under the License.
 #include "../common/SBOMGenerator.hpp"
 #include "../common/Utils.hpp"
 #include "../compat/compatibility.hpp"
+#include "../common/ParallelProcessor.hpp"
 
 namespace heimdall {
 
@@ -81,6 +82,23 @@ void GoldAdapter::Impl::processSymbol(const std::string& symbolName, uint64_t ad
                                       uint64_t /*size*/) {
     if (verbose)
         std::cout << "[GoldAdapter] Processed symbol: " << symbolName << " at " << address << '\n';
+}
+
+void GoldAdapter::Impl::processFilesParallel(const std::vector<std::string>& filePaths) {
+    // DWARF/LLVM debug info extraction is disabled for parallel runs (thread-safety).
+    auto processFile = [this](const std::string& filePath) -> ComponentInfo {
+        ComponentInfo component(Utils::getFileName(filePath), filePath);
+        component.setDetectedBy(LinkerType::Gold);
+        MetadataExtractor extractor;
+        extractor.setSuppressWarnings(suppressWarnings);
+        extractor.setExtractDebugInfo(false); // Disable DWARF for parallel
+        extractor.extractMetadata(component);
+        return component;
+    };
+    auto results = ParallelProcessor::process(filePaths, processFile);
+    for (auto& component : results) {
+        sbomGenerator->processComponent(component);
+    }
 }
 
 void GoldAdapter::Impl::setOutputPath(const std::string& path) {
@@ -152,6 +170,9 @@ void GoldAdapter::processLibrary(const std::string& libraryPath) {
 }
 void GoldAdapter::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) {
     pImpl->processSymbol(symbolName, address, size);
+}
+void GoldAdapter::processFilesParallel(const std::vector<std::string>& filePaths) {
+    pImpl->processFilesParallel(filePaths);
 }
 void GoldAdapter::setOutputPath(const std::string& path) {
     pImpl->setOutputPath(path);

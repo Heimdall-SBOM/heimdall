@@ -185,6 +185,12 @@ public:
      */
     [[nodiscard]] std::string extractComponentName(const std::string& filePath) const;
 
+    /**
+     * @brief Process multiple files in parallel
+     * @param filePaths Vector of file paths to process
+     */
+    void processFilesParallel(const std::vector<std::string>& filePaths);
+
 private:
     class Impl {
     public:
@@ -206,6 +212,7 @@ private:
         void setSuppressWarnings(bool suppress);
         [[nodiscard]] size_t getComponentCount() const;
         void printStatistics() const;
+        void processFilesParallel(const std::vector<std::string>& filePaths);
 
         // Getter methods for accessing private members
         const std::vector<std::string>& getProcessedFiles() const { return processedFiles; }
