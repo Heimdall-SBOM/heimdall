@@ -534,7 +534,13 @@ std::string SBOMGenerator::Impl::generateSPDX2_3_Document() {
             if (!comment.str().empty()) comment << "; ";
             comment << "Enhanced metadata: ";
             bool first = true;
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
             for (const auto& [key, value] : component.properties) {
+#else
+            for (const auto& property : component.properties) {
+                const auto& key = property.first;
+                const auto& value = property.second;
+#endif
                 if (!first) comment << ", ";
                 comment << key << "=" << value;
                 first = false;
@@ -1016,7 +1022,13 @@ std::string SBOMGenerator::Impl::generateAllProperties(const ComponentInfo& comp
     
     // Add enhanced Ada properties first
     bool firstProperty = true;
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
     for (const auto& [key, value] : component.properties) {
+#else
+    for (const auto& property : component.properties) {
+        const auto& key = property.first;
+        const auto& value = property.second;
+#endif
         if (!firstProperty) {
             ss << ",\n";
         }

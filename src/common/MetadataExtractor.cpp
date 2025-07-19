@@ -47,13 +47,17 @@ limitations under the License.
 #include "AdaExtractor.hpp"
 #include <algorithm>
 #include <cstring>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <cstdio>
+#include <cstdlib>
 #include "ComponentInfo.hpp"
 #include "Utils.hpp"
 #include "../compat/compatibility.hpp"
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+#include <filesystem>
+#endif
 
 #if LLVM_DWARF_AVAILABLE
 #include "DWARFExtractor.hpp"
@@ -230,15 +234,37 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
         }
 
         // Try Ada metadata extraction (always attempt, regardless of other package managers)
-        std::filesystem::path filePath(component.filePath);
         std::vector<std::string> aliFiles;
         
         // Try multiple search paths for ALI files
-        std::vector<std::string> searchPaths = {
+        std::vector<std::string> searchPaths;
+        
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+        // Use std::filesystem for C++17+
+        std::filesystem::path filePath(component.filePath);
+        searchPaths = {
             filePath.parent_path().string(),
             filePath.parent_path().parent_path().string(),
             std::filesystem::current_path().string()
         };
+#else
+        // Manual path parsing for C++11 compatibility
+        std::string filePath = component.filePath;
+        size_t lastSlash = filePath.find_last_of("/\\");
+        if (lastSlash != std::string::npos) {
+            std::string dirPath = filePath.substr(0, lastSlash);
+            searchPaths.push_back(dirPath);
+            
+            // Parent directory
+            size_t parentSlash = dirPath.find_last_of("/\\");
+            if (parentSlash != std::string::npos) {
+                searchPaths.push_back(dirPath.substr(0, parentSlash));
+            }
+        }
+        
+        // Current directory
+        searchPaths.push_back(".");
+#endif
         
         for (const auto& searchPath : searchPaths) {
             if (findAdaAliFiles(searchPath, aliFiles)) {
@@ -537,11 +563,35 @@ bool MetadataExtractor::isAdaAliFile(const std::string& filePath) {
 bool MetadataExtractor::findAdaAliFiles(const std::string& directory, 
                                        std::vector<std::string>& aliFiles) {
     try {
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+        // Use std::filesystem for C++17+
         for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
             if (entry.is_regular_file() && isAdaAliFile(entry.path().string())) {
                 aliFiles.push_back(entry.path().string());
             }
         }
+#else
+        // Simple directory scanning for C++11 compatibility
+        std::string command = "find " + directory + " -name \"*.ali\" -type f 2>/dev/null";
+        FILE* pipe = popen(command.c_str(), "r");
+        if (!pipe) {
+            return false;
+        }
+        
+        char buffer[1024];
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            std::string line(buffer);
+            // Remove newline
+            if (!line.empty() && line[line.length()-1] == '\n') {
+                line.erase(line.length()-1);
+            }
+            if (!line.empty() && isAdaAliFile(line)) {
+                aliFiles.push_back(line);
+            }
+        }
+        
+        pclose(pipe);
+#endif
         return true;
     } catch (const std::exception& e) {
         if (pImpl->verbose) {
@@ -2229,11 +2279,27 @@ bool isAdaAliFile(const std::string& filePath) {
 bool findAdaAliFiles(const std::string& directory, 
                     std::vector<std::string>& aliFiles) {
     try {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
-            if (entry.is_regular_file() && isAdaAliFile(entry.path().string())) {
-                aliFiles.push_back(entry.path().string());
+        // Simple directory scanning for C++11 compatibility
+        // This is a basic implementation - in production, you'd want a more robust solution
+        std::string command = "find " + directory + " -name \"*.ali\" -type f 2>/dev/null";
+        FILE* pipe = popen(command.c_str(), "r");
+        if (!pipe) {
+            return false;
+        }
+        
+        char buffer[1024];
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            std::string line(buffer);
+            // Remove newline
+            if (!line.empty() && line[line.length()-1] == '\n') {
+                line.erase(line.length()-1);
+            }
+            if (!line.empty()) {
+                aliFiles.push_back(line);
             }
         }
+        
+        pclose(pipe);
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error searching for ALI files: " << e.what() << std::endl;

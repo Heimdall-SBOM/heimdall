@@ -29,7 +29,11 @@ limitations under the License.
 #include <algorithm>
 #include <regex>
 #include <set>
+#include <cstdio>
+#include <cstdlib>
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
 #include <filesystem>
+#endif
 
 namespace heimdall {
 
@@ -220,7 +224,13 @@ bool AdaExtractor::extractAdaMetadata(ComponentInfo& component,
         // Add build timestamps
         if (!allTimestamps.empty()) {
             std::string timestampsStr;
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
             for (const auto& [file, timestamp] : allTimestamps) {
+#else
+            for (const auto& timestampEntry : allTimestamps) {
+                const auto& file = timestampEntry.first;
+                const auto& timestamp = timestampEntry.second;
+#endif
                 if (!timestampsStr.empty()) timestampsStr += ", ";
                 timestampsStr += file + ": " + timestamp;
             }
@@ -230,7 +240,13 @@ bool AdaExtractor::extractAdaMetadata(ComponentInfo& component,
         // Add build checksums
         if (!allChecksums.empty()) {
             std::string checksumsStr;
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
             for (const auto& [file, checksum] : allChecksums) {
+#else
+            for (const auto& checksumEntry : allChecksums) {
+                const auto& file = checksumEntry.first;
+                const auto& checksum = checksumEntry.second;
+#endif
                 if (!checksumsStr.empty()) checksumsStr += ", ";
                 checksumsStr += file + ": " + checksum;
             }
@@ -389,11 +405,35 @@ bool AdaExtractor::isAliFile(const std::string& filePath) {
 bool AdaExtractor::findAliFiles(const std::string& directory, 
                                std::vector<std::string>& aliFiles) {
     try {
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+        // Use std::filesystem for C++17+
         for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
             if (entry.is_regular_file() && isAliFile(entry.path().string())) {
                 aliFiles.push_back(entry.path().string());
             }
         }
+#else
+        // Simple directory scanning for C++11 compatibility
+        std::string command = "find " + directory + " -name \"*.ali\" -type f 2>/dev/null";
+        FILE* pipe = popen(command.c_str(), "r");
+        if (!pipe) {
+            return false;
+        }
+        
+        char buffer[1024];
+        while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+            std::string line(buffer);
+            // Remove newline
+            if (!line.empty() && line[line.length()-1] == '\n') {
+                line.erase(line.length()-1);
+            }
+            if (!line.empty() && isAliFile(line)) {
+                aliFiles.push_back(line);
+            }
+        }
+        
+        pclose(pipe);
+#endif
         return true;
     } catch (const std::exception& e) {
         if (verbose) {
@@ -723,8 +763,16 @@ bool AdaExtractor::isRuntimePackage(const std::string& packageName) {
 }
 
 std::string AdaExtractor::extractPackageName(const std::string& aliFilePath) {
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+    // Use std::filesystem for C++17+
     std::filesystem::path path(aliFilePath);
     std::string filename = path.filename().string();
+#else
+    // Extract filename manually for C++11 compatibility
+    size_t lastSlash = aliFilePath.find_last_of("/\\");
+    std::string filename = (lastSlash != std::string::npos) ? 
+                          aliFilePath.substr(lastSlash + 1) : aliFilePath;
+#endif
     
     // Remove .ali extension
     if (filename.length() > 4 && filename.substr(filename.length() - 4) == ".ali") {
@@ -735,8 +783,16 @@ std::string AdaExtractor::extractPackageName(const std::string& aliFilePath) {
 }
 
 std::string AdaExtractor::extractSourceFilePath(const std::string& aliFilePath) {
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+    // Use std::filesystem for C++17+
     std::filesystem::path path(aliFilePath);
     std::string filename = path.filename().string();
+#else
+    // Extract filename manually for C++11 compatibility
+    size_t lastSlash = aliFilePath.find_last_of("/\\");
+    std::string filename = (lastSlash != std::string::npos) ? 
+                          aliFilePath.substr(lastSlash + 1) : aliFilePath;
+#endif
     
     // Remove .ali extension and construct source file name
     if (filename.length() > 4 && filename.substr(filename.length() - 4) == ".ali") {
