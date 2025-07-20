@@ -533,6 +533,18 @@ bool findAdaAliFiles(const std::string& directory,
                     std::vector<std::string>& aliFiles);
 
 /**
+ * @brief Thread-safe test mode control
+ * @param enabled Whether to enable test mode
+ */
+void setTestMode(bool enabled);
+
+/**
+ * @brief Check if test mode is enabled
+ * @return true if test mode is enabled
+ */
+bool isTestMode();
+
+/**
  * @brief Extract Ada metadata from ALI files
  * @param aliFiles Vector of ALI file paths
  * @param component The component to store metadata in

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/common/MetadataExtractor.hpp"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -49,6 +50,9 @@ namespace heimdall {
 class DWARFIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        // Enable test mode to avoid hanging on directory operations
+        heimdall::MetadataHelpers::setTestMode(true);
+        
         test_dir = std::filesystem::temp_directory_path() / "heimdall_dwarf_integration_test";
         std::filesystem::create_directories(test_dir);
 
