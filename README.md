@@ -102,7 +102,8 @@ Heimdall supports multiple C++ standards with automatic compiler and LLVM versio
 We provide an automated setup script that detects your Linux distribution and installs all necessary dependencies:
 
 ```bash
-git clone https://github.com/your-org/heimdall.git
+git clone --recurse-submodules https://github.com/your-org/heimdall.git
+
 cd heimdall
 
 # Run the automated setup script
