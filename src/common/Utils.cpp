@@ -641,6 +641,16 @@ void debugPrint(const std::string& message) {
 }
 
 /**
+ * @brief Print an informational message (only if HEIMDALL_DEBUG_ENABLED is defined)
+ * @param message The message to print
+ */
+void infoPrint(const std::string& message) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+    std::cerr << "[INFO] " << message << std::endl;
+#endif
+}
+
+/**
  * @brief Print an error message
  * @param message The error message to print
  */

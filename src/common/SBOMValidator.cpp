@@ -63,29 +63,29 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
                 } else if (context == "https://spdx.org/rdf/3.0.0/spdx-context.jsonld") {
                     schema_path = "./schema/spdx-bom-3.0.0.schema.json";
                 } else {
-                    std::cerr << "[WARN] Unknown SPDX @context: '" << context << "', defaulting to 3.0.0 schema.\n";
+                    heimdall::Utils::warningPrint("Unknown SPDX @context: '" + context + "', defaulting to 3.0.0 schema.\n");
                     schema_path = "./schema/spdx-bom-3.0.0.schema.json";
                 }
             } else {
-                std::cerr << "[WARN] No @context found in SPDX JSON-LD, defaulting to 3.0.0 schema.\n";
+                heimdall::Utils::warningPrint("No @context found in SPDX JSON-LD, defaulting to 3.0.0 schema.\n");
                 schema_path = "./schema/spdx-bom-3.0.0.schema.json";
             }
-            std::cerr << "[DEBUG] SPDX JSON-LD: schema_path=" << schema_path << std::endl;
+            heimdall::Utils::debugPrint("SPDX JSON-LD: schema_path=" + schema_path + "\n");
             if (sbom.contains("@context")) {
-                std::cerr << "[DEBUG] SPDX JSON-LD: sbom['@context']='" << sbom["@context"] << "'" << std::endl;
+                heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context']='" + std::string(sbom["@context"]) + "\n");
             } else {
-                std::cerr << "[DEBUG] SPDX JSON-LD: sbom['@context'] not found" << std::endl;
+                heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context'] not found\n");
             }
-            std::cerr << "[DEBUG] SPDX JSON-LD: first 100 chars of content: '" << content.substr(0, 100) << "'" << std::endl;
+            heimdall::Utils::debugPrint("SPDX JSON-LD: first 100 chars of content: '" + std::string(content.substr(0, 100)) + "'\n");
             // Debug: print first object in @graph and its keys
             if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
                 const auto& doc = sbom["@graph"][0];
-                std::cerr << "[DEBUG] First @graph object: " << doc.dump(2) << std::endl;
-                std::cerr << "[DEBUG] Keys in first @graph object:";
+                heimdall::Utils::debugPrint("First @graph object: " + doc.dump(2) + "\n");
+                heimdall::Utils::debugPrint("Keys in first @graph object:");
                 for (auto it = doc.begin(); it != doc.end(); ++it) {
-                    std::cerr << " " << it.key();
+                    heimdall::Utils::debugPrint(" " + it.key() + "\n" );
                 }
-                std::cerr << std::endl;
+                 heimdall::Utils::debugPrint( "\n" );
             }
             // --- END DEBUG PRINTS ---
             std::ifstream schema_file(schema_path);
@@ -133,8 +133,8 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
             auto sbom = nlohmann::json::parse(content);
             if (sbom.contains("spdxId") && sbom.contains("type") && sbom["type"] == "SpdxDocument" && sbom.contains("specVersion")) {
                 std::string schema_path = "./schema/spdx-bom-3.0.1.schema.json";
-                std::cerr << "[DEBUG] SPDX classic 3.0.1: schema_path=" << schema_path << std::endl;
-                std::cerr << "[DEBUG] SPDX classic 3.0.1: first 100 chars of content: '" << content.substr(0, 100) << "'" << std::endl;
+                heimdall::Utils::debugPrint("SPDX classic 3.0.1: schema_path=" + schema_path + "\n");
+                heimdall::Utils::debugPrint("SPDX classic 3.0.1: first 100 chars of content: '" + content.substr(0, 100) + "'\n" );
                 std::string version = sbom["specVersion"].get<std::string>();
                 std::string format = (version == "SPDX-3.0.1") ? "SPDX 3.0.1" : "SPDX 3.0";
                 result.addMetadata("format", format);
@@ -285,15 +285,15 @@ ValidationResult SPDXValidator::validateSPDX3_0(const std::string& content) {
             // If we get here, validation passed
             result.addMetadata("format", "SPDX 3.0");
             result.addMetadata("version", version);
-            std::cerr << "[DEBUG] SPDX 3.0 validation passed, setting metadata: format=SPDX 3.0, version=" << version << std::endl;
+            heimdall::Utils::debugPrint("SPDX 3.0 validation passed, setting metadata: format=SPDX 3.0, version=" + version + "\n");
         } catch (const std::exception& e) {
             result.addError(std::string("SPDX 3.x schema validation failed: ") + e.what());
-            std::cerr << "[DEBUG] SPDX 3.0 validation failed: " << e.what() << std::endl;
+            heimdall::Utils::errorPrint("SPDX 3.0 validation failed: " + std::string(e.what()) + "\n");
             return result;
         }
     } catch (const std::exception& e) {
         result.addError(std::string("SPDX 3.x JSON parse error: ") + e.what());
-        std::cerr << "[DEBUG] SPDX 3.0 JSON parse error: " << e.what() << std::endl;
+        heimdall::Utils::errorPrint("SPDX 3.0 JSON parse error: " + std::string(e.what()) + "\n");
     }
     return result;
 }
