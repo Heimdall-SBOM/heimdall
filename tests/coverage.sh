@@ -1,23 +1,9 @@
-# Copyright 2025 The Heimdall Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 #!/bin/bash
 
-# Heimdall Test Coverage Script
-# This script generates code coverage reports for the Heimdall project
+# Heimdall Coverage Script
+# This script builds the project with coverage enabled, runs tests, and generates coverage reports
 
-set -e
+set -e  # Exit on any error
 
 # Colors for output
 RED='\033[0;31m'
@@ -27,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Function to print colored output
-print_info() {
+print_status() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
@@ -45,179 +31,230 @@ print_error() {
 
 # Check if we're in the right directory
 if [ ! -f "CMakeLists.txt" ]; then
-    print_error "This script must be run from the project root directory"
+    print_error "CMakeLists.txt not found. Please run this script from the project root."
     exit 1
 fi
 
-# Check if build directory exists
-if [ ! -d "build" ]; then
-    print_error "Build directory not found. Please run './build.sh' first"
-    exit 1
-fi
+# Check for required tools
+check_requirements() {
+    print_status "Checking requirements..."
+    
+    if ! command -v cmake &> /dev/null; then
+        print_error "cmake not found. Please install CMake."
+        exit 1
+    fi
+    
+    if ! command -v gcov &> /dev/null; then
+        print_error "gcov not found. Please install GCC with coverage support."
+        exit 1
+    fi
+    
+    if ! command -v lcov &> /dev/null; then
+        print_warning "lcov not found. Installing lcov..."
+        if command -v yum &> /dev/null; then
+            sudo yum install -y lcov
+        elif command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y lcov
+        else
+            print_error "Could not install lcov automatically. Please install it manually."
+            exit 1
+        fi
+    fi
+    
+    print_success "All requirements satisfied"
+}
 
-cd build
+# Clean previous build artifacts
+clean_build() {
+    print_status "Cleaning previous build artifacts..."
+    
+    if [ -d "build" ]; then
+        rm -rf build
+        print_success "Removed build directory"
+    fi
+    
+    # Clean any existing coverage files
+    find . -name "*.gcda" -delete 2>/dev/null || true
+    find . -name "*.gcno" -delete 2>/dev/null || true
+    find . -name "*.gcov" -delete 2>/dev/null || true
+    
+    print_success "Clean completed"
+}
 
-# Check if coverage was enabled
-if [ ! -f "CMakeCache.txt" ] || ! grep -q "ENABLE_COVERAGE:BOOL=ON" CMakeCache.txt; then
-    print_warning "Coverage not enabled. Reconfiguring with coverage enabled..."
-    cmake -DENABLE_COVERAGE=ON ..
-fi
-
-# Build with coverage
-print_info "Building with coverage enabled..."
-cmake --build . -- -j$(nproc)
+# Configure and build with coverage
+build_with_coverage() {
+    print_status "Configuring and building with coverage enabled..."
+    
+    # Create build directory
+    mkdir -p build
+    cd build
+    
+    # Configure with coverage enabled
+    cmake .. \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DENABLE_COVERAGE=ON \
+        -DBUILD_TESTS=ON \
+        -DENABLE_DEBUG=ON
+    
+    if [ $? -ne 0 ]; then
+        print_error "CMake configuration failed"
+        exit 1
+    fi
+    
+    # Build the project
+    make -j$(nproc)
+    
+    if [ $? -ne 0 ]; then
+        print_error "Build failed"
+        exit 1
+    fi
+    
+    cd ..
+    print_success "Build completed successfully"
+}
 
 # Run tests
-print_info "Running tests to generate coverage data..."
-ctest --output-on-failure
-
-# Create coverage directory
-COVERAGE_DIR="coverage"
-mkdir -p "$COVERAGE_DIR"
-
-# Find all .gcda files
-print_info "Finding coverage data files..."
-GCDA_FILES=$(find . -name "*.gcda" 2>/dev/null || true)
-
-if [ -z "$GCDA_FILES" ]; then
-    print_error "No coverage data files found. Make sure tests were run successfully."
-    exit 1
-fi
-
-print_info "Found coverage data files:"
-echo "$GCDA_FILES"
-
-# Generate coverage reports
-print_info "Generating coverage reports..."
-
-# Generate gcov reports for all source files
-for gcda_file in $GCDA_FILES; do
-    gcov_file="${gcda_file%.gcda}.gcov"
-    print_info "Processing $gcda_file..."
+run_tests() {
+    print_status "Running tests..."
     
-    # Try different gcov approaches
-    if gcov -r -b -s "$(pwd)/.." "$gcda_file" > /dev/null 2>&1; then
-        print_info "Generated coverage for $gcda_file"
-    elif gcov -r -b "$gcda_file" > /dev/null 2>&1; then
-        print_info "Generated coverage for $gcda_file (without source path)"
+    cd build
+    
+    # Run the test executable
+    if [ -f "tests/heimdall-tests" ]; then
+        ./tests/heimdall-tests
+        TEST_EXIT_CODE=$?
     else
-        print_warning "Failed to generate coverage for $gcda_file"
+        print_error "Test executable not found"
+        exit 1
     fi
-done
-
-# Move all .gcov files to coverage directory
-find . -name "*.gcov" -exec mv {} "$COVERAGE_DIR/" \; 2>/dev/null || true
-
-# Alternative coverage generation for main source files
-print_info "Generating coverage for main source files..."
-MAIN_SOURCES=(
-    "CMakeFiles/heimdall-core.dir/src/common/SBOMGenerator.cpp"
-    "CMakeFiles/heimdall-core.dir/src/common/ComponentInfo.cpp"
-    "CMakeFiles/heimdall-core.dir/src/common/MetadataExtractor.cpp"
-    "CMakeFiles/heimdall-core.dir/src/common/Utils.cpp"
-    "CMakeFiles/heimdall-core.dir/src/common/DWARFExtractor.cpp"
-    "CMakeFiles/heimdall-core.dir/src/common/PluginInterface.cpp"
-)
-
-for source in "${MAIN_SOURCES[@]}"; do
-    if [ -f "${source}.gcno" ]; then
-        print_info "Processing $source..."
-        gcov -r -b -s "$(pwd)/.." "${source}.gcno" > /dev/null 2>&1 || true
+    
+    cd ..
+    
+    if [ $TEST_EXIT_CODE -eq 0 ]; then
+        print_success "Tests completed successfully"
+    else
+        print_warning "Some tests failed (exit code: $TEST_EXIT_CODE)"
     fi
-done
+}
 
-# Move any additional .gcov files
-find . -name "*.gcov" -exec mv {} "$COVERAGE_DIR/" \; 2>/dev/null || true
+# Generate coverage data
+generate_coverage() {
+    print_status "Generating coverage data..."
+    
+    cd build
+    
+    # Create coverage directory
+    mkdir -p coverage
+    
+    # Use lcov to capture coverage data
+    if command -v lcov &> /dev/null; then
+        print_status "Using lcov for coverage generation..."
+        
+        # Capture coverage data
+        lcov --capture --directory . --output-file coverage/coverage.info
+        
+        if [ $? -eq 0 ]; then
+            # Remove system headers and external files
+            lcov --remove coverage/coverage.info \
+                '/usr/*' \
+                '*/external/*' \
+                '*/tests/*' \
+                '*/testdata/*' \
+                --output-file coverage/coverage_filtered.info
+            
+            # Generate HTML report
+            genhtml coverage/coverage_filtered.info --output-directory coverage/html
+            
+            # Generate text summary
+            lcov --summary coverage/coverage_filtered.info > coverage/coverage_summary.txt
+            
+            print_success "Coverage report generated in build/coverage/"
+        else
+            print_warning "lcov failed, falling back to gcov..."
+            generate_gcov_coverage
+        fi
+    else
+        print_warning "lcov not available, using gcov directly..."
+        generate_gcov_coverage
+    fi
+    
+    cd ..
+}
 
-# Generate summary report
-print_info "Generating coverage summary..."
-{
-    echo "Heimdall Code Coverage Report"
-    echo "============================="
-    echo "Generated: $(date)"
-    echo ""
-    echo "Coverage Summary:"
-    echo "================="
+# Fallback coverage generation using gcov directly
+generate_gcov_coverage() {
+    print_status "Generating coverage using gcov..."
     
-    # Process each .gcov file and extract coverage information
-    total_lines=0
-    covered_lines=0
-    
-    for gcov_file in "$COVERAGE_DIR"/*.gcov; do
-        if [ -f "$gcov_file" ]; then
-            filename=$(basename "$gcov_file" .gcov)
-            echo ""
-            echo "File: $filename"
-            echo "----------------------------------------"
+    # Find all .gcda files
+    find . -name "*.gcda" | while read gcda_file; do
+        dir=$(dirname "$gcda_file")
+        base=$(basename "$gcda_file" .gcda)
+        
+        # Find corresponding .gcno file
+        gcno_file="$dir/$base.gcno"
+        if [ -f "$gcno_file" ]; then
+            print_status "Processing $gcda_file..."
             
-            # Count lines and coverage
-            file_lines=0
-            file_covered=0
-            
-            while IFS= read -r line; do
-                if [[ $line =~ ^[[:space:]]*([0-9]+):[[:space:]]*([0-9]+): ]]; then
-                    count="${BASH_REMATCH[1]}"
-                    line_num="${BASH_REMATCH[2]}"
-                    
-                    if [ "$count" != "#####" ] && [ "$count" -gt 0 ]; then
-                        ((file_covered++))
-                    fi
-                    ((file_lines++))
-                fi
-            done < "$gcov_file"
-            
-            if [ $file_lines -gt 0 ]; then
-                coverage_percent=$((file_covered * 100 / file_lines))
-                echo "Lines: $file_lines, Covered: $file_covered, Coverage: ${coverage_percent}%"
-                ((total_lines += file_lines))
-                ((covered_lines += file_covered))
-            fi
+            # Change to the directory and run gcov
+            (cd "$dir" && gcov -o . "$base.gcda")
         fi
     done
     
-    echo ""
-    echo "Overall Coverage:"
-    echo "================="
-    if [ $total_lines -gt 0 ]; then
-        overall_coverage=$((covered_lines * 100 / total_lines))
-        echo "Total Lines: $total_lines"
-        echo "Covered Lines: $covered_lines"
-        echo "Overall Coverage: ${overall_coverage}%"
-    else
-        echo "No coverage data available"
+    # Move all .gcov files to coverage directory
+    find . -name "*.gcov" -exec mv {} coverage/ \; 2>/dev/null || true
+    
+    print_success "Gcov coverage files generated in build/coverage/"
+}
+
+# Display coverage summary
+update_coverage_badge() {
+    # Extract the line coverage percentage from the summary
+    if [ -f "build/coverage/coverage_summary.txt" ]; then
+        percent=$(grep -Po 'lines\.+: \K[0-9]+\.[0-9]+' build/coverage/coverage_summary.txt | head -1)
+        if [ -n "$percent" ]; then
+            badge="[![Coverage](https://img.shields.io/badge/coverage-${percent}%25-yellow.svg)](build/coverage/html/index.html)"
+            # Replace the badge line in README.md
+            sed -i -E "s|\[!\[Coverage\]\(https://img.shields.io/badge/coverage-[0-9]+\.[0-9]+%25-[a-z]+.svg\)\]\(build/coverage/html/index.html\)|$badge|g" README.md
+        fi
+    fi
+}
+
+# Display coverage summary
+display_summary() {
+    print_status "Coverage Summary:"
+    
+    if [ -f "build/coverage/coverage_summary.txt" ]; then
+        echo "=== LCOV Coverage Summary ==="
+        cat build/coverage/coverage_summary.txt
+        echo ""
+        echo "HTML report available at: build/coverage/html/index.html"
     fi
     
-} > "$COVERAGE_DIR/coverage_summary.txt"
-
-# Display summary
-print_success "Coverage report generated in $COVERAGE_DIR/"
-echo ""
-echo "Coverage Summary:"
-cat "$COVERAGE_DIR/coverage_summary.txt"
-
-# Try to generate HTML report if lcov is available
-if command -v lcov >/dev/null 2>&1 && command -v genhtml >/dev/null 2>&1; then
-    print_info "Generating HTML coverage report..."
+    if [ -d "build/coverage" ]; then
+        echo "=== GCOV Files Generated ==="
+        ls -la build/coverage/*.gcov 2>/dev/null || echo "No .gcov files found"
+    fi
     
-    # Create lcov info file
-    lcov --capture --directory . --output-file "$COVERAGE_DIR/coverage.info" --quiet
-    
-    # Generate HTML report
-    genhtml "$COVERAGE_DIR/coverage.info" --output-directory "$COVERAGE_DIR/html" --quiet
-    
-    print_success "HTML coverage report generated in $COVERAGE_DIR/html/"
-    print_info "Open $COVERAGE_DIR/html/index.html in your browser to view the report"
-else
-    print_warning "lcov/genhtml not found. HTML report not generated."
-    print_info "Install lcov to generate HTML coverage reports:"
-    print_info "  Ubuntu/Debian: sudo apt-get install lcov"
-    print_info "  CentOS/RHEL: sudo yum install lcov"
-    print_info "  macOS: brew install lcov"
-fi
+    # Show source files that should have coverage
+    echo ""
+    echo "=== Project Source Files ==="
+    find src -name "*.cpp" -o -name "*.cxx" -o -name "*.cc" | sort
+}
 
-print_success "Coverage analysis complete!"
-print_info "Files generated:"
-print_info "  - $COVERAGE_DIR/coverage_summary.txt (Text summary)"
-if [ -d "$COVERAGE_DIR/html" ]; then
-    print_info "  - $COVERAGE_DIR/html/ (HTML report)"
-fi 
+# Main execution
+main() {
+    print_status "Starting Heimdall coverage analysis..."
+    
+    check_requirements
+    clean_build
+    build_with_coverage
+    run_tests
+    generate_coverage
+    display_summary
+    update_coverage_badge
+    print_success "Coverage analysis completed!"
+    print_status "Check build/coverage/ for detailed reports"
+}
+
+# Run main function
+main "$@" 

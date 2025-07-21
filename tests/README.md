@@ -12,6 +12,16 @@ The test suite uses Google Test framework and provides extensive coverage of all
 - **MetadataExtractor**: Binary file analysis and metadata extraction
 - **DWARFExtractor**: DWARF debug information extraction (LLVM-based)
 
+## Code Coverage
+
+- **Current coverage:** ![Coverage](https://img.shields.io/badge/coverage-47.3%25-yellow.svg)
+- Coverage is generated using `tests/coverage.sh` and includes all source files, including `src/tools/*.cpp`.
+- To update the badge and report, run:
+  ```bash
+  ./tests/coverage.sh
+  ```
+- The full HTML report is available at `build/coverage/html/index.html` after running the script.
+
 ## Important Thread-Safety Limitations
 
 **⚠️ CRITICAL: DWARF Tests Are Not Thread-Safe**

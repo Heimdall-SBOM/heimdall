@@ -12,6 +12,7 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
+[![Coverage](https://img.shields.io/badge/coverage-47.3%25-yellow.svg)](build/coverage/html/index.html)
 
 ## Features
 
@@ -29,6 +30,16 @@ A comprehensive Software Bill of Materials (SBOM) generation plugin that works w
 - **Multi-Compiler Support**: Automatic detection and selection of GCC and Clang versions
 - **SCL Integration**: Support for Software Collections (SCL) on RHEL/Rocky/CentOS
 - **Enhanced Test Coverage**: Recent improvements added 151 new test cases for SBOM validation, comparison, and plugin functionality
+
+## Code Coverage
+
+- **Current coverage:** ![Coverage](https://img.shields.io/badge/coverage-47.3%25-yellow.svg)
+- Coverage is generated using `tests/coverage.sh` and includes all source files, including `src/tools/*.cpp`.
+- To update the badge and report, run:
+  ```bash
+  ./tests/coverage.sh
+  ```
+- The full HTML report is available at `build/coverage/html/index.html` after running the script.
 
 ## Build System and Compatibility
 
