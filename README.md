@@ -48,11 +48,15 @@ Heimdall features a robust build system that automatically selects the correct c
 # Build all compatible standards
 ./scripts/build_all_standards.sh
 
-# Build a specific standard with GCC (default)
+# Build a specific standard with GCC (default) and run all unit tests
 ./scripts/build.sh --standard 17 --compiler gcc --tests
 
-# Build a specific standard with Clang
+# Build a specific standard with Clang and run all unit tests
 ./scripts/build.sh --standard 17 --compiler clang --tests
+
+# Build C++23 with GCC (requires SCL activation on RHEL/Rocky/CentOS)
+scl enable gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
 
 # Build with tests and SBOM generation
 ./scripts/build.sh --standard 20 --all
@@ -73,8 +77,8 @@ Heimdall supports multiple C++ standards with automatic compiler and LLVM versio
 | C++11        | 7+           | 4.8+        | 3.3+          | Basic + Compatibility | ✅ Working |
 | C++14        | 7+           | 6+          | 3.4+          | Enhanced + Compatibility | ✅ Working |
 | C++17        | 11+          | 7+          | 5+            | Full Standard Library | ✅ Working |
-| C++20        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
-| C++23        | 19+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+| C++20        | 18+          | 13+         | 14+           | Full + std::format    | ✅ Working |
+| C++23        | 18+          | 13+         | 14+           | Full + std::format    | ✅ Working |
 
 > **Note:** C++20/23 require GCC 13+ or Clang 14+ for `<format>` support. The build system will provide clear guidance if your compiler is too old.
 
@@ -88,14 +92,14 @@ Heimdall supports multiple C++ standards with automatic compiler and LLVM versio
 
 ### Automatic Setup (Recommended)
 
-We provide an automated setup script that detects your Linux distribution and installs all necessary dependencies:
+We provide an automated setup script for many Linux distributions that installs all necessary dependencies:
 
 ```bash
-git clone https://github.com/your-org/heimdall.git
+git clone https://github.com/Heimdall-SBOM/heimdall.git
 cd heimdall
 
 # Run the automated setup script
-sudo ./setup.sh
+sudo ./scripts/setup-[YOUR DISTRO].sh
 
 # Build with default settings (GCC, C++17)
 ./scripts/build.sh --standard 17 --compiler gcc --tests
@@ -104,28 +108,8 @@ sudo ./setup.sh
 ./scripts/build_all_standards.sh
 ```
 
-#### Setup Script Options
-
-```bash
-# Show what would be installed without actually installing
-sudo ./setup.sh --dry-run
-
-# Install with verbose output
-sudo ./setup.sh --verbose
-
-# Skip LLVM installation (use system LLVM if available)
-sudo ./setup.sh --skip-llvm
-
-# Skip GCC installation (use system GCC)
-sudo ./setup.sh --skip-gcc
-
-# Show help
-./setup.sh --help
-```
-
 #### Supported Distributions
 
-The setup script automatically supports:
 - **Ubuntu 22.04+**: GCC 11, 13 + LLVM 18
 - **Debian Bookworm**: GCC 11, 12 + LLVM 18
 - **Debian Testing**: GCC 12, 13, 14 + LLVM 18
@@ -138,26 +122,6 @@ The setup script automatically supports:
 ### Manual Installation
 
 If you prefer to install dependencies manually or the setup script doesn't support your distribution:
-
-### Usage Examples
-
-```bash
-# Build C++11 with system GCC
-./scripts/build.sh --standard 11 --compiler gcc --tests
-
-# Build C++17 with Clang
-./scripts/build.sh --standard 17 --compiler clang --tests
-
-# Build C++23 with GCC (requires SCL activation on RHEL/Rocky/CentOS)
-scl enable gcc-toolset-14 bash
-./scripts/build.sh --standard 23 --compiler gcc --tests
-
-# Build with tests and SBOM generation
-./scripts/build.sh --standard 20 --all
-
-# Check what you can build on your system
-./scripts/show_build_compatibility.sh
-```
 
 ### Using Heimdall as a Linker Plugin
 
@@ -197,7 +161,7 @@ cd examples/heimdall-usage-example
 
 **Recommended**: Use the automated setup script for easy installation:
 ```bash
-sudo ./setup.sh
+sudo ./setup-[YOUR DISTRO].sh
 ```
 
 #### Ubuntu/Debian
@@ -272,26 +236,6 @@ export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
 # Or use Clang
 ./scripts/build.sh --standard 17 --compiler clang --tests
 ```
-
-### Build Options
-
-```bash
-# Build with specific C++ standard
-./scripts/build.sh --standard 20 --compiler gcc --tests
-
-# Build with Clang
-./scripts/build.sh --standard 17 --compiler clang --tests
-
-# Build with tests and SBOM generation
-./scripts/build.sh --standard 23 --all
-
-# Clean build directory before building
-./scripts/build.sh --standard 17 --compiler gcc --clean --tests
-
-# Custom build directory
-./scripts/build.sh --standard 17 --compiler gcc --build-dir mybuild --tests
-```
-
 ### SCL Integration (RHEL/Rocky/CentOS)
 
 For C++20/23 on RHEL/Rocky/CentOS systems:
@@ -338,40 +282,6 @@ The project includes a comprehensive test suite with **257 passing tests** acros
 | **GoldPlugin.cpp** | 62.8% | 58.3% | ⚠️ Moderate |
 | **LLDPlugin.cpp** | 52.2% | 33.3% | ❌ Needs improvement |
 | **SBOMComparator.cpp** | 44.1% | 53.1% | ❌ Needs improvement |
-
-### Test Categories
-
-#### **Core Components (Well Tested)**
-- **ComponentInfo**: 7 tests - Data structure and serialization
-- **DWARFExtractor**: 10 tests - Debug information extraction
-- **Utils**: 24 tests - Utility functions and file operations
-- **SBOMGenerator**: 5 tests - SBOM generation in multiple formats
-
-#### **SBOM Components (Recently Enhanced)**
-- **SBOMValidator**: 62 tests - Validation logic and error handling
-- **SBOMComparator**: 62 tests - Component comparison and diff generation
-- **MetadataExtractor**: 48 tests - File metadata extraction with edge cases
-
-#### **Plugin Components (Comprehensive Testing)**
-- **LLDPlugin**: 43 tests - LLVM LLD plugin functionality
-- **GoldPlugin**: 43 tests - GNU Gold plugin functionality
-- **PluginInterface**: 38 tests - Common plugin interface
-
-#### **Advanced Testing**
-- **DWARFAdvanced**: 18 tests - Complex debug information scenarios
-- **DWARFCrossPlatform**: 12 tests - Platform-specific behavior
-- **DWARFIntegration**: 9 tests - End-to-end integration testing
-
-### Error Handling & Edge Cases
-
-The test suite includes comprehensive error handling and edge case testing:
-
-- **File System Edge Cases**: Non-existent files, empty files, corrupted files, symlinks, hard links
-- **Path Handling**: Unicode characters, special characters, spaces, long paths, relative paths
-- **Memory Management**: Large files, memory pressure, concurrent access, resource cleanup
-- **Plugin Integration**: Null pointers, invalid configurations, error recovery
-- **Platform Specific**: Linux-specific ELF testing, cross-platform compatibility
-- **Input Validation**: Invalid SBOM formats, malformed data, missing dependencies
 
 ### Running Tests
 
@@ -436,31 +346,33 @@ heimdall-sbom ../../build-cpp23/lib/heimdall-gold.so myapp --format spdx --outpu
 - **LLVM 19+:** Plugin interface completely changed - wrapper approach is the only reliable method
 - **GNU Gold:** Uses native plugin interface with `--plugin` and `--plugin-opt` (requires dependencies)
 
-**Current Status:** Heimdall provides universal compatibility through the wrapper approach for LLD and plugin interface for Gold with automatic fallback.
-
-For detailed technical rationale and compatibility information, see [docs/rationale.md](docs/rationale.md).
-
-**Quick compatibility check:**
-```bash
-# Check your system
-ld.lld --version
-ld.gold --version
-
-# Test with the example
-cd examples/heimdall-usage-example
-./run_example.sh
-```
-
 ### Build System Integration
 
-#### CMake
-```cmake
-find_library(HEIMDALL_LLD heimdall-lld)
-target_link_options(myapp PRIVATE
-    "LINKER:--plugin-opt=load:${HEIMDALL_LLD}"
-    "LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp.json"
-)
-```
+#### CMake Module Integration
+
+Heimdall provides a CMake module for seamless SBOM generation in C++ projects. This module supports:
+- Executables and libraries (static/shared/interface)
+- Multi-target and installable projects
+- Automatic linker detection (LLD/Gold)
+
+*Quick Integration*
+
+1. Add the `cmake/` directory to your `CMAKE_MODULE_PATH`:
+   ```cmake
+   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+   ```
+2. Include the Heimdall modules:
+   ```cmake
+   include(HeimdallConfig)
+   include(HeimdallSBOM)
+   ```
+3. Add your targets and enable SBOM generation:
+   ```cmake
+   add_executable(myapp main.cpp)
+   heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
+   ```
+
+See [`cmake/templates/cmake-sbom-template.cmake`](cmake/templates/cmake-sbom-template.cmake) for a ready-to-use template.
 
 #### Makefile
 ```makefile
@@ -611,66 +523,6 @@ g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
     main.o libmath.a libutils.so -o complex-app
 ```
 
-## API Reference
-
-### ComponentInfo
-
-```cpp
-struct ComponentInfo {
-    std::string name;
-    std::string filePath;
-    std::string version;
-    std::string supplier;
-    std::string license;
-    std::string checksum;
-    FileType fileType;
-    std::vector<SymbolInfo> symbols;
-    std::vector<std::string> dependencies;
-};
-```
-
-### SBOMGenerator
-
-```cpp
-class SBOMGenerator {
-public:
-    void processComponent(const ComponentInfo& component);
-    void generateSBOM();
-    void setOutputPath(const std::string& path);
-    void setFormat(const std::string& format);
-    size_t getComponentCount() const;
-};
-```
-
-### MetadataExtractor
-
-```cpp
-class MetadataExtractor {
-public:
-    bool extractMetadata(ComponentInfo& component);
-    bool extractVersionInfo(ComponentInfo& component);
-    bool extractLicenseInfo(ComponentInfo& component);
-    bool extractSymbolInfo(ComponentInfo& component);
-};
-```
-
-### Compatibility Layer
-
-```cpp
-#include "compat/compatibility.hpp"
-
-using namespace heimdall::compat;
-
-// Works across all C++ standards
-optional<int> opt(42);
-string_view sv("hello");
-fs::path p("file.txt");
-variant<int, std::string> v(100);
-
-// Utility functions
-string_view result = utils::to_string_view(42);
-int val = utils::get_optional_value(opt, 0);
-```
 
 ## Troubleshooting
 
@@ -783,51 +635,7 @@ For detailed information about linker integration rationale and technical approa
 
 For comprehensive multi-standard C++ support documentation, see [docs/multi-standard-support.md](docs/multi-standard-support.md).
 
-### Development Setup
 
-```bash
-# Clone with submodules
-git clone --recursive https://github.com/your-org/heimdall.git
-cd heimdall
-
-# Build in debug mode
-./scripts/build.sh --standard 17 --compiler gcc --tests
-
-# Test all C++ standards
-for std in 11 14 17 20 23; do
-    echo "Testing C++$std..."
-    ./scripts/build.sh --standard $std --compiler gcc --tests
-done
-
-# Test with Clang
-./scripts/build.sh --standard 17 --compiler clang --tests
-```
-
-## CMake Module Integration
-
-Heimdall provides a CMake module for seamless SBOM generation in C++ projects. This module supports:
-- Executables and libraries (static/shared/interface)
-- Multi-target and installable projects
-- Automatic linker detection (LLD/Gold)
-
-### Quick Integration
-
-1. Add the `cmake/` directory to your `CMAKE_MODULE_PATH`:
-   ```cmake
-   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-   ```
-2. Include the Heimdall modules:
-   ```cmake
-   include(HeimdallConfig)
-   include(HeimdallSBOM)
-   ```
-3. Add your targets and enable SBOM generation:
-   ```cmake
-   add_executable(myapp main.cpp)
-   heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
-   ```
-
-See [`cmake/templates/cmake-sbom-template.cmake`](cmake/templates/cmake-sbom-template.cmake) for a ready-to-use template.
 
 ### Advanced Example Projects
 
