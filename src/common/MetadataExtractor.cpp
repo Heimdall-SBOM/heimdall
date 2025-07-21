@@ -245,47 +245,49 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
             }
         }
 
-        // Try Ada metadata extraction (always attempt, regardless of other package managers)
-        std::vector<std::string> aliFiles;
-        
-        // Try multiple search paths for ALI files
+        // Declare searchPaths and aliFiles for Ada detection
         std::vector<std::string> searchPaths;
-        
-#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
-        // Use std::filesystem for C++17+
-        std::filesystem::path filePath(component.filePath);
-        searchPaths = {
-            filePath.parent_path().string(),
-            filePath.parent_path().parent_path().string(),
-            std::filesystem::current_path().string()
-        };
-#else
-        // Manual path parsing for C++11 compatibility
-        std::string filePath = component.filePath;
-        size_t lastSlash = filePath.find_last_of("/\\");
-        if (lastSlash != std::string::npos) {
-            std::string dirPath = filePath.substr(0, lastSlash);
-            searchPaths.push_back(dirPath);
-            
-            // Parent directory
-            size_t parentSlash = dirPath.find_last_of("/\\");
-            if (parentSlash != std::string::npos) {
-                searchPaths.push_back(dirPath.substr(0, parentSlash));
-            }
-        }
-        
-        // Current directory
-        searchPaths.push_back(".");
-#endif
-        
+        std::vector<std::string> aliFiles;
+
+        // Try Ada metadata extraction ONLY if Ada files are present
+        bool adaFilesPresent = false;
         for (const auto& searchPath : searchPaths) {
-            if (findAdaAliFiles(searchPath, aliFiles)) {
-                if (extractAdaMetadata(component, aliFiles)) {
-                    if (!packageManagerDetected) {
-                        packageManagerDetected = true;
+#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
+            for (const auto& entry : std::filesystem::directory_iterator(searchPath)) {
+                if (entry.is_regular_file()) {
+                    std::string fname = entry.path().filename().string();
+                    if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" || fname.substr(fname.size() - 4) == ".ads" || fname.substr(fname.size() - 4) == ".ali")) {
+                        adaFilesPresent = true;
+                        break;
                     }
-                    heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " + searchPath);
-                    break;
+                }
+            }
+#else
+            DIR* dir = opendir(searchPath.c_str());
+            if (dir) {
+                struct dirent* entry;
+                while ((entry = readdir(dir)) != nullptr) {
+                    std::string fname = entry->d_name;
+                    if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" || fname.substr(fname.size() - 4) == ".ads" || fname.substr(fname.size() - 4) == ".ali")) {
+                        adaFilesPresent = true;
+                        break;
+                    }
+                }
+                closedir(dir);
+            }
+#endif
+            if (adaFilesPresent) break;
+        }
+        if (adaFilesPresent) {
+            for (const auto& searchPath : searchPaths) {
+                if (findAdaAliFiles(searchPath, aliFiles)) {
+                    if (extractAdaMetadata(component, aliFiles)) {
+                        if (!packageManagerDetected) {
+                            packageManagerDetected = true;
+                        }
+                        heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " + searchPath);
+                        break;
+                    }
                 }
             }
         }
