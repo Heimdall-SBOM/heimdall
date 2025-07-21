@@ -159,22 +159,8 @@ void DWARFExtractor::ensureLLVMInitialized() {
  * Prints debug information if compiled with debug output enabled.
  */
 DWARFExtractor::DWARFExtractor() {
-#ifdef HEIMDALL_DEBUG_ENABLED
-    Utils::debugPrint("DWARFExtractor constructor called");
-    Utils::debugPrint("About to check LLVM_DWARF_AVAILABLE");
-#endif
 #ifdef LLVM_DWARF_AVAILABLE
-#ifdef HEIMDALL_DEBUG_ENABLED
-    Utils::debugPrint("LLVM_DWARF_AVAILABLE is defined");
-#endif
     // No per-instance LLVM initialization
-#else
-#ifdef HEIMDALL_DEBUG_ENABLED
-    Utils::debugPrint("LLVM_DWARF_AVAILABLE is NOT defined");
-#endif
-#endif
-#ifdef HEIMDALL_DEBUG_ENABLED
-    Utils::debugPrint("DWARFExtractor constructor completed");
 #endif
 }
 
@@ -185,14 +171,8 @@ DWARFExtractor::DWARFExtractor() {
  * Prints debug information if compiled with debug output enabled.
  */
 DWARFExtractor::~DWARFExtractor() {
-#ifdef HEIMDALL_DEBUG_ENABLED
-    Utils::debugPrint("DWARFExtractor destructor called");
-#endif
 #ifdef LLVM_DWARF_AVAILABLE
     // No per-instance LLVM cleanup
-#endif
-#ifdef HEIMDALL_DEBUG_ENABLED
-    Utils::debugPrint("DWARFExtractor destructor completed");
 #endif
 }
 
@@ -209,40 +189,17 @@ DWARFExtractor::~DWARFExtractor() {
  */
 bool DWARFExtractor::extractSourceFiles(const std::string& filePath,
                                         std::vector<std::string>& sourceFiles) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-    heimdall::Utils::debugPrint("DWARFExtractor: Starting extractSourceFiles for " + filePath);
-#ifdef LLVM_DWARF_AVAILABLE
-    heimdall::Utils::debugPrint("DWARFExtractor: LLVM_DWARF_AVAILABLE is defined");
-#else
-    heimdall::Utils::debugPrint("DWARFExtractor: LLVM_DWARF_AVAILABLE is NOT defined");
-#endif
-#endif
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
     auto context = createDWARFContext(filePath);
     if (context) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        heimdall::Utils::debugPrint("DWARFExtractor: LLVM context created successfully");
-#endif
         auto numUnits = context->getNumCompileUnits();
-#ifdef HEIMDALL_DEBUG_ENABLED
-        heimdall::Utils::debugPrint("DWARFExtractor: Number of compile units: " + std::to_string(numUnits));
-#endif
         for (uint32_t i = 0; i < numUnits; ++i) {
             auto unit = context->getUnitAtIndex(i);
             if (unit) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-                heimdall::Utils::debugPrint("DWARFExtractor: Extracting source files from unit " + std::to_string(i));
-#endif
                 extractSourceFilesFromDie(unit->getUnitDIE(), sourceFiles);
             }
         }
-#ifdef HEIMDALL_DEBUG_ENABLED
-        heimdall::Utils::debugPrint("DWARFExtractor: Total source files found: " + std::to_string(sourceFiles.size()));
-        for (const auto& file : sourceFiles) {
-            heimdall::Utils::debugPrint("DWARFExtractor: Source file: " + file);
-        }
-#endif
         return !sourceFiles.empty();
     } else {
 #ifdef HEIMDALL_DEBUG_ENABLED
@@ -475,23 +432,13 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) {
  */
 llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePath) {
     try {
-#ifdef HEIMDALL_DEBUG_ENABLED
-        std::cout << "DWARFExtractor: Creating DWARF context for: " << filePath << std::endl;
-#endif
-
         // Check if file exists and is readable
         if (filePath.empty()) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: File path is empty" << std::endl;
-#endif
             return nullptr;
         }
 
         std::ifstream testFile(filePath);
         if (!testFile.good()) {
-#ifdef HEIMDALL_DEBUG_ENABLED
-            std::cout << "DWARFExtractor: File is not readable: " << filePath << std::endl;
-#endif
             return nullptr;
         }
         testFile.close();

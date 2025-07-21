@@ -64,9 +64,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         
         # Docker container exclusions
         # Skip package manager tests in Docker containers where they may fail
-        if(filename STREQUAL "test_package_manager_and_archive.cpp")
-            continue()
-        endif()
+        # Note: This has been modified to use mock files instead of system binaries
+        # if(filename STREQUAL "test_package_manager_and_archive.cpp")
+        #     continue()
+        # endif()
         
         list(APPEND TEST_SOURCES ${source})
     endforeach()

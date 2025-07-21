@@ -590,25 +590,29 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithHomeDirectory) {
     EXPECT_FALSE(result);
 }
 
-TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSystemPaths) {
+TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithMockSystemPaths) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    // Test with system paths - only test if files exist
-    std::vector<std::string> system_paths = {
-        "/usr/lib/libc.so",
-        "/usr/lib/libm.so",
-        "/usr/bin/ls",
-        "/bin/bash"
+    // Create mock ELF files instead of using real system binaries
+    std::vector<std::pair<std::string, std::string>> mock_files = {
+        {"mock_libc.so", "\x7f\x45\x4c\x46\x02\x01\x01\x00"},  // ELF header
+        {"mock_libm.so", "\x7f\x45\x4c\x46\x02\x01\x01\x00"},  // ELF header
+        {"mock_ls", "\x7f\x45\x4c\x46\x02\x01\x01\x00"},       // ELF header
+        {"mock_bash", "\x7f\x45\x4c\x46\x02\x01\x01\x00"}      // ELF header
     };
     
-    for (const auto& path : system_paths) {
-        if (std::filesystem::exists(path)) {
-            ComponentInfo component(std::filesystem::path(path).filename().string(), path);
-            bool result = extractor->extractMetadata(component);
-            // These should succeed if they are valid ELF files
-            // We don't assert success here as it depends on the system
-        }
+    for (const auto& [filename, content] : mock_files) {
+        std::filesystem::path mock_file = test_dir / filename;
+        std::ofstream file(mock_file, std::ios::binary);
+        file.write(content.c_str(), content.length());
+        file.close();
+        
+        ComponentInfo component(filename, mock_file.string());
+        bool result = extractor->extractMetadata(component);
+        // These should fail gracefully since they're not complete ELF files
+        // but the important thing is they don't trigger system directory scanning
+        EXPECT_FALSE(result);
     }
 }
 

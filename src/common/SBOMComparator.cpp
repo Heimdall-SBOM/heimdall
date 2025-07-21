@@ -611,24 +611,28 @@ std::string SBOMComparator::generateTextReport(const std::vector<SBOMDifference>
     ss << "  Modified: " << stats["modified"] << "\n";
     ss << "  Unchanged: " << stats["unchanged"] << "\n\n";
     
-    ss << "Details:\n";
-    for (const auto& diff : differences) {
-        switch (diff.type) {
-            case SBOMDifference::Type::ADDED:
-                ss << "[ADDED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
-                break;
-            case SBOMDifference::Type::REMOVED:
-                ss << "[REMOVED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
-                break;
-            case SBOMDifference::Type::MODIFIED:
-                ss << "[MODIFIED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
-                if (diff.oldComponent.has_value()) {
-                    ss << "  Previous: " << diff.oldComponent->name << " " << diff.oldComponent->version << "\n";
-                }
-                break;
-            case SBOMDifference::Type::UNCHANGED:
-                ss << "[UNCHANGED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
-                break;
+    if (differences.empty()) {
+        ss << "No differences found\n";
+    } else {
+        ss << "Details:\n";
+        for (const auto& diff : differences) {
+            switch (diff.type) {
+                case SBOMDifference::Type::ADDED:
+                    ss << "[ADDED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
+                    break;
+                case SBOMDifference::Type::REMOVED:
+                    ss << "[REMOVED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
+                    break;
+                case SBOMDifference::Type::MODIFIED:
+                    ss << "[MODIFIED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
+                    if (diff.oldComponent.has_value()) {
+                        ss << "  Previous: " << diff.oldComponent->name << " " << diff.oldComponent->version << "\n";
+                    }
+                    break;
+                case SBOMDifference::Type::UNCHANGED:
+                    ss << "[UNCHANGED] " << diff.component.name << " " << diff.component.version << " (" << diff.component.id << ")\n";
+                    break;
+            }
         }
     }
     

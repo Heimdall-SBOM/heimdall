@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fstream>
 #include <filesystem>
+#include <thread>
 #include "common/SBOMValidator.hpp"
 #include "common/SBOMComparator.hpp"
 
@@ -810,4 +811,503 @@ TEST_F(SBOMValidationTest, MultipleDiffReport) {
     EXPECT_NE(report.find("Component2"), std::string::npos);
     EXPECT_NE(report.find("ADDED"), std::string::npos);
     EXPECT_NE(report.find("REMOVED"), std::string::npos);
+} 
+
+// Additional comprehensive tests for SBOMValidator
+TEST_F(SBOMValidationTest, SPDXValidatorWithInvalidSchemaPath) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Test with non-existent schema file
+    std::string invalid_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})";
+    
+    ValidationResult result = validator->validateContent(invalid_content);
+    // Should handle missing schema gracefully
+    EXPECT_NO_THROW(validator->validateContent(invalid_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithMalformedJSON) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string malformed_json = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"
+})"; // Missing closing brace
+    
+    ValidationResult result = validator->validateContent(malformed_json);
+    EXPECT_NO_THROW(validator->validateContent(malformed_json));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithEmptyContent) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    ValidationResult result = validator->validateContent("");
+    EXPECT_NO_THROW(validator->validateContent(""));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithWhitespaceOnly) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    ValidationResult result = validator->validateContent("   \n\t  ");
+    EXPECT_NO_THROW(validator->validateContent("   \n\t  "));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithUnknownContext) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string unknown_context = R"({
+  "@context": "https://unknown.org/context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})";
+    
+    ValidationResult result = validator->validateContent(unknown_context);
+    EXPECT_NO_THROW(validator->validateContent(unknown_context));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithMissingContext) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string missing_context = R"({
+  "@graph": [{"spdxId": "test"}]
+})";
+    
+    ValidationResult result = validator->validateContent(missing_context);
+    EXPECT_NO_THROW(validator->validateContent(missing_context));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithEmptyGraph) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string empty_graph = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": []
+})";
+    
+    ValidationResult result = validator->validateContent(empty_graph);
+    EXPECT_NO_THROW(validator->validateContent(empty_graph));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithMissingGraph) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string missing_graph = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld"
+})";
+    
+    ValidationResult result = validator->validateContent(missing_graph);
+    EXPECT_NO_THROW(validator->validateContent(missing_graph));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithInvalidGraphType) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string invalid_graph = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": "not_an_array"
+})";
+    
+    ValidationResult result = validator->validateContent(invalid_graph);
+    EXPECT_NO_THROW(validator->validateContent(invalid_graph));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithLargeContent) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Create large content
+    std::string large_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [)";
+    
+    // Add many objects to make it large
+    for (int i = 0; i < 1000; ++i) {
+        large_content += R"({"spdxId": "test)" + std::to_string(i) + R"("},)";
+    }
+    large_content += R"({"spdxId": "final"}]})";
+    
+    ValidationResult result = validator->validateContent(large_content);
+    EXPECT_NO_THROW(validator->validateContent(large_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithSpecialCharacters) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string special_chars = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test\u0000\u0001\u0002"}]
+})";
+    
+    ValidationResult result = validator->validateContent(special_chars);
+    EXPECT_NO_THROW(validator->validateContent(special_chars));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithUnicodeContent) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string unicode_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test", "name": "测试文档"}]
+})";
+    
+    ValidationResult result = validator->validateContent(unicode_content);
+    EXPECT_NO_THROW(validator->validateContent(unicode_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithNestedObjects) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string nested_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "creationInfo": {
+      "created": "2024-01-01T00:00:00Z",
+      "createdBy": [{"name": "Test Tool"}]
+    }
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(nested_content);
+    EXPECT_NO_THROW(validator->validateContent(nested_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithArrayFields) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string array_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "createdBy": ["Tool1", "Tool2", "Tool3"]
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(array_content);
+    EXPECT_NO_THROW(validator->validateContent(array_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithNullValues) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string null_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "name": null,
+    "description": null
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(null_content);
+    EXPECT_NO_THROW(validator->validateContent(null_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithBooleanValues) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string boolean_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "isValid": true,
+    "isComplete": false
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(boolean_content);
+    EXPECT_NO_THROW(validator->validateContent(boolean_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithNumericValues) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string numeric_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "version": 1,
+    "count": 42,
+    "percentage": 99.9
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(numeric_content);
+    EXPECT_NO_THROW(validator->validateContent(numeric_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithMixedContent) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string mixed_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "string": "hello",
+    "number": 123,
+    "boolean": true,
+    "null": null,
+    "array": [1, 2, 3],
+    "object": {"nested": "value"}
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(mixed_content);
+    EXPECT_NO_THROW(validator->validateContent(mixed_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithDeepNesting) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string deep_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "level1": {
+      "level2": {
+        "level3": {
+          "level4": {
+            "level5": {
+              "value": "deep"
+            }
+          }
+        }
+      }
+    }
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(deep_content);
+    EXPECT_NO_THROW(validator->validateContent(deep_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithDuplicateKeys) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string duplicate_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "name": "first",
+    "name": "second"
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(duplicate_content);
+    EXPECT_NO_THROW(validator->validateContent(duplicate_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithEscapedCharacters) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string escaped_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "name": "test\"quotes\"",
+    "path": "C:\\Users\\test\\file.txt",
+    "url": "https://example.com/path?param=value&other=123"
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(escaped_content);
+    EXPECT_NO_THROW(validator->validateContent(escaped_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithVeryLongStrings) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string long_string(10000, 'a'); // 10KB string
+    std::string long_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "description": ")" + long_string + R"("
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(long_content);
+    EXPECT_NO_THROW(validator->validateContent(long_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithInvalidUTF8) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Create content with invalid UTF-8 sequences
+    std::string invalid_utf8 = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "name": ")" + std::string("\xFF\xFE\xFD") + R"("
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(invalid_utf8);
+    EXPECT_NO_THROW(validator->validateContent(invalid_utf8));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithControlCharacters) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string control_chars = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "name": "test\x01\x02\x03\x04\x05"
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(control_chars);
+    EXPECT_NO_THROW(validator->validateContent(control_chars));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithCircularReferences) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Test with potentially problematic content
+    std::string circular_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{
+    "spdxId": "test",
+    "references": ["test", "test", "test"]
+  }]
+})";
+    
+    ValidationResult result = validator->validateContent(circular_content);
+    EXPECT_NO_THROW(validator->validateContent(circular_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithMemoryPressure) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Create content that might cause memory pressure
+    std::string memory_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [)";
+    
+    // Add many small objects
+    for (int i = 0; i < 10000; ++i) {
+        memory_content += R"({"spdxId": "obj)" + std::to_string(i) + R"("},)";
+    }
+    memory_content += R"({"spdxId": "final"}]})";
+    
+    ValidationResult result = validator->validateContent(memory_content);
+    EXPECT_NO_THROW(validator->validateContent(memory_content));
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithConcurrentAccess) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string test_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})";
+    
+    // Test concurrent access
+    auto validate_thread = [&validator, &test_content]() {
+        for (int i = 0; i < 100; ++i) {
+            EXPECT_NO_THROW(validator->validateContent(test_content));
+        }
+    };
+    
+    std::thread t1(validate_thread);
+    std::thread t2(validate_thread);
+    std::thread t3(validate_thread);
+    
+    t1.join();
+    t2.join();
+    t3.join();
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithRapidSuccession) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    std::string test_content = R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})";
+    
+    // Test rapid succession of validation calls
+    for (int i = 0; i < 1000; ++i) {
+        EXPECT_NO_THROW(validator->validateContent(test_content));
+    }
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithMixedFormats) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Test with different SPDX formats in rapid succession
+    std::vector<std::string> formats = {
+        R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})",
+        R"({
+  "@context": "https://spdx.org/rdf/3.0.1/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})",
+        R"({
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "SPDXID": "SPDXRef-DOCUMENT"
+})"
+    };
+    
+    for (const auto& format : formats) {
+        EXPECT_NO_THROW(validator->validateContent(format));
+    }
+}
+
+TEST_F(SBOMValidationTest, SPDXValidatorWithErrorRecovery) {
+    auto validator = SBOMValidatorFactory::createValidator("spdx");
+    ASSERT_NE(validator, nullptr);
+    
+    // Test that validator can recover from errors
+    std::vector<std::string> test_cases = {
+        "", // Empty
+        "invalid json", // Invalid JSON
+        R"({"not": "spdx"})", // Not SPDX
+        R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "test"}]
+})", // Valid SPDX
+        "another invalid", // Invalid again
+        R"({
+  "@context": "https://spdx.org/rdf/3.0.0/spdx-context.jsonld",
+  "@graph": [{"spdxId": "recovery"}]
+})" // Valid again
+    };
+    
+    for (const auto& test_case : test_cases) {
+        EXPECT_NO_THROW(validator->validateContent(test_case));
+    }
 } 
