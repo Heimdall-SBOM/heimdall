@@ -1,59 +1,57 @@
-FROM archlinux:latest
+FROM ubuntu:22.04
 
 ARG GCC_VERSION=11
 ARG LLVM_VERSION=18
 ARG LLVM_TAG=llvmorg-18.1.8
 
 # Install prerequisites
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm \
-      base-devel \
-      cmake \
-      ninja \
-      python \
-      python-pip \
-      git \
+RUN apt-get update && \
+    apt-get install -y \
+      software-properties-common \
       wget \
-      curl \
-      openssl \
-      elfutils \
+      gnupg \
+      lsb-release \
+      curl
+
+# Always add the Ubuntu Toolchain PPA so both GCC 11 and 13 are available
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt-get update
+
+# Install build tools and all needed GCC/G++
+RUN apt-get update && \
+    apt-get install -y \
+      build-essential \
+      gcc-11 g++-11 \
+      gcc-13 g++-13 \
+      cmake \
+      ninja-build \
+      python3 \
+      python3-pip \
+      git \
+      binutils-gold \
+      libssl-dev \
+      libelf-dev \
       pkg-config \
-      boost \
-      boost-libs
+      libboost-filesystem-dev \
+      libboost-system-dev
 
-# Install GCC versions (Arch has latest by default, but we can install specific versions)
-RUN if [ "$GCC_VERSION" = "11" ]; then \
-      echo "GCC 11 not available in Arch, using default GCC (15)"; \
-    elif [ "$GCC_VERSION" = "13" ]; then \
-      echo "GCC 13 not available in Arch, using default GCC (15)"; \
-    elif [ "$GCC_VERSION" = "14" ]; then \
-      pacman -S --noconfirm gcc14; \
-    fi
-
-# Set GCC alternatives for GCC 14
-RUN if [ "$GCC_VERSION" = "14" ]; then \
-      ln -sf /usr/bin/gcc-14 /usr/bin/gcc && \
-      ln -sf /usr/bin/g++-14 /usr/bin/g++; \
-    fi
-
-# Arch uses default GCC (currently 15), no symlinks needed
+# Set GCC alternatives
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 100 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 100
 
 # Install requested LLVM version
-RUN pacman -S --noconfirm llvm${LLVM_VERSION} lld${LLVM_VERSION}
+RUN wget https://apt.llvm.org/llvm.sh && \
+    chmod +x llvm.sh && \
+    ./llvm.sh ${LLVM_VERSION}
+
+RUN apt-get update && \
+    apt-get install -y \
+      llvm-${LLVM_VERSION}-dev \
+      lld-${LLVM_VERSION}
 
 # Create default symlinks for LLVM
 RUN ln -sf /usr/bin/llvm-config-${LLVM_VERSION} /usr/bin/llvm-config && \
     ln -sf /usr/bin/ld.lld-${LLVM_VERSION} /usr/bin/ld.lld && \
     ln -sf /usr/bin/lld-${LLVM_VERSION} /usr/bin/lld
-
-# Create symlinks for CMake config files so they can be found automatically
-RUN mkdir -p /usr/lib/cmake && \
-    ln -sf /usr/lib/llvm${LLVM_VERSION}/lib/cmake/llvm /usr/lib/cmake/llvm
-
-# Create symlinks for LLVM headers so they can be found in standard include path
-RUN mkdir -p /usr/include && \
-    ln -sf /usr/lib/llvm${LLVM_VERSION}/include/llvm /usr/include/llvm && \
-    ln -sf /usr/lib/llvm${LLVM_VERSION}/include/llvm-c /usr/include/llvm-c
 
 # Install LLD headers for the selected LLVM version
 RUN mkdir -p /usr/local/include/lld/Common && \
