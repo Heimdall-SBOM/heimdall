@@ -1,12 +1,4 @@
----
-**Note:** To generate HTML and PDF versions of this guide, install [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live):
 
-```sh
-sudo dnf install -y pandoc texlive
-```
-
-Then use the CMake targets `docs-html` and `docs-pdf`.
----
 
 # Heimdall SBOM Generator - User Guide
 
@@ -1103,3 +1095,12 @@ Heimdall supports multiple C++ standards with different feature sets:
 - Future support for `std::format`, `std::print`, and more
 
 If you encounter build errors, ensure your compiler supports the selected C++ standard and that CMake is passing the correct `-std=c++XX` flag to your compiler.
+
+---
+**Note:** To generate HTML and PDF versions of this guide, install [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live):
+
+```sh
+sudo dnf install -y pandoc texlive
+```
+
+Then use the CMake targets `docs-html` and `docs-pdf`.

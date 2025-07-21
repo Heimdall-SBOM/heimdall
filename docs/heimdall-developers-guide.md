@@ -1,12 +1,3 @@
----
-**Note:** To generate HTML and PDF versions of this guide, install [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live):
-
-```sh
-sudo dnf install -y pandoc texlive
-```
-
-Then use the CMake targets `docs-html` and `docs-pdf`.
----
 
 # Heimdall Developer's Guide
 
@@ -266,3 +257,11 @@ digraph GoldPlugin {
 ---
 
 For further details, see the [Heimdall User's Guide](./heimdall-users-guide.md), [SBOM Validation Guide](./sbom_validation_guide.md), and [Testing Guide](./testing-heimdall.md). 
+---
+**Note:** To generate HTML and PDF versions of this guide, install [pandoc](https://pandoc.org/) and [pdflatex](https://www.tug.org/texlive/) (from TeX Live):
+
+```sh
+sudo dnf install -y pandoc texlive
+```
+
+Then use the CMake targets `docs-html` and `docs-pdf`.
