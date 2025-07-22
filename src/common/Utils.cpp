@@ -486,17 +486,26 @@ std::string getEnvironmentVariable(const std::string& name) {
 std::vector<std::string> getLibrarySearchPaths() {
     std::vector<std::string> paths;
 
-    // Add standard library paths
+// Add standard library paths
 #ifdef _WIN32
     paths.push_back("C:\\Windows\\System32");
     paths.push_back("C:\\Windows\\SysWOW64");
 #else
-    paths.push_back("/usr/lib");
-    paths.push_back("/usr/lib64");
-    paths.push_back("/usr/local/lib");
-    paths.push_back("/usr/local/lib64");
+    // Universal
     paths.push_back("/lib");
+    paths.push_back("/usr/lib");
+    paths.push_back("/usr/local/lib");
+    // 64-bit
     paths.push_back("/lib64");
+    paths.push_back("/usr/lib64");
+    paths.push_back("/usr/local/lib64");
+    // Debian/Ubuntu multiarch (x86_64)
+    paths.push_back("/lib/x86_64-linux-gnu");
+    paths.push_back("/usr/lib/x86_64-linux-gnu");
+    // Debian/Ubuntu multiarch (i386)
+    paths.push_back("/lib/i386-linux-gnu");
+    paths.push_back("/usr/lib/i386-linux-gnu");
+    // Add more multiarch or distro-specific paths as needed
 #endif
 
     // Add paths from LD_LIBRARY_PATH (Linux) or PATH (Windows)
