@@ -160,13 +160,9 @@ bool AdaExtractor::extractAdaMetadata(ComponentInfo& component,
 
     // Add Ada packages as dependencies
     for (const auto& pkg : packages) {
-        if (!pkg.isRuntime || extractRuntimePackages) {
-            component.addDependency(pkg.name);
+        for (const auto& dep : pkg.dependencies) {
+            component.addDependency(dep);
         }
-    }
-
-    // Add source files from all packages
-    for (const auto& pkg : packages) {
         if (!pkg.sourceFile.empty()) {
             component.addSourceFile(pkg.sourceFile);
         }

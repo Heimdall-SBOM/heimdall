@@ -250,6 +250,41 @@ public:
      */
     void setExtractEnhancedMetadata(bool extract);
 
+    /**
+     * @brief Check if a package is a known Ada runtime package
+     * @param packageName Name of the package
+     * @return true if it is a runtime package
+     */
+    bool isRuntimePackage(const std::string& packageName);
+
+    /**
+     * @brief Extract package name from ALI file path
+     * @param aliFilePath ALI file path
+     * @return Package name
+     */
+    std::string extractPackageName(const std::string& aliFilePath);
+
+    /**
+     * @brief Extract source file path from ALI file path
+     * @param aliFilePath ALI file path
+     * @return Source file path
+     */
+    std::string extractSourceFilePath(const std::string& aliFilePath);
+
+    /**
+     * @brief Check if a build flag is security-related
+     * @param flag Build flag to check
+     * @return true if it's a security-related flag
+     */
+    bool isSecurityFlag(const std::string& flag);
+
+    /**
+     * @brief Check if a build flag is optimization-related
+     * @param flag Build flag to check
+     * @return true if it's an optimization flag
+     */
+    bool isOptimizationFlag(const std::string& flag);
+
 private:
     /**
      * @brief Parse ALI file version line
@@ -321,41 +356,6 @@ private:
     bool parseFileInfoLine(const std::string& line,
                           std::map<std::string, std::string>& timestamps,
                           std::map<std::string, std::string>& checksums);
-
-    /**
-     * @brief Check if a package is a runtime package
-     * @param packageName Package name to check
-     * @return true if it's a runtime package
-     */
-    bool isRuntimePackage(const std::string& packageName);
-
-    /**
-     * @brief Extract package name from ALI file path
-     * @param aliFilePath ALI file path
-     * @return Package name
-     */
-    std::string extractPackageName(const std::string& aliFilePath);
-
-    /**
-     * @brief Extract source file path from ALI file path
-     * @param aliFilePath ALI file path
-     * @return Source file path
-     */
-    std::string extractSourceFilePath(const std::string& aliFilePath);
-
-    /**
-     * @brief Check if a build flag is security-related
-     * @param flag Build flag to check
-     * @return true if it's a security-related flag
-     */
-    bool isSecurityFlag(const std::string& flag);
-
-    /**
-     * @brief Check if a build flag is optimization-related
-     * @param flag Build flag to check
-     * @return true if it's an optimization flag
-     */
-    bool isOptimizationFlag(const std::string& flag);
 
     bool verbose = false;                    ///< Verbose output flag
     bool extractRuntimePackages = false;     ///< Whether to extract runtime packages
