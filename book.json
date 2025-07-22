@@ -1,0 +1,6 @@
+{
+  "title": "Heimdall-SBOM Documentation",
+  "ignore": [
+    "external"
+  ]
+}
