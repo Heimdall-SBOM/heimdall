@@ -285,6 +285,9 @@ public:
      */
     bool isOptimizationFlag(const std::string& flag);
 
+    static void setTestMode(bool enabled);
+    static bool isTestMode();
+
 private:
     /**
      * @brief Parse ALI file version line

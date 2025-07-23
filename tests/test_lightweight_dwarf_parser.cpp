@@ -623,3 +623,48 @@ TEST_F(LightweightDWARFParserTest, MixedValidAndInvalidFiles) {
         EXPECT_NO_THROW(parser.hasDWARFInfo(test_file));
     }
 }
+
+TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_Single) {
+    LightweightDWARFParser parser;
+    std::vector<std::string> sourceFiles;
+    std::string bin_path = (test_dir / "mock_with_source").string();
+    std::ofstream bin(bin_path, std::ios::binary);
+    std::string content = "randomdata /tmp/mock_source.cpp moredata";
+    bin.write(content.c_str(), content.size());
+    bin.close();
+    bool result = parser.extractSourceFiles(bin_path, sourceFiles);
+    EXPECT_TRUE(result);
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/mock_source.cpp"), sourceFiles.end());
+}
+
+TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_Multiple) {
+    LightweightDWARFParser parser;
+    std::vector<std::string> sourceFiles;
+    std::string bin_path = (test_dir / "mock_with_multiple_sources").string();
+    std::ofstream bin(bin_path, std::ios::binary);
+    std::string content = "foo/bar.cpp /tmp/abc.c /tmp/def.hpp /tmp/xyz.h moretext";
+    bin.write(content.c_str(), content.size());
+    bin.close();
+    bool result = parser.extractSourceFiles(bin_path, sourceFiles);
+    EXPECT_TRUE(result);
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "foo/bar.cpp"), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/abc.c"), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/def.hpp"), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/xyz.h"), sourceFiles.end());
+}
+
+TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_InvalidExtensions) {
+    LightweightDWARFParser parser;
+    std::vector<std::string> sourceFiles;
+    std::string bin_path = (test_dir / "mock_with_invalid_ext").string();
+    std::ofstream bin(bin_path, std::ios::binary);
+    std::string content = "foo/bar.txt /tmp/abc.doc /tmp/def main.c";
+    bin.write(content.c_str(), content.size());
+    bin.close();
+    bool result = parser.extractSourceFiles(bin_path, sourceFiles);
+    // Should only find main.c
+    EXPECT_TRUE(result);
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "main.c"), sourceFiles.end());
+    EXPECT_EQ(std::find(sourceFiles.begin(), sourceFiles.end(), "foo/bar.txt"), sourceFiles.end());
+    EXPECT_EQ(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/abc.doc"), sourceFiles.end());
+}

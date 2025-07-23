@@ -45,9 +45,16 @@ limitations under the License.
 
 namespace heimdall {
 
-// Thread-safe test mode detection
-static std::atomic<bool> g_test_mode{false};
-static std::mutex env_mutex;
+    static std::atomic<bool> g_test_mode{false};
+    static std::mutex env_mutex;
+
+    void setTestMode(bool enabled) {
+        g_test_mode.store(enabled, std::memory_order_release);
+    }
+
+    bool isTestMode() {
+        return g_test_mode.load(std::memory_order_acquire);
+    }
 
 AdaExtractor::AdaExtractor() {
     // Initialize known runtime packages
@@ -411,12 +418,12 @@ bool AdaExtractor::isAliFile(const std::string& filePath) {
 }
 
 // Thread-safe test mode control
-void setTestMode(bool enabled) {
-    g_test_mode.store(enabled, std::memory_order_release);
+void AdaExtractor::setTestMode(bool enabled) {
+    heimdall::setTestMode(enabled);
 }
 
-bool isTestMode() {
-    return g_test_mode.load(std::memory_order_acquire);
+bool AdaExtractor::isTestMode() {
+    return heimdall::isTestMode();
 }
 
 bool AdaExtractor::findAliFiles(const std::string& directory,
