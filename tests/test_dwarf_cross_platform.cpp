@@ -22,6 +22,7 @@ limitations under the License.
 #include "common/DWARFExtractor.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/Utils.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -30,9 +31,18 @@ namespace heimdall {
 class DWARFCrossPlatformTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_dwarf_cross_platform_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_cross_platform_test");
         std::filesystem::create_directories(test_dir);
+        
+        // Create test files
+        createTestFiles();
+    }
 
+    void TearDown() override {
+        test_utils::safeRemoveDirectory(test_dir);
+    }
+
+    void createTestFiles() {
         // Create cross-platform test source
         test_source = test_dir / "cross_platform_test.c";
         std::ofstream(test_source) << R"(
@@ -75,10 +85,6 @@ int main() {
 
         // Compile for different platforms/architectures
         compileTestBinaries();
-    }
-
-    void TearDown() override {
-        std::filesystem::remove_all(test_dir);
     }
 
     void compileTestBinaries() {

@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <algorithm>
 #include "common/LightweightDWARFParser.hpp"
 #include "test_utils.hpp"
 
@@ -12,7 +13,7 @@ using namespace heimdall;
 class LightweightDWARFParserTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_dwarf_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_test");
         std::filesystem::create_directories(test_dir);
         
         // Create a simple test ELF file with DWARF data
@@ -635,7 +636,7 @@ TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_Single) {
     bin.close();
     bool result = parser.extractSourceFiles(bin_path, sourceFiles);
     EXPECT_TRUE(result);
-    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/mock_source.cpp"), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("/tmp/mock_source.cpp")), sourceFiles.end());
 }
 
 TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_Multiple) {
@@ -648,10 +649,10 @@ TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_Multiple) {
     bin.close();
     bool result = parser.extractSourceFiles(bin_path, sourceFiles);
     EXPECT_TRUE(result);
-    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "foo/bar.cpp"), sourceFiles.end());
-    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/abc.c"), sourceFiles.end());
-    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/def.hpp"), sourceFiles.end());
-    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/xyz.h"), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("foo/bar.cpp")), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("/tmp/abc.c")), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("/tmp/def.hpp")), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("/tmp/xyz.h")), sourceFiles.end());
 }
 
 TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_InvalidExtensions) {
@@ -665,7 +666,7 @@ TEST_F(LightweightDWARFParserTest, HeuristicSourceFileExtraction_InvalidExtensio
     bool result = parser.extractSourceFiles(bin_path, sourceFiles);
     // Should only find main.c
     EXPECT_TRUE(result);
-    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), "main.c"), sourceFiles.end());
-    EXPECT_EQ(std::find(sourceFiles.begin(), sourceFiles.end(), "foo/bar.txt"), sourceFiles.end());
-    EXPECT_EQ(std::find(sourceFiles.begin(), sourceFiles.end(), "/tmp/abc.doc"), sourceFiles.end());
+    EXPECT_NE(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("main.c")), sourceFiles.end());
+    EXPECT_EQ(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("foo/bar.txt")), sourceFiles.end());
+    EXPECT_EQ(std::find(sourceFiles.begin(), sourceFiles.end(), std::string("/tmp/abc.doc")), sourceFiles.end());
 }

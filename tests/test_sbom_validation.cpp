@@ -5,6 +5,7 @@
 #include <thread>
 #include "common/SBOMValidator.hpp"
 #include "common/SBOMComparator.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -75,13 +76,12 @@ PackageDownloadLocation: https://example.com/test
   }]
 })";
 
-        // Create test directory
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_test");
         std::filesystem::create_directories(test_dir);
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     std::string spdx2_3_content;

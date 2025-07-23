@@ -10,15 +10,31 @@
 #include "common/SBOMGenerator.hpp"
 #include "common/Utils.hpp"
 #include "test_plugin_interface.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class GoldPluginTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_gold_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_gold_test");
         std::filesystem::create_directories(test_dir);
         
+        // Create test files
+        createTestFiles();
+    }
+
+    void TearDown() override {
+        test_utils::safeRemoveDirectory(test_dir);
+    }
+
+    std::filesystem::path test_dir;
+    std::filesystem::path test_object_file;
+    std::filesystem::path test_library_file;
+    std::filesystem::path test_shared_lib;
+    std::filesystem::path test_executable;
+
+    void createTestFiles() {
         // Create test object file
         test_object_file = test_dir / "test.o";
         std::ofstream obj_file(test_object_file);
@@ -43,16 +59,6 @@ protected:
         exe_file << "Executable content";
         exe_file.close();
     }
-
-    void TearDown() override {
-        std::filesystem::remove_all(test_dir);
-    }
-
-    std::filesystem::path test_dir;
-    std::filesystem::path test_object_file;
-    std::filesystem::path test_library_file;
-    std::filesystem::path test_shared_lib;
-    std::filesystem::path test_executable;
 };
 
 // GoldAdapter Unit Tests
@@ -295,7 +301,7 @@ TEST_F(GoldPluginTest, FullWorkflowIntegration) {
     onload(nullptr);
     
     // Set configuration
-    heimdall_set_output_path("/tmp/workflow.sbom");
+    heimdall_set_output_path((test_dir / "workflow.sbom").string().c_str());
     heimdall_set_format("spdx");
     heimdall_set_verbose(true);
     
@@ -349,7 +355,7 @@ TEST_F(GoldPluginTest, ConfigurationPersistenceIntegration) {
     onload(nullptr);
     
     // Set configuration
-    heimdall_set_output_path("/tmp/persistent.sbom");
+    heimdall_set_output_path((test_dir / "persistent.sbom").string().c_str());
     heimdall_set_format("cyclonedx");
     heimdall_set_cyclonedx_version("1.6");
     heimdall_set_verbose(true);
@@ -359,7 +365,7 @@ TEST_F(GoldPluginTest, ConfigurationPersistenceIntegration) {
     
     // Change configuration
     heimdall_set_format("spdx");
-    heimdall_set_output_path("/tmp/changed.sbom");
+    heimdall_set_output_path((test_dir / "changed.sbom").string().c_str());
     
     // Process another file
     heimdall_process_input_file(test_executable.string().c_str());
@@ -438,7 +444,7 @@ TEST_F(GoldPluginTest, GoldPluginOptionsIntegration) {
     onload(nullptr);
     
     // Test various plugin options
-    heimdall_gold_set_plugin_option("--plugin-opt=output=/tmp/gold_output.sbom");
+    heimdall_gold_set_plugin_option(("--plugin-opt=output=" + (test_dir / "gold_output.sbom").string()).c_str());
     heimdall_gold_set_plugin_option("--plugin-opt=format=spdx");
     heimdall_gold_set_plugin_option("--plugin-opt=verbose");
     heimdall_gold_set_plugin_option("--plugin-opt=cyclonedx-version=1.6");
@@ -469,7 +475,7 @@ TEST_F(GoldPluginTest, GoldConfigurationValidationIntegration) {
     onload(nullptr);
     
     // Test configuration validation
-    heimdall_set_output_path("/tmp/valid.sbom");
+    heimdall_set_output_path((test_dir / "valid.sbom").string().c_str());
     heimdall_set_format("spdx");
     heimdall_set_cyclonedx_version("1.6");
     

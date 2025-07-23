@@ -20,15 +20,25 @@ limitations under the License.
 #include <iostream>
 #include "common/DWARFExtractor.hpp"
 #include "common/Utils.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class DWARFExtractorTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_dwarf_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_test");
         std::filesystem::create_directories(test_dir);
+        
+        // Create test files
+        createTestFiles();
+    }
 
+    void TearDown() override {
+        test_utils::safeRemoveDirectory(test_dir);
+    }
+
+    void createTestFiles() {
         // Create a simple C source file with debug info
         test_source = test_dir / "testlib.c";
         std::ofstream(test_source) << R"(
@@ -69,10 +79,6 @@ static int internal_function() {
         if (!std::filesystem::exists(test_object)) {
             std::ofstream(test_object) << "dummy object";
         }
-    }
-
-    void TearDown() override {
-        std::filesystem::remove_all(test_dir);
     }
 
     std::filesystem::path test_dir;

@@ -19,19 +19,18 @@ limitations under the License.
 #include <sstream>
 #include "common/ComponentInfo.hpp"
 #include "common/SBOMGenerator.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class SBOMGeneratorTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_sbom_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_sbom_test");
         std::filesystem::create_directories(test_dir);
-        test_file = test_dir / "libfoo.so";
-        std::ofstream(test_file) << "dummy content";
     }
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
     std::filesystem::path test_dir;
     std::filesystem::path test_file;

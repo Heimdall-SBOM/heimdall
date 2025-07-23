@@ -2,8 +2,47 @@
 
 #include <filesystem>
 #include <string>
+#include <cstdlib>
+#include <unistd.h>
 
 namespace test_utils {
+
+/**
+ * Get a unique test directory name based on build configuration.
+ * This helps prevent conflicts when multiple builds run simultaneously.
+ * 
+ * @param base_name The base name for the test directory
+ * @return A unique path that includes compiler and standard information
+ */
+inline std::filesystem::path getUniqueTestDirectory(const std::string& base_name) {
+    // Get compiler info from environment variables
+    const char* compiler = std::getenv("CC");
+    const char* cxx_compiler = std::getenv("CXX");
+    const char* cxx_standard = std::getenv("CMAKE_CXX_STANDARD");
+    const char* build_type = std::getenv("CMAKE_BUILD_TYPE");
+    
+    // Use CXX if available, otherwise CC, otherwise "unknown"
+    std::string compiler_name = "unknown";
+    if (cxx_compiler) {
+        compiler_name = std::filesystem::path(cxx_compiler).filename().string();
+    } else if (compiler) {
+        compiler_name = std::filesystem::path(compiler).filename().string();
+    }
+    
+    // Get standard info
+    std::string standard_name = cxx_standard ? std::string("cxx") + cxx_standard : "unknown";
+    
+    // Get build type
+    std::string build_type_name = build_type ? build_type : "unknown";
+    
+    // Create unique directory name
+    std::string unique_name = base_name + "_" + compiler_name + "_" + standard_name + "_" + build_type_name;
+    
+    // Add process ID for extra uniqueness
+    unique_name += "_" + std::to_string(getpid());
+    
+    return std::filesystem::temp_directory_path() / unique_name;
+}
 
 /**
  * Safely remove a directory and all its contents.

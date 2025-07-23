@@ -18,6 +18,7 @@ limitations under the License.
 #include "common/ComponentInfo.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "gtest/gtest.h"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -47,7 +48,7 @@ TEST(PackageManagerIntegration, DetectRpm) {
     extractor.extractMetadata(comp);
     
     // Clean up
-    std::filesystem::remove_all(test_dir);
+    test_utils::safeRemoveDirectory(test_dir);
     
     // The package manager detection should work based on the path structure
     EXPECT_EQ(comp.packageManager, "rpm");
@@ -71,7 +72,7 @@ TEST(PackageManagerIntegration, DetectDeb) {
     extractor.extractMetadata(comp);
     
     // Clean up
-    std::filesystem::remove_all(test_dir);
+    test_utils::safeRemoveDirectory(test_dir);
     
     // The package manager detection should work based on the path structure
     EXPECT_EQ(comp.packageManager, "deb");
@@ -98,7 +99,7 @@ TEST(PackageManagerIntegration, DetectPacman) {
     extractor.extractMetadata(comp);
     
     // Clean up
-    std::filesystem::remove_all(test_dir);
+    test_utils::safeRemoveDirectory(test_dir);
     
     // The package manager detection should work based on the path structure
     EXPECT_EQ(comp.packageManager, "pacman");

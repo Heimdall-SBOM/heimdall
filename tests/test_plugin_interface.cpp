@@ -256,10 +256,10 @@ TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
 
 // Configuration Tests
 TEST_F(PluginInterfaceTest, SetOutputPath) {
-    plugin->setOutputPath("/tmp/test_output.json");
+    plugin->setOutputPath((std::filesystem::temp_directory_path() / "test_output.json").string());
     // Note: We can't easily test the internal SBOM generator path setting
     // but we can test that the method doesn't crash
-    EXPECT_NO_THROW(plugin->setOutputPath("/tmp/test_output.json"));
+    EXPECT_NO_THROW(plugin->setOutputPath((std::filesystem::temp_directory_path() / "test_output.json").string()));
 }
 
 TEST_F(PluginInterfaceTest, SetFormat) {

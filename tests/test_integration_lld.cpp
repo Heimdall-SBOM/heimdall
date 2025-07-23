@@ -35,22 +35,38 @@ limitations under the License.
 #include "common/SBOMGenerator.hpp"
 #include "common/Utils.hpp"
 #include "test_plugin_interface.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class LLDIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_lld_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_lld_test");
         std::filesystem::create_directories(test_dir);
         
+        // Create test files
+        createTestFiles();
+    }
+    
+    void TearDown() override {
+        test_utils::safeRemoveDirectory(test_dir);
+    }
+    
+    std::filesystem::path test_dir;
+    std::filesystem::path test_object_file;
+    std::filesystem::path test_library_file;
+    std::filesystem::path test_executable;
+    std::filesystem::path test_bitcode;
+    std::filesystem::path test_llvm_ir;
+
+    void createTestFiles() {
         test_object_file = test_dir / "test.o";
         test_library_file = test_dir / "libtest.a";
         test_executable = test_dir / "test_executable";
         test_bitcode = test_dir / "test.bc";
         test_llvm_ir = test_dir / "test.ll";
         
-        // Create test files
         std::ofstream obj_file(test_object_file);
         obj_file << "ELF object file content";
         obj_file.close();
@@ -71,17 +87,6 @@ protected:
         ll_file << "LLVM IR content";
         ll_file.close();
     }
-    
-    void TearDown() override {
-        std::filesystem::remove_all(test_dir);
-    }
-    
-    std::filesystem::path test_dir;
-    std::filesystem::path test_object_file;
-    std::filesystem::path test_library_file;
-    std::filesystem::path test_executable;
-    std::filesystem::path test_bitcode;
-    std::filesystem::path test_llvm_ir;
 };
 
 // End-to-End Workflow Tests
@@ -518,7 +523,7 @@ TEST_F(LLDIntegrationTest, LLDPluginOptions) {
     onload(nullptr);
     
     // Test various LLD plugin options
-    heimdall_lld_set_plugin_option("--plugin-opt=output=/tmp/lld_output.sbom");
+    heimdall_lld_set_plugin_option(("--plugin-opt=output=" + (test_dir / "lld_output.sbom").string()).c_str());
     heimdall_lld_set_plugin_option("--plugin-opt=format=spdx");
     heimdall_lld_set_plugin_option("--plugin-opt=verbose");
     heimdall_lld_set_plugin_option("--plugin-opt=cyclonedx-version=1.6");
@@ -548,7 +553,7 @@ TEST_F(LLDIntegrationTest, LLDConfigurationValidation) {
     onload(nullptr);
     
     // Test configuration validation
-    heimdall_set_output_path("/tmp/valid.sbom");
+    heimdall_set_output_path((test_dir / "valid.sbom").string().c_str());
     heimdall_set_format("spdx");
     heimdall_set_cyclonedx_version("1.6");
     

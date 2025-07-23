@@ -23,13 +23,14 @@ limitations under the License.
 #include "common/ComponentInfo.hpp"
 #include "common/Utils.hpp"
 #include <thread>
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class MetadataExtractorExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_metadata_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_metadata_test");
         std::filesystem::create_directories(test_dir);
         
         // Create test files
@@ -37,7 +38,7 @@ protected:
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     void createTestFiles() {

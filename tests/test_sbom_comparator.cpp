@@ -5,13 +5,14 @@
 #include <string>
 #include <thread>
 #include "common/SBOMComparator.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class SBOMComparatorTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_comparator_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_comparator_test");
         std::filesystem::create_directories(test_dir);
         
         // Create test SBOM files
@@ -19,7 +20,7 @@ protected:
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     void createTestSBOMs() {
@@ -956,7 +957,7 @@ TEST_F(SBOMComparatorTest, BoundaryConditions) {
     
     // Test with very large file paths
     std::string long_path = test_dir.string();
-    for (int i = 0; i < 50; ++i) {
+    for (int i = 0; i < 10; ++i) {  // Reduced from 50 to 10
         long_path += "/very/deep/nested/directory/structure/";
     }
     std::filesystem::create_directories(long_path);

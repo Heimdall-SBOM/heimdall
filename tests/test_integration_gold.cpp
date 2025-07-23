@@ -33,6 +33,7 @@ limitations under the License.
 #include "common/SBOMGenerator.hpp"
 #include "common/Utils.hpp"
 #include "test_plugin_interface.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -41,16 +42,31 @@ using namespace heimdall;
 class GoldIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_gold_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_gold_test");
         std::filesystem::create_directories(test_dir);
         
+        // Create test files
+        createTestFiles();
+    }
+    
+    void TearDown() override {
+        test_utils::safeRemoveDirectory(test_dir);
+    }
+    
+    std::filesystem::path test_dir;
+    std::filesystem::path test_object_file;
+    std::filesystem::path test_library_file;
+    std::filesystem::path test_shared_lib;
+    std::filesystem::path test_executable;
+    std::filesystem::path test_archive;
+
+    void createTestFiles() {
         test_object_file = test_dir / "test.o";
         test_library_file = test_dir / "libtest.a";
         test_shared_lib = test_dir / "libtest.so";
         test_executable = test_dir / "test_executable";
         test_archive = test_dir / "archive.a";
         
-        // Create test files
         std::ofstream obj_file(test_object_file);
         obj_file << "ELF object file content";
         obj_file.close();
@@ -71,17 +87,6 @@ protected:
         archive_file << "Archive content";
         archive_file.close();
     }
-    
-    void TearDown() override {
-        std::filesystem::remove_all(test_dir);
-    }
-    
-    std::filesystem::path test_dir;
-    std::filesystem::path test_object_file;
-    std::filesystem::path test_library_file;
-    std::filesystem::path test_shared_lib;
-    std::filesystem::path test_executable;
-    std::filesystem::path test_archive;
 };
 
 // End-to-End Workflow Tests

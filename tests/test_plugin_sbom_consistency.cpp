@@ -39,6 +39,7 @@ limitations under the License.
 // #include "external/nlohmann_json.hpp"
 // #include "external/json-schema-validator.hpp"
 #include <nlohmann/json-schema.hpp>
+#include "test_utils.hpp"
 
 // Plugin function typedefs
 typedef int (*init_func_t)(void*);
@@ -53,19 +54,11 @@ namespace {
 class PluginSBOMConsistencyTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Create test directory
-        testDir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
+        testDir = test_utils::getUniqueTestDirectory("heimdall_plugin_test");
         std::filesystem::create_directories(testDir);
-
-        // Ensure plugins are built before finding them
-        ensurePluginsBuilt();
-
-        // Find plugin paths
-        lldPluginPath = findPluginPath("heimdall-lld.so");
-        goldPluginPath = findPluginPath("heimdall-gold.so");
-
-        // Create a simple test binary
-        createTestBinary();
+        
+        // Create test files
+        createTestFiles();
     }
 
     void ensurePluginsBuilt() {
@@ -98,7 +91,19 @@ protected:
 
     void TearDown() override {
         // Clean up test files
-        std::filesystem::remove_all(testDir);
+        test_utils::safeRemoveDirectory(testDir);
+    }
+
+    void createTestFiles() {
+        // Ensure plugins are built before finding them
+        ensurePluginsBuilt();
+
+        // Find plugin paths
+        lldPluginPath = findPluginPath("heimdall-lld.so");
+        goldPluginPath = findPluginPath("heimdall-gold.so");
+
+        // Create a simple test binary
+        createTestBinary();
     }
 
     std::string findPluginPath(const std::string& pluginName) {
@@ -513,7 +518,7 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
               << std::endl;
 
     // Debug: print all parsed component names
-    std::ofstream debugOut("/tmp/gold_cyclonedx_components.txt");
+    std::ofstream debugOut((testDir / "gold_cyclonedx_components.txt").string());
     if (!debugOut.is_open()) {
         std::cerr << "DEBUG: Failed to open debug file for writing" << std::endl;
     } else {
@@ -632,12 +637,6 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
     EXPECT_TRUE(success) << "Failed to generate Gold CycloneDX SBOM";
     EXPECT_TRUE(std::filesystem::exists(outputPath)) << "Gold CycloneDX file not created";
 
-    // Copy SBOM to /tmp for inspection
-    std::string tmpCopy = "/tmp/gold_test.cyclonedx.json";
-    std::cerr << "DEBUG: Copying SBOM to " << tmpCopy << std::endl;
-    std::filesystem::copy_file(outputPath, tmpCopy,
-                               std::filesystem::copy_options::overwrite_existing);
-
     // Parse and validate CycloneDX
     std::cerr << "DEBUG: Parsing CycloneDX SBOM" << std::endl;
     SBOMData cyclonedxData = parseCycloneDX(outputPath);
@@ -645,7 +644,7 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
               << std::endl;
 
     // Debug: print all parsed component names
-    std::ofstream debugOut("/tmp/gold_cyclonedx_components.txt");
+    std::ofstream debugOut((testDir / "gold_cyclonedx_components.txt").string());
     if (!debugOut.is_open()) {
         std::cerr << "DEBUG: Failed to open debug file for writing" << std::endl;
     } else {

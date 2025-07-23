@@ -20,15 +20,25 @@ limitations under the License.
 #include <iostream>
 #include "common/ComponentInfo.hpp"
 #include "common/MetadataExtractor.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
 class LinuxSupportTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_linux_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_linux_test");
         std::filesystem::create_directories(test_dir);
+        
+        // Create test files
+        createTestFiles();
+    }
+    
+    void TearDown() override {
+        test_utils::safeRemoveDirectory(test_dir);
+    }
 
+    void createTestFiles() {
         // Create a simple C source file for testing
         test_source = test_dir / "testlib.c";
         std::ofstream(test_source) << R"(
@@ -57,9 +67,6 @@ const char* test_license = "MIT";
         if (!std::filesystem::exists(test_lib)) {
             std::ofstream(test_lib) << "dummy content";
         }
-    }
-    void TearDown() override {
-        std::filesystem::remove_all(test_dir);
     }
     std::filesystem::path test_dir;
     std::filesystem::path test_source;

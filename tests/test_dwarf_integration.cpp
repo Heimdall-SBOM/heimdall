@@ -30,6 +30,7 @@ limitations under the License.
 #include "common/MetadataExtractor.hpp"
 #include "common/PluginInterface.hpp"
 #include "common/Utils.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -50,19 +51,24 @@ namespace heimdall {
 class DWARFIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Enable test mode to avoid hanging on directory operations
-        heimdall::MetadataHelpers::setTestMode(true);
-        
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_dwarf_integration_test";
+        test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_integration_test");
         std::filesystem::create_directories(test_dir);
-
-        // Create complex multi-file project
-        createTestProject();
-        compileTestProject();
+        
+        // Create test files
+        createTestFiles();
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
+    }
+
+    void createTestFiles() {
+        // Enable test mode to avoid hanging on directory operations
+        heimdall::MetadataHelpers::setTestMode(true);
+        
+        // Create complex multi-file project
+        createTestProject();
+        compileTestProject();
     }
 
     void createTestProject() {
