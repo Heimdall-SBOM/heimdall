@@ -66,6 +66,7 @@ limitations under the License.
 #if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
 #include <filesystem>
 #endif
+#include <filesystem>
 
 #if LLVM_DWARF_AVAILABLE
 #include "DWARFExtractor.hpp"
@@ -245,49 +246,29 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
             }
         }
 
+        std::filesystem::path filePath(component.filePath);
         // Declare searchPaths and aliFiles for Ada detection
-        std::vector<std::string> searchPaths;
         std::vector<std::string> aliFiles;
 
         // Try Ada metadata extraction ONLY if Ada files are present
+        heimdall::Utils::debugPrint("Attempting Ada Metadata extraction");
         bool adaFilesPresent = false;
+
+        // Try multiple search paths for ALI files
+        std::vector<std::string> searchPaths = {
+            filePath.parent_path().string(),
+            filePath.parent_path().parent_path().string(),
+            std::filesystem::current_path().string()
+        };
+
         for (const auto& searchPath : searchPaths) {
-#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
-            for (const auto& entry : std::filesystem::directory_iterator(searchPath)) {
-                if (entry.is_regular_file()) {
-                    std::string fname = entry.path().filename().string();
-                    if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" || fname.substr(fname.size() - 4) == ".ads" || fname.substr(fname.size() - 4) == ".ali")) {
-                        adaFilesPresent = true;
-                        break;
+            if (findAdaAliFiles(searchPath, aliFiles)) {
+                if (extractAdaMetadata(component, aliFiles)) {
+                    if (!packageManagerDetected) {
+                        packageManagerDetected = true;
                     }
-                }
-            }
-#else
-            DIR* dir = opendir(searchPath.c_str());
-            if (dir) {
-                struct dirent* entry;
-                while ((entry = readdir(dir)) != nullptr) {
-                    std::string fname = entry->d_name;
-                    if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" || fname.substr(fname.size() - 4) == ".ads" || fname.substr(fname.size() - 4) == ".ali")) {
-                        adaFilesPresent = true;
-                        break;
-                    }
-                }
-                closedir(dir);
-            }
-#endif
-            if (adaFilesPresent) break;
-        }
-        if (adaFilesPresent) {
-            for (const auto& searchPath : searchPaths) {
-                if (findAdaAliFiles(searchPath, aliFiles)) {
-                    if (extractAdaMetadata(component, aliFiles)) {
-                        if (!packageManagerDetected) {
-                            packageManagerDetected = true;
-                        }
-                        heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " + searchPath);
-                        break;
-                    }
+                    heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " + searchPath);
+                    break;
                 }
             }
         }
@@ -359,9 +340,9 @@ bool MetadataExtractor::extractLicenseInfo(ComponentInfo& component) {
 bool MetadataExtractor::extractSymbolInfo(ComponentInfo& component) {
     // Use lazy symbol extraction with caching
     static LazySymbolExtractor lazyExtractor;
-    
+
     component.symbols = lazyExtractor.getSymbols(component.filePath);
-    
+
     // Handle archive members for additional metadata
     if (isArchive(component.filePath)) {
         std::vector<std::string> members;
@@ -372,7 +353,7 @@ bool MetadataExtractor::extractSymbolInfo(ComponentInfo& component) {
             Utils::debugPrint("Extracted " + std::to_string(members.size()) + " archive members");
         }
     }
-    
+
     return !component.symbols.empty();
 }
 
@@ -570,11 +551,11 @@ bool MetadataExtractor::extractAdaMetadata(ComponentInfo& component,
 }
 
 bool MetadataExtractor::isAdaAliFile(const std::string& filePath) {
-    return filePath.length() > 4 && 
+    return filePath.length() > 4 &&
            filePath.substr(filePath.length() - 4) == ".ali";
 }
 
-bool MetadataExtractor::findAdaAliFiles(const std::string& directory, 
+bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                                        std::vector<std::string>& aliFiles) {
     try {
 #if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
@@ -582,20 +563,20 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
         try {
             time_t start_time = time(nullptr);
             const int timeout_seconds = 30;
-            
+
             std::cerr << "DEBUG: Starting filesystem scan for directory: " << directory << std::endl;
             std::vector<std::string> dirs_to_scan = {directory};
-            
+
             while (!dirs_to_scan.empty()) {
                 // Check timeout
                 if (time(nullptr) - start_time > timeout_seconds) {
                     std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory << std::endl;
                     return false;
                 }
-                
+
                 std::string current_dir = dirs_to_scan.back();
                 dirs_to_scan.pop_back();
-                
+
                 try {
                     std::cerr << "DEBUG: Starting directory iteration for: " << current_dir << std::endl;
                     for (const auto& entry : std::filesystem::directory_iterator(current_dir)) {
@@ -604,7 +585,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                             std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory << std::endl;
                             return false;
                         }
-                        
+
                         if (entry.is_regular_file() && isAdaAliFile(entry.path().string())) {
                             aliFiles.push_back(entry.path().string());
                             std::cerr << "DEBUG: Found ALI file: " << entry.path().string() << std::endl;
@@ -628,14 +609,14 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
         try {
             time_t start_time = time(nullptr);
             const int timeout_seconds = 30;
-            
+
             if (pImpl->verbose) {
                 std::cerr << "DEBUG: Starting portable directory scan for: " << directory << std::endl;
             }
-            
+
             // Use a stack-based approach to avoid recursion depth issues
             std::vector<std::string> dirs_to_scan = {directory};
-            
+
             while (!dirs_to_scan.empty()) {
                 // Check timeout
                 if (time(nullptr) - start_time > timeout_seconds) {
@@ -644,10 +625,10 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                     }
                     return false;
                 }
-                
+
                 std::string current_dir = dirs_to_scan.back();
                 dirs_to_scan.pop_back();
-                
+
                 try {
                     // Use basic directory operations that work on all platforms
                     DIR* dir = opendir(current_dir.c_str());
@@ -657,7 +638,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                         }
                         continue;
                     }
-                    
+
                     struct dirent* entry;
                     while ((entry = readdir(dir)) != nullptr) {
                         // Check timeout for each entry
@@ -668,16 +649,16 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                             closedir(dir);
                             return false;
                         }
-                        
+
                         std::string entry_name = entry->d_name;
-                        
+
                         // Skip . and ..
                         if (entry_name == "." || entry_name == "..") {
                             continue;
                         }
-                        
+
                         std::string full_path = current_dir + "/" + entry_name;
-                        
+
                         // Check if it's a regular file with .ali extension
                         if (entry->d_type == DT_REG || entry->d_type == DT_UNKNOWN) {
                             // For DT_UNKNOWN, we need to stat the file
@@ -691,7 +672,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                                     continue;
                                 }
                             }
-                            
+
                             // Check if it's an ALI file
                             if (isAdaAliFile(full_path)) {
                                 aliFiles.push_back(full_path);
@@ -713,12 +694,12 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                                     continue;
                                 }
                             }
-                            
+
                             // Add subdirectory for scanning
                             dirs_to_scan.push_back(full_path);
                         }
                     }
-                    
+
                     closedir(dir);
                 } catch (const std::exception& e) {
                     // Skip problematic directories but continue scanning
@@ -728,7 +709,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                     continue;
                 }
             }
-            
+
             return true;
         } catch (const std::exception& e) {
             if (pImpl->verbose) {
@@ -1967,16 +1948,16 @@ bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& comp
 #if LLVM_DWARF_AVAILABLE
     // Use the new robust DWARF extractor with optimized single-context extraction
     heimdall::DWARFExtractor dwarfExtractor;
-    
+
     // Extract all debug information using a single DWARF context
     std::vector<std::string> sourceFiles;
     std::vector<std::string> compileUnits;
     std::vector<std::string> functions;
-    
+
 #ifdef HEIMDALL_DEBUG_ENABLED
     heimdall::Utils::debugPrint("MetadataHelpers: Calling extractAllDebugInfo (optimized single-context extraction)");
 #endif
-    
+
     if (dwarfExtractor.extractAllDebugInfo(filePath, sourceFiles, compileUnits, functions)) {
 #ifdef HEIMDALL_DEBUG_ENABLED
         heimdall::Utils::debugPrint("MetadataHelpers: extractAllDebugInfo returned true");
@@ -1984,22 +1965,22 @@ bool extractDebugInfo(const std::string& filePath, heimdall::ComponentInfo& comp
         heimdall::Utils::debugPrint("MetadataHelpers: Found " + std::to_string(compileUnits.size()) + " compile units");
         heimdall::Utils::debugPrint("MetadataHelpers: Found " + std::to_string(functions.size()) + " functions");
 #endif
-        
+
         // Add source files to component
         for (const auto& sourceFile : sourceFiles) {
             component.addSourceFile(sourceFile);
         }
-        
+
         // Add compile units to component
         for (const auto& unit : compileUnits) {
             component.compileUnits.push_back(unit);
         }
-        
+
         // Add functions to component
         for (const auto& function : functions) {
             component.functions.push_back(function);
         }
-        
+
         component.setContainsDebugInfo(true);
 #ifdef HEIMDALL_DEBUG_ENABLED
         heimdall::Utils::debugPrint("MetadataHelpers: Setting containsDebugInfo to true");
@@ -2417,7 +2398,7 @@ bool detectSpackMetadata(heimdall::ComponentInfo& component) {
 }
 
 bool isAdaAliFile(const std::string& filePath) {
-    return filePath.length() > 4 && 
+    return filePath.length() > 4 &&
            filePath.substr(filePath.length() - 4) == ".ali";
 }
 
@@ -2430,38 +2411,38 @@ bool isTestMode() {
     return g_test_mode.load(std::memory_order_acquire);
 }
 
-bool findAdaAliFiles(const std::string& directory, 
+bool findAdaAliFiles(const std::string& directory,
                     std::vector<std::string>& aliFiles) {
     // Skip Ada ALI file search in test environment to avoid hanging
     if (isTestMode()) {
         std::cerr << "DEBUG: Skipping Ada ALI file search in test mode for: " << directory << std::endl;
         return true;
     }
-    
+
     try {
         // Enhanced directory scanning with timeout and error handling
         std::string command = "/usr/bin/timeout 30s /usr/bin/find " + directory + " -name \"*.ali\" -type f 2>/dev/null";
-        
+
         std::cerr << "DEBUG: Starting findAdaAliFiles for directory: " << directory << std::endl;
         std::cerr << "DEBUG: Command: " << command << std::endl;
         std::cerr << "DEBUG: About to call popen with command: " << command << std::endl;
-        
+
         FILE* pipe = popen(command.c_str(), "r");
         if (!pipe) {
             std::cerr << "DEBUG: popen failed for directory: " << directory << " with errno: " << errno << std::endl;
             return false;
         }
         std::cerr << "DEBUG: popen succeeded, pipe fd: " << fileno(pipe) << std::endl;
-        
+
         // Set non-blocking mode for timeout handling
         int fd = fileno(pipe);
         int flags = fcntl(fd, F_GETFL, 0);
         fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-        
+
         char buffer[1024];
         time_t start_time = time(nullptr);
         const int timeout_seconds = 30;
-        
+
         while (true) {
             // Check timeout
             if (time(nullptr) - start_time > timeout_seconds) {
@@ -2469,7 +2450,7 @@ bool findAdaAliFiles(const std::string& directory,
                 pclose(pipe);
                 return false;
             }
-            
+
             // Try to read from pipe
             char* result = fgets(buffer, sizeof(buffer), pipe);
             if (result == nullptr) {
@@ -2482,7 +2463,7 @@ bool findAdaAliFiles(const std::string& directory,
                 // End of file or error
                 break;
             }
-            
+
             std::string line(buffer);
             // Remove newline
             if (!line.empty() && line[line.length()-1] == '\n') {
@@ -2493,14 +2474,14 @@ bool findAdaAliFiles(const std::string& directory,
                 std::cerr << "DEBUG: Found ALI file: " << line << std::endl;
             }
         }
-        
+
         std::cerr << "DEBUG: About to call pclose on pipe fd: " << fileno(pipe) << std::endl;
         int status = pclose(pipe);
         std::cerr << "DEBUG: pclose returned status: " << status << std::endl;
         if (status != 0) {
             std::cerr << "DEBUG: Find command exited with status: " << status << std::endl;
         }
-        
+
         return true;
     } catch (const std::exception& e) {
         std::cerr << "Error searching for ALI files: " << e.what() << std::endl;
@@ -2508,7 +2489,7 @@ bool findAdaAliFiles(const std::string& directory,
     }
 }
 
-bool extractAdaMetadata(const std::vector<std::string>& aliFiles, 
+bool extractAdaMetadata(const std::vector<std::string>& aliFiles,
                        heimdall::ComponentInfo& component) {
     heimdall::AdaExtractor adaExtractor;
     adaExtractor.setExtractEnhancedMetadata(true);  // Enable enhanced metadata extraction
