@@ -18,6 +18,8 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <openssl/ssl.h>
+#include <openssl/evp.h>
 #include "common/Utils.hpp"
 #include "test_utils.hpp"
 
@@ -26,6 +28,10 @@ using namespace heimdall;
 class UtilsExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        // Initialize OpenSSL for CI environments
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+        
         test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_extended_test";
         std::filesystem::create_directories(test_dir);
 
@@ -53,6 +59,9 @@ protected:
         // Safely remove test directory using utility function
         test_utils::safeRemoveDirectory(test_dir);
         unsetenv("TEST_VAR");
+        
+        // Clean up OpenSSL
+        EVP_cleanup();
     }
 
     std::filesystem::path test_dir;

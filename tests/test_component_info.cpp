@@ -16,6 +16,8 @@ limitations under the License.
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
+#include <openssl/ssl.h>
+#include <openssl/evp.h>
 #include "common/ComponentInfo.hpp"
 #include "test_utils.hpp"
 
@@ -24,6 +26,10 @@ using namespace heimdall;
 class ComponentInfoTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        // Initialize OpenSSL for CI environments
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+        
         test_dir = std::filesystem::temp_directory_path() / "heimdall_component_test";
         std::filesystem::create_directories(test_dir);
         test_file = test_dir / "libtest.so";

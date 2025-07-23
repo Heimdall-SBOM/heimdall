@@ -25,9 +25,12 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <chrono>
+#include <thread>
 #include "common/ComponentInfo.hpp"
 #include "common/PluginInterface.hpp"
 #include "common/SBOMGenerator.hpp"
+#include "common/Utils.hpp"
 
 namespace heimdall {
 namespace test {
@@ -138,6 +141,7 @@ public:
     using PluginInterface::shouldProcessFile;
     using PluginInterface::updateComponent;
     using PluginInterface::verbose;
+    
 };
 
 /**
@@ -158,25 +162,67 @@ protected:
     }
 
     void createTestFiles() {
+        // Get current working directory for absolute paths
+        std::filesystem::path cwd = std::filesystem::current_path();
+        
         // Create test object file
-        std::ofstream objFile("test_object.o");
+        std::filesystem::path objPath = cwd / "test_object.o";
+        std::ofstream objFile(objPath);
+        if (!objFile.is_open()) {
+            std::cerr << "ERROR: Failed to create test_object.o" << std::endl;
+            return;
+        }
         objFile << "test object file content";
         objFile.close();
+        
+        // Ensure file is written to disk
+        objFile.flush();
+        std::filesystem::path(objPath).clear();
 
         // Create test library file
-        std::ofstream libFile("libtest.so");
+        std::filesystem::path libPath = cwd / "libtest.so";
+        std::ofstream libFile(libPath);
+        if (!libFile.is_open()) {
+            std::cerr << "ERROR: Failed to create libtest.so" << std::endl;
+            return;
+        }
         libFile << "test library file content";
         libFile.close();
+        
+        // Ensure file is written to disk
+        libFile.flush();
+        std::filesystem::path(libPath).clear();
 
         // Create test executable
-        std::ofstream exeFile("test_executable.exe");
+        std::filesystem::path exePath = cwd / "test_executable.exe";
+        std::ofstream exeFile(exePath);
+        if (!exeFile.is_open()) {
+            std::cerr << "ERROR: Failed to create test_executable.exe" << std::endl;
+            return;
+        }
         exeFile << "test executable content";
         exeFile.close();
+        
+        // Ensure file is written to disk
+        exeFile.flush();
+        std::filesystem::path(exePath).clear();
 
         // Create test archive
-        std::ofstream archiveFile("libtest.a");
+        std::filesystem::path archivePath = cwd / "libtest.a";
+        std::ofstream archiveFile(archivePath);
+        if (!archiveFile.is_open()) {
+            std::cerr << "ERROR: Failed to create libtest.a" << std::endl;
+            return;
+        }
         archiveFile << "test archive content";
         archiveFile.close();
+        
+        // Ensure file is written to disk
+        archiveFile.flush();
+        std::filesystem::path(archivePath).clear();
+        
+        // Small delay to ensure filesystem synchronization in CI environments
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     void cleanupTestFiles() {
