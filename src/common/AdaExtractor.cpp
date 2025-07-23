@@ -96,11 +96,13 @@ bool AdaExtractor::extractAdaMetadata(ComponentInfo& component,
     std::map<std::string, std::string> allTimestamps;
     std::map<std::string, std::string> allChecksums;
 
+    bool hasValidFiles = false;
     // Parse each ALI file
     for (const auto& aliFile : aliFiles) {
         AdaPackageInfo packageInfo;
         if (parseAliFile(aliFile, packageInfo)) {
             packages.push_back(packageInfo);
+            hasValidFiles = true;
             
             // Extract enhanced metadata from this ALI file
             std::ifstream file(aliFile);
@@ -294,7 +296,7 @@ bool AdaExtractor::extractAdaMetadata(ComponentInfo& component,
         std::cout << std::endl;
     }
 
-    return true;
+    return hasValidFiles;
 }
 
 bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& packageInfo) {
@@ -310,20 +312,24 @@ bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& 
     packageInfo.name = extractPackageName(aliFilePath);
     packageInfo.sourceFile = extractSourceFilePath(aliFilePath);
 
+    bool hasValidContent = false;
     std::string line;
     while (std::getline(file, line)) {
         // Parse version line
         if (line.substr(0, 2) == "V ") {
             AdaBuildInfo buildInfo;
             parseVersionLine(line, buildInfo);
+            hasValidContent = true;
         }
         // Parse dependency lines (W lines)
         else if (line.substr(0, 2) == "W ") {
             parseDependencyLine(line, packageInfo);
+            hasValidContent = true;
         }
         // Parse runtime dependency lines (Z lines)
         else if (line.substr(0, 2) == "Z ") {
             parseDependencyLine(line, packageInfo);
+            hasValidContent = true;
         }
         // Parse function lines (X lines with V*)
         else if (line.substr(0, 2) == "X " && line.find("V*") != std::string::npos) {
@@ -332,6 +338,7 @@ bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& 
             for (const auto& func : functions) {
                 packageInfo.functions.push_back(func.name);
             }
+            hasValidContent = true;
         }
         // Parse variable lines (X lines with a*)
         else if (line.substr(0, 2) == "X " && line.find("a*") != std::string::npos) {
@@ -339,6 +346,7 @@ bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& 
             parseVariableLine(line, variables);
             packageInfo.variables.insert(packageInfo.variables.end(), 
                                        variables.begin(), variables.end());
+            hasValidContent = true;
         }
         // Parse type lines (X lines with i*)
         else if (line.substr(0, 2) == "X " && line.find("i*") != std::string::npos) {
@@ -346,6 +354,7 @@ bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& 
             parseTypeLine(line, types);
             packageInfo.types.insert(packageInfo.types.end(), 
                                    types.begin(), types.end());
+            hasValidContent = true;
         }
     }
 
@@ -353,7 +362,7 @@ bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& 
     packageInfo.isRuntime = isRuntimePackage(packageInfo.name);
     packageInfo.isSpecification = packageInfo.sourceFile.find(".ads") != std::string::npos;
 
-    return true;
+    return hasValidContent;
 }
 
 bool AdaExtractor::extractDependencies(const std::string& content, 

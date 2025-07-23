@@ -20,6 +20,7 @@ limitations under the License.
 #include "common/AdaExtractor.hpp"
 #include "common/ComponentInfo.hpp"
 #include "common/Utils.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -36,7 +37,7 @@ protected:
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     std::filesystem::path test_dir;

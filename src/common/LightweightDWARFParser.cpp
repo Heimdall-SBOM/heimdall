@@ -636,8 +636,21 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string& file
             }
             
             std::string filename = data.substr(start, end - start);
-            if (filename.length() > 3 && filename.find('/') != std::string::npos) {
-                foundFiles.insert(filename);
+            // Only include files with valid source extensions and paths
+            if (filename.length() > 3) {
+                // Check if the filename ends with a valid source extension
+                bool hasValidExtension = false;
+                for (const auto& validExt : extensions) {
+                    if (filename.length() >= validExt.length() && 
+                        filename.substr(filename.length() - validExt.length()) == validExt) {
+                        hasValidExtension = true;
+                        break;
+                    }
+                }
+                
+                if (hasValidExtension) {
+                    foundFiles.insert(filename);
+                }
             }
             
             pos = end;

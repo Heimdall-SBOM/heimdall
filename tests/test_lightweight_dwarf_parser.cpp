@@ -5,6 +5,7 @@
 #include <string>
 #include <thread>
 #include "common/LightweightDWARFParser.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -19,7 +20,7 @@ protected:
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     void createTestELF() {
