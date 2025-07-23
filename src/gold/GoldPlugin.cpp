@@ -318,25 +318,8 @@ int heimdall_process_input_file(const char* filePath) {
     // --- NEW: Detect and process dependencies ---
     std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(path);
     for (const auto& dep : deps) {
-        std::string depPath;
-        // Absolute path? Use as is
-        if (!dep.empty() && dep[0] == '/') {
-            depPath = dep;
-        } else {
-            // Search standard library paths
-            std::vector<std::string> libPaths = {
-                "/usr/lib", "/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib",
-                "/lib",     "/lib64",         "/usr/lib64"};
-            for (const auto& libDir : libPaths) {
-                std::string candidate = libDir;
-                candidate += "/";
-                candidate += dep;
-                if (heimdall::Utils::fileExists(candidate)) {
-                    depPath = candidate;
-                    break;
-                }
-            }
-        }
+        // Use the comprehensive library resolver like LLD adapter
+        std::string depPath = heimdall::Utils::resolveLibraryPath(dep);
         if (!depPath.empty() && heimdall::Utils::fileExists(depPath)) {
             // Avoid duplicate processing
             if (std::find(processedLibraries.begin(), processedLibraries.end(), depPath) ==
