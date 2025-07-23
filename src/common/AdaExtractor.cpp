@@ -654,7 +654,11 @@ bool AdaExtractor::parseDependencyLine(const std::string& line, AdaPackageInfo& 
         size_t percentPos = packagePart.find('%');
         if (percentPos != std::string::npos) {
             std::string packageName = packagePart.substr(0, percentPos);
-            packageInfo.dependencies.push_back(packageName);
+            
+            // Only add non-runtime packages as dependencies
+            if (!isRuntimePackage(packageName)) {
+                packageInfo.dependencies.push_back(packageName);
+            }
             
             // Store the source file name from ALI file (don't try to find actual file on disk)
             if (!isRuntimePackage(packageName) && !sourceFile.empty()) {

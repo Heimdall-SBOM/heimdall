@@ -75,6 +75,7 @@ TEST_F(AdaExtractorTest, IsRuntimePackage) {
     AdaExtractor extractor;
     EXPECT_TRUE(extractor.isRuntimePackage("ada.strings"));
     EXPECT_TRUE(extractor.isRuntimePackage("system.io"));
+    EXPECT_TRUE(extractor.isRuntimePackage("ada"));  // Test exact match
     EXPECT_FALSE(extractor.isRuntimePackage("my_package"));
 }
 
