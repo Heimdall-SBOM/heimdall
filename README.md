@@ -325,6 +325,23 @@ The build system will automatically detect if you need SCL and provide clear ins
 
 The project includes a comprehensive test suite with **257 passing tests** across **19 test suites** and **45.4% code coverage**. The test suite validates compatibility across all supported C++ standards and provides extensive error handling and edge case testing.
 
+### Continuous Integration
+
+Heimdall uses GitHub Actions for comprehensive CI/CD testing:
+
+- **Multi-standard testing**: C++11 and C++23 builds
+- **Multi-compiler testing**: GCC and Clang support  
+- **Unit test execution**: All 257 tests across 19 test suites
+- **Code coverage analysis**: Automated coverage reporting
+- **Example validation**: All example projects built and tested
+
+The CI workflow runs automatically on:
+- **Push to main/develop**: Full test suite + coverage + examples
+- **Pull requests**: Core build and test validation
+- **Manual triggers**: Selective testing by C++ standard and compiler
+
+See [docs/ci-workflow.md](docs/ci-workflow.md) for detailed CI documentation.
+
 ### Test Statistics
 
 | Metric | Count | Status |
