@@ -68,7 +68,7 @@ compiler: clang
 
 ### Pre-built DevContainer Image
 
-All jobs use the pre-built devcontainer image (`${{ github.repository_owner }}/heimdall-devcontainer:latest`) which includes:
+All jobs use the pre-built devcontainer image (`ghcr.io/${{ github.repository_owner }}/heimdall-devcontainer:latest`) which includes:
 
 - **Base System**: Ubuntu 22.04
 - **Build Tools**: build-essential, cmake, ninja-build, git
@@ -90,7 +90,7 @@ The CI workflow uses the container specification:
 
 ```yaml
 container:
-  image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+  image: ghcr.io/${{ github.repository_owner }}/heimdall-devcontainer:latest
   options: --user root
 ```
 

@@ -4,28 +4,28 @@ This guide explains how to build and use a pre-built devcontainer Docker image t
 
 ## Quick Start
 
-1. **Build and push the image to Docker Hub:**
+1. **Build and push the image to GitHub Container Registry:**
    ```bash
-   ./scripts/build-devcontainer.sh your-dockerhub-username heimdall-devcontainer:latest
+   ./scripts/build-devcontainer.sh your-github-username heimdall-devcontainer:latest
    ```
 
 2. **Update the devcontainer.json:**
-   Replace `your-dockerhub-username` in `.devcontainer/devcontainer.json` with your actual Docker Hub username.
+   Replace `your-github-username` in `.devcontainer/devcontainer.json` with your actual GitHub username.
 
 3. **Use the pre-built image:**
    The devcontainer will now use the pre-built image from Docker Hub instead of building locally.
 
 ## Detailed Steps
 
-### Step 1: Create Docker Hub Account
+### Step 1: Create GitHub Account
 
-1. Go to [Docker Hub](https://hub.docker.com) and create an account
-2. Create a repository for your devcontainer image (optional, but recommended)
+1. You already have a GitHub account (required for this repository)
+2. GitHub Container Registry is automatically available with your GitHub account
 
-### Step 2: Login to Docker Hub
+### Step 2: Login to GitHub Container Registry
 
 ```bash
-docker login
+docker login ghcr.io
 ```
 
 ### Step 3: Build and Push the Image
@@ -35,16 +35,16 @@ docker login
 ./scripts/build-devcontainer.sh
 
 # Or specify custom username and tag
-./scripts/build-devcontainer.sh your-username heimdall-dev:latest
+./scripts/build-devcontainer.sh your-github-username heimdall-dev:latest
 ```
 
 ### Step 4: Update devcontainer.json
 
-Edit `.devcontainer/devcontainer.json` and replace `your-dockerhub-username` with your actual Docker Hub username:
+Edit `.devcontainer/devcontainer.json` and replace `your-github-username` with your actual GitHub username:
 
 ```json
 {
-    "image": "your-actual-username/heimdall-devcontainer:latest",
+    "image": "ghcr.io/your-actual-username/heimdall-devcontainer:latest",
     "build": {
         "dockerfile": "./Dockerfile",
         "context": "."
@@ -56,7 +56,7 @@ Edit `.devcontainer/devcontainer.json` and replace `your-dockerhub-username` wit
 ### Step 5: Use the Pre-built Image
 
 When you open the codespace, VS Code will:
-1. First try to pull the pre-built image from Docker Hub
+1. First try to pull the pre-built image from GitHub Container Registry
 2. If the image doesn't exist or can't be pulled, it will fall back to building locally
 
 ## Benefits
@@ -74,10 +74,10 @@ You can use different tags for different versions or configurations:
 
 ```bash
 # Build with specific tag
-./scripts/build-devcontainer.sh your-username heimdall-dev:v1.0
+./scripts/build-devcontainer.sh your-github-username heimdall-dev:v1.0
 
 # Build with latest tag
-./scripts/build-devcontainer.sh your-username heimdall-dev:latest
+./scripts/build-devcontainer.sh your-github-username heimdall-dev:latest
 ```
 
 ### Fallback Configuration
@@ -86,7 +86,7 @@ The `devcontainer.json` is configured to fall back to local build if the pre-bui
 
 ```json
 {
-    "image": "your-username/heimdall-devcontainer:latest",
+    "image": "ghcr.io/your-username/heimdall-devcontainer:latest",
     "build": {
         "dockerfile": "./Dockerfile",
         "context": "."
@@ -95,7 +95,7 @@ The `devcontainer.json` is configured to fall back to local build if the pre-bui
 ```
 
 This means:
-- If the image exists on Docker Hub, it will be used
+- If the image exists on GitHub Container Registry, it will be used
 - If the image doesn't exist or can't be pulled, it will build locally
 - You can always force a local build by commenting out the `"image"` line
 
@@ -103,24 +103,24 @@ This means:
 
 For team projects, you can:
 
-1. **Use a shared Docker Hub organization:**
+1. **Use a shared GitHub organization:**
    ```json
    {
-       "image": "your-org/heimdall-devcontainer:latest"
+       "image": "ghcr.io/your-org/heimdall-devcontainer:latest"
    }
    ```
 
 2. **Use versioned tags for stability:**
    ```json
    {
-       "image": "your-username/heimdall-devcontainer:v1.2.3"
+       "image": "ghcr.io/your-username/heimdall-devcontainer:v1.2.3"
    }
    ```
 
 3. **Use different images for different branches:**
    ```json
    {
-       "image": "your-username/heimdall-devcontainer:${env:GITHUB_REF_NAME:-main}"
+       "image": "ghcr.io/your-username/heimdall-devcontainer:${env:GITHUB_REF_NAME:-main}"
    }
    ```
 
@@ -130,9 +130,9 @@ For team projects, you can:
 
 If you get an error that the image doesn't exist:
 
-1. Check that you've pushed the image to Docker Hub
+1. Check that you've pushed the image to GitHub Container Registry
 2. Verify the image name and tag in `devcontainer.json`
-3. Try pulling the image manually: `docker pull your-username/heimdall-devcontainer:latest`
+3. Try pulling the image manually: `docker pull ghcr.io/your-username/heimdall-devcontainer:latest`
 
 ### Build Fails
 
