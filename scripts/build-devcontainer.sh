@@ -172,38 +172,8 @@ if ! docker info >/dev/null 2>&1; then
 fi
 print_success "Docker is running"
 
-# Check if logged in to GitHub Container Registry
-print_status "Checking GitHub Container Registry authentication..."
-# Try to access the registry - if this fails, we're not authenticated
-if ! docker search ghcr.io/hello-world >/dev/null 2>&1; then
-    print_warning "Could not verify GitHub Container Registry access"
-    echo ""
-    echo "This might be due to:"
-    echo "1. Not logged in to GitHub Container Registry"
-    echo "2. Network connectivity issues"
-    echo "3. Registry access restrictions"
-    echo ""
-    echo "To ensure you're logged in:"
-    echo "1. Create a GitHub Personal Access Token:"
-    echo "   - Go to GitHub.com → Settings → Developer settings → Personal access tokens"
-    echo "   - Generate a new token with 'write:packages' permission"
-    echo "2. Login to GitHub Container Registry:"
-    echo "   docker login ghcr.io"
-    echo "   - Username: your GitHub username"
-    echo "   - Password: your GitHub Personal Access Token"
-    echo ""
-    echo "For detailed instructions, see: docs/github-container-registry-setup.md"
-    echo ""
-    read -p "Continue anyway? (y/N): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_status "Aborted by user"
-        exit 2
-    fi
-    print_warning "Continuing without authentication verification..."
-else
-    print_success "Authenticated with GitHub Container Registry"
-fi
+# Note: Authentication will be checked during push operation
+print_status "Authentication will be verified during push operation"
 
 # Check if Dockerfile exists
 print_status "Checking Dockerfile..."
