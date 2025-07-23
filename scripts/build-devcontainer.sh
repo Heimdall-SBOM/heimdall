@@ -43,16 +43,16 @@ show_usage() {
     echo "  --verbose               Show detailed output"
     echo ""
     echo "Arguments:"
-    echo "  GITHUB_USERNAME         Your GitHub username (default: your-github-username)"
+    echo "  GITHUB_USERNAME         Your GitHub username (default: bakkertj)"
     echo "  IMAGE_TAG              Image tag (default: heimdall-devcontainer:latest)"
     echo ""
     echo "Examples:"
     echo "  $0                                    # Build with defaults"
-    echo "  $0 tbakker                           # Build for user 'tbakker'"
-    echo "  $0 tbakker my-dev:latest            # Build with custom tag"
-    echo "  $0 --dry-run tbakker                # Show what would be built"
-    echo "  $0 --no-push tbakker                # Build only, don't push"
-    echo "  $0 --force tbakker                  # Skip confirmation prompts"
+    echo "  $0 bakkertj                          # Build for user 'bakkertj'"
+    echo "  $0 bakkertj my-dev:latest           # Build with custom tag"
+    echo "  $0 --dry-run bakkertj               # Show what would be built"
+    echo "  $0 --no-push bakkertj               # Build only, don't push"
+    echo "  $0 --force bakkertj                 # Skip confirmation prompts"
     echo ""
     echo "Prerequisites:"
     echo "  1. Docker installed and running"
@@ -71,7 +71,7 @@ show_usage() {
 }
 
 # Default values
-DEFAULT_GITHUB_USERNAME="your-github-username"
+DEFAULT_GITHUB_USERNAME="bakkertj"
 DEFAULT_IMAGE_TAG="heimdall-devcontainer:latest"
 
 # Parse command line arguments
@@ -144,10 +144,10 @@ echo "  Verbose: $VERBOSE"
 echo ""
 
 # Validate GitHub username
-if [ "$GITHUB_USERNAME" = "$DEFAULT_GITHUB_USERNAME" ]; then
+if [ "$GITHUB_USERNAME" = "your-github-username" ]; then
     print_error "Please provide your GitHub username"
     echo "Usage: $0 [OPTIONS] GITHUB_USERNAME [IMAGE_TAG]"
-    echo "Example: $0 tbakker"
+    echo "Example: $0 bakkertj"
     exit 1
 fi
 
