@@ -66,44 +66,51 @@ compiler: clang
 
 ## Environment Setup
 
-### Ubuntu 22.04 Base
+### Pre-built DevContainer Image
 
-All jobs run on Ubuntu 22.04 with the following base packages:
+All jobs use the pre-built devcontainer image (`${{ github.repository_owner }}/heimdall-devcontainer:latest`) which includes:
 
-```bash
-build-essential cmake ninja-build git binutils-gold
-libssl-dev libelf-dev pkg-config
-libboost-filesystem-dev libboost-system-dev
-```
+- **Base System**: Ubuntu 22.04
+- **Build Tools**: build-essential, cmake, ninja-build, git
+- **Compilers**: GCC 11, GCC 13, Clang
+- **LLVM**: LLVM 19 with LLD
+- **Dependencies**: All required libraries and development packages
+- **LLD Headers**: Pre-installed LLD headers for plugin development
 
 ### Compiler Versions
 
 | C++ Standard | GCC Version | Clang Version | LLVM Version |
 |-------------|-------------|---------------|--------------|
-| C++11 | System GCC | Clang 18 | LLVM 18 |
-| C++23 | GCC 13 | Clang 20 | LLVM 20 |
+| C++11 | GCC 11/13 | Clang | LLVM 19 |
+| C++23 | GCC 13 | Clang | LLVM 19 |
 
-### LLVM Installation
+### Container Usage
 
-LLVM is installed using the official LLVM repository:
+The CI workflow uses the container specification:
 
-```bash
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh <version>
-sudo apt-get install -y llvm-<version>-dev lld-<version>
+```yaml
+container:
+  image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+  options: --user root
 ```
+
+This provides:
+- **Consistency**: Same environment as development
+- **Speed**: No dependency installation during CI
+- **Reliability**: Pre-tested and validated environment
 
 ## Build Process
 
 Each job follows this process:
 
-1. **Checkout**: Repository with submodules
-2. **Install Dependencies**: System packages and compilers
+1. **Container Setup**: Use pre-built devcontainer image
+2. **Checkout**: Repository with submodules
 3. **Setup Environment**: Configure LLVM and compiler paths
 4. **Build**: Run `./scripts/build.sh` with appropriate flags
 5. **Test**: Execute unit tests with CTest
 6. **Upload Artifacts**: Test results and build artifacts
+
+**Note**: No dependency installation is needed as the devcontainer image includes all required packages.
 
 ### Build Command
 
@@ -218,15 +225,15 @@ The summary job provides a comprehensive overview of all build results:
 
 ### Common Issues
 
-1. **LLVM Installation Failures**
-   - Check network connectivity
-   - Verify Ubuntu 22.04 compatibility
-   - Check for conflicting LLVM installations
+1. **DevContainer Image Issues**
+   - Ensure the devcontainer image is built and pushed to Docker Hub
+   - Check that the image name matches the repository owner
+   - Verify the image contains all required dependencies
 
 2. **Compiler Version Issues**
    - C++23 requires GCC 13+ or Clang 14+
-   - Verify compiler installation
-   - Check PATH configuration
+   - The devcontainer image includes GCC 13 and Clang
+   - Check that the correct compiler is selected in environment setup
 
 3. **Test Failures**
    - Review test output in artifacts

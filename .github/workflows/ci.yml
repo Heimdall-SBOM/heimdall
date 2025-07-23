@@ -43,38 +43,21 @@ jobs:
       matrix:
         cpp_standard: [11]
         compiler: [gcc]
+    container:
+      image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+      options: --user root
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
+      - name: Set up Environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            binutils-gold \
-            libssl-dev \
-            libelf-dev \
-            pkg-config \
-            libboost-filesystem-dev \
-            libboost-system-dev
-
-      - name: Install LLVM 18
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 18
-          sudo apt-get install -y llvm-18-dev lld-18
-
-      - name: Set up LLVM Environment
-        run: |
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-18" >> $GITHUB_ENV
-          echo "LLVM_VERSION=18" >> $GITHUB_ENV
+          # The devcontainer image already has all dependencies installed
+          # Just set up the environment variables for the build
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
@@ -105,40 +88,23 @@ jobs:
       matrix:
         cpp_standard: [11]
         compiler: [clang]
+    container:
+      image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+      options: --user root
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
+      - name: Set up Environment
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            binutils-gold \
-            libssl-dev \
-            libelf-dev \
-            pkg-config \
-            libboost-filesystem-dev \
-            libboost-system-dev
-
-      - name: Install LLVM 18
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 18
-          sudo apt-get install -y llvm-18-dev lld-18 clang-18
-
-      - name: Set up LLVM Environment
-        run: |
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-18" >> $GITHUB_ENV
-          echo "LLVM_VERSION=18" >> $GITHUB_ENV
-          echo "CC=clang-18" >> $GITHUB_ENV
-          echo "CXX=clang++-18" >> $GITHUB_ENV
+          # The devcontainer image already has all dependencies installed
+          # Just set up the environment variables for the build
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
 
       - name: Build C++11 with Clang
         run: |
@@ -168,44 +134,21 @@ jobs:
       matrix:
         cpp_standard: [23]
         compiler: [gcc]
+    container:
+      image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+      options: --user root
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            binutils-gold \
-            libssl-dev \
-            libelf-dev \
-            pkg-config \
-            libboost-filesystem-dev \
-            libboost-system-dev
-
-      - name: Install GCC 13 (for C++23 support)
-        run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get update
-          sudo apt-get install -y gcc-13 g++-13
-
-      - name: Install LLVM 20
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 20
-          sudo apt-get install -y llvm-20-dev lld-20
-
       - name: Set up Environment
         run: |
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-20" >> $GITHUB_ENV
-          echo "LLVM_VERSION=20" >> $GITHUB_ENV
+          # The devcontainer image already has GCC 13 and LLVM 19 installed
+          # For C++23, we'll use the available GCC 13 and LLVM 19
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
           echo "CC=gcc-13" >> $GITHUB_ENV
           echo "CXX=g++-13" >> $GITHUB_ENV
 
@@ -236,40 +179,23 @@ jobs:
       matrix:
         cpp_standard: [23]
         compiler: [clang]
+    container:
+      image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+      options: --user root
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            binutils-gold \
-            libssl-dev \
-            libelf-dev \
-            pkg-config \
-            libboost-filesystem-dev \
-            libboost-system-dev
-
-      - name: Install LLVM 20
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 20
-          sudo apt-get install -y llvm-20-dev lld-20 clang-20
-
       - name: Set up Environment
         run: |
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-20" >> $GITHUB_ENV
-          echo "LLVM_VERSION=20" >> $GITHUB_ENV
-          echo "CC=clang-20" >> $GITHUB_ENV
-          echo "CXX=clang++-20" >> $GITHUB_ENV
+          # The devcontainer image already has LLVM 19 installed
+          # For C++23, we'll use the available LLVM 19
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
 
       - name: Build C++23 with Clang
         run: |
@@ -295,40 +221,26 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       BUILD_DIR: build-cpp17
+    container:
+      image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+      options: --user root
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
+      - name: Install Coverage Tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            binutils-gold \
-            libssl-dev \
-            libelf-dev \
-            pkg-config \
-            libboost-filesystem-dev \
-            libboost-system-dev \
-            lcov \
-            gcovr
-
-      - name: Install LLVM 18
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 18
-          sudo apt-get install -y llvm-18-dev lld-18
+          # Install additional coverage tools not in the devcontainer
+          apt-get update
+          apt-get install -y lcov gcovr
 
       - name: Set up Environment
         run: |
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-18" >> $GITHUB_ENV
-          echo "LLVM_VERSION=18" >> $GITHUB_ENV
+          # The devcontainer image already has all build dependencies
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
@@ -358,38 +270,20 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       BUILD_DIR: build-cpp17
+    container:
+      image: ${{ github.repository_owner }}/heimdall-devcontainer:latest
+      options: --user root
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            ninja-build \
-            git \
-            binutils-gold \
-            libssl-dev \
-            libelf-dev \
-            pkg-config \
-            libboost-filesystem-dev \
-            libboost-system-dev
-
-      - name: Install LLVM 18
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 18
-          sudo apt-get install -y llvm-18-dev lld-18
-
       - name: Set up Environment
         run: |
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-18" >> $GITHUB_ENV
-          echo "LLVM_VERSION=18" >> $GITHUB_ENV
+          # The devcontainer image already has all build dependencies
+          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
+          echo "LLVM_VERSION=19" >> $GITHUB_ENV
           echo "CC=gcc" >> $GITHUB_ENV
           echo "CXX=g++" >> $GITHUB_ENV
 
