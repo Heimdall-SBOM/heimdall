@@ -18,6 +18,7 @@ limitations under the License.
 #include <fstream>
 #include <sstream>
 #include "common/Utils.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -30,7 +31,7 @@ protected:
         std::ofstream(test_file) << "test content";
     }
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        test_utils::safeRemoveDirectory(test_dir);
     }
     std::filesystem::path test_dir;
     std::filesystem::path test_file;

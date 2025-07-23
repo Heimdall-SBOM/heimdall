@@ -19,6 +19,7 @@ limitations under the License.
 #include <fstream>
 #include <sstream>
 #include "common/Utils.hpp"
+#include "test_utils.hpp"
 
 using namespace heimdall;
 
@@ -49,7 +50,8 @@ protected:
     }
 
     void TearDown() override {
-        std::filesystem::remove_all(test_dir);
+        // Safely remove test directory using utility function
+        test_utils::safeRemoveDirectory(test_dir);
         unsetenv("TEST_VAR");
     }
 
