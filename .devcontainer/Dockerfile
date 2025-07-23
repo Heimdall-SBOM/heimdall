@@ -1,8 +1,8 @@
 FROM ubuntu:22.04
 
 ARG GCC_VERSION=11
-ARG LLVM_VERSION=18
-ARG LLVM_TAG=llvmorg-18.1.8
+ARG LLVM_VERSION=19
+ARG LLVM_TAG=llvmorg-19.1.0
 
 # Install prerequisites
 RUN apt-get update && \
@@ -52,6 +52,11 @@ RUN apt-get update && \
 RUN ln -sf /usr/bin/llvm-config-${LLVM_VERSION} /usr/bin/llvm-config && \
     ln -sf /usr/bin/ld.lld-${LLVM_VERSION} /usr/bin/ld.lld && \
     ln -sf /usr/bin/lld-${LLVM_VERSION} /usr/bin/lld
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 90
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 90
+RUN update-alternatives --set gcc /usr/bin/gcc-13
+RUN update-alternatives --set g++ /usr/bin/g++-13
 
 # Install LLD headers for the selected LLVM version
 RUN mkdir -p /usr/local/include/lld/Common && \
