@@ -28,9 +28,16 @@ using namespace heimdall;
 class UtilsExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        // Initialize OpenSSL for CI environments
+        // Initialize OpenSSL for CI environments with more robust initialization
         SSL_library_init();
         OpenSSL_add_all_algorithms();
+        OpenSSL_add_all_ciphers();
+        OpenSSL_add_all_digests();
+        
+        // Ensure OpenSSL is properly initialized
+        if (!EVP_MD_CTX_new()) {
+            std::cerr << "WARNING: OpenSSL initialization may have failed" << std::endl;
+        }
         
         test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_extended_test";
         std::filesystem::create_directories(test_dir);
@@ -99,6 +106,10 @@ TEST_F(UtilsExtendedTest, GetFileSize) {
 }
 
 TEST_F(UtilsExtendedTest, GetFileChecksum) {
+    // Ensure OpenSSL is properly initialized for this test
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    
     std::string checksum = Utils::getFileChecksum(test_file.string());
     EXPECT_FALSE(checksum.empty());
     EXPECT_EQ(checksum.length(), 64u);  // SHA256 is 32 bytes = 64 hex chars
@@ -168,6 +179,10 @@ TEST_F(UtilsExtendedTest, FileTypeDetection) {
 }
 
 TEST_F(UtilsExtendedTest, CalculateSHA256) {
+    // Ensure OpenSSL is properly initialized for this test
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    
     // Should be same as getFileChecksum
     std::string checksum1 = Utils::getFileChecksum(test_file.string());
     std::string checksum2 = Utils::calculateSHA256(test_file.string());
