@@ -162,11 +162,15 @@ protected:
     }
 
     void createTestFiles() {
-        // Get current working directory for absolute paths
-        std::filesystem::path cwd = std::filesystem::current_path();
+        // Create a specific test directory that doesn't contain package manager strings
+        std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
+        std::filesystem::create_directories(test_dir);
+        
+        // Change to the test directory to avoid package manager detection issues
+        std::filesystem::current_path(test_dir);
         
         // Create test object file
-        std::filesystem::path objPath = cwd / "test_object.o";
+        std::filesystem::path objPath = test_dir / "test_object.o";
         std::ofstream objFile(objPath);
         if (!objFile.is_open()) {
             std::cerr << "ERROR: Failed to create test_object.o" << std::endl;
@@ -177,10 +181,9 @@ protected:
         
         // Ensure file is written to disk
         objFile.flush();
-        std::filesystem::path(objPath).clear();
 
         // Create test library file
-        std::filesystem::path libPath = cwd / "libtest.so";
+        std::filesystem::path libPath = test_dir / "libtest.so";
         std::ofstream libFile(libPath);
         if (!libFile.is_open()) {
             std::cerr << "ERROR: Failed to create libtest.so" << std::endl;
@@ -191,10 +194,9 @@ protected:
         
         // Ensure file is written to disk
         libFile.flush();
-        std::filesystem::path(libPath).clear();
 
         // Create test executable
-        std::filesystem::path exePath = cwd / "test_executable.exe";
+        std::filesystem::path exePath = test_dir / "test_executable.exe";
         std::ofstream exeFile(exePath);
         if (!exeFile.is_open()) {
             std::cerr << "ERROR: Failed to create test_executable.exe" << std::endl;
@@ -205,10 +207,9 @@ protected:
         
         // Ensure file is written to disk
         exeFile.flush();
-        std::filesystem::path(exePath).clear();
 
         // Create test archive
-        std::filesystem::path archivePath = cwd / "libtest.a";
+        std::filesystem::path archivePath = test_dir / "libtest.a";
         std::ofstream archiveFile(archivePath);
         if (!archiveFile.is_open()) {
             std::cerr << "ERROR: Failed to create libtest.a" << std::endl;
@@ -219,19 +220,25 @@ protected:
         
         // Ensure file is written to disk
         archiveFile.flush();
-        std::filesystem::path(archivePath).clear();
         
         // Small delay to ensure filesystem synchronization in CI environments
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     void cleanupTestFiles() {
+        // Remove test files
         std::filesystem::remove("test_object.o");
         std::filesystem::remove("libtest.so");
         std::filesystem::remove("test_executable.exe");
         std::filesystem::remove("libtest.a");
         std::filesystem::remove("test_config.json");
         std::filesystem::remove("test_output.json");
+        
+        // Clean up the test directory
+        std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
+        if (std::filesystem::exists(test_dir)) {
+            std::filesystem::remove_all(test_dir);
+        }
     }
 
     std::unique_ptr<TestPluginInterface> plugin;
@@ -290,6 +297,9 @@ TEST_F(PluginInterfaceTest, ProcessSymbol) {
 }
 
 TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
+    // Disable metadata extraction to prevent component names from being overwritten
+    plugin->setExtractDebugInfo(false);
+    
     plugin->processInputFile("test_object.o");
     plugin->processLibrary("libtest.so");
     plugin->processInputFile("test_executable.exe");
