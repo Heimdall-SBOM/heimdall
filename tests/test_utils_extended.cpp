@@ -195,12 +195,32 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
 
     // Same file should have same checksum
     std::cout << "DEBUG: Calling getFileChecksum again for same file..." << std::endl;
+    
+    // Re-initialize OpenSSL to prevent state corruption in CI
+    std::cout << "DEBUG: Re-initializing OpenSSL before second call..." << std::endl;
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+    SSL_load_error_strings();
+    ERR_load_CRYPTO_strings();
+    
     std::string checksum2 = heimdall::Utils::getFileChecksum(test_file.string());
     std::cout << "DEBUG: Second getFileChecksum returned: '" << checksum2 << "'" << std::endl;
     EXPECT_EQ(checksum, checksum2);
 
     // Different files should have different checksums
     std::cout << "DEBUG: Calling getFileChecksum for large file..." << std::endl;
+    
+    // Re-initialize OpenSSL before large file test
+    std::cout << "DEBUG: Re-initializing OpenSSL before large file test..." << std::endl;
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+    SSL_load_error_strings();
+    ERR_load_CRYPTO_strings();
+    
     std::string large_checksum = heimdall::Utils::getFileChecksum(large_file.string());
     std::cout << "DEBUG: Large file checksum: '" << large_checksum << "'" << std::endl;
     EXPECT_NE(checksum, large_checksum);
@@ -300,6 +320,16 @@ TEST_F(UtilsExtendedTest, CalculateSHA256) {
     std::cout << "DEBUG: checksum1 empty: " << (checksum1.empty() ? "yes" : "no") << std::endl;
     
     std::cout << "DEBUG: About to call Utils::calculateSHA256 with file: " << test_file << std::endl;
+    
+    // Re-initialize OpenSSL before calculateSHA256 call to prevent state corruption
+    std::cout << "DEBUG: Re-initializing OpenSSL before calculateSHA256 call..." << std::endl;
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+    SSL_load_error_strings();
+    ERR_load_CRYPTO_strings();
+    
     std::string checksum2 = heimdall::Utils::calculateSHA256(test_file.string());
     std::cout << "DEBUG: calculateSHA256 returned: '" << checksum2 << "'" << std::endl;
     std::cout << "DEBUG: checksum2 length: " << checksum2.length() << std::endl;
