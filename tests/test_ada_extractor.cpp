@@ -32,24 +32,15 @@ class AdaExtractorTest : public ::testing::Test {
 protected:
     void SetUp() override {
         std::cout << "DEBUG: AdaExtractorTest::SetUp() starting" << std::endl;
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_ada_test";
+        
+        // Use current working directory instead of temp directory for CI compatibility
+        test_dir = std::filesystem::current_path();
         std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
+        std::cout << "DEBUG: Current working directory: " << std::filesystem::current_path() << std::endl;
         
-        // Clean up any existing test directory first
-        if (std::filesystem::exists(test_dir)) {
-            std::cout << "DEBUG: Removing existing test directory..." << std::endl;
-            std::filesystem::remove_all(test_dir);
-        }
-        
-        std::cout << "DEBUG: Creating test directory..." << std::endl;
-        std::filesystem::create_directories(test_dir);
-        std::cout << "DEBUG: Test directory created successfully" << std::endl;
-        std::cout << "DEBUG: Test directory exists: " << (std::filesystem::exists(test_dir) ? "yes" : "no") << std::endl;
-        std::cout << "DEBUG: Test directory is directory: " << (std::filesystem::is_directory(test_dir) ? "yes" : "no") << std::endl;
-        
-        // Create a dummy ali file named my_package.ali
+        // Create a dummy ali file named my_package.ali in current directory
         std::cout << "DEBUG: Creating dummy ALI file..." << std::endl;
-        std::ofstream ali_file(test_dir / "my_package.ali");
+        std::ofstream ali_file("my_package.ali");
         if (!ali_file.is_open()) {
             std::cerr << "ERROR: Failed to create dummy ALI file" << std::endl;
         } else {
@@ -62,7 +53,17 @@ protected:
     }
 
     void TearDown() override {
-        test_utils::safeRemoveDirectory(test_dir);
+        // Clean up files created in current working directory
+        std::filesystem::remove("my_package.ali");
+        std::filesystem::remove("pkg1.ali");
+        std::filesystem::remove("pkg2.ali");
+        std::filesystem::remove("empty.ali");
+        std::filesystem::remove("corrupt.ali");
+        std::filesystem::remove("runtime.ali");
+        std::filesystem::remove("dup.ali");
+        std::filesystem::remove("no_w.ali");
+        std::filesystem::remove("verbose.ali");
+        std::filesystem::remove("testmode.ali");
     }
 
     std::filesystem::path test_dir;
@@ -107,7 +108,7 @@ TEST_F(AdaExtractorTest, IsRuntimePackage) {
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_EmptyAliFile) {
     AdaExtractor extractor;
     ComponentInfo component;
-    std::string empty_ali = (test_dir / "empty.ali").string();
+    std::string empty_ali = "empty.ali";
     std::ofstream(empty_ali).close();
     std::vector<std::string> aliFiles = {empty_ali};
     EXPECT_FALSE(extractor.extractAdaMetadata(component, aliFiles));
@@ -116,7 +117,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_EmptyAliFile) {
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_CorruptAliFile) {
     AdaExtractor extractor;
     ComponentInfo component;
-    std::string corrupt_ali = (test_dir / "corrupt.ali").string();
+    std::string corrupt_ali = "corrupt.ali";
     std::ofstream(corrupt_ali) << "This is not a valid ALI file";
     std::vector<std::string> aliFiles = {corrupt_ali};
     EXPECT_FALSE(extractor.extractAdaMetadata(component, aliFiles));
@@ -125,7 +126,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_CorruptAliFile) {
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_RuntimeOnly) {
     AdaExtractor extractor;
     ComponentInfo component;
-    std::string runtime_ali = (test_dir / "runtime.ali").string();
+    std::string runtime_ali = "runtime.ali";
     std::ofstream(runtime_ali) << "V \"GNAT Lib v2022\"\nW ada%b runtime.adb runtime.ali\n";
     std::vector<std::string> aliFiles = {runtime_ali};
     extractor.extractAdaMetadata(component, aliFiles);
@@ -136,7 +137,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_RuntimeOnly) {
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_DuplicateDependencies) {
     AdaExtractor extractor;
     ComponentInfo component;
-    std::string dup_ali = (test_dir / "dup.ali").string();
+    std::string dup_ali = "dup.ali";
     std::ofstream(dup_ali) << "V \"GNAT Lib v2022\"\nW my_package%b main.adb main.ali\nW my_package%b main.adb main.ali\n";
     std::vector<std::string> aliFiles = {dup_ali};
     extractor.extractAdaMetadata(component, aliFiles);
@@ -147,7 +148,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_DuplicateDependencies) {
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_MissingWLine) {
     AdaExtractor extractor;
     ComponentInfo component;
-    std::string no_w_ali = (test_dir / "no_w.ali").string();
+    std::string no_w_ali = "no_w.ali";
     std::ofstream(no_w_ali) << "V \"GNAT Lib v2022\"\n";
     std::vector<std::string> aliFiles = {no_w_ali};
     extractor.extractAdaMetadata(component, aliFiles);
@@ -159,8 +160,8 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
     try {
         AdaExtractor extractor;
         ComponentInfo component;
-        std::string ali1 = (test_dir / "pkg1.ali").string();
-        std::string ali2 = (test_dir / "pkg2.ali").string();
+        std::string ali1 = "pkg1.ali";
+        std::string ali2 = "pkg2.ali";
         
         std::cout << "DEBUG: Test directory: " << test_dir << std::endl;
         std::cout << "DEBUG: Test directory exists: " << (std::filesystem::exists(test_dir) ? "yes" : "no") << std::endl;
@@ -283,7 +284,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_VerboseMode) {
     AdaExtractor extractor;
     extractor.setVerbose(true);
     ComponentInfo component;
-    std::string ali = (test_dir / "verbose.ali").string();
+    std::string ali = "verbose.ali";
     std::ofstream(ali) << "V \"GNAT Lib v2022\"\nW my_package%b main.adb main.ali\n";
     std::vector<std::string> aliFiles = {ali};
     extractor.extractAdaMetadata(component, aliFiles);
@@ -294,7 +295,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_TestMode) {
     AdaExtractor::setTestMode(true);
     AdaExtractor extractor;
     ComponentInfo component;
-    std::string ali = (test_dir / "testmode.ali").string();
+    std::string ali = "testmode.ali";
     std::ofstream(ali) << "V \"GNAT Lib v2022\"\nW my_package%b main.adb main.ali\n";
     std::vector<std::string> aliFiles = {ali};
     extractor.extractAdaMetadata(component, aliFiles);
