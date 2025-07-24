@@ -336,17 +336,36 @@ TEST_F(PluginInterfaceTest, ProcessSymbol) {
 }
 
 TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
-    // Disable metadata extraction to prevent component names from being overwritten
-    plugin->setExtractDebugInfo(false);
-    
-    plugin->processInputFile("test_object.o");
-    plugin->processLibrary("libtest.so");
-    plugin->processInputFile("test_executable.exe");
+    try {
+        // Disable metadata extraction to prevent component names from being overwritten
+        plugin->setExtractDebugInfo(false);
+        
+        // Verify test files exist before processing
+        if (!std::filesystem::exists("test_object.o")) {
+            FAIL() << "test_object.o does not exist";
+        }
+        if (!std::filesystem::exists("libtest.so")) {
+            FAIL() << "libtest.so does not exist";
+        }
+        if (!std::filesystem::exists("test_executable.exe")) {
+            FAIL() << "test_executable.exe does not exist";
+        }
+        
+        plugin->processInputFile("test_object.o");
+        plugin->processLibrary("libtest.so");
+        plugin->processInputFile("test_executable.exe");
 
-    EXPECT_EQ(plugin->getComponentCount(), 3u);
-    EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
-    EXPECT_EQ(plugin->processedComponents[1].name, "test");
-    EXPECT_EQ(plugin->processedComponents[2].name, "test_executable");
+        EXPECT_EQ(plugin->getComponentCount(), 3u);
+        EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
+        EXPECT_EQ(plugin->processedComponents[1].name, "test");
+        EXPECT_EQ(plugin->processedComponents[2].name, "test_executable");
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: Exception in ProcessMultipleComponents test: " << e.what() << std::endl;
+        throw;
+    } catch (...) {
+        std::cerr << "ERROR: Unknown exception in ProcessMultipleComponents test" << std::endl;
+        throw;
+    }
 }
 
 // Configuration Tests
@@ -405,11 +424,19 @@ TEST_F(PluginInterfaceTest, SetIncludeSystemLibraries) {
 
 // Statistics Tests
 TEST_F(PluginInterfaceTest, GetComponentCount) {
-    EXPECT_EQ(plugin->getComponentCount(), 0u);
-    plugin->processInputFile("test_object.o");
-    EXPECT_EQ(plugin->getComponentCount(), 1u);
-    plugin->processLibrary("libtest.so");
-    EXPECT_EQ(plugin->getComponentCount(), 2u);
+    try {
+        EXPECT_EQ(plugin->getComponentCount(), 0u);
+        plugin->processInputFile("test_object.o");
+        EXPECT_EQ(plugin->getComponentCount(), 1u);
+        plugin->processLibrary("libtest.so");
+        EXPECT_EQ(plugin->getComponentCount(), 2u);
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: Exception in GetComponentCount test: " << e.what() << std::endl;
+        throw;
+    } catch (...) {
+        std::cerr << "ERROR: Unknown exception in GetComponentCount test" << std::endl;
+        throw;
+    }
 }
 
 TEST_F(PluginInterfaceTest, PrintStatistics) {
@@ -709,35 +736,51 @@ TEST_F(PluginInterfaceTest, ProcessInvalidFileType) {
 }
 
 TEST_F(PluginInterfaceTest, ProcessSymbolWithoutComponent) {
-    // Process symbol without any component
-    plugin->processSymbol("test_function", 0x1000, 64);
-    EXPECT_EQ(plugin->getComponentCount(), 0u);
+    try {
+        // Process symbol without any component
+        plugin->processSymbol("test_function", 0x1000, 64);
+        EXPECT_EQ(plugin->getComponentCount(), 0u);
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: Exception in ProcessSymbolWithoutComponent test: " << e.what() << std::endl;
+        throw;
+    } catch (...) {
+        std::cerr << "ERROR: Unknown exception in ProcessSymbolWithoutComponent test" << std::endl;
+        throw;
+    }
 }
 
 // Integration Tests
 TEST_F(PluginInterfaceTest, FullWorkflow) {
-    // Set up plugin
-    plugin->setVerbose(true);
-    plugin->setOutputPath("test_output.json");
-    plugin->setFormat("spdx");
+    try {
+        // Set up plugin
+        plugin->setVerbose(true);
+        plugin->setOutputPath("test_output.json");
+        plugin->setFormat("spdx");
 
-    // Process files
-    plugin->processInputFile("test_object.o");
-    plugin->processLibrary("libtest.so");
-    plugin->processSymbol("function1", 0x1000, 64);
-    plugin->processSymbol("function2", 0x2000, 128);
+        // Process files
+        plugin->processInputFile("test_object.o");
+        plugin->processLibrary("libtest.so");
+        plugin->processSymbol("function1", 0x1000, 64);
+        plugin->processSymbol("function2", 0x2000, 128);
 
-    // Verify results
-    EXPECT_EQ(plugin->getComponentCount(), 2u);
-    EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
-    EXPECT_EQ(plugin->processedComponents[1].name, "test");
-    EXPECT_EQ(plugin->processedComponents[1].symbols.size(), 2u);
+        // Verify results
+        EXPECT_EQ(plugin->getComponentCount(), 2u);
+        EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
+        EXPECT_EQ(plugin->processedComponents[1].name, "test");
+        EXPECT_EQ(plugin->processedComponents[1].symbols.size(), 2u);
 
-    // Generate SBOM (should not crash)
-    EXPECT_NO_THROW(plugin->generateSBOM());
+        // Generate SBOM (should not crash)
+        EXPECT_NO_THROW(plugin->generateSBOM());
 
-    // Clean up
-    std::filesystem::remove("test_output.json");
+        // Clean up
+        std::filesystem::remove("test_output.json");
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: Exception in FullWorkflow test: " << e.what() << std::endl;
+        throw;
+    } catch (...) {
+        std::cerr << "ERROR: Unknown exception in FullWorkflow test" << std::endl;
+        throw;
+    }
 }
 
 TEST_F(PluginInterfaceTest, MultipleSymbolsPerComponent) {

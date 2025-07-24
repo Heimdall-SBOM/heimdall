@@ -34,6 +34,10 @@ protected:
         OpenSSL_add_all_ciphers();
         OpenSSL_add_all_digests();
         
+        // Additional initialization for CI environments
+        SSL_load_error_strings();
+        ERR_load_CRYPTO_strings();
+        
         // Ensure OpenSSL is properly initialized
         if (!EVP_MD_CTX_new()) {
             std::cerr << "WARNING: OpenSSL initialization may have failed" << std::endl;
@@ -109,6 +113,10 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     // Ensure OpenSSL is properly initialized for this test
     SSL_library_init();
     OpenSSL_add_all_algorithms();
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+    SSL_load_error_strings();
+    ERR_load_CRYPTO_strings();
     
     std::string checksum = Utils::getFileChecksum(test_file.string());
     EXPECT_FALSE(checksum.empty());
@@ -182,6 +190,10 @@ TEST_F(UtilsExtendedTest, CalculateSHA256) {
     // Ensure OpenSSL is properly initialized for this test
     SSL_library_init();
     OpenSSL_add_all_algorithms();
+    OpenSSL_add_all_ciphers();
+    OpenSSL_add_all_digests();
+    SSL_load_error_strings();
+    ERR_load_CRYPTO_strings();
     
     // Should be same as getFileChecksum
     std::string checksum1 = Utils::getFileChecksum(test_file.string());
