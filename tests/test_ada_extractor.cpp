@@ -15,16 +15,19 @@ limitations under the License.
 */
 
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <fstream>
-#include <filesystem>
+#include <sstream>
+#include <vector>
+#include <algorithm>
 #include <chrono>
 #include <thread>
+#include <unistd.h>
 #include <cerrno>
 #include <cstring>
-#include <unistd.h>
-#include "common/AdaExtractor.hpp"
-#include "common/ComponentInfo.hpp"
-#include "common/Utils.hpp"
+#include "src/compat/compatibility.hpp"
+#include "src/common/AdaExtractor.hpp"
+#include "src/common/ComponentInfo.hpp"
 #include "test_utils.hpp"
 
 using namespace heimdall;
@@ -36,16 +39,16 @@ protected:
         // Create a temporary test directory and change to it (same approach as PluginInterfaceTest)
         // Use process ID to make directory unique and avoid test interference
         auto pid = std::to_string(getpid());
-        test_dir = std::filesystem::temp_directory_path() / ("heimdall_ada_test_" + pid);
+        test_dir = heimdall::compat::fs::temp_directory_path() / ("heimdall_ada_test_" + pid);
         
         // Clean up any existing test directory first
-        if (std::filesystem::exists(test_dir)) {
-            std::filesystem::remove_all(test_dir);
+        if (heimdall::compat::fs::exists(test_dir)) {
+            heimdall::compat::fs::remove_all(test_dir);
         }
         
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
-        std::filesystem::current_path(test_dir);
+        heimdall::compat::fs::current_path(test_dir);
         
         // Create a dummy ali file named my_package.ali in test directory
         std::ofstream ali_file("my_package.ali");
@@ -63,7 +66,7 @@ protected:
         test_utils::safeRemoveDirectory(test_dir);
     }
 
-    std::filesystem::path test_dir;
+    heimdall::compat::fs::path test_dir;
 };
 
 TEST_F(AdaExtractorTest, FindAliFiles) {
@@ -71,7 +74,7 @@ TEST_F(AdaExtractorTest, FindAliFiles) {
     std::vector<std::string> aliFiles;
     extractor.findAliFiles(test_dir.string(), aliFiles);
     ASSERT_EQ(aliFiles.size(), 1);
-    EXPECT_EQ(std::filesystem::path(aliFiles[0]).filename(), "my_package.ali");
+    EXPECT_EQ(heimdall::compat::fs::path(aliFiles[0]).filename(), "my_package.ali");
 }
 
 TEST_F(AdaExtractorTest, ExtractAdaMetadata) {
@@ -172,7 +175,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         file1.close();
         
         // Check if file exists immediately after creation
-        bool file_exists_immediately = std::filesystem::exists(ali1);
+        bool file_exists_immediately = heimdall::compat::fs::exists(ali1);
         if (file_exists_immediately) {
             try {
             } catch (const std::exception& e) {
@@ -189,8 +192,8 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         file2.close();
         
         // Check if both files exist after second file creation
-        bool ali1_exists_after_second = std::filesystem::exists(ali1);
-        bool ali2_exists_after_second = std::filesystem::exists(ali2);
+        bool ali1_exists_after_second = heimdall::compat::fs::exists(ali1);
+        bool ali2_exists_after_second = heimdall::compat::fs::exists(ali2);
         
         // Ensure files are written to disk and synchronized
         
@@ -199,7 +202,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         
         // Debug: Check current directory and list files before verification
         try {
-            for (const auto& entry : std::filesystem::directory_iterator(".")) {
+            for (const auto& entry : heimdall::compat::fs::directory_iterator(".")) {
             }
         } catch (const std::exception& e) {
         }
@@ -215,11 +218,11 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         while (retry_count < max_retries && (!ali1_exists || !ali2_exists)) {
             
             if (!ali1_exists) {
-                ali1_exists = std::filesystem::exists(ali1);
+                ali1_exists = heimdall::compat::fs::exists(ali1);
             }
             
             if (!ali2_exists) {
-                ali2_exists = std::filesystem::exists(ali2);
+                ali2_exists = heimdall::compat::fs::exists(ali2);
             }
             
             if (!ali1_exists || !ali2_exists) {

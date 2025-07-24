@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -28,7 +29,7 @@ class MetadataExtractorTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_metadata_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
         // Create test files
         createTestFiles();
@@ -64,13 +65,13 @@ const char* test_license = "MIT";
         (void)compile_result; // Suppress unused variable warning
 
         // Fallback to dummy file if compilation fails
-        if (!std::filesystem::exists(test_lib)) {
+        if (!heimdall::compat::fs::exists(test_lib)) {
             std::ofstream(test_lib) << "dummy content";
         }
     }
-    std::filesystem::path test_dir;
-    std::filesystem::path test_source;
-    std::filesystem::path test_lib;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_source;
+    heimdall::compat::fs::path test_lib;
 };
 
 TEST_F(MetadataExtractorTest, ExtractMetadataBasic) {
@@ -79,14 +80,14 @@ TEST_F(MetadataExtractorTest, ExtractMetadataBasic) {
 
     // Debug: Check if the library exists and its size
     std::cout << "Test library path: " << test_lib.string() << std::endl;
-    std::cout << "Test library exists: " << std::filesystem::exists(test_lib) << std::endl;
-    std::cout << "Test library size: " << std::filesystem::file_size(test_lib) << std::endl;
+    std::cout << "Test library exists: " << heimdall::compat::fs::exists(test_lib) << std::endl;
+    std::cout << "Test library size: " << heimdall::compat::fs::file_size(test_lib) << std::endl;
 
     // Debug: Check if it's recognized as ELF
     std::cout << "Is ELF: " << extractor.isELF(test_lib.string()) << std::endl;
 
     // Test individual extraction methods
-    if (std::filesystem::file_size(test_lib) > 100) {
+    if (heimdall::compat::fs::file_size(test_lib) > 100) {
         // Real library - should extract symbols and sections
         std::cout << "Testing symbol extraction..." << std::endl;
         bool symbolResult = extractor.extractSymbolInfo(component);
@@ -123,7 +124,7 @@ TEST_F(MetadataExtractorTest, FileFormatDetection) {
     EXPECT_FALSE(extractor.isArchive(test_source.string()));
 
     // Test with the actual library
-    if (std::filesystem::file_size(test_lib) > 100) {
+    if (heimdall::compat::fs::file_size(test_lib) > 100) {
 // Platform-specific format detection
 #ifdef __linux__
         // On Linux, should detect ELF format for real library

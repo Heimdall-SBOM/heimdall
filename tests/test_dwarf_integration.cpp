@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include "src/common/MetadataExtractor.hpp"
 #include <algorithm>
 #include <atomic>
@@ -52,7 +53,7 @@ class DWARFIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_integration_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
         // Create test files
         createTestFiles();
@@ -229,30 +230,30 @@ char* concatenate_strings(const char* str1, const char* str2) {
         (void)static_lib_result; // Suppress unused variable warning
 
         // Fallback to dummy files if compilation fails
-        if (!std::filesystem::exists(main_executable)) {
+        if (!heimdall::compat::fs::exists(main_executable)) {
             std::ofstream(main_executable) << "dummy executable";
         }
-        if (!std::filesystem::exists(math_library)) {
+        if (!heimdall::compat::fs::exists(math_library)) {
             std::ofstream(math_library) << "dummy math library";
         }
-        if (!std::filesystem::exists(string_library)) {
+        if (!heimdall::compat::fs::exists(string_library)) {
             std::ofstream(string_library) << "dummy string library";
         }
-        if (!std::filesystem::exists(static_library)) {
+        if (!heimdall::compat::fs::exists(static_library)) {
             std::ofstream(static_library) << "!<arch>\ndummy static library";
         }
     }
 
-    std::filesystem::path test_dir;
-    std::filesystem::path main_source, math_source, string_source;
-    std::filesystem::path math_header, string_header;
-    std::filesystem::path main_executable, math_object, string_object;
-    std::filesystem::path math_library, string_library, static_library;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path main_source, math_source, string_source;
+    heimdall::compat::fs::path math_header, string_header;
+    heimdall::compat::fs::path main_executable, math_object, string_object;
+    heimdall::compat::fs::path math_library, string_library, static_library;
 };
 
 // End-to-End Integration Tests
 TEST_F(DWARFIntegrationTest, EndToEndSBOMGeneration) {
-    if (std::filesystem::file_size(main_executable) > 100) {
+    if (heimdall::compat::fs::file_size(main_executable) > 100) {
         MetadataExtractor extractor;
         ComponentInfo component("integration_test", main_executable.string());
 
@@ -304,7 +305,7 @@ TEST_F(DWARFIntegrationTest, MultiComponentSBOMGeneration) {
     std::vector<ComponentInfo> components;
 
     for (size_t i = 0; i < component_paths.size(); ++i) {
-        if (std::filesystem::file_size(component_paths[i]) > 100) {
+        if (heimdall::compat::fs::file_size(component_paths[i]) > 100) {
             std::string name = "component_" + std::to_string(i);
             ComponentInfo component(name, component_paths[i]);
 
@@ -342,7 +343,7 @@ TEST_F(DWARFIntegrationTest, MultiComponentSBOMGeneration) {
 
 // Performance Integration Tests
 TEST_F(DWARFIntegrationTest, LargeBinaryPerformance) {
-    if (std::filesystem::file_size(main_executable) > 100) {
+    if (heimdall::compat::fs::file_size(main_executable) > 100) {
         DWARFExtractor extractor;
         std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
 
@@ -409,7 +410,7 @@ TEST_F(DWARFIntegrationTest, MemoryLeakStressTest) {
 
                 // Test DWARF extraction - only on valid ELF files
                 for (const auto& path : component_paths) {
-                    if (std::filesystem::file_size(path) > 100 && 
+                    if (heimdall::compat::fs::file_size(path) > 100 && 
                         Utils::getFileExtension(path) != ".a") {  // Skip static libraries for DWARF
                         dwarf_extractor->extractSourceFiles(path, sourceFiles);
                         dwarf_extractor->extractFunctions(path, functions);
@@ -421,7 +422,7 @@ TEST_F(DWARFIntegrationTest, MemoryLeakStressTest) {
 
                 // Test metadata extraction
                 for (const auto& path : component_paths) {
-                    if (std::filesystem::file_size(path) > 100) {
+                    if (heimdall::compat::fs::file_size(path) > 100) {
                         ComponentInfo component("test_component", path);
                         metadata_extractor->extractMetadata(component);
                     }
@@ -444,7 +445,7 @@ TEST_F(DWARFIntegrationTest, MemoryLeakStressTest) {
 TEST_F(DWARFIntegrationTest, LargeVectorStressTest) {
     const int num_iterations = 5;  // Reduced from 50
 
-    if (std::filesystem::file_size(main_executable) > 100) {
+    if (heimdall::compat::fs::file_size(main_executable) > 100) {
         for (int i = 0; i < num_iterations; ++i) {
             {
                 DWARFExtractor extractor;
@@ -482,10 +483,10 @@ TEST_F(DWARFIntegrationTest, LargeVectorStressTest) {
 // Plugin Integration Tests
 TEST_F(DWARFIntegrationTest, PluginInterfaceIntegration) {
     // Debug: Check if test executable exists and has proper size
-    bool executable_exists = std::filesystem::exists(main_executable);
+    bool executable_exists = heimdall::compat::fs::exists(main_executable);
     size_t executable_size = 0;
     if (executable_exists) {
-        executable_size = std::filesystem::file_size(main_executable);
+        executable_size = heimdall::compat::fs::file_size(main_executable);
     }
     
     // Debug: Check if it's a real executable (not dummy)
@@ -531,7 +532,7 @@ TEST_F(DWARFIntegrationTest, ErrorRecoveryIntegration) {
     MetadataExtractor metadata_extractor;
 
     // Test with valid file first
-    if (std::filesystem::file_size(main_executable) > 100) {
+    if (heimdall::compat::fs::file_size(main_executable) > 100) {
         std::vector<std::string> result;
         bool valid_result = extractor.extractSourceFiles(main_executable.string(), result);
         EXPECT_TRUE(valid_result || !valid_result);  // Should not crash
@@ -552,7 +553,7 @@ TEST_F(DWARFIntegrationTest, ErrorRecoveryIntegration) {
     EXPECT_FALSE(invalid_metadata);
 
     // Test with valid file again (should still work)
-    if (std::filesystem::file_size(main_executable) > 100) {
+    if (heimdall::compat::fs::file_size(main_executable) > 100) {
         result.clear();
         bool recovery_result = extractor.extractSourceFiles(main_executable.string(), result);
         EXPECT_TRUE(recovery_result || !recovery_result);  // Should not crash
@@ -571,7 +572,7 @@ TEST_F(DWARFIntegrationTest, CrossComponentIntegration) {
     std::vector<ComponentInfo> components;
 
     for (const auto& path : component_paths) {
-        if (std::filesystem::file_size(path) > 100) {
+        if (heimdall::compat::fs::file_size(path) > 100) {
             ComponentInfo component("test_component", path);
 
             MetadataExtractor extractor;
@@ -600,7 +601,7 @@ TEST_F(DWARFIntegrationTest, CrossComponentIntegration) {
 
 // Performance Benchmark Tests
 // TEST_F(DWARFIntegrationTest, PerformanceBenchmark) {
-//     if (std::filesystem::file_size(main_executable) > 100) {
+//     if (heimdall::compat::fs::file_size(main_executable) > 100) {
 //         const int num_runs = 10;
 //         std::vector<long long> durations;
 //

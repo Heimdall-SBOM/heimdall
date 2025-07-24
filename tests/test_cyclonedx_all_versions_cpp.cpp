@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include "compat/compatibility.hpp"  // Re-enabled to test the fix
 #include "llvm/llvm_detector.hpp"
 #include <vector>

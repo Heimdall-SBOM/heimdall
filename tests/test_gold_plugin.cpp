@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,7 +19,7 @@ class GoldPluginTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_gold_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
         // Create test files
         createTestFiles();
@@ -28,11 +29,11 @@ protected:
         test_utils::safeRemoveDirectory(test_dir);
     }
 
-    std::filesystem::path test_dir;
-    std::filesystem::path test_object_file;
-    std::filesystem::path test_library_file;
-    std::filesystem::path test_shared_lib;
-    std::filesystem::path test_executable;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_object_file;
+    heimdall::compat::fs::path test_library_file;
+    heimdall::compat::fs::path test_shared_lib;
+    heimdall::compat::fs::path test_executable;
 
     void createTestFiles() {
         // Create test object file

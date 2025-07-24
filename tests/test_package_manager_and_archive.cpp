@@ -24,7 +24,7 @@ using namespace heimdall;
 
 // Helper: Only run if file exists
 #define REQUIRE_FILE(path)                               \
-    if (!std::filesystem::exists(path)) {                \
+    if (!heimdall::compat::fs::exists(path)) {                \
         GTEST_SKIP() << "Test file not found: " << path; \
     }
 
@@ -33,10 +33,10 @@ using namespace heimdall;
 TEST(PackageManagerIntegration, DetectRpm) {
     GTEST_SKIP() << "Disabled due to known issues with mock ELF files and package manager detection.";
     // Create a mock RPM file in a test directory
-    std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_rpm_test";
-    std::filesystem::create_directories(test_dir);
-    std::filesystem::path mock_rpm_path = test_dir / "usr" / "lib" / "librpm.so";
-    std::filesystem::create_directories(mock_rpm_path.parent_path());
+    heimdall::compat::fs::path test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_rpm_test";
+    heimdall::compat::fs::create_directories(test_dir);
+    heimdall::compat::fs::path mock_rpm_path = test_dir / "usr" / "lib" / "librpm.so";
+    heimdall::compat::fs::create_directories(mock_rpm_path.parent_path());
     
     // Create a minimal ELF file
     std::ofstream mock_file(mock_rpm_path, std::ios::binary);
@@ -57,10 +57,10 @@ TEST(PackageManagerIntegration, DetectRpm) {
 
 TEST(PackageManagerIntegration, DetectDeb) {
     // Create a mock Debian file in a test directory
-    std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_deb_test";
-    std::filesystem::create_directories(test_dir);
-    std::filesystem::path mock_deb_path = test_dir / "usr" / "lib" / "x86_64-linux-gnu" / "libc.so.6";
-    std::filesystem::create_directories(mock_deb_path.parent_path());
+    heimdall::compat::fs::path test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_deb_test";
+    heimdall::compat::fs::create_directories(test_dir);
+    heimdall::compat::fs::path mock_deb_path = test_dir / "usr" / "lib" / "x86_64-linux-gnu" / "libc.so.6";
+    heimdall::compat::fs::create_directories(mock_deb_path.parent_path());
     
     // Create a minimal ELF file
     std::ofstream mock_file(mock_deb_path, std::ios::binary);
@@ -84,10 +84,10 @@ TEST(PackageManagerIntegration, DetectDeb) {
 TEST(PackageManagerIntegration, DetectPacman) {
     GTEST_SKIP() << "Disabled due to known issues with mock ELF files and package manager detection.";
     // Create a mock Pacman file in a test directory
-    std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_pacman_test";
-    std::filesystem::create_directories(test_dir);
-    std::filesystem::path mock_pacman_path = test_dir / "usr" / "lib" / "libc.so.6";
-    std::filesystem::create_directories(mock_pacman_path.parent_path());
+    heimdall::compat::fs::path test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_pacman_test";
+    heimdall::compat::fs::create_directories(test_dir);
+    heimdall::compat::fs::path mock_pacman_path = test_dir / "usr" / "lib" / "libc.so.6";
+    heimdall::compat::fs::create_directories(mock_pacman_path.parent_path());
     
     // Create a minimal ELF file
     std::ofstream mock_file(mock_pacman_path, std::ios::binary);

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -49,9 +50,9 @@ protected:
         } else {
         }
         
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_extended_test";
+        test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_utils_extended_test";
         
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
 
         // Create test files
         test_file = test_dir / "test.txt";
@@ -79,7 +80,7 @@ protected:
 
         // Create test directories
         sub_dir = test_dir / "subdir";
-        std::filesystem::create_directories(sub_dir);
+        heimdall::compat::fs::create_directories(sub_dir);
 
         // Set environment variable for testing
         setenv("TEST_VAR", "test_value", 1);
@@ -97,10 +98,10 @@ protected:
         EVP_cleanup();
     }
 
-    std::filesystem::path test_dir;
-    std::filesystem::path test_file;
-    std::filesystem::path large_file;
-    std::filesystem::path sub_dir;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_file;
+    heimdall::compat::fs::path large_file;
+    heimdall::compat::fs::path sub_dir;
 };
 
 TEST_F(UtilsExtendedTest, NormalizePath) {
@@ -364,7 +365,7 @@ TEST_F(UtilsExtendedTest, EnvironmentVariables) {
 TEST_F(UtilsExtendedTest, CurrentWorkingDirectory) {
     std::string cwd = Utils::getCurrentWorkingDirectory();
     EXPECT_FALSE(cwd.empty());
-    EXPECT_TRUE(std::filesystem::exists(cwd));
+    EXPECT_TRUE(heimdall::compat::fs::exists(cwd));
 }
 
 TEST_F(UtilsExtendedTest, LibrarySearchPaths) {

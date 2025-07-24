@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <filesystem>
 #include <fstream>
 #include <openssl/ssl.h>
@@ -30,16 +31,16 @@ protected:
         SSL_library_init();
         OpenSSL_add_all_algorithms();
         
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_component_test";
-        std::filesystem::create_directories(test_dir);
+        test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_component_test";
+        heimdall::compat::fs::create_directories(test_dir);
         test_file = test_dir / "libtest.so";
         std::ofstream(test_file) << "dummy content";
     }
     void TearDown() override {
         test_utils::safeRemoveDirectory(test_dir);
     }
-    std::filesystem::path test_dir;
-    std::filesystem::path test_file;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_file;
 };
 
 TEST_F(ComponentInfoTest, DefaultConstructor) {

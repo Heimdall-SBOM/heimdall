@@ -22,6 +22,7 @@ limitations under the License.
  */
 
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -43,7 +44,7 @@ class GoldIntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_gold_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
         // Create test files
         createTestFiles();
@@ -53,12 +54,12 @@ protected:
         test_utils::safeRemoveDirectory(test_dir);
     }
     
-    std::filesystem::path test_dir;
-    std::filesystem::path test_object_file;
-    std::filesystem::path test_library_file;
-    std::filesystem::path test_shared_lib;
-    std::filesystem::path test_executable;
-    std::filesystem::path test_archive;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_object_file;
+    heimdall::compat::fs::path test_library_file;
+    heimdall::compat::fs::path test_shared_lib;
+    heimdall::compat::fs::path test_executable;
+    heimdall::compat::fs::path test_archive;
 
     void createTestFiles() {
         test_object_file = test_dir / "test.o";
@@ -120,9 +121,9 @@ TEST_F(GoldIntegrationTest, CompleteSBOMGenerationWorkflow) {
     adapter->finalize();
     
     // Verify SBOM file was created
-    std::filesystem::path sbom_file = test_dir / "complete_workflow.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
-    EXPECT_GT(std::filesystem::file_size(sbom_file), 0);
+    heimdall::compat::fs::path sbom_file = test_dir / "complete_workflow.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
+    EXPECT_GT(heimdall::compat::fs::file_size(sbom_file), 0);
     
     // Verify processed files
     auto processed_files = adapter->getProcessedFiles();
@@ -157,9 +158,9 @@ TEST_F(GoldIntegrationTest, CycloneDXFormatWorkflow) {
     adapter->finalize();
     
     // Verify SBOM file
-    std::filesystem::path sbom_file = test_dir / "cyclonedx_workflow.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
-    EXPECT_GT(std::filesystem::file_size(sbom_file), 0);
+    heimdall::compat::fs::path sbom_file = test_dir / "cyclonedx_workflow.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
+    EXPECT_GT(heimdall::compat::fs::file_size(sbom_file), 0);
 }
 
 TEST_F(GoldIntegrationTest, LargeScaleProcessingWorkflow) {
@@ -173,9 +174,9 @@ TEST_F(GoldIntegrationTest, LargeScaleProcessingWorkflow) {
     adapter->setVerbose(false); // Disable verbose for performance
     
     // Create and process many files
-    std::vector<std::filesystem::path> test_files;
+    std::vector<heimdall::compat::fs::path> test_files;
     for (int i = 0; i < 50; ++i) {
-        std::filesystem::path file_path = test_dir / ("file_" + std::to_string(i) + ".o");
+        heimdall::compat::fs::path file_path = test_dir / ("file_" + std::to_string(i) + ".o");
         std::ofstream file(file_path);
         file << "Content for file " << i;
         file.close();
@@ -193,9 +194,9 @@ TEST_F(GoldIntegrationTest, LargeScaleProcessingWorkflow) {
     adapter->finalize();
     
     // Verify results
-    std::filesystem::path sbom_file = test_dir / "large_scale.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
-    EXPECT_GT(std::filesystem::file_size(sbom_file), 0);
+    heimdall::compat::fs::path sbom_file = test_dir / "large_scale.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
+    EXPECT_GT(heimdall::compat::fs::file_size(sbom_file), 0);
     
     auto processed_files = adapter->getProcessedFiles();
     EXPECT_EQ(processed_files.size(), 50);
@@ -232,9 +233,9 @@ TEST_F(GoldIntegrationTest, ErrorRecoveryWorkflow) {
     adapter->finalize();
     
     // Should still generate a valid SBOM
-    std::filesystem::path sbom_file = test_dir / "error_recovery.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
-    EXPECT_GT(std::filesystem::file_size(sbom_file), 0);
+    heimdall::compat::fs::path sbom_file = test_dir / "error_recovery.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
+    EXPECT_GT(heimdall::compat::fs::file_size(sbom_file), 0);
 }
 
 TEST_F(GoldIntegrationTest, ConfigurationErrorHandling) {
@@ -262,8 +263,8 @@ TEST_F(GoldIntegrationTest, ConfigurationErrorHandling) {
     adapter->finalize();
     
     // Should still generate SBOM
-    std::filesystem::path sbom_file = test_dir / "config_error.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
+    heimdall::compat::fs::path sbom_file = test_dir / "config_error.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
 }
 
 // Performance and Stress Tests
@@ -281,7 +282,7 @@ TEST_F(GoldIntegrationTest, MemoryStressTest) {
         
         // Process many files and symbols
         for (int i = 0; i < 100; ++i) {
-            std::filesystem::path file_path = test_dir / ("stress_file_" + std::to_string(i) + ".o");
+            heimdall::compat::fs::path file_path = test_dir / ("stress_file_" + std::to_string(i) + ".o");
             std::ofstream file(file_path);
             file << "Stress test content " << i;
             file.close();
@@ -298,8 +299,8 @@ TEST_F(GoldIntegrationTest, MemoryStressTest) {
         adapter->finalize();
         
         // Verify SBOM was created
-        std::filesystem::path sbom_file = test_dir / ("stress_" + std::to_string(cycle) + ".sbom");
-        EXPECT_TRUE(std::filesystem::exists(sbom_file));
+        heimdall::compat::fs::path sbom_file = test_dir / ("stress_" + std::to_string(cycle) + ".sbom");
+        EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
     }
 }
 
@@ -318,7 +319,7 @@ TEST_F(GoldIntegrationTest, SequentialAdapterTest) {
         
         // Process files sequentially for each adapter
         for (int j = 0; j < 10; ++j) {
-            std::filesystem::path file_path = test_dir / ("sequential_file_" + std::to_string(i) + "_" + std::to_string(j) + ".o");
+            heimdall::compat::fs::path file_path = test_dir / ("sequential_file_" + std::to_string(i) + "_" + std::to_string(j) + ".o");
             std::ofstream file(file_path);
             file << "Sequential test content " << i << "_" << j;
             file.close();
@@ -331,9 +332,9 @@ TEST_F(GoldIntegrationTest, SequentialAdapterTest) {
     
     // Verify all SBOMs were created
     for (int i = 0; i < 3; ++i) {
-        std::filesystem::path sbom_file = test_dir / ("sequential_" + std::to_string(i) + ".sbom");
-        EXPECT_TRUE(std::filesystem::exists(sbom_file));
-        EXPECT_GT(std::filesystem::file_size(sbom_file), 0);
+        heimdall::compat::fs::path sbom_file = test_dir / ("sequential_" + std::to_string(i) + ".sbom");
+        EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
+        EXPECT_GT(heimdall::compat::fs::file_size(sbom_file), 0);
     }
 }
 
@@ -354,7 +355,7 @@ TEST_F(GoldIntegrationTest, ArchiveFileProcessing) {
     
     // Create additional archive files
     for (int i = 0; i < 5; ++i) {
-        std::filesystem::path archive_path = test_dir / ("archive_" + std::to_string(i) + ".a");
+        heimdall::compat::fs::path archive_path = test_dir / ("archive_" + std::to_string(i) + ".a");
         std::ofstream archive_file(archive_path);
         archive_file << "Archive content " << i;
         archive_file.close();
@@ -364,8 +365,8 @@ TEST_F(GoldIntegrationTest, ArchiveFileProcessing) {
     
     adapter->finalize();
     
-    std::filesystem::path sbom_file = test_dir / "archive_test.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
+    heimdall::compat::fs::path sbom_file = test_dir / "archive_test.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
     
     auto processed_libraries = adapter->getProcessedLibraries();
     EXPECT_EQ(processed_libraries.size(), 7);
@@ -385,7 +386,7 @@ TEST_F(GoldIntegrationTest, SharedLibraryProcessing) {
     
     // Create additional shared libraries
     for (int i = 0; i < 5; ++i) {
-        std::filesystem::path shared_path = test_dir / ("libshared_" + std::to_string(i) + ".so");
+        heimdall::compat::fs::path shared_path = test_dir / ("libshared_" + std::to_string(i) + ".so");
         std::ofstream shared_file(shared_path);
         shared_file << "Shared library content " << i;
         shared_file.close();
@@ -395,8 +396,8 @@ TEST_F(GoldIntegrationTest, SharedLibraryProcessing) {
     
     adapter->finalize();
     
-    std::filesystem::path sbom_file = test_dir / "shared_lib_test.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
+    heimdall::compat::fs::path sbom_file = test_dir / "shared_lib_test.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
     
     auto processed_libraries = adapter->getProcessedLibraries();
     EXPECT_EQ(processed_libraries.size(), 6);
@@ -447,8 +448,8 @@ TEST_F(GoldIntegrationTest, SBOMContentValidation) {
     adapter->finalize();
     
     // Read and validate SBOM content
-    std::filesystem::path sbom_file = test_dir / "validation_test.sbom";
-    EXPECT_TRUE(std::filesystem::exists(sbom_file));
+    heimdall::compat::fs::path sbom_file = test_dir / "validation_test.sbom";
+    EXPECT_TRUE(heimdall::compat::fs::exists(sbom_file));
     
     std::ifstream file(sbom_file);
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());

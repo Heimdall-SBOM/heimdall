@@ -23,6 +23,7 @@ limitations under the License.
 
 #include <dlfcn.h>
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +56,7 @@ class PluginSBOMConsistencyTest : public ::testing::Test {
 protected:
     void SetUp() override {
         testDir = test_utils::getUniqueTestDirectory("heimdall_plugin_test");
-        std::filesystem::create_directories(testDir);
+        heimdall::compat::fs::create_directories(testDir);
         
         // Create test files
         createTestFiles();
@@ -63,9 +64,9 @@ protected:
 
     void ensurePluginsBuilt() {
         // Check if we're in a build directory and plugins don't exist
-        if (std::filesystem::exists("CMakeCache.txt")) {
-            bool lldExists = std::filesystem::exists("lib/heimdall-lld.so");
-            bool goldExists = std::filesystem::exists("lib/heimdall-gold.so");
+        if (heimdall::compat::fs::exists("CMakeCache.txt")) {
+            bool lldExists = heimdall::compat::fs::exists("lib/heimdall-lld.so");
+            bool goldExists = heimdall::compat::fs::exists("lib/heimdall-gold.so");
             
             // On macOS, only build LLD plugin (Gold is Linux-only)
             #ifdef __APPLE__
@@ -127,14 +128,14 @@ protected:
 
         for (const auto& path : searchPaths) {
             std::string fullPath = path + pluginName;
-            if (std::filesystem::exists(fullPath)) {
-                return std::filesystem::absolute(fullPath).string();
+            if (heimdall::compat::fs::exists(fullPath)) {
+                return heimdall::compat::fs::absolute(fullPath).string();
             }
         }
 
         // Also try to find plugins in the current directory tree
-        std::filesystem::path currentDir = std::filesystem::current_path();
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(currentDir)) {
+        heimdall::compat::fs::path currentDir = heimdall::compat::fs::current_path();
+        for (const auto& entry : heimdall::compat::fs::recursive_directory_iterator(currentDir)) {
             if (entry.is_regular_file() && entry.path().filename() == pluginName) {
                 return entry.path().string();
             }
@@ -144,7 +145,7 @@ protected:
         std::cerr << "WARNING: Plugin " << pluginName << " not found. Attempting to build..." << std::endl;
         
         // Try to run cmake build if we're in a build directory
-        if (std::filesystem::exists("CMakeCache.txt")) {
+        if (heimdall::compat::fs::exists("CMakeCache.txt")) {
             int build_result;
             
             // On macOS, only build LLD plugin (Gold is Linux-only)
@@ -164,8 +165,8 @@ protected:
             // Check again after build attempt
             for (const auto& path : searchPaths) {
                 std::string fullPath = path + pluginName;
-                if (std::filesystem::exists(fullPath)) {
-                    return std::filesystem::absolute(fullPath).string();
+                if (heimdall::compat::fs::exists(fullPath)) {
+                    return heimdall::compat::fs::absolute(fullPath).string();
                 }
             }
         }
@@ -221,8 +222,8 @@ int main() {
         source.close();
 
         // Compile the test binary with platform-specific settings
-        std::filesystem::path binaryPath = testDir / "test_binary";
-        std::filesystem::path sourcePath = sourceFile;
+        heimdall::compat::fs::path binaryPath = testDir / "test_binary";
+        heimdall::compat::fs::path sourcePath = sourceFile;
         
         std::string compileCmd;
         
@@ -400,10 +401,10 @@ int main() {
         finalize();
         dlclose(handle);
 
-        return std::filesystem::exists(outputPath);
+        return heimdall::compat::fs::exists(outputPath);
     }
 
-    std::filesystem::path testDir;
+    heimdall::compat::fs::path testDir;
     std::string lldPluginPath;
     std::string goldPluginPath;
     std::string testBinaryPath;
@@ -413,21 +414,21 @@ TEST_F(PluginSBOMConsistencyTest, PluginPathsExist) {
 #if defined(__APPLE__)
     // On macOS, only check for LLD plugin
     EXPECT_FALSE(lldPluginPath.empty()) << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
-    EXPECT_TRUE(std::filesystem::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
-    EXPECT_GT(std::filesystem::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
+    EXPECT_TRUE(heimdall::compat::fs::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
+    EXPECT_GT(heimdall::compat::fs::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
 #else
     // On Linux, check for both LLD and Gold plugins
     EXPECT_FALSE(lldPluginPath.empty()) << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
     EXPECT_FALSE(goldPluginPath.empty()) << "Gold plugin not found. Searched in build/, install/, and current directory tree.";
-    EXPECT_TRUE(std::filesystem::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
-    EXPECT_TRUE(std::filesystem::exists(goldPluginPath)) << "Gold plugin file does not exist: " << goldPluginPath;
-    EXPECT_GT(std::filesystem::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
-    EXPECT_GT(std::filesystem::file_size(goldPluginPath), 0) << "Gold plugin file is empty: " << goldPluginPath;
+    EXPECT_TRUE(heimdall::compat::fs::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
+    EXPECT_TRUE(heimdall::compat::fs::exists(goldPluginPath)) << "Gold plugin file does not exist: " << goldPluginPath;
+    EXPECT_GT(heimdall::compat::fs::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
+    EXPECT_GT(heimdall::compat::fs::file_size(goldPluginPath), 0) << "Gold plugin file is empty: " << goldPluginPath;
 #endif
 }
 
 TEST_F(PluginSBOMConsistencyTest, TestBinaryExists) {
-    EXPECT_TRUE(std::filesystem::exists(testBinaryPath)) << "Test binary not created";
+    EXPECT_TRUE(heimdall::compat::fs::exists(testBinaryPath)) << "Test binary not created";
 }
 
 TEST_F(PluginSBOMConsistencyTest, LLDPluginSPDXGeneration) {
@@ -443,7 +444,7 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginSPDXGeneration) {
         GTEST_SKIP() << "LLD plugin failed to load (LLVM linking issues)";
     }
 
-    EXPECT_TRUE(std::filesystem::exists(outputPath)) << "LLD SPDX file not created";
+    EXPECT_TRUE(heimdall::compat::fs::exists(outputPath)) << "LLD SPDX file not created";
 
     // Parse and validate SPDX
     SBOMData spdxData = parseSPDX(outputPath);
@@ -504,7 +505,7 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
         GTEST_SKIP() << "LLD plugin failed to load (LLVM linking issues)";
     }
 
-    EXPECT_TRUE(std::filesystem::exists(outputPath)) << "LLD CycloneDX file not created";
+    EXPECT_TRUE(heimdall::compat::fs::exists(outputPath)) << "LLD CycloneDX file not created";
 
     // Parse and validate CycloneDX
     SBOMData cyclonedxData = parseCycloneDX(outputPath);
@@ -575,7 +576,7 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginSPDXGeneration) {
     bool success = generateSBOM(goldPluginPath, "spdx", outputPath, testBinaryPath);
 
     EXPECT_TRUE(success) << "Failed to generate Gold SPDX SBOM";
-    EXPECT_TRUE(std::filesystem::exists(outputPath)) << "Gold SPDX file not created";
+    EXPECT_TRUE(heimdall::compat::fs::exists(outputPath)) << "Gold SPDX file not created";
 
     // Parse and validate SPDX
     SBOMData spdxData = parseSPDX(outputPath);
@@ -624,7 +625,7 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
     bool success = generateSBOM(goldPluginPath, "cyclonedx", outputPath, testBinaryPath);
 
     EXPECT_TRUE(success) << "Failed to generate Gold CycloneDX SBOM";
-    EXPECT_TRUE(std::filesystem::exists(outputPath)) << "Gold CycloneDX file not created";
+    EXPECT_TRUE(heimdall::compat::fs::exists(outputPath)) << "Gold CycloneDX file not created";
 
     // Parse and validate CycloneDX
     SBOMData cyclonedxData = parseCycloneDX(outputPath);

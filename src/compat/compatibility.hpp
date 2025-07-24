@@ -53,6 +53,11 @@ limitations under the License.
 #include <utility>
 #include <sstream>
 #include <cstdint>
+#include <fstream>
+#include <cstdlib>
+#include <unistd.h>
+#include <dirent.h>
+#include <climits>
 
 /**
  * @namespace heimdall::compat::detail
@@ -187,9 +192,145 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
         #endif
     #endif
 #else
-    // C++11/14 - Boost.Filesystem
+    // C++11/14: Custom implementations or Boost
     #if defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM
-        #include <boost/filesystem.hpp>
+        namespace fs = boost::filesystem;
+    #else
+        // Fallback filesystem implementation for C++11/14 without Boost
+        namespace fs {
+            class path {
+            private:
+                std::string path_str;
+                
+            public:
+                path() = default;
+                path(const std::string& str) : path_str(str) {}
+                path(const char* str) : path_str(str ? str : "") {}
+                
+                // Basic operations
+                std::string string() const { return path_str; }
+                std::string filename() const {
+                    size_t pos = path_str.find_last_of("/\\");
+                    return (pos == std::string::npos) ? path_str : path_str.substr(pos + 1);
+                }
+                path parent_path() const {
+                    size_t pos = path_str.find_last_of("/\\");
+                    return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
+                }
+                
+                // Operators
+                path operator/(const path& other) const {
+                    if (path_str.empty()) return other;
+                    if (other.path_str.empty()) return *this;
+                    if (path_str.back() == '/' || path_str.back() == '\\') {
+                        return path(path_str + other.path_str);
+                    }
+                    return path(path_str + "/" + other.path_str);
+                }
+                
+                path& operator/=(const path& other) {
+                    *this = *this / other;
+                    return *this;
+                }
+                
+                // Conversion operators
+                operator std::string() const { return path_str; }
+            };
+            
+            // Filesystem operations
+            inline bool exists(const path& p) {
+                std::ifstream file(p.string());
+                return file.good();
+            }
+            
+            inline bool create_directories(const path& p) {
+                // Simple implementation - just create the directory
+                std::string cmd = "mkdir -p " + p.string();
+                return system(cmd.c_str()) == 0;
+            }
+            
+            inline bool remove(const path& p) {
+                std::string cmd = "rm -f " + p.string();
+                return system(cmd.c_str()) == 0;
+            }
+            
+            inline bool remove_all(const path& p) {
+                std::string cmd = "rm -rf " + p.string();
+                return system(cmd.c_str()) == 0;
+            }
+            
+            inline path current_path() {
+                char cwd[PATH_MAX];
+                if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+                    return path(cwd);
+                }
+                return path();
+            }
+            
+            inline bool current_path(const path& p) {
+                return chdir(p.string().c_str()) == 0;
+            }
+            
+            inline path temp_directory_path() {
+                const char* temp_dir = getenv("TMPDIR");
+                if (!temp_dir) temp_dir = getenv("TEMP");
+                if (!temp_dir) temp_dir = getenv("TMP");
+                if (!temp_dir) temp_dir = "/tmp";
+                return path(temp_dir);
+            }
+            
+            inline uintmax_t file_size(const path& p) {
+                std::ifstream file(p.string(), std::ios::binary | std::ios::ate);
+                if (file.is_open()) {
+                    return file.tellg();
+                }
+                return 0;
+            }
+            
+            class directory_iterator {
+            private:
+                DIR* dir;
+                std::string current_path;
+                
+            public:
+                directory_iterator() : dir(nullptr) {}
+                directory_iterator(const path& p) : dir(nullptr) {
+                    dir = opendir(p.string().c_str());
+                }
+                
+                ~directory_iterator() {
+                    if (dir) closedir(dir);
+                }
+                
+                bool operator!=(const directory_iterator& other) const {
+                    return dir != other.dir;
+                }
+                
+                directory_iterator& operator++() {
+                    if (dir) {
+                        struct dirent* entry = readdir(dir);
+                        if (!entry) {
+                            closedir(dir);
+                            dir = nullptr;
+                        }
+                    }
+                    return *this;
+                }
+                
+                path operator*() const {
+                    return path(current_path);
+                }
+            };
+            
+            inline directory_iterator begin(directory_iterator iter) { return iter; }
+            inline directory_iterator end(directory_iterator) { return directory_iterator(); }
+            
+            // Exception types
+            class filesystem_error : public std::runtime_error {
+            public:
+                filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
+            };
+        }
     #endif
 #endif
 
@@ -273,6 +414,142 @@ namespace compat {
     // C++11/14: Custom implementations or Boost
     #if defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM
         namespace fs = boost::filesystem;
+    #else
+        // Fallback filesystem implementation for C++11/14 without Boost
+        namespace fs {
+            class path {
+            private:
+                std::string path_str;
+                
+            public:
+                path() = default;
+                path(const std::string& str) : path_str(str) {}
+                path(const char* str) : path_str(str ? str : "") {}
+                
+                // Basic operations
+                std::string string() const { return path_str; }
+                std::string filename() const {
+                    size_t pos = path_str.find_last_of("/\\");
+                    return (pos == std::string::npos) ? path_str : path_str.substr(pos + 1);
+                }
+                path parent_path() const {
+                    size_t pos = path_str.find_last_of("/\\");
+                    return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
+                }
+                
+                // Operators
+                path operator/(const path& other) const {
+                    if (path_str.empty()) return other;
+                    if (other.path_str.empty()) return *this;
+                    if (path_str.back() == '/' || path_str.back() == '\\') {
+                        return path(path_str + other.path_str);
+                    }
+                    return path(path_str + "/" + other.path_str);
+                }
+                
+                path& operator/=(const path& other) {
+                    *this = *this / other;
+                    return *this;
+                }
+                
+                // Conversion operators
+                operator std::string() const { return path_str; }
+            };
+            
+            // Filesystem operations
+            inline bool exists(const path& p) {
+                std::ifstream file(p.string());
+                return file.good();
+            }
+            
+            inline bool create_directories(const path& p) {
+                // Simple implementation - just create the directory
+                std::string cmd = "mkdir -p " + p.string();
+                return system(cmd.c_str()) == 0;
+            }
+            
+            inline bool remove(const path& p) {
+                std::string cmd = "rm -f " + p.string();
+                return system(cmd.c_str()) == 0;
+            }
+            
+            inline bool remove_all(const path& p) {
+                std::string cmd = "rm -rf " + p.string();
+                return system(cmd.c_str()) == 0;
+            }
+            
+            inline path current_path() {
+                char cwd[PATH_MAX];
+                if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+                    return path(cwd);
+                }
+                return path();
+            }
+            
+            inline bool current_path(const path& p) {
+                return chdir(p.string().c_str()) == 0;
+            }
+            
+            inline path temp_directory_path() {
+                const char* temp_dir = getenv("TMPDIR");
+                if (!temp_dir) temp_dir = getenv("TEMP");
+                if (!temp_dir) temp_dir = getenv("TMP");
+                if (!temp_dir) temp_dir = "/tmp";
+                return path(temp_dir);
+            }
+            
+            inline uintmax_t file_size(const path& p) {
+                std::ifstream file(p.string(), std::ios::binary | std::ios::ate);
+                if (file.is_open()) {
+                    return file.tellg();
+                }
+                return 0;
+            }
+            
+            class directory_iterator {
+            private:
+                DIR* dir;
+                std::string current_path;
+                
+            public:
+                directory_iterator() : dir(nullptr) {}
+                directory_iterator(const path& p) : dir(nullptr) {
+                    dir = opendir(p.string().c_str());
+                }
+                
+                ~directory_iterator() {
+                    if (dir) closedir(dir);
+                }
+                
+                bool operator!=(const directory_iterator& other) const {
+                    return dir != other.dir;
+                }
+                
+                directory_iterator& operator++() {
+                    if (dir) {
+                        struct dirent* entry = readdir(dir);
+                        if (!entry) {
+                            closedir(dir);
+                            dir = nullptr;
+                        }
+                    }
+                    return *this;
+                }
+                
+                path operator*() const {
+                    return path(current_path);
+                }
+            };
+            
+            inline directory_iterator begin(directory_iterator iter) { return iter; }
+            inline directory_iterator end(directory_iterator) { return directory_iterator(); }
+            
+            // Exception types
+            class filesystem_error : public std::runtime_error {
+            public:
+                filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
+            };
+        }
     #endif
     
     /**

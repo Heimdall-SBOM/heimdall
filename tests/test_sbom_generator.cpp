@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -27,13 +28,13 @@ class SBOMGeneratorTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_sbom_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
     }
     void TearDown() override {
         test_utils::safeRemoveDirectory(test_dir);
     }
-    std::filesystem::path test_dir;
-    std::filesystem::path test_file;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_file;
 };
 
 TEST_F(SBOMGeneratorTest, ProcessComponentAndCount) {

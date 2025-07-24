@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -25,16 +26,16 @@ using namespace heimdall;
 class UtilsTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_test";
-        std::filesystem::create_directories(test_dir);
+        test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_utils_test";
+        heimdall::compat::fs::create_directories(test_dir);
         test_file = test_dir / "file.txt";
         std::ofstream(test_file) << "test content";
     }
     void TearDown() override {
         test_utils::safeRemoveDirectory(test_dir);
     }
-    std::filesystem::path test_dir;
-    std::filesystem::path test_file;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_file;
 };
 
 TEST_F(UtilsTest, GetDirectory) {

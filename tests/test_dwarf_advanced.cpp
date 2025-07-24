@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
@@ -47,8 +48,8 @@ namespace heimdall {
 class DWARFAdvancedTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_dwarf_advanced_test";
-        std::filesystem::create_directories(test_dir);
+        test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_dwarf_advanced_test";
+        heimdall::compat::fs::create_directories(test_dir);
 
         // Create complex C source file with multiple functions and debug info
         test_source = test_dir / "complex_test.c";
@@ -162,27 +163,27 @@ static int internal_helper() {
         (void)lib_compile_result; // Suppress unused variable warning
 
         // Fallback to dummy files if compilation fails
-        if (!std::filesystem::exists(test_executable)) {
+        if (!heimdall::compat::fs::exists(test_executable)) {
             std::ofstream(test_executable) << "dummy executable";
         }
-        if (!std::filesystem::exists(test_object)) {
+        if (!heimdall::compat::fs::exists(test_object)) {
             std::ofstream(test_object) << "dummy object";
         }
-        if (!std::filesystem::exists(test_library)) {
+        if (!heimdall::compat::fs::exists(test_library)) {
             std::ofstream(test_library) << "dummy library";
         }
     }
 
     void TearDown() override {
         // Keep the test directory for debugging
-        // std::filesystem::remove_all(test_dir);
+        // heimdall::compat::fs::remove_all(test_dir);
     }
 
-    std::filesystem::path test_dir;
-    std::filesystem::path test_source;
-    std::filesystem::path test_executable;
-    std::filesystem::path test_object;
-    std::filesystem::path test_library;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_source;
+    heimdall::compat::fs::path test_executable;
+    heimdall::compat::fs::path test_object;
+    heimdall::compat::fs::path test_library;
 };
 
 // Advanced Function Extraction Tests
@@ -190,7 +191,7 @@ TEST_F(DWARFAdvancedTest, DetailedFunctionExtraction) {
     DWARFExtractor extractor;
     std::vector<std::string> functions;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         bool result = extractor.extractFunctions(test_executable.string(), functions);
 
         if (result) {
@@ -229,7 +230,7 @@ TEST_F(DWARFAdvancedTest, FunctionExtractionFromObjectFile) {
     DWARFExtractor extractor;
     std::vector<std::string> functions;
 
-    if (std::filesystem::file_size(test_object) > 100) {
+    if (heimdall::compat::fs::file_size(test_object) > 100) {
         bool result = extractor.extractFunctions(test_object.string(), functions);
 
         if (result) {
@@ -258,7 +259,7 @@ TEST_F(DWARFAdvancedTest, FunctionExtractionFromSharedLibrary) {
     DWARFExtractor extractor;
     std::vector<std::string> functions;
 
-    if (std::filesystem::file_size(test_library) > 100) {
+    if (heimdall::compat::fs::file_size(test_library) > 100) {
         bool result = extractor.extractFunctions(test_library.string(), functions);
 
         if (result) {
@@ -288,7 +289,7 @@ TEST_F(DWARFAdvancedTest, DetailedLineInfoExtraction) {
     DWARFExtractor extractor;
     std::vector<std::string> lineInfo;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         bool result = extractor.extractLineInfo(test_executable.string(), lineInfo);
 
         if (result) {
@@ -315,7 +316,7 @@ TEST_F(DWARFAdvancedTest, CorruptedFileHandling) {
     std::vector<std::string> result;
 
     // Create a corrupted ELF file
-    std::filesystem::path corrupted_file = test_dir / "corrupted.elf";
+    heimdall::compat::fs::path corrupted_file = test_dir / "corrupted.elf";
     std::ofstream(corrupted_file, std::ios::binary) << "This is not a valid ELF file";
 
     // All operations should fail gracefully
@@ -341,9 +342,9 @@ TEST_F(DWARFAdvancedTest, TruncatedFileHandling) {
     DWARFExtractor extractor;
     std::vector<std::string> result;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         // Create a truncated copy of the executable
-        std::filesystem::path truncated_file = test_dir / "truncated.elf";
+        heimdall::compat::fs::path truncated_file = test_dir / "truncated.elf";
         std::ifstream src(test_executable, std::ios::binary);
         std::ofstream dst(truncated_file, std::ios::binary);
 
@@ -407,9 +408,9 @@ TEST_F(DWARFAdvancedTest, PermissionDeniedHandling) {
     std::vector<std::string> result;
 
     // Create a file with no read permissions
-    std::filesystem::path no_permission_file = test_dir / "no_permission.elf";
+    heimdall::compat::fs::path no_permission_file = test_dir / "no_permission.elf";
     std::ofstream(no_permission_file) << "dummy content";
-    std::filesystem::permissions(no_permission_file, std::filesystem::perms::none);
+    heimdall::compat::fs::permissions(no_permission_file, heimdall::compat::fs::perms::none);
 
     // Operations should fail gracefully
     EXPECT_FALSE(extractor.extractSourceFiles(no_permission_file.string(), result));
@@ -430,8 +431,8 @@ TEST_F(DWARFAdvancedTest, PermissionDeniedHandling) {
     EXPECT_FALSE(extractor.hasDWARFInfo(no_permission_file.string()));
 
     // Restore permissions for cleanup
-    std::filesystem::permissions(no_permission_file, std::filesystem::perms::owner_read |
-                                                         std::filesystem::perms::owner_write);
+    heimdall::compat::fs::permissions(no_permission_file, heimdall::compat::fs::perms::owner_read |
+                                                         heimdall::compat::fs::perms::owner_write);
 }
 
 // Performance and Stress Tests
@@ -439,7 +440,7 @@ TEST_F(DWARFAdvancedTest, LargeFilePerformance) {
     DWARFExtractor extractor;
     std::vector<std::string> result;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         auto start = std::chrono::high_resolution_clock::now();
 
         bool success = extractor.extractSourceFiles(test_executable.string(), result);
@@ -466,7 +467,7 @@ TEST_F(DWARFAdvancedTest, MemoryStressTest) {
     const int num_iterations = 100;
     std::vector<std::unique_ptr<DWARFExtractor>> extractors;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         for (int i = 0; i < num_iterations; ++i) {
             auto extractor = std::make_unique<DWARFExtractor>();
             std::vector<std::string> result;
@@ -495,7 +496,7 @@ TEST_F(DWARFAdvancedTest, PlatformSpecificBehavior) {
     DWARFExtractor extractor;
     std::vector<std::string> result;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         bool success = extractor.extractSourceFiles(test_executable.string(), result);
 
         // On Linux with LLVM DWARF support, this should work
@@ -522,10 +523,10 @@ TEST_F(DWARFAdvancedTest, MetadataExtractorIntegration) {
     ComponentInfo component("complex_test", test_executable.string());
 
     // Debug: Check if test executable exists and has proper size
-    bool executable_exists = std::filesystem::exists(test_executable);
+    bool executable_exists = heimdall::compat::fs::exists(test_executable);
     size_t executable_size = 0;
     if (executable_exists) {
-        executable_size = std::filesystem::file_size(test_executable);
+        executable_size = heimdall::compat::fs::file_size(test_executable);
     }
     
     
@@ -558,10 +559,10 @@ TEST_F(DWARFAdvancedTest, MetadataExtractorIntegration) {
 
 TEST_F(DWARFAdvancedTest, MetadataHelpersIntegration) {
     // Debug: Check if test executable exists and has proper size
-    bool executable_exists = std::filesystem::exists(test_executable);
+    bool executable_exists = heimdall::compat::fs::exists(test_executable);
     size_t executable_size = 0;
     if (executable_exists) {
-        executable_size = std::filesystem::file_size(test_executable);
+        executable_size = heimdall::compat::fs::file_size(test_executable);
     }
     
     // Debug: Check if it's a real executable (not dummy)
@@ -607,7 +608,7 @@ TEST_F(DWARFAdvancedTest, MetadataHelpersIntegration) {
 
 // End-to-End Tests
 TEST_F(DWARFAdvancedTest, EndToEndSBOMGeneration) {
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         MetadataExtractor extractor;
         ComponentInfo component("complex_test", test_executable.string());
 
@@ -642,11 +643,11 @@ TEST_F(DWARFAdvancedTest, HeuristicFallbackBehavior) {
     std::vector<std::string> result;
 
     // Create a file with debug info but potentially corrupted DWARF
-    std::filesystem::path fallback_file = test_dir / "fallback_test.elf";
+    heimdall::compat::fs::path fallback_file = test_dir / "fallback_test.elf";
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         // Copy the executable to test fallback behavior
-        std::filesystem::copy_file(test_executable, fallback_file, std::filesystem::copy_options::overwrite_existing);
+        heimdall::compat::fs::copy_file(test_executable, fallback_file, heimdall::compat::fs::copy_options::overwrite_existing);
 
         std::vector<std::string> sourceFiles;
         bool result = extractor.extractSourceFiles(fallback_file.string(), sourceFiles);
@@ -663,7 +664,7 @@ TEST_F(DWARFAdvancedTest, HeuristicFallbackBehavior) {
 TEST_F(DWARFAdvancedTest, MemoryLeakStressTest) {
     const int num_iterations = 50;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         for (int i = 0; i < num_iterations; ++i) {
             {
                 DWARFExtractor extractor;
@@ -692,7 +693,7 @@ TEST_F(DWARFAdvancedTest, EmptyVectorHandling) {
     DWARFExtractor extractor;
     std::vector<std::string> empty_result;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         // Test that functions handle empty vectors correctly
         bool success = extractor.extractSourceFiles(test_executable.string(), empty_result);
 
@@ -716,7 +717,7 @@ TEST_F(DWARFAdvancedTest, EmptyVectorHandling) {
 TEST_F(DWARFAdvancedTest, LargeOutputVectorHandling) {
     DWARFExtractor extractor;
 
-    if (std::filesystem::file_size(test_executable) > 100) {
+    if (heimdall::compat::fs::file_size(test_executable) > 100) {
         // Test with very large pre-allocated vector
         std::vector<std::string> large_vector;
         large_vector.reserve(10000);

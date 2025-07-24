@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <fstream>
 #include <filesystem>
 #include <vector>
@@ -13,7 +14,7 @@ class SBOMComparatorTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_comparator_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
         // Create test SBOM files
         createTestSBOMs();
@@ -148,7 +149,7 @@ PackageDownloadLocation: https://example.com/libbaz
         test_cdx2 = cdx_file2;
     }
 
-    std::filesystem::path test_dir;
+    heimdall::compat::fs::path test_dir;
     std::string test_spdx1, test_spdx2, test_cdx1, test_cdx2;
 };
 
@@ -960,7 +961,7 @@ TEST_F(SBOMComparatorTest, BoundaryConditions) {
     for (int i = 0; i < 10; ++i) {  // Reduced from 50 to 10
         long_path += "/very/deep/nested/directory/structure/";
     }
-    std::filesystem::create_directories(long_path);
+    heimdall::compat::fs::create_directories(long_path);
     
     std::string long_file = long_path + "/test.json";
     std::ofstream long_out(long_file);

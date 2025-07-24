@@ -22,16 +22,17 @@ limitations under the License.
  */
 
 #include <gtest/gtest.h>
-#include <filesystem>
+#include "src/compat/compatibility.hpp"
 #include <fstream>
 #include <sstream>
 #include <chrono>
 #include <thread>
 #include <unistd.h>
-#include "common/ComponentInfo.hpp"
-#include "common/PluginInterface.hpp"
-#include "common/SBOMGenerator.hpp"
-#include "common/Utils.hpp"
+#include "src/compat/compatibility.hpp"
+#include "src/common/ComponentInfo.hpp"
+#include "src/common/PluginInterface.hpp"
+#include "src/common/SBOMGenerator.hpp"
+#include "src/common/Utils.hpp"
 #include "test_utils.hpp"
 
 namespace heimdall {
@@ -157,15 +158,15 @@ protected:
             
             // Create process-unique test directory
             auto pid = std::to_string(getpid());
-            test_dir = std::filesystem::temp_directory_path() / ("heimdall_plugin_test_" + pid);
+            test_dir = heimdall::heimdall::compat::fs::temp_directory_path() / ("heimdall_plugin_test_" + pid);
             
             // Clean up any existing test directory first
-            if (std::filesystem::exists(test_dir)) {
-                std::filesystem::remove_all(test_dir);
+            if (heimdall::heimdall::compat::fs::exists(test_dir)) {
+                heimdall::heimdall::compat::fs::remove_all(test_dir);
             }
             
-            std::filesystem::create_directories(test_dir);
-            std::filesystem::current_path(test_dir);
+            heimdall::heimdall::compat::fs::create_directories(test_dir);
+            heimdall::heimdall::compat::fs::current_path(test_dir);
             
             // Create temporary test files
             createTestFiles();
@@ -203,7 +204,7 @@ protected:
         objFile.close();
         
         // Verify file was created
-        if (!std::filesystem::exists("test_object.o")) {
+        if (!heimdall::compat::fs::exists("test_object.o")) {
             std::cerr << "ERROR: test_object.o was not created" << std::endl;
             return;
         }
@@ -218,7 +219,7 @@ protected:
         libFile.close();
         
         // Verify file was created
-        if (!std::filesystem::exists("libtest.so")) {
+        if (!heimdall::compat::fs::exists("libtest.so")) {
             std::cerr << "ERROR: libtest.so was not created" << std::endl;
             return;
         }
@@ -233,7 +234,7 @@ protected:
         exeFile.close();
         
         // Verify file was created
-        if (!std::filesystem::exists("test_executable.exe")) {
+        if (!heimdall::compat::fs::exists("test_executable.exe")) {
             std::cerr << "ERROR: test_executable.exe was not created" << std::endl;
             return;
         }
@@ -248,7 +249,7 @@ protected:
         archiveFile.close();
         
         // Verify file was created
-        if (!std::filesystem::exists("libtest.a")) {
+        if (!heimdall::compat::fs::exists("libtest.a")) {
             std::cerr << "ERROR: libtest.a was not created" << std::endl;
             return;
         }
@@ -267,18 +268,18 @@ protected:
 
     void cleanupTestFiles() {
         // Remove test files
-        std::filesystem::remove("test_object.o");
-        std::filesystem::remove("libtest.so");
-        std::filesystem::remove("test_executable.exe");
-        std::filesystem::remove("libtest.a");
-        std::filesystem::remove("test_config.json");
-        std::filesystem::remove("test_output.json");
+        heimdall::compat::fs::remove("test_object.o");
+        heimdall::compat::fs::remove("libtest.so");
+        heimdall::compat::fs::remove("test_executable.exe");
+        heimdall::compat::fs::remove("libtest.a");
+        heimdall::compat::fs::remove("test_config.json");
+        heimdall::compat::fs::remove("test_output.json");
         
         // Note: Process-unique test directory cleanup is handled in TearDown()
     }
 
     std::unique_ptr<TestPluginInterface> plugin;
-    std::filesystem::path test_dir;
+    heimdall::compat::fs::path test_dir;
 };
 
 // Constructor and Destructor Tests
@@ -339,17 +340,17 @@ TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
         plugin->setExtractDebugInfo(false);
         
         // Verify test files exist before processing
-        if (!std::filesystem::exists("test_object.o")) {
+        if (!heimdall::compat::fs::exists("test_object.o")) {
             std::cerr << "ERROR: test_object.o does not exist" << std::endl;
             FAIL() << "test_object.o does not exist";
         }
         
-        if (!std::filesystem::exists("libtest.so")) {
+        if (!heimdall::compat::fs::exists("libtest.so")) {
             std::cerr << "ERROR: libtest.so does not exist" << std::endl;
             FAIL() << "libtest.so does not exist";
         }
         
-        if (!std::filesystem::exists("test_executable.exe")) {
+        if (!heimdall::compat::fs::exists("test_executable.exe")) {
             std::cerr << "ERROR: test_executable.exe does not exist" << std::endl;
             FAIL() << "test_executable.exe does not exist";
         }
@@ -384,10 +385,10 @@ TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
 
 // Configuration Tests
 TEST_F(PluginInterfaceTest, SetOutputPath) {
-    plugin->setOutputPath((std::filesystem::temp_directory_path() / "test_output.json").string());
+    plugin->setOutputPath((heimdall::compat::fs::temp_directory_path() / "test_output.json").string());
     // Note: We can't easily test the internal SBOM generator path setting
     // but we can test that the method doesn't crash
-    EXPECT_NO_THROW(plugin->setOutputPath((std::filesystem::temp_directory_path() / "test_output.json").string()));
+    EXPECT_NO_THROW(plugin->setOutputPath((heimdall::compat::fs::temp_directory_path() / "test_output.json").string()));
 }
 
 TEST_F(PluginInterfaceTest, SetFormat) {
@@ -485,7 +486,7 @@ TEST_F(PluginInterfaceTest, AddComponent) {
     testFile.close();
     
     // Verify file was created
-    if (!std::filesystem::exists("test_file.o")) {
+    if (!heimdall::compat::fs::exists("test_file.o")) {
         std::cerr << "ERROR: test_file.o was not created" << std::endl;
         FAIL() << "test_file.o was not created";
     }
@@ -500,7 +501,7 @@ TEST_F(PluginInterfaceTest, AddComponent) {
     EXPECT_EQ(plugin->processedComponents[0].filePath, "test_file.o");
 
     // Clean up
-    std::filesystem::remove("test_file.o");
+    heimdall::compat::fs::remove("test_file.o");
 }
 
 TEST_F(PluginInterfaceTest, UpdateComponent) {
@@ -535,7 +536,7 @@ TEST_F(PluginInterfaceTest, UpdateComponent) {
     EXPECT_EQ(plugin->processedComponents[0].symbols[1].name, "function2");
 
     // Clean up
-    std::filesystem::remove("test_file.o");
+    heimdall::compat::fs::remove("test_file.o");
 }
 
 TEST_F(PluginInterfaceTest, UpdateComponentNotFound) {
@@ -558,7 +559,7 @@ TEST_F(PluginInterfaceTest, UpdateComponentNotFound) {
     EXPECT_EQ(plugin->processedComponents[0].symbols.size(), 1u);
 
     // Clean up
-    std::filesystem::remove("nonexistent.o");
+    heimdall::compat::fs::remove("nonexistent.o");
 }
 
 TEST_F(PluginInterfaceTest, ShouldProcessFile) {
@@ -566,13 +567,13 @@ TEST_F(PluginInterfaceTest, ShouldProcessFile) {
     // Check if test files exist
     
     // Check file sizes if they exist
-    if (std::filesystem::exists("test_object.o")) {
+    if (heimdall::compat::fs::exists("test_object.o")) {
     }
-    if (std::filesystem::exists("libtest.so")) {
+    if (heimdall::compat::fs::exists("libtest.so")) {
     }
-    if (std::filesystem::exists("test_executable.exe")) {
+    if (heimdall::compat::fs::exists("test_executable.exe")) {
     }
-    if (std::filesystem::exists("libtest.a")) {
+    if (heimdall::compat::fs::exists("libtest.a")) {
     }
     
     // Valid files
@@ -620,7 +621,7 @@ TEST_F(PluginInterfaceTest, ShouldProcessFileSystemLibraries) {
     
     bool checked = false;
     for (const auto& path : possible_libc_paths) {
-        if (std::filesystem::exists(path)) {
+        if (heimdall::compat::fs::exists(path)) {
             EXPECT_TRUE(plugin->shouldProcessFile(path));
             checked = true;
             break;
@@ -640,7 +641,7 @@ TEST_F(PluginInterfaceTest, ShouldProcessFileSystemLibraries) {
     };
     
     for (const auto& path : possible_libstdcxx_paths) {
-        if (std::filesystem::exists(path)) {
+        if (heimdall::compat::fs::exists(path)) {
             EXPECT_TRUE(plugin->shouldProcessFile(path));
             break;
         }
@@ -781,7 +782,7 @@ TEST_F(PluginInterfaceTest, ProcessInvalidFileType) {
     EXPECT_EQ(plugin->getComponentCount(), 0u);
 
     // Clean up
-    std::filesystem::remove("test.txt");
+    heimdall::compat::fs::remove("test.txt");
 }
 
 TEST_F(PluginInterfaceTest, ProcessSymbolWithoutComponent) {
@@ -835,7 +836,7 @@ TEST_F(PluginInterfaceTest, FullWorkflow) {
         EXPECT_NO_THROW(plugin->generateSBOM());
 
         // Clean up
-        std::filesystem::remove("test_output.json");
+        heimdall::compat::fs::remove("test_output.json");
     } catch (const std::exception& e) {
         std::cerr << "ERROR: Exception in FullWorkflow test: " << e.what() << std::endl;
         throw;

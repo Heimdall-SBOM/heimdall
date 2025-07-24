@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 #include <gtest/gtest.h>
+#include "src/compat/compatibility.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,7 +32,7 @@ class MetadataExtractorExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_metadata_test");
-        std::filesystem::create_directories(test_dir);
+        heimdall::compat::fs::create_directories(test_dir);
         
         // Create test files
         createTestFiles();
@@ -85,14 +86,14 @@ protected:
         deb_file.close();
     }
 
-    std::filesystem::path test_dir;
-    std::filesystem::path test_object_file;
-    std::filesystem::path test_library_file;
-    std::filesystem::path test_executable;
-    std::filesystem::path test_shared_lib;
-    std::filesystem::path test_archive;
-    std::filesystem::path test_rpm;
-    std::filesystem::path test_deb;
+    heimdall::compat::fs::path test_dir;
+    heimdall::compat::fs::path test_object_file;
+    heimdall::compat::fs::path test_library_file;
+    heimdall::compat::fs::path test_executable;
+    heimdall::compat::fs::path test_shared_lib;
+    heimdall::compat::fs::path test_archive;
+    heimdall::compat::fs::path test_rpm;
+    heimdall::compat::fs::path test_deb;
 };
 
 // Enhanced MetadataExtractor Tests
@@ -290,23 +291,23 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithUnreadableFile) {
     ASSERT_NE(extractor, nullptr);
     
     // Create a file with no read permissions
-    std::filesystem::path unreadable_file = test_dir / "unreadable.o";
+    heimdall::compat::fs::path unreadable_file = test_dir / "unreadable.o";
     std::ofstream file(unreadable_file);
     file << "content";
     file.close();
     
     // Remove read permissions
-    std::filesystem::permissions(unreadable_file, 
-                                std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
-                                std::filesystem::perm_options::remove);
+    heimdall::compat::fs::permissions(unreadable_file, 
+                                heimdall::compat::fs::perms::owner_read | heimdall::compat::fs::perms::owner_write,
+                                heimdall::compat::fs::perm_options::remove);
     
     ComponentInfo component("unreadable.o", unreadable_file.string());
     bool result = extractor->extractMetadata(component);
     
     // Restore permissions for cleanup
-    std::filesystem::permissions(unreadable_file, 
-                                std::filesystem::perms::owner_read | std::filesystem::perms::owner_write,
-                                std::filesystem::perm_options::add);
+    heimdall::compat::fs::permissions(unreadable_file, 
+                                heimdall::compat::fs::perms::owner_read | heimdall::compat::fs::perms::owner_write,
+                                heimdall::compat::fs::perm_options::add);
     
     EXPECT_FALSE(result);
 }
@@ -315,7 +316,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithLargeFile) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path large_file = test_dir / "large.o";
+    heimdall::compat::fs::path large_file = test_dir / "large.o";
     std::ofstream file(large_file);
     file << std::string(1024 * 1024, 'A'); // 1MB of data
     file.close();
@@ -331,7 +332,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithBinaryFile) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path binary_file = test_dir / "binary.o";
+    heimdall::compat::fs::path binary_file = test_dir / "binary.o";
     std::ofstream file(binary_file, std::ios::binary);
     for (int i = 0; i < 1000; ++i) {
         file.put(static_cast<char>(i % 256));
@@ -349,7 +350,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithCorruptedFile) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path corrupted_file = test_dir / "corrupted.o";
+    heimdall::compat::fs::path corrupted_file = test_dir / "corrupted.o";
     std::ofstream file(corrupted_file);
     file << "This is not a valid ELF file at all";
     file.close();
@@ -365,7 +366,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSpecialCharacters) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path special_file = test_dir / "test-file_with_special_chars.o";
+    heimdall::compat::fs::path special_file = test_dir / "test-file_with_special_chars.o";
     std::ofstream file(special_file);
     file << "ELF object file content with special chars";
     file.close();
@@ -381,7 +382,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithUnicodeCharacters) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path unicode_file = test_dir / "test-unicode-测试.o";
+    heimdall::compat::fs::path unicode_file = test_dir / "test-unicode-测试.o";
     std::ofstream file(unicode_file);
     file << "ELF object file content with unicode";
     file.close();
@@ -398,13 +399,13 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithLongPath) {
     ASSERT_NE(extractor, nullptr);
     
     // Create a deep directory structure
-    std::filesystem::path deep_dir = test_dir;
+    heimdall::compat::fs::path deep_dir = test_dir;
     for (int i = 0; i < 10; ++i) {
         deep_dir = deep_dir / ("level" + std::to_string(i));
-        std::filesystem::create_directories(deep_dir);
+        heimdall::compat::fs::create_directories(deep_dir);
     }
     
-    std::filesystem::path deep_file = deep_dir / "test.o";
+    heimdall::compat::fs::path deep_file = deep_dir / "test.o";
     std::ofstream file(deep_file);
     file << "ELF object file content in deep path";
     file.close();
@@ -421,8 +422,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSymlink) {
     ASSERT_NE(extractor, nullptr);
     
     // Create a symlink to the test object file
-    std::filesystem::path symlink_file = test_dir / "symlink.o";
-    std::filesystem::create_symlink(test_object_file, symlink_file);
+    heimdall::compat::fs::path symlink_file = test_dir / "symlink.o";
+    heimdall::compat::fs::create_symlink(test_object_file, symlink_file);
     
     ComponentInfo component("symlink.o", symlink_file.string());
     bool result = extractor->extractMetadata(component);
@@ -436,8 +437,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithHardlink) {
     ASSERT_NE(extractor, nullptr);
     
     // Create a hardlink to the test object file
-    std::filesystem::path hardlink_file = test_dir / "hardlink.o";
-    std::filesystem::create_hard_link(test_object_file, hardlink_file);
+    heimdall::compat::fs::path hardlink_file = test_dir / "hardlink.o";
+    heimdall::compat::fs::create_hard_link(test_object_file, hardlink_file);
     
     ComponentInfo component("hardlink.o", hardlink_file.string());
     bool result = extractor->extractMetadata(component);
@@ -450,7 +451,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithZeroSizeFile) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path empty_file = test_dir / "empty.o";
+    heimdall::compat::fs::path empty_file = test_dir / "empty.o";
     std::ofstream file(empty_file);
     file.close();
     
@@ -465,7 +466,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithVeryLargeFile) {
     auto extractor = std::make_unique<MetadataExtractor>();
     ASSERT_NE(extractor, nullptr);
     
-    std::filesystem::path large_file = test_dir / "very_large.o";
+    heimdall::compat::fs::path large_file = test_dir / "very_large.o";
     std::ofstream file(large_file);
     file << std::string(10 * 1024 * 1024, 'B'); // 10MB of data
     file.close();
@@ -507,9 +508,9 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithMemoryPressure) {
     ASSERT_NE(extractor, nullptr);
     
     // Create fewer files to prevent timeout (reduced from 100 to 10)
-    std::vector<std::filesystem::path> files;
+    std::vector<heimdall::compat::fs::path> files;
     for (int i = 0; i < 10; ++i) {
-        std::filesystem::path file = test_dir / ("test" + std::to_string(i) + ".o");
+        heimdall::compat::fs::path file = test_dir / ("test" + std::to_string(i) + ".o");
         std::ofstream f(file);
         f << "ELF object file content " << i;
         f.close();
@@ -533,7 +534,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithInvalidFileTypes) {
     std::vector<std::string> invalid_extensions = {".txt", ".doc", ".pdf", ".jpg", ".mp3"};
     
     for (const auto& ext : invalid_extensions) {
-        std::filesystem::path file = test_dir / ("test" + ext);
+        heimdall::compat::fs::path file = test_dir / ("test" + ext);
         std::ofstream f(file);
         f << "This is not a binary file";
         f.close();
@@ -604,7 +605,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithMockSystemPaths) {
     };
     
     for (const auto& [filename, content] : mock_files) {
-        std::filesystem::path mock_file = test_dir / filename;
+        heimdall::compat::fs::path mock_file = test_dir / filename;
         std::ofstream file(mock_file, std::ios::binary);
         file.write(content.c_str(), content.length());
         file.close();
@@ -622,7 +623,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithTemporaryFiles) {
     ASSERT_NE(extractor, nullptr);
     
     // Test with temporary files
-    std::filesystem::path temp_file = std::filesystem::temp_directory_path() / "temp_test.o";
+    heimdall::compat::fs::path temp_file = heimdall::compat::fs::temp_directory_path() / "temp_test.o";
     std::ofstream file(temp_file);
     file << "ELF object file content";
     file.close();
@@ -631,7 +632,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithTemporaryFiles) {
     bool result = extractor->extractMetadata(component);
     
     // Clean up
-    std::filesystem::remove(temp_file);
+    heimdall::compat::fs::remove(temp_file);
     
     // Should fail because our test file is not a real ELF file
     EXPECT_FALSE(result);
@@ -673,8 +674,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithBrokenSymlink) {
     ASSERT_NE(extractor, nullptr);
     
     // Create a broken symlink
-    std::filesystem::path broken_symlink = test_dir / "broken_symlink.o";
-    std::filesystem::create_symlink("/nonexistent/file.o", broken_symlink);
+    heimdall::compat::fs::path broken_symlink = test_dir / "broken_symlink.o";
+    heimdall::compat::fs::create_symlink("/nonexistent/file.o", broken_symlink);
     
     ComponentInfo component("broken_symlink.o", broken_symlink.string());
     bool result = extractor->extractMetadata(component);
@@ -687,11 +688,11 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithCircularSymlink) {
     ASSERT_NE(extractor, nullptr);
     
     // Create a circular symlink
-    std::filesystem::path circular1 = test_dir / "circular1.o";
-    std::filesystem::path circular2 = test_dir / "circular2.o";
+    heimdall::compat::fs::path circular1 = test_dir / "circular1.o";
+    heimdall::compat::fs::path circular2 = test_dir / "circular2.o";
     
-    std::filesystem::create_symlink(circular2, circular1);
-    std::filesystem::create_symlink(circular1, circular2);
+    heimdall::compat::fs::create_symlink(circular2, circular1);
+    heimdall::compat::fs::create_symlink(circular1, circular2);
     
     ComponentInfo component("circular1.o", circular1.string());
     bool result = extractor->extractMetadata(component);
@@ -704,8 +705,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithUnicodePath) {
     ASSERT_NE(extractor, nullptr);
     
     // Create file with unicode path
-    std::filesystem::path unicode_path = test_dir / "测试路径" / "test.o";
-    std::filesystem::create_directories(unicode_path.parent_path());
+    heimdall::compat::fs::path unicode_path = test_dir / "测试路径" / "test.o";
+    heimdall::compat::fs::create_directories(unicode_path.parent_path());
     std::ofstream file(unicode_path);
     file << "ELF object file content";
     file.close();
@@ -722,8 +723,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSpacesInPath) {
     ASSERT_NE(extractor, nullptr);
     
     // Create file with spaces in path
-    std::filesystem::path space_path = test_dir / "path with spaces" / "test file.o";
-    std::filesystem::create_directories(space_path.parent_path());
+    heimdall::compat::fs::path space_path = test_dir / "path with spaces" / "test file.o";
+    heimdall::compat::fs::create_directories(space_path.parent_path());
     std::ofstream file(space_path);
     file << "ELF object file content";
     file.close();
@@ -740,8 +741,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSpecialCharactersInPath
     ASSERT_NE(extractor, nullptr);
     
     // Create file with special characters in path
-    std::filesystem::path special_path = test_dir / "path-with-special-chars-!@#$%^&*()" / "test.o";
-    std::filesystem::create_directories(special_path.parent_path());
+    heimdall::compat::fs::path special_path = test_dir / "path-with-special-chars-!@#$%^&*()" / "test.o";
+    heimdall::compat::fs::create_directories(special_path.parent_path());
     std::ofstream file(special_path);
     file << "ELF object file content";
     file.close();
