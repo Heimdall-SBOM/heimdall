@@ -164,8 +164,8 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
     try {
         AdaExtractor extractor;
         ComponentInfo component;
-        std::string ali1 = "pkg1.ali";
-        std::string ali2 = "pkg2.ali";
+        std::string ali1 = "ada_test_pkg1.ali";
+        std::string ali2 = "ada_test_pkg2.ali";
         
         std::cout << "DEBUG: Test directory: " << test_dir << std::endl;
         std::cout << "DEBUG: Test directory exists: " << (std::filesystem::exists(test_dir) ? "yes" : "no") << std::endl;
