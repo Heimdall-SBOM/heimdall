@@ -185,7 +185,7 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     std::cout << "DEBUG: File exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
     std::cout << "DEBUG: File size: " << std::filesystem::file_size(test_file) << std::endl;
     
-    std::string checksum = Utils::getFileChecksum(test_file.string());
+    std::string checksum = heimdall::Utils::getFileChecksum(test_file.string());
     std::cout << "DEBUG: getFileChecksum returned: '" << checksum << "'" << std::endl;
     std::cout << "DEBUG: checksum length: " << checksum.length() << std::endl;
     std::cout << "DEBUG: checksum empty: " << (checksum.empty() ? "yes" : "no") << std::endl;
@@ -195,19 +195,19 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
 
     // Same file should have same checksum
     std::cout << "DEBUG: Calling getFileChecksum again for same file..." << std::endl;
-    std::string checksum2 = Utils::getFileChecksum(test_file.string());
+    std::string checksum2 = heimdall::Utils::getFileChecksum(test_file.string());
     std::cout << "DEBUG: Second getFileChecksum returned: '" << checksum2 << "'" << std::endl;
     EXPECT_EQ(checksum, checksum2);
 
     // Different files should have different checksums
     std::cout << "DEBUG: Calling getFileChecksum for large file..." << std::endl;
-    std::string large_checksum = Utils::getFileChecksum(large_file.string());
+    std::string large_checksum = heimdall::Utils::getFileChecksum(large_file.string());
     std::cout << "DEBUG: Large file checksum: '" << large_checksum << "'" << std::endl;
     EXPECT_NE(checksum, large_checksum);
 
     // Non-existent file should return empty string
     std::cout << "DEBUG: Testing non-existent file..." << std::endl;
-    std::string nonexistent_checksum = Utils::getFileChecksum((test_dir / "nonexistent.txt").string());
+    std::string nonexistent_checksum = heimdall::Utils::getFileChecksum((test_dir / "nonexistent.txt").string());
     std::cout << "DEBUG: Non-existent file checksum: '" << nonexistent_checksum << "'" << std::endl;
     EXPECT_TRUE(nonexistent_checksum.empty());
     
@@ -294,13 +294,13 @@ TEST_F(UtilsExtendedTest, CalculateSHA256) {
     std::cout << "DEBUG: File size: " << std::filesystem::file_size(test_file) << std::endl;
     
     // Should be same as getFileChecksum
-    std::string checksum1 = Utils::getFileChecksum(test_file.string());
+    std::string checksum1 = heimdall::Utils::getFileChecksum(test_file.string());
     std::cout << "DEBUG: getFileChecksum returned: '" << checksum1 << "'" << std::endl;
     std::cout << "DEBUG: checksum1 length: " << checksum1.length() << std::endl;
     std::cout << "DEBUG: checksum1 empty: " << (checksum1.empty() ? "yes" : "no") << std::endl;
     
     std::cout << "DEBUG: About to call Utils::calculateSHA256 with file: " << test_file << std::endl;
-    std::string checksum2 = Utils::calculateSHA256(test_file.string());
+    std::string checksum2 = heimdall::Utils::calculateSHA256(test_file.string());
     std::cout << "DEBUG: calculateSHA256 returned: '" << checksum2 << "'" << std::endl;
     std::cout << "DEBUG: checksum2 length: " << checksum2.length() << std::endl;
     std::cout << "DEBUG: checksum2 empty: " << (checksum2.empty() ? "yes" : "no") << std::endl;
