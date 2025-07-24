@@ -28,48 +28,33 @@ using namespace heimdall;
 class UtilsExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        std::cout << "DEBUG: UtilsExtendedTest::SetUp() starting" << std::endl;
         
         // Initialize OpenSSL for CI environments with more robust initialization
-        std::cout << "DEBUG: Initializing OpenSSL..." << std::endl;
         SSL_library_init();
-        std::cout << "DEBUG: SSL_library_init() completed" << std::endl;
         
         OpenSSL_add_all_algorithms();
-        std::cout << "DEBUG: OpenSSL_add_all_algorithms() completed" << std::endl;
         
         OpenSSL_add_all_ciphers();
-        std::cout << "DEBUG: OpenSSL_add_all_ciphers() completed" << std::endl;
         
         OpenSSL_add_all_digests();
-        std::cout << "DEBUG: OpenSSL_add_all_digests() completed" << std::endl;
         
         // Additional initialization for CI environments
         SSL_load_error_strings();
-        std::cout << "DEBUG: SSL_load_error_strings() completed" << std::endl;
         
         ERR_load_CRYPTO_strings();
-        std::cout << "DEBUG: ERR_load_CRYPTO_strings() completed" << std::endl;
         
         // Ensure OpenSSL is properly initialized
-        std::cout << "DEBUG: Testing OpenSSL initialization with EVP_MD_CTX_new()..." << std::endl;
         if (!EVP_MD_CTX_new()) {
             std::cerr << "WARNING: OpenSSL initialization may have failed" << std::endl;
         } else {
-            std::cout << "DEBUG: OpenSSL initialization test passed" << std::endl;
         }
         
-        std::cout << "DEBUG: Creating test directory..." << std::endl;
         test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_extended_test";
-        std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
         
         std::filesystem::create_directories(test_dir);
-        std::cout << "DEBUG: Test directory created successfully" << std::endl;
 
         // Create test files
-        std::cout << "DEBUG: Creating test files..." << std::endl;
         test_file = test_dir / "test.txt";
-        std::cout << "DEBUG: Test file path: " << test_file << std::endl;
         
         std::ofstream test_stream(test_file);
         if (!test_stream.is_open()) {
@@ -77,13 +62,10 @@ protected:
         } else {
             test_stream << "test content";
             test_stream.close();
-            std::cout << "DEBUG: Test file created successfully" << std::endl;
         }
 
         // Create a larger file for checksum testing
-        std::cout << "DEBUG: Creating large test file..." << std::endl;
         large_file = test_dir / "large.bin";
-        std::cout << "DEBUG: Large file path: " << large_file << std::endl;
         
         std::ofstream large_stream(large_file, std::ios::binary);
         if (!large_stream.is_open()) {
@@ -93,26 +75,17 @@ protected:
                 large_stream.write(reinterpret_cast<const char*>(&i), sizeof(i));
             }
             large_stream.close();
-            std::cout << "DEBUG: Large file created successfully" << std::endl;
         }
 
         // Create test directories
-        std::cout << "DEBUG: Creating subdirectory..." << std::endl;
         sub_dir = test_dir / "subdir";
         std::filesystem::create_directories(sub_dir);
-        std::cout << "DEBUG: Subdirectory created successfully" << std::endl;
 
         // Set environment variable for testing
         setenv("TEST_VAR", "test_value", 1);
-        std::cout << "DEBUG: Environment variable set" << std::endl;
         
         // Verify all files exist
-        std::cout << "DEBUG: Verifying file existence..." << std::endl;
-        std::cout << "DEBUG: test_file exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
-        std::cout << "DEBUG: large_file exists: " << (std::filesystem::exists(large_file) ? "yes" : "no") << std::endl;
-        std::cout << "DEBUG: sub_dir exists: " << (std::filesystem::exists(sub_dir) ? "yes" : "no") << std::endl;
         
-        std::cout << "DEBUG: UtilsExtendedTest::SetUp() completed successfully" << std::endl;
     }
 
     void TearDown() override {
@@ -159,45 +132,29 @@ TEST_F(UtilsExtendedTest, GetFileSize) {
 }
 
 TEST_F(UtilsExtendedTest, GetFileChecksum) {
-    std::cout << "DEBUG: GetFileChecksum test starting" << std::endl;
     
     // Ensure OpenSSL is properly initialized for this test
-    std::cout << "DEBUG: Re-initializing OpenSSL for GetFileChecksum test..." << std::endl;
     SSL_library_init();
-    std::cout << "DEBUG: SSL_library_init() completed" << std::endl;
     
     OpenSSL_add_all_algorithms();
-    std::cout << "DEBUG: OpenSSL_add_all_algorithms() completed" << std::endl;
     
     OpenSSL_add_all_ciphers();
-    std::cout << "DEBUG: OpenSSL_add_all_ciphers() completed" << std::endl;
     
     OpenSSL_add_all_digests();
-    std::cout << "DEBUG: OpenSSL_add_all_digests() completed" << std::endl;
     
     SSL_load_error_strings();
-    std::cout << "DEBUG: SSL_load_error_strings() completed" << std::endl;
     
     ERR_load_CRYPTO_strings();
-    std::cout << "DEBUG: ERR_load_CRYPTO_strings() completed" << std::endl;
     
-    std::cout << "DEBUG: About to call Utils::getFileChecksum with file: " << test_file << std::endl;
-    std::cout << "DEBUG: File exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
-    std::cout << "DEBUG: File size: " << std::filesystem::file_size(test_file) << std::endl;
     
     std::string checksum = heimdall::Utils::getFileChecksum(test_file.string());
-    std::cout << "DEBUG: getFileChecksum returned: '" << checksum << "'" << std::endl;
-    std::cout << "DEBUG: checksum length: " << checksum.length() << std::endl;
-    std::cout << "DEBUG: checksum empty: " << (checksum.empty() ? "yes" : "no") << std::endl;
     
     EXPECT_FALSE(checksum.empty());
     EXPECT_EQ(checksum.length(), 64u);  // SHA256 is 32 bytes = 64 hex chars
 
     // Same file should have same checksum
-    std::cout << "DEBUG: Calling getFileChecksum again for same file..." << std::endl;
     
     // Re-initialize OpenSSL to prevent state corruption in CI
-    std::cout << "DEBUG: Re-initializing OpenSSL before second call..." << std::endl;
     SSL_library_init();
     OpenSSL_add_all_algorithms();
     OpenSSL_add_all_ciphers();
@@ -206,31 +163,24 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     ERR_load_CRYPTO_strings();
     
     std::string checksum2 = heimdall::Utils::getFileChecksum(test_file.string());
-    std::cout << "DEBUG: Second getFileChecksum returned: '" << checksum2 << "'" << std::endl;
     
     // If the second call fails, try a different approach
     if (checksum2.empty()) {
-        std::cout << "DEBUG: Second call failed, trying with explicit error checking..." << std::endl;
         
         // Try to open the file manually and check if it's accessible
         std::ifstream testFile(test_file.string(), std::ios::binary);
         if (!testFile.is_open()) {
-            std::cout << "DEBUG: ERROR: Could not open file for reading" << std::endl;
         } else {
-            std::cout << "DEBUG: File opened successfully, size: " << std::filesystem::file_size(test_file) << std::endl;
             testFile.close();
         }
         
         // Try a simple OpenSSL test
         EVP_MD_CTX* testCtx = EVP_MD_CTX_new();
         if (!testCtx) {
-            std::cout << "DEBUG: ERROR: Could not create EVP_MD_CTX" << std::endl;
         } else {
             const EVP_MD* md = EVP_sha256();
             if (!md) {
-                std::cout << "DEBUG: ERROR: Could not get SHA256 digest" << std::endl;
             } else {
-                std::cout << "DEBUG: SHA256 digest obtained successfully" << std::endl;
             }
             EVP_MD_CTX_free(testCtx);
         }
@@ -239,8 +189,6 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     // In CI environments, subsequent OpenSSL calls might fail due to state corruption
     // If the second call fails, we'll accept it as long as the first call succeeded
     if (checksum2.empty()) {
-        std::cout << "DEBUG: Second call failed in CI environment, but first call succeeded" << std::endl;
-        std::cout << "DEBUG: This is expected behavior in CI due to OpenSSL state corruption" << std::endl;
         // Don't fail the test if the first call succeeded
         EXPECT_FALSE(checksum.empty());
         EXPECT_EQ(checksum.length(), 64u);
@@ -249,10 +197,8 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     }
 
     // Different files should have different checksums
-    std::cout << "DEBUG: Calling getFileChecksum for large file..." << std::endl;
     
     // Re-initialize OpenSSL before large file test
-    std::cout << "DEBUG: Re-initializing OpenSSL before large file test..." << std::endl;
     SSL_library_init();
     OpenSSL_add_all_algorithms();
     OpenSSL_add_all_ciphers();
@@ -261,12 +207,9 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     ERR_load_CRYPTO_strings();
     
     std::string large_checksum = heimdall::Utils::getFileChecksum(large_file.string());
-    std::cout << "DEBUG: Large file checksum: '" << large_checksum << "'" << std::endl;
     
     // In CI environments, subsequent OpenSSL calls might fail
     if (large_checksum.empty()) {
-        std::cout << "DEBUG: Large file checksum failed in CI environment" << std::endl;
-        std::cout << "DEBUG: This is expected behavior in CI due to OpenSSL state corruption" << std::endl;
         // Don't fail the test if the first call succeeded
         EXPECT_FALSE(checksum.empty());
     } else {
@@ -274,12 +217,9 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
     }
 
     // Non-existent file should return empty string
-    std::cout << "DEBUG: Testing non-existent file..." << std::endl;
     std::string nonexistent_checksum = heimdall::Utils::getFileChecksum((test_dir / "nonexistent.txt").string());
-    std::cout << "DEBUG: Non-existent file checksum: '" << nonexistent_checksum << "'" << std::endl;
     EXPECT_TRUE(nonexistent_checksum.empty());
     
-    std::cout << "DEBUG: GetFileChecksum test completed successfully" << std::endl;
 }
 
 TEST_F(UtilsExtendedTest, StringManipulation) {
@@ -335,42 +275,26 @@ TEST_F(UtilsExtendedTest, FileTypeDetection) {
 }
 
 TEST_F(UtilsExtendedTest, CalculateSHA256) {
-    std::cout << "DEBUG: CalculateSHA256 test starting" << std::endl;
     
     // Ensure OpenSSL is properly initialized for this test
-    std::cout << "DEBUG: Re-initializing OpenSSL for CalculateSHA256 test..." << std::endl;
     SSL_library_init();
-    std::cout << "DEBUG: SSL_library_init() completed" << std::endl;
     
     OpenSSL_add_all_algorithms();
-    std::cout << "DEBUG: OpenSSL_add_all_algorithms() completed" << std::endl;
     
     OpenSSL_add_all_ciphers();
-    std::cout << "DEBUG: OpenSSL_add_all_ciphers() completed" << std::endl;
     
     OpenSSL_add_all_digests();
-    std::cout << "DEBUG: OpenSSL_add_all_digests() completed" << std::endl;
     
     SSL_load_error_strings();
-    std::cout << "DEBUG: SSL_load_error_strings() completed" << std::endl;
     
     ERR_load_CRYPTO_strings();
-    std::cout << "DEBUG: ERR_load_CRYPTO_strings() completed" << std::endl;
     
-    std::cout << "DEBUG: About to call Utils::getFileChecksum with file: " << test_file << std::endl;
-    std::cout << "DEBUG: File exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
-    std::cout << "DEBUG: File size: " << std::filesystem::file_size(test_file) << std::endl;
     
     // Should be same as getFileChecksum
     std::string checksum1 = heimdall::Utils::getFileChecksum(test_file.string());
-    std::cout << "DEBUG: getFileChecksum returned: '" << checksum1 << "'" << std::endl;
-    std::cout << "DEBUG: checksum1 length: " << checksum1.length() << std::endl;
-    std::cout << "DEBUG: checksum1 empty: " << (checksum1.empty() ? "yes" : "no") << std::endl;
     
-    std::cout << "DEBUG: About to call Utils::calculateSHA256 with file: " << test_file << std::endl;
     
     // Re-initialize OpenSSL before calculateSHA256 call to prevent state corruption
-    std::cout << "DEBUG: Re-initializing OpenSSL before calculateSHA256 call..." << std::endl;
     SSL_library_init();
     OpenSSL_add_all_algorithms();
     OpenSSL_add_all_ciphers();
@@ -379,46 +303,33 @@ TEST_F(UtilsExtendedTest, CalculateSHA256) {
     ERR_load_CRYPTO_strings();
     
     std::string checksum2 = heimdall::Utils::calculateSHA256(test_file.string());
-    std::cout << "DEBUG: calculateSHA256 returned: '" << checksum2 << "'" << std::endl;
-    std::cout << "DEBUG: checksum2 length: " << checksum2.length() << std::endl;
-    std::cout << "DEBUG: checksum2 empty: " << (checksum2.empty() ? "yes" : "no") << std::endl;
     
     // If calculateSHA256 fails, try a different approach
     if (checksum2.empty()) {
-        std::cout << "DEBUG: calculateSHA256 failed, trying with explicit error checking..." << std::endl;
         
         // Try to open the file manually and check if it's accessible
         std::ifstream testFile(test_file.string(), std::ios::binary);
         if (!testFile.is_open()) {
-            std::cout << "DEBUG: ERROR: Could not open file for reading" << std::endl;
         } else {
-            std::cout << "DEBUG: File opened successfully, size: " << std::filesystem::file_size(test_file) << std::endl;
             testFile.close();
         }
         
         // Try a simple OpenSSL test
         EVP_MD_CTX* testCtx = EVP_MD_CTX_new();
         if (!testCtx) {
-            std::cout << "DEBUG: ERROR: Could not create EVP_MD_CTX" << std::endl;
         } else {
             const EVP_MD* md = EVP_sha256();
             if (!md) {
-                std::cout << "DEBUG: ERROR: Could not get SHA256 digest" << std::endl;
             } else {
-                std::cout << "DEBUG: SHA256 digest obtained successfully" << std::endl;
             }
             EVP_MD_CTX_free(testCtx);
         }
     }
     
-    std::cout << "DEBUG: Comparing checksums..." << std::endl;
-    std::cout << "DEBUG: checksum1 == checksum2: " << (checksum1 == checksum2 ? "yes" : "no") << std::endl;
     
     // In CI environments, subsequent OpenSSL calls might fail due to state corruption
     // If calculateSHA256 fails, we'll accept it as long as getFileChecksum succeeded
     if (checksum2.empty()) {
-        std::cout << "DEBUG: calculateSHA256 failed in CI environment, but getFileChecksum succeeded" << std::endl;
-        std::cout << "DEBUG: This is expected behavior in CI due to OpenSSL state corruption" << std::endl;
         // Don't fail the test if the first call succeeded
         EXPECT_FALSE(checksum1.empty());
         EXPECT_EQ(checksum1.length(), 64u);
@@ -426,7 +337,6 @@ TEST_F(UtilsExtendedTest, CalculateSHA256) {
         EXPECT_EQ(checksum1, checksum2);
     }
     
-    std::cout << "DEBUG: CalculateSHA256 test completed successfully" << std::endl;
 }
 
 TEST_F(UtilsExtendedTest, LicenseDetection) {

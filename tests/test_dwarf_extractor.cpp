@@ -88,18 +88,12 @@ static int internal_function() {
 };
 
 TEST_F(DWARFExtractorTest, Constructor) {
-    std::cout << "DEBUG: Test starting" << std::endl;
     DWARFExtractor extractor;
-    std::cout << "DEBUG: DWARFExtractor created successfully" << std::endl;
     // Should not crash
-    std::cout << "DEBUG: Test about to end" << std::endl;
 }
 
 TEST(DWARFExtractorStandaloneTest, SimpleConstructor) {
-    std::cout << "DEBUG: Standalone test starting" << std::endl;
     DWARFExtractor extractor;
-    std::cout << "DEBUG: Standalone DWARFExtractor created successfully" << std::endl;
-    std::cout << "DEBUG: Standalone test about to end" << std::endl;
 }
 
 TEST_F(DWARFExtractorTest, ExtractSourceFiles) {

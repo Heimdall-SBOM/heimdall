@@ -307,10 +307,8 @@ int main() {
         }
 
         // Debug output
-        std::cerr << "DEBUG: SPDX parsing found " << data.components.size() << " components"
                   << std::endl;
         for (const auto& name : data.components) {
-            std::cerr << "DEBUG: Component: " << name << std::endl;
         }
 
         return data;
@@ -331,10 +329,8 @@ int main() {
             }
         }
         // Debug output
-        std::cerr << "DEBUG: CycloneDX parsing found " << data.components.size() << " components"
                   << std::endl;
         for (const auto& name : data.components) {
-            std::cerr << "DEBUG: Component: " << name << std::endl;
         }
         return data;
     }
@@ -514,22 +510,18 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
     SBOMData cyclonedxData = parseCycloneDX(outputPath);
 
     // Debug: write to stderr to ensure visibility
-    std::cerr << "DEBUG: Parsed " << cyclonedxData.components.size() << " components from CycloneDX"
               << std::endl;
 
     // Debug: print all parsed component names
     std::ofstream debugOut((testDir / "gold_cyclonedx_components.txt").string());
     if (!debugOut.is_open()) {
-        std::cerr << "DEBUG: Failed to open debug file for writing" << std::endl;
     } else {
-        std::cerr << "DEBUG: Successfully opened debug file" << std::endl;
     }
     debugOut << "Parsed CycloneDX components:\n";
     for (const auto& name : cyclonedxData.components) {
         debugOut << "  - " << name << "\n";
     }
     debugOut.close();
-    std::cerr << "DEBUG: Closed debug file" << std::endl;
 
     // Should contain main binary
     EXPECT_TRUE(cyclonedxData.components.find("test_binary") != cyclonedxData.components.end())
@@ -624,38 +616,30 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginSPDXGeneration) {
 }
 
 TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
-    std::cerr << "DEBUG: Running GoldPluginCycloneDXGeneration" << std::endl;
     if (goldPluginPath.empty()) {
         GTEST_SKIP() << "Gold plugin not available";
     }
 
     std::string outputPath = (testDir / "gold_test.cyclonedx.json").string();
-    std::cerr << "DEBUG: About to generate SBOM at " << outputPath << std::endl;
     bool success = generateSBOM(goldPluginPath, "cyclonedx", outputPath, testBinaryPath);
-    std::cerr << "DEBUG: SBOM generation returned " << success << std::endl;
 
     EXPECT_TRUE(success) << "Failed to generate Gold CycloneDX SBOM";
     EXPECT_TRUE(std::filesystem::exists(outputPath)) << "Gold CycloneDX file not created";
 
     // Parse and validate CycloneDX
-    std::cerr << "DEBUG: Parsing CycloneDX SBOM" << std::endl;
     SBOMData cyclonedxData = parseCycloneDX(outputPath);
-    std::cerr << "DEBUG: Parsed " << cyclonedxData.components.size() << " components from CycloneDX"
               << std::endl;
 
     // Debug: print all parsed component names
     std::ofstream debugOut((testDir / "gold_cyclonedx_components.txt").string());
     if (!debugOut.is_open()) {
-        std::cerr << "DEBUG: Failed to open debug file for writing" << std::endl;
     } else {
-        std::cerr << "DEBUG: Successfully opened debug file" << std::endl;
     }
     debugOut << "Parsed CycloneDX components:\n";
     for (const auto& name : cyclonedxData.components) {
         debugOut << "  - " << name << "\n";
     }
     debugOut.close();
-    std::cerr << "DEBUG: Closed debug file" << std::endl;
 
     // Should contain main binary
     EXPECT_TRUE(cyclonedxData.components.find("test_binary") != cyclonedxData.components.end())
