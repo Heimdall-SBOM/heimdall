@@ -151,6 +151,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
             FAIL() << "Failed to create " << ali1;
         }
         file1 << "V \"GNAT Lib v2022\"\nW pkg1%b file1.adb file1.ali\n";
+        file1.flush();
         file1.close();
         std::cout << "DEBUG: First ALI file created successfully" << std::endl;
         
@@ -161,31 +162,57 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
             FAIL() << "Failed to create " << ali2;
         }
         file2 << "V \"GNAT Lib v2022\"\nW pkg2%b file2.adb file2.ali\n";
+        file2.flush();
         file2.close();
         std::cout << "DEBUG: Second ALI file created successfully" << std::endl;
         
-        // Ensure files are written to disk
-        std::cout << "DEBUG: Flushing files to disk..." << std::endl;
-        file1.flush();
-        file2.flush();
+        // Ensure files are written to disk and synchronized
+        std::cout << "DEBUG: Ensuring filesystem synchronization..." << std::endl;
         
         // Small delay to ensure filesystem synchronization in CI environments
         std::cout << "DEBUG: Waiting for filesystem synchronization..." << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         
-        // Verify files were created
+        // Verify files were created with retries for CI environments
         std::cout << "DEBUG: Verifying file creation..." << std::endl;
-        if (!std::filesystem::exists(ali1)) {
-            std::cerr << "ERROR: File " << ali1 << " was not created" << std::endl;
+        
+        // Try multiple times to verify file existence (CI filesystem timing issues)
+        int retry_count = 0;
+        const int max_retries = 5;
+        bool ali1_exists = false;
+        bool ali2_exists = false;
+        
+        while (retry_count < max_retries && (!ali1_exists || !ali2_exists)) {
+            std::cout << "DEBUG: Verification attempt " << (retry_count + 1) << "/" << max_retries << std::endl;
+            
+            if (!ali1_exists) {
+                ali1_exists = std::filesystem::exists(ali1);
+                std::cout << "DEBUG: ali1 exists: " << (ali1_exists ? "yes" : "no") << std::endl;
+            }
+            
+            if (!ali2_exists) {
+                ali2_exists = std::filesystem::exists(ali2);
+                std::cout << "DEBUG: ali2 exists: " << (ali2_exists ? "yes" : "no") << std::endl;
+            }
+            
+            if (!ali1_exists || !ali2_exists) {
+                std::cout << "DEBUG: Files not found, waiting before retry..." << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                retry_count++;
+            }
+        }
+        
+        if (!ali1_exists) {
+            std::cerr << "ERROR: File " << ali1 << " was not created after " << max_retries << " attempts" << std::endl;
             FAIL() << "File " << ali1 << " was not created";
         }
-        std::cout << "DEBUG: ali1 exists" << std::endl;
         
-        if (!std::filesystem::exists(ali2)) {
-            std::cerr << "ERROR: File " << ali2 << " was not created" << std::endl;
+        if (!ali2_exists) {
+            std::cerr << "ERROR: File " << ali2 << " was not created after " << max_retries << " attempts" << std::endl;
             FAIL() << "File " << ali2 << " was not created";
         }
-        std::cout << "DEBUG: ali2 exists" << std::endl;
+        
+        std::cout << "DEBUG: Both files verified successfully" << std::endl;
         
         // Check file sizes
         std::cout << "DEBUG: ali1 file size: " << std::filesystem::file_size(ali1) << std::endl;
