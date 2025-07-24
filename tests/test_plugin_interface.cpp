@@ -150,10 +150,18 @@ public:
 class PluginInterfaceTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        plugin = std::make_unique<TestPluginInterface>();
-
-        // Create temporary test files
-        createTestFiles();
+        try {
+            plugin = std::make_unique<TestPluginInterface>();
+            
+            // Create temporary test files
+            createTestFiles();
+        } catch (const std::exception& e) {
+            std::cerr << "ERROR: Exception in SetUp: " << e.what() << std::endl;
+            throw;
+        } catch (...) {
+            std::cerr << "ERROR: Unknown exception in SetUp" << std::endl;
+            throw;
+        }
     }
 
     void TearDown() override {
@@ -164,7 +172,19 @@ protected:
     void createTestFiles() {
         // Create a specific test directory that doesn't contain package manager strings
         std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
+        
+        // Remove directory if it exists to avoid conflicts
+        if (std::filesystem::exists(test_dir)) {
+            std::filesystem::remove_all(test_dir);
+        }
+        
         std::filesystem::create_directories(test_dir);
+        
+        // Verify directory was created
+        if (!std::filesystem::exists(test_dir)) {
+            std::cerr << "ERROR: Failed to create test directory: " << test_dir << std::endl;
+            return;
+        }
         
         // Change to the test directory to avoid package manager detection issues
         std::filesystem::current_path(test_dir);
@@ -179,8 +199,11 @@ protected:
         objFile << "test object file content";
         objFile.close();
         
-        // Ensure file is written to disk
-        objFile.flush();
+        // Verify file was created
+        if (!std::filesystem::exists(objPath)) {
+            std::cerr << "ERROR: test_object.o was not created" << std::endl;
+            return;
+        }
 
         // Create test library file
         std::filesystem::path libPath = test_dir / "libtest.so";
@@ -192,8 +215,11 @@ protected:
         libFile << "test library file content";
         libFile.close();
         
-        // Ensure file is written to disk
-        libFile.flush();
+        // Verify file was created
+        if (!std::filesystem::exists(libPath)) {
+            std::cerr << "ERROR: libtest.so was not created" << std::endl;
+            return;
+        }
 
         // Create test executable
         std::filesystem::path exePath = test_dir / "test_executable.exe";
@@ -205,8 +231,11 @@ protected:
         exeFile << "test executable content";
         exeFile.close();
         
-        // Ensure file is written to disk
-        exeFile.flush();
+        // Verify file was created
+        if (!std::filesystem::exists(exePath)) {
+            std::cerr << "ERROR: test_executable.exe was not created" << std::endl;
+            return;
+        }
 
         // Create test archive
         std::filesystem::path archivePath = test_dir / "libtest.a";
@@ -218,11 +247,21 @@ protected:
         archiveFile << "test archive content";
         archiveFile.close();
         
-        // Ensure file is written to disk
-        archiveFile.flush();
+        // Verify file was created
+        if (!std::filesystem::exists(archivePath)) {
+            std::cerr << "ERROR: libtest.a was not created" << std::endl;
+            return;
+        }
         
         // Small delay to ensure filesystem synchronization in CI environments
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
+        // Final verification that all files exist
+        std::cout << "DEBUG: Test files created successfully:" << std::endl;
+        std::cout << "DEBUG: test_object.o exists: " << (std::filesystem::exists(objPath) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: libtest.so exists: " << (std::filesystem::exists(libPath) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: test_executable.exe exists: " << (std::filesystem::exists(exePath) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: libtest.a exists: " << (std::filesystem::exists(archivePath) ? "yes" : "no") << std::endl;
     }
 
     void cleanupTestFiles() {
