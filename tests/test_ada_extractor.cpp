@@ -21,6 +21,7 @@ limitations under the License.
 #include <thread>
 #include <cerrno>
 #include <cstring>
+#include <unistd.h>
 #include "common/AdaExtractor.hpp"
 #include "common/ComponentInfo.hpp"
 #include "common/Utils.hpp"
@@ -34,7 +35,9 @@ protected:
         std::cout << "DEBUG: AdaExtractorTest::SetUp() starting" << std::endl;
         
         // Create a temporary test directory and change to it (same approach as PluginInterfaceTest)
-        test_dir = std::filesystem::temp_directory_path() / "heimdall_ada_test";
+        // Use process ID to make directory unique and avoid test interference
+        auto pid = std::to_string(getpid());
+        test_dir = std::filesystem::temp_directory_path() / ("heimdall_ada_test_" + pid);
         std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
         
         // Clean up any existing test directory first
