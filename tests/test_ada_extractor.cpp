@@ -19,6 +19,8 @@ limitations under the License.
 #include <filesystem>
 #include <chrono>
 #include <thread>
+#include <cerrno>
+#include <cstring>
 #include "common/AdaExtractor.hpp"
 #include "common/ComponentInfo.hpp"
 #include "common/Utils.hpp"
@@ -29,13 +31,34 @@ using namespace heimdall;
 class AdaExtractorTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        std::cout << "DEBUG: AdaExtractorTest::SetUp() starting" << std::endl;
         test_dir = std::filesystem::temp_directory_path() / "heimdall_ada_test";
+        std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
+        
+        // Clean up any existing test directory first
+        if (std::filesystem::exists(test_dir)) {
+            std::cout << "DEBUG: Removing existing test directory..." << std::endl;
+            std::filesystem::remove_all(test_dir);
+        }
+        
+        std::cout << "DEBUG: Creating test directory..." << std::endl;
         std::filesystem::create_directories(test_dir);
+        std::cout << "DEBUG: Test directory created successfully" << std::endl;
+        std::cout << "DEBUG: Test directory exists: " << (std::filesystem::exists(test_dir) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: Test directory is directory: " << (std::filesystem::is_directory(test_dir) ? "yes" : "no") << std::endl;
+        
         // Create a dummy ali file named my_package.ali
+        std::cout << "DEBUG: Creating dummy ALI file..." << std::endl;
         std::ofstream ali_file(test_dir / "my_package.ali");
-        ali_file << "V \"GNAT Lib v2022\"" << std::endl;
-        ali_file << "W my_package%b main.adb main.ali" << std::endl;
-        ali_file.close();
+        if (!ali_file.is_open()) {
+            std::cerr << "ERROR: Failed to create dummy ALI file" << std::endl;
+        } else {
+            ali_file << "V \"GNAT Lib v2022\"" << std::endl;
+            ali_file << "W my_package%b main.adb main.ali" << std::endl;
+            ali_file.close();
+            std::cout << "DEBUG: Dummy ALI file created successfully" << std::endl;
+        }
+        std::cout << "DEBUG: AdaExtractorTest::SetUp() completed" << std::endl;
     }
 
     void TearDown() override {
@@ -140,16 +163,22 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         std::string ali2 = (test_dir / "pkg2.ali").string();
         
         std::cout << "DEBUG: Test directory: " << test_dir << std::endl;
+        std::cout << "DEBUG: Test directory exists: " << (std::filesystem::exists(test_dir) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: Test directory is directory: " << (std::filesystem::is_directory(test_dir) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: Current working directory: " << std::filesystem::current_path() << std::endl;
         std::cout << "DEBUG: ali1 path: " << ali1 << std::endl;
         std::cout << "DEBUG: ali2 path: " << ali2 << std::endl;
         
         // Create test files with proper synchronization
         std::cout << "DEBUG: Creating first ALI file..." << std::endl;
+        std::cout << "DEBUG: About to open file: " << ali1 << std::endl;
         std::ofstream file1(ali1);
         if (!file1.is_open()) {
             std::cerr << "ERROR: Failed to create " << ali1 << std::endl;
+            std::cerr << "ERROR: errno: " << errno << " (" << std::strerror(errno) << ")" << std::endl;
             FAIL() << "Failed to create " << ali1;
         }
+        std::cout << "DEBUG: File opened successfully, writing content..." << std::endl;
         file1 << "V \"GNAT Lib v2022\"\nW pkg1%b file1.adb file1.ali\n";
         file1.flush();
         file1.close();
