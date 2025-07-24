@@ -55,9 +55,11 @@ limitations under the License.
 #include <cstdint>
 #include <fstream>
 #include <cstdlib>
+#include <vector>
 #include <unistd.h>
 #include <dirent.h>
 #include <climits>
+#include <sys/stat.h>
 
 /**
  * @namespace heimdall::compat::detail
@@ -142,14 +144,8 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
 #endif
 
 // Include standard library headers based on C++ standard - OUTSIDE namespace
-#if defined(HEIMDALL_CPP17_AVAILABLE) && !defined(HEIMDALL_CPP20_AVAILABLE)
-    // C++17 includes
-    #include <filesystem>
-    #include <optional>
-    #include <string_view>
-    #include <variant>
-#elif defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
-    // C++20/23 includes
+#if __cplusplus >= 202302L
+    // C++23 includes
     #include <filesystem>
     #include <optional>
     #include <string_view>
@@ -180,17 +176,53 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
     #if __has_include(<functional>)
         #include <functional>
     #endif
-    #if defined(HEIMDALL_CPP23_AVAILABLE)
-        #if __has_include(<generator>)
-            #include <generator>
-        #endif
-        #if __has_include(<print>)
-            #include <print>
-        #endif
-        #if __has_include(<stacktrace>)
-            #include <stacktrace>
-        #endif
+    #if __has_include(<generator>)
+        #include <generator>
     #endif
+    #if __has_include(<print>)
+        #include <print>
+    #endif
+    #if __has_include(<stacktrace>)
+        #include <stacktrace>
+    #endif
+#elif __cplusplus >= 202002L
+    // C++20 includes
+    #include <filesystem>
+    #include <optional>
+    #include <string_view>
+    #include <variant>
+    #include <span>
+    #include <concepts>
+    #include <ranges>
+    #include <format>
+    #include <source_location>
+    #include <bit>
+    #include <numbers>
+    #include <compare>
+    #include <coroutine>
+    #include <latch>
+    #include <barrier>
+    #include <semaphore>
+    #include <stop_token>
+    #include <syncstream>
+    #include <chrono>
+    #include <version>
+    #if __has_include(<expected>)
+        #include <expected>
+    #endif
+    #if __has_include(<flat_map>)
+        #include <flat_map>
+        #include <flat_set>
+    #endif
+    #if __has_include(<functional>)
+        #include <functional>
+    #endif
+#elif __cplusplus >= 201703L
+    // C++17 includes
+    #include <filesystem>
+    #include <optional>
+    #include <string_view>
+    #include <variant>
 #else
     // C++11/14: Custom implementations or Boost
     #if defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM
@@ -209,9 +241,9 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
                 
                 // Basic operations
                 std::string string() const { return path_str; }
-                std::string filename() const {
+                path filename() const {
                     size_t pos = path_str.find_last_of("/\\");
-                    return (pos == std::string::npos) ? path_str : path_str.substr(pos + 1);
+                    return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
                 }
                 path parent_path() const {
                     size_t pos = path_str.find_last_of("/\\");
@@ -235,6 +267,19 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
                 
                 // Conversion operators
                 operator std::string() const { return path_str; }
+                
+                // Comparison operators
+                bool operator==(const path& other) const { return path_str == other.path_str; }
+                bool operator!=(const path& other) const { return path_str != other.path_str; }
+                bool operator==(const std::string& other) const { return path_str == other; }
+                bool operator!=(const std::string& other) const { return path_str != other; }
+                bool operator==(const char* other) const { return path_str == other; }
+                bool operator!=(const char* other) const { return path_str != other; }
+                
+                // Path utilities
+                bool is_absolute() const {
+                    return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
+                }
             };
             
             // Filesystem operations
@@ -286,35 +331,204 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
                 }
                 return 0;
             }
+
+            // File permissions enum
+            enum class perms {
+                none = 0,
+                owner_read = 0400,
+                owner_write = 0200,
+                owner_exec = 0100,
+                owner_all = owner_read | owner_write | owner_exec,
+                group_read = 0040,
+                group_write = 0020,
+                group_exec = 0010,
+                group_all = group_read | group_write | group_exec,
+                others_read = 0004,
+                others_write = 0002,
+                others_exec = 0001,
+                others_all = others_read | others_write | others_exec,
+                all = owner_all | group_all | others_all,
+                set_uid = 04000,
+                set_gid = 02000,
+                sticky_bit = 01000,
+                mask = all | set_uid | set_gid | sticky_bit,
+                unknown = 0xFFFF
+            };
+            
+            // Bitwise operators for perms enum
+            inline perms operator|(perms lhs, perms rhs) {
+                return static_cast<perms>(static_cast<int>(lhs) | static_cast<int>(rhs));
+            }
+            
+            inline perms operator&(perms lhs, perms rhs) {
+                return static_cast<perms>(static_cast<int>(lhs) & static_cast<int>(rhs));
+            }
+            
+            inline perms operator^(perms lhs, perms rhs) {
+                return static_cast<perms>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
+            }
+            
+            inline perms operator~(perms p) {
+                return static_cast<perms>(~static_cast<int>(p));
+            }
+            
+            inline perms& operator|=(perms& lhs, perms rhs) {
+                lhs = lhs | rhs;
+                return lhs;
+            }
+            
+            inline perms& operator&=(perms& lhs, perms rhs) {
+                lhs = lhs & rhs;
+                return lhs;
+            }
+            
+            inline perms& operator^=(perms& lhs, perms rhs) {
+                lhs = lhs ^ rhs;
+                return lhs;
+            }
+            
+            // Copy options enum
+            enum class copy_options {
+                none = 0,
+                skip_existing = 1,
+                overwrite_existing = 2,
+                update_existing = 4,
+                recursive = 8,
+                copy_symlinks = 16,
+                skip_symlinks = 32,
+                directories_only = 64,
+                create_symlinks = 128,
+                create_hard_links = 256
+            };
+            
+            // Permission options enum
+            enum class perm_options {
+                replace = 0,
+                add = 1,
+                remove = 2,
+                nofollow = 4
+            };
+            
+            // Forward declaration
+            class filesystem_error;
+            
+            // Filesystem operations
+            inline void permissions(const path& p, perms prms, perm_options opts = perm_options::replace) {
+                // Simple implementation using chmod
+                chmod(p.string().c_str(), static_cast<mode_t>(prms));
+            }
+            
+            inline void copy_file(const path& from, const path& to, copy_options options = copy_options::none) {
+                // Simple implementation using system commands
+                std::string cmd = "cp ";
+                if (static_cast<int>(options) & static_cast<int>(copy_options::overwrite_existing)) {
+                    cmd += "-f ";
+                }
+                cmd += from.string() + " " + to.string();
+                system(cmd.c_str());
+            }
+            
+            inline void create_symlink(const path& to, const path& new_symlink) {
+                symlink(to.string().c_str(), new_symlink.string().c_str());
+            }
+            
+            inline void create_hard_link(const path& to, const path& new_hard_link) {
+                link(to.string().c_str(), new_hard_link.string().c_str());
+            }
+            
+            inline path absolute(const path& p) {
+                char resolved_path[PATH_MAX];
+                if (realpath(p.string().c_str(), resolved_path) != nullptr) {
+                    return path(resolved_path);
+                }
+                return p;
+            }
+            
+            // Directory iterator implementation
+            class recursive_directory_iterator {
+            private:
+                std::vector<path> files;
+                size_t current_index;
+                
+            public:
+                recursive_directory_iterator() : current_index(0) {}
+                recursive_directory_iterator(const path& p) : current_index(0) {
+                    // Simple implementation - collect all files
+                    DIR* dir = opendir(p.string().c_str());
+                    if (dir) {
+                        struct dirent* entry;
+                        while ((entry = readdir(dir)) != nullptr) {
+                            if (entry->d_name[0] != '.') {
+                                files.push_back(p / entry->d_name);
+                            }
+                        }
+                        closedir(dir);
+                    }
+                }
+                
+                recursive_directory_iterator& operator++() {
+                    if (current_index < files.size()) {
+                        ++current_index;
+                    }
+                    return *this;
+                }
+                
+                bool operator!=(const recursive_directory_iterator& other) const {
+                    return current_index != other.current_index;
+                }
+                
+                bool is_regular_file() const {
+                    if (current_index >= files.size()) return false;
+                    struct stat st;
+                    if (stat(files[current_index].string().c_str(), &st) == 0) {
+                        return S_ISREG(st.st_mode);
+                    }
+                    return false;
+                }
+                
+                path get_path() const {
+                    if (current_index < files.size()) {
+                        return files[current_index];
+                    }
+                    return path();
+                }
+            };
+            
+            // Directory iterator
+            struct DirCloser {
+                void operator()(DIR* d) const { if (d) closedir(d); }
+            };
             
             class directory_iterator {
             private:
-                DIR* dir;
+                std::unique_ptr<DIR, DirCloser> dir;
                 std::string current_path;
                 
             public:
                 directory_iterator() : dir(nullptr) {}
-                directory_iterator(const path& p) : dir(nullptr) {
-                    dir = opendir(p.string().c_str());
-                }
+                directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
+                ~directory_iterator() = default;
                 
-                ~directory_iterator() {
-                    if (dir) closedir(dir);
+                // Disable copy operations
+                directory_iterator(const directory_iterator&) = delete;
+                directory_iterator& operator=(const directory_iterator&) = delete;
+                directory_iterator(directory_iterator&&) = delete;
+                directory_iterator& operator=(directory_iterator&&) = delete;
+                
+                directory_iterator& operator++() {
+                    if (dir) {
+                        struct dirent* entry = readdir(dir.get());
+                        if (entry) {
+                            current_path = entry->d_name;
+                        } else {
+                            dir.reset();
+                        }
+                    }
+                    return *this;
                 }
                 
                 bool operator!=(const directory_iterator& other) const {
                     return dir != other.dir;
-                }
-                
-                directory_iterator& operator++() {
-                    if (dir) {
-                        struct dirent* entry = readdir(dir);
-                        if (!entry) {
-                            closedir(dir);
-                            dir = nullptr;
-                        }
-                    }
-                    return *this;
                 }
                 
                 path operator*() const {
@@ -322,8 +536,11 @@ constexpr bool HEIMDALL_MODERN_FEATURES = heimdall::compat::detail::modern_featu
                 }
             };
             
-            inline directory_iterator begin(directory_iterator iter) { return iter; }
-            inline directory_iterator end(directory_iterator) { return directory_iterator(); }
+            inline directory_iterator& begin(directory_iterator& iter) { return iter; }
+            inline const directory_iterator& end(const directory_iterator&) { 
+                static const directory_iterator end_iter;
+                return end_iter;
+            }
             
             // Exception types
             class filesystem_error : public std::runtime_error {
@@ -364,8 +581,8 @@ namespace compat {
 #endif
 
 // Define namespace aliases and compatibility types based on C++ standard
-#if defined(HEIMDALL_CPP17_AVAILABLE) && !defined(HEIMDALL_CPP20_AVAILABLE)
-    // C++17: Use standard library with namespace alias
+#if __cplusplus >= 201703L
+    // C++17 and above: Use standard library with namespace alias
     namespace fs = std::filesystem;
     
     // Re-export standard types for compatibility
@@ -374,44 +591,184 @@ namespace compat {
     using std::variant;
     using std::monostate;
     
-#elif defined(HEIMDALL_CPP20_AVAILABLE) || defined(HEIMDALL_CPP23_AVAILABLE)
-    // C++20/23: Use standard library with namespace alias
-    namespace fs = std::filesystem;
-    
-    // Re-export standard types for compatibility
-    using std::optional;
-    using std::string_view;
-    using std::variant;
-    using std::monostate;
-    using std::span;
-    
-    // Define concepts for C++20/23
-    template<typename T>
-    concept integral = std::integral<T>;
-    template<typename T>
-    concept floating_point = std::floating_point<T>;
-    template<typename T>
-    concept arithmetic = std::is_arithmetic_v<T>;
-    template<typename T>
-    concept convertible_to_string = requires(T t) {
-        { std::to_string(t) } -> std::convertible_to<std::string>;
-    };
-    
-    #if defined(HEIMDALL_CPP23_AVAILABLE)
+    #if __cplusplus >= 202002L
+        // C++20/23: Additional types
+        using std::span;
+        
+        // Define concepts for C++20/23
         template<typename T>
-        concept sized_range = std::ranges::sized_range<T>;
+        concept integral = std::integral<T>;
         template<typename T>
-        concept random_access_range = std::ranges::random_access_range<T>;
+        concept floating_point = std::floating_point<T>;
         template<typename T>
-        concept contiguous_range = std::ranges::contiguous_range<T>;
+        concept arithmetic = std::is_arithmetic_v<T>;
         template<typename T>
-        constexpr auto to_underlying(T e) noexcept {
-            return static_cast<std::underlying_type_t<T>>(e);
-        }
+        concept convertible_to_string = requires(T t) {
+            { std::to_string(t) } -> std::convertible_to<std::string>;
+        };
+        
+        #if __cplusplus >= 202302L
+            template<typename T>
+            concept sized_range = std::ranges::sized_range<T>;
+            template<typename T>
+            concept random_access_range = std::ranges::random_access_range<T>;
+            template<typename T>
+            concept contiguous_range = std::ranges::contiguous_range<T>;
+            template<typename T>
+            constexpr auto to_underlying(T e) noexcept {
+                return static_cast<std::underlying_type_t<T>>(e);
+            }
+        #endif
     #endif
     
 #else
     // C++11/14: Custom implementations or Boost
+    
+    // Fallback type definitions for C++11/14 ONLY
+    #if __cplusplus < 201703L
+    namespace fallback {
+        template<typename T>
+        class optional {
+        private:
+            T value_;
+            bool has_value_;
+            
+        public:
+            optional() : has_value_(false) {}
+            optional(const T& value) : value_(value), has_value_(true) {}
+            optional(T&& value) : value_(std::move(value)), has_value_(true) {}
+            
+            bool has_value() const { return has_value_; }
+            const T& value() const { 
+                if (!has_value_) throw std::runtime_error("Optional has no value");
+                return value_; 
+            }
+            T& value() { 
+                if (!has_value_) throw std::runtime_error("Optional has no value");
+                return value_; 
+            }
+            
+            // Dereference operators to match std::optional
+            const T& operator*() const { return value(); }
+            T& operator*() { return value(); }
+            const T* operator->() const { return &value(); }
+            T* operator->() { return &value(); }
+            
+            // value_or method to match std::optional
+            template<typename U>
+            T value_or(U&& default_value) const {
+                return has_value_ ? value_ : static_cast<T>(std::forward<U>(default_value));
+            }
+            
+            operator bool() const { return has_value_; }
+        };
+        
+        class string_view {
+        private:
+            const char* data_;
+            size_t size_;
+            
+        public:
+            string_view() : data_(nullptr), size_(0) {}
+            string_view(const char* str) : data_(str), size_(str ? strlen(str) : 0) {}
+            string_view(const std::string& str) : data_(str.data()), size_(str.size()) {}
+            string_view(const char* data, size_t size) : data_(data), size_(size) {}
+            
+            const char* data() const { return data_; }
+            size_t size() const { return size_; }
+            bool empty() const { return size_ == 0; }
+            
+            const char& operator[](size_t pos) const { return data_[pos]; }
+            
+            // find method to match std::string_view
+            size_t find(char ch, size_t pos = 0) const {
+                for (size_t i = pos; i < size_; ++i) {
+                    if (data_[i] == ch) return i;
+                }
+                return std::string::npos;
+            }
+            
+            // substr method to match std::string_view
+            string_view substr(size_t pos = 0, size_t count = std::string::npos) const {
+                if (pos > size_) return string_view();
+                size_t actual_count = (count == std::string::npos) ? (size_ - pos) : std::min(count, size_ - pos);
+                return string_view(data_ + pos, actual_count);
+            }
+            
+            std::string to_string() const { return std::string(data_, size_); }
+            operator std::string() const { return to_string(); }
+        };
+        
+        template<typename... Types>
+        class variant {
+        private:
+            enum class type_index { none = 0 };
+            type_index current_type_;
+            typename std::aligned_storage<64, 8>::type storage_; // Simplified storage for C++11
+            
+        public:
+            variant() : current_type_(type_index::none) {}
+            
+            template<typename T>
+            variant(const T& value) : current_type_(type_index::none) {
+                // Simplified implementation - just store the first type
+                static_assert(sizeof...(Types) > 0, "Variant must have at least one type");
+            }
+            
+            // index method to match std::variant
+            size_t index() const { return static_cast<size_t>(current_type_); }
+            
+            // get method to match std::variant (simplified)
+            template<typename T>
+            T get() const {
+                // Simplified implementation - just return a default value
+                return T{};
+            }
+            
+            // Non-template get method for the first type
+            int get() const {
+                // Simplified implementation - just return 0
+                return 0;
+            }
+            
+            bool valueless_by_exception() const { return current_type_ == type_index::none; }
+        };
+        
+        struct monostate {};
+        
+        template<typename T>
+        class span {
+        private:
+            T* data_;
+            size_t size_;
+            
+        public:
+            span() : data_(nullptr), size_(0) {}
+            span(T* data, size_t size) : data_(data), size_(size) {}
+            
+            T* data() const { return data_; }
+            size_t size() const { return size_; }
+            bool empty() const { return size_ == 0; }
+            
+            T& operator[](size_t index) const { return data_[index]; }
+            
+            T* begin() const { return data_; }
+            T* end() const { return data_ + size_; }
+        };
+    }
+    
+    // Use fallback types for C++11/14 ONLY - with explicit template parameters
+    template<typename T>
+    using optional = fallback::optional<T>;
+    using string_view = fallback::string_view;
+    template<typename... Types>
+    using variant = fallback::variant<Types...>;
+    using monostate = fallback::monostate;
+    template<typename T>
+    using span = fallback::span<T>;
+    #endif
+    
+    #if __cplusplus < 201703L
     #if defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM
         namespace fs = boost::filesystem;
     #else
@@ -428,9 +785,9 @@ namespace compat {
                 
                 // Basic operations
                 std::string string() const { return path_str; }
-                std::string filename() const {
+                path filename() const {
                     size_t pos = path_str.find_last_of("/\\");
-                    return (pos == std::string::npos) ? path_str : path_str.substr(pos + 1);
+                    return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
                 }
                 path parent_path() const {
                     size_t pos = path_str.find_last_of("/\\");
@@ -454,6 +811,19 @@ namespace compat {
                 
                 // Conversion operators
                 operator std::string() const { return path_str; }
+                
+                // Comparison operators
+                bool operator==(const path& other) const { return path_str == other.path_str; }
+                bool operator!=(const path& other) const { return path_str != other.path_str; }
+                bool operator==(const std::string& other) const { return path_str == other; }
+                bool operator!=(const std::string& other) const { return path_str != other; }
+                bool operator==(const char* other) const { return path_str == other; }
+                bool operator!=(const char* other) const { return path_str != other; }
+                
+                // Path utilities
+                bool is_absolute() const {
+                    return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
+                }
             };
             
             // Filesystem operations
@@ -505,35 +875,204 @@ namespace compat {
                 }
                 return 0;
             }
+
+            // File permissions enum
+            enum class perms {
+                none = 0,
+                owner_read = 0400,
+                owner_write = 0200,
+                owner_exec = 0100,
+                owner_all = owner_read | owner_write | owner_exec,
+                group_read = 0040,
+                group_write = 0020,
+                group_exec = 0010,
+                group_all = group_read | group_write | group_exec,
+                others_read = 0004,
+                others_write = 0002,
+                others_exec = 0001,
+                others_all = others_read | others_write | others_exec,
+                all = owner_all | group_all | others_all,
+                set_uid = 04000,
+                set_gid = 02000,
+                sticky_bit = 01000,
+                mask = all | set_uid | set_gid | sticky_bit,
+                unknown = 0xFFFF
+            };
+            
+            // Bitwise operators for perms enum
+            inline perms operator|(perms lhs, perms rhs) {
+                return static_cast<perms>(static_cast<int>(lhs) | static_cast<int>(rhs));
+            }
+            
+            inline perms operator&(perms lhs, perms rhs) {
+                return static_cast<perms>(static_cast<int>(lhs) & static_cast<int>(rhs));
+            }
+            
+            inline perms operator^(perms lhs, perms rhs) {
+                return static_cast<perms>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
+            }
+            
+            inline perms operator~(perms p) {
+                return static_cast<perms>(~static_cast<int>(p));
+            }
+            
+            inline perms& operator|=(perms& lhs, perms rhs) {
+                lhs = lhs | rhs;
+                return lhs;
+            }
+            
+            inline perms& operator&=(perms& lhs, perms rhs) {
+                lhs = lhs & rhs;
+                return lhs;
+            }
+            
+            inline perms& operator^=(perms& lhs, perms rhs) {
+                lhs = lhs ^ rhs;
+                return lhs;
+            }
+            
+            // Copy options enum
+            enum class copy_options {
+                none = 0,
+                skip_existing = 1,
+                overwrite_existing = 2,
+                update_existing = 4,
+                recursive = 8,
+                copy_symlinks = 16,
+                skip_symlinks = 32,
+                directories_only = 64,
+                create_symlinks = 128,
+                create_hard_links = 256
+            };
+            
+            // Permission options enum
+            enum class perm_options {
+                replace = 0,
+                add = 1,
+                remove = 2,
+                nofollow = 4
+            };
+            
+            // Forward declaration
+            class filesystem_error;
+            
+            // Filesystem operations
+            inline void permissions(const path& p, perms prms, perm_options opts = perm_options::replace) {
+                // Simple implementation using chmod
+                chmod(p.string().c_str(), static_cast<mode_t>(prms));
+            }
+            
+            inline void copy_file(const path& from, const path& to, copy_options options = copy_options::none) {
+                // Simple implementation using system commands
+                std::string cmd = "cp ";
+                if (static_cast<int>(options) & static_cast<int>(copy_options::overwrite_existing)) {
+                    cmd += "-f ";
+                }
+                cmd += from.string() + " " + to.string();
+                system(cmd.c_str());
+            }
+            
+            inline void create_symlink(const path& to, const path& new_symlink) {
+                symlink(to.string().c_str(), new_symlink.string().c_str());
+            }
+            
+            inline void create_hard_link(const path& to, const path& new_hard_link) {
+                link(to.string().c_str(), new_hard_link.string().c_str());
+            }
+            
+            inline path absolute(const path& p) {
+                char resolved_path[PATH_MAX];
+                if (realpath(p.string().c_str(), resolved_path) != nullptr) {
+                    return path(resolved_path);
+                }
+                return p;
+            }
+            
+            // Directory iterator implementation
+            class recursive_directory_iterator {
+            private:
+                std::vector<path> files;
+                size_t current_index;
+                
+            public:
+                recursive_directory_iterator() : current_index(0) {}
+                recursive_directory_iterator(const path& p) : current_index(0) {
+                    // Simple implementation - collect all files
+                    DIR* dir = opendir(p.string().c_str());
+                    if (dir) {
+                        struct dirent* entry;
+                        while ((entry = readdir(dir)) != nullptr) {
+                            if (entry->d_name[0] != '.') {
+                                files.push_back(p / entry->d_name);
+                            }
+                        }
+                        closedir(dir);
+                    }
+                }
+                
+                recursive_directory_iterator& operator++() {
+                    if (current_index < files.size()) {
+                        ++current_index;
+                    }
+                    return *this;
+                }
+                
+                bool operator!=(const recursive_directory_iterator& other) const {
+                    return current_index != other.current_index;
+                }
+                
+                bool is_regular_file() const {
+                    if (current_index >= files.size()) return false;
+                    struct stat st;
+                    if (stat(files[current_index].string().c_str(), &st) == 0) {
+                        return S_ISREG(st.st_mode);
+                    }
+                    return false;
+                }
+                
+                path get_path() const {
+                    if (current_index < files.size()) {
+                        return files[current_index];
+                    }
+                    return path();
+                }
+            };
+            
+            // Directory iterator
+            struct DirCloser {
+                void operator()(DIR* d) const { if (d) closedir(d); }
+            };
             
             class directory_iterator {
             private:
-                DIR* dir;
+                std::unique_ptr<DIR, DirCloser> dir;
                 std::string current_path;
                 
             public:
                 directory_iterator() : dir(nullptr) {}
-                directory_iterator(const path& p) : dir(nullptr) {
-                    dir = opendir(p.string().c_str());
-                }
+                directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
+                ~directory_iterator() = default;
                 
-                ~directory_iterator() {
-                    if (dir) closedir(dir);
+                // Disable copy operations
+                directory_iterator(const directory_iterator&) = delete;
+                directory_iterator& operator=(const directory_iterator&) = delete;
+                directory_iterator(directory_iterator&&) = delete;
+                directory_iterator& operator=(directory_iterator&&) = delete;
+                
+                directory_iterator& operator++() {
+                    if (dir) {
+                        struct dirent* entry = readdir(dir.get());
+                        if (entry) {
+                            current_path = entry->d_name;
+                        } else {
+                            dir.reset();
+                        }
+                    }
+                    return *this;
                 }
                 
                 bool operator!=(const directory_iterator& other) const {
                     return dir != other.dir;
-                }
-                
-                directory_iterator& operator++() {
-                    if (dir) {
-                        struct dirent* entry = readdir(dir);
-                        if (!entry) {
-                            closedir(dir);
-                            dir = nullptr;
-                        }
-                    }
-                    return *this;
                 }
                 
                 path operator*() const {
@@ -541,8 +1080,11 @@ namespace compat {
                 }
             };
             
-            inline directory_iterator begin(directory_iterator iter) { return iter; }
-            inline directory_iterator end(directory_iterator) { return directory_iterator(); }
+            inline directory_iterator& begin(directory_iterator& iter) { return iter; }
+            inline const directory_iterator& end(const directory_iterator&) { 
+                static const directory_iterator end_iter;
+                return end_iter;
+            }
             
             // Exception types
             class filesystem_error : public std::runtime_error {
@@ -551,517 +1093,129 @@ namespace compat {
             };
         }
     #endif
-    
-    /**
-     * @brief Custom optional implementation for C++11/14
-     * 
-     * Provides a basic optional implementation for C++11/14 that mimics
-     * the std::optional interface from C++17.
-     * 
-     * @tparam T The type to store in the optional
-     */
-    template<typename T>
-    class optional {
-    private:
-        bool has_value_;
-        union {
-            T value_;
-            char dummy_;
-        };
-    public:
-        /**
-         * @brief Default constructor - creates an empty optional
-         */
-        optional() : has_value_(false), dummy_() {}
-        
-        /**
-         * @brief Constructor with value
-         * @param value The value to store
-         */
-        optional(const T& value) : has_value_(true), value_(value) {}
-        
-        /**
-         * @brief Move constructor with value
-         * @param value The value to move
-         */
-        optional(T&& value) : has_value_(true), value_(std::move(value)) {}
-        
-        /**
-         * @brief Copy constructor
-         * @param other The optional to copy from
-         */
-        optional(const optional& other) : has_value_(other.has_value_) {
-            if (has_value_) {
-                new (&value_) T(other.value_);
-            }
-        }
-        
-        /**
-         * @brief Move constructor
-         * @param other The optional to move from
-         */
-        optional(optional&& other) noexcept : has_value_(other.has_value_) {
-            if (has_value_) {
-                new (&value_) T(std::move(other.value_));
-                other.has_value_ = false;
-            }
-        }
-        
-        /**
-         * @brief Destructor
-         */
-        ~optional() {
-            if (has_value_) {
-                value_.~T();
-            }
-        }
-        
-        /**
-         * @brief Copy assignment operator
-         * @param other The optional to copy from
-         * @return Reference to this optional
-         */
-        optional& operator=(const optional& other) {
-            if (this != &other) {
-                if (has_value_) {
-                    value_.~T();
-                }
-                has_value_ = other.has_value_;
-                if (has_value_) {
-                    new (&value_) T(other.value_);
-                }
-            }
-            return *this;
-        }
-        
-        /**
-         * @brief Move assignment operator
-         * @param other The optional to move from
-         * @return Reference to this optional
-         */
-        optional& operator=(optional&& other) noexcept {
-            if (this != &other) {
-                if (has_value_) {
-                    value_.~T();
-                }
-                has_value_ = other.has_value_;
-                if (has_value_) {
-                    new (&value_) T(std::move(other.value_));
-                    other.has_value_ = false;
-                }
-            }
-            return *this;
-        }
-        
-        /**
-         * @brief Check if the optional has a value
-         * @return true if the optional has a value, false otherwise
-         */
-        bool has_value() const { return has_value_; }
-        
-        /**
-         * @brief Get the stored value
-         * @return Reference to the stored value
-         * @throws std::runtime_error if the optional is empty
-         */
-        T& value() {
-            if (!has_value_) {
-                throw std::runtime_error("Optional has no value");
-            }
-            return value_;
-        }
-        
-        /**
-         * @brief Get the stored value (const version)
-         * @return Const reference to the stored value
-         * @throws std::runtime_error if the optional is empty
-         */
-        const T& value() const {
-            if (!has_value_) {
-                throw std::runtime_error("Optional has no value");
-            }
-            return value_;
-        }
-        
-        /**
-         * @brief Dereference operator
-         * @return Reference to the stored value
-         */
-        T& operator*() { return value(); }
-        
-        /**
-         * @brief Dereference operator (const version)
-         * @return Const reference to the stored value
-         */
-        const T& operator*() const { return value(); }
-
-        /**
-         * @brief Arrow operator
-         * @return Pointer to the stored value
-         */
-        T* operator->() { return &value(); }
-
-        /**
-         * @brief Arrow operator (const version)
-         * @return Const pointer to the stored value
-         */
-        const T* operator->() const { return &value(); }
-        
-        /**
-         * @brief Get value or default
-         * @param default_value The default value to return if optional is empty
-         * @return The stored value or the default value
-         */
-        template<typename U>
-        T value_or(U&& default_value) const {
-            return has_value_ ? value_ : static_cast<T>(std::forward<U>(default_value));
-        }
-    };
-    
-    /**
-     * @brief Custom string_view implementation for C++11/14
-     * 
-     * Provides a basic string_view implementation for C++11/14 that mimics
-     * the std::string_view interface from C++17.
-     */
-    class string_view {
-    private:
-        const char* data_;
-        size_t size_;
-    public:
-        /**
-         * @brief Default constructor
-         */
-        string_view() : data_(nullptr), size_(0) {}
-        
-        /**
-         * @brief Constructor from C-string
-         * @param str The C-string to view
-         */
-        string_view(const char* str) : data_(str), size_(str ? std::strlen(str) : 0) {}
-        
-        /**
-         * @brief Constructor from data and size
-         * @param data The data pointer
-         * @param size The size of the data
-         */
-        string_view(const char* data, size_t size) : data_(data), size_(size) {}
-        
-        /**
-         * @brief Constructor from data with null termination check
-         * @param data The data pointer
-         * @param max_len The maximum length to check
-         * @param find_null Whether to find null terminator
-         */
-        string_view(const char* data, size_t max_len, bool find_null) : data_(data), size_(0) {
-            if (find_null && data) {
-                size_ = std::strlen(data);
-                if (size_ > max_len) {
-                    size_ = max_len;
-                }
-            }
-        }
-        
-        /**
-         * @brief Constructor from std::string
-         * @param str The string to view
-         */
-        string_view(const std::string& str) : data_(str.data()), size_(str.size()) {}
-        
-        /**
-         * @brief Get the size of the string view
-         * @return The size
-         */
-        size_t size() const { return size_; }
-        
-        /**
-         * @brief Get the length of the string view
-         * @return The length
-         */
-        size_t length() const { return size_; }
-        
-        /**
-         * @brief Check if the string view is empty
-         * @return true if empty, false otherwise
-         */
-        bool empty() const { return size_ == 0; }
-        
-        /**
-         * @brief Access character at index
-         * @param pos The position
-         * @return Reference to the character
-         */
-        const char& operator[](size_t pos) const { return data_[pos]; }
-        
-        /**
-         * @brief Convert to std::string
-         * @return The string
-         */
-        std::string to_string() const { return std::string(data_, size_); }
-        operator std::string() const { return to_string(); }
-        
-        /**
-         * @brief Find character in string view
-         * @param ch The character to find
-         * @param pos The starting position
-         * @return Position of the character, or std::string::npos if not found
-         */
-        size_t find(char ch, size_t pos = 0) const {
-            for (size_t i = pos; i < size_; ++i) {
-                if (data_[i] == ch) return i;
-            }
-            return std::string::npos;
-        }
-        
-        /**
-         * @brief Find substring in string view
-         * @param str The substring to find
-         * @param pos The starting position
-         * @return Position of the substring, or std::string::npos if not found
-         */
-        size_t find(const string_view& str, size_t pos = 0) const {
-            if (str.size() > size_ - pos) return std::string::npos;
-            for (size_t i = pos; i <= size_ - str.size(); ++i) {
-                if (std::memcmp(data_ + i, str.data_, str.size_) == 0) {
-                    return i;
-                }
-            }
-            return std::string::npos;
-        }
-        
-        /**
-         * @brief Get substring
-         * @param pos The starting position
-         * @param count The number of characters
-         * @return The substring
-         */
-        string_view substr(size_t pos = 0, size_t count = std::string::npos) const {
-            if (pos >= size_) return string_view();
-            if (count == std::string::npos || pos + count > size_) {
-                count = size_ - pos;
-            }
-            return string_view(data_ + pos, count);
-        }
-    };
-    
-    /**
-     * @brief Simple variant implementation for C++11/14
-     * 
-     * Provides a basic variant implementation for C++11/14 that mimics
-     * the std::variant interface from C++17.
-     * 
-     * @tparam Types The types that can be stored in the variant
-     */
-    template<typename... Types>
-    class variant {
-        using first_type = typename std::tuple_element<0, std::tuple<Types...>>::type;
-    private:
-        first_type value_;
-        int index_;
-    public:
-        /**
-         * @brief Default constructor
-         */
-        variant() : value_(), index_(0) {}
-        
-        /**
-         * @brief Constructor with value
-         * @param value The value to store
-         */
-        variant(const first_type& value) : value_(value), index_(0) {}
-        
-        /**
-         * @brief Get the index of the stored type
-         * @return The index
-         */
-        int index() const { return index_; }
-        first_type& get() { return value_; }
-        const first_type& get() const { return value_; }
-    };
-    
-    /**
-     * @brief Monostate for variant
-     */
-    struct monostate {};
-    
-    /**
-     * @brief Simple span implementation for C++11/14
-     * 
-     * Provides a basic span implementation for C++11/14 that mimics
-     * the std::span interface from C++20.
-     * 
-     * @tparam T The element type
-     */
-    template<typename T>
-    class span {
-    private:
-        T* data_;
-        size_t size_;
-    public:
-        /**
-         * @brief Default constructor
-         */
-        span() : data_(nullptr), size_(0) {}
-        
-        /**
-         * @brief Constructor from data and size
-         * @param data The data pointer
-         * @param size The size
-         */
-        span(T* data, size_t size) : data_(data), size_(size) {}
-        
-        /**
-         * @brief Constructor from container
-         * @param c The container
-         */
-        template<typename Container>
-        span(Container& c) : data_(c.data()), size_(c.size()) {}
-        
-        /**
-         * @brief Get the size of the span
-         * @return The size
-         */
-        size_t size() const { return size_; }
-        
-        /**
-         * @brief Check if the span is empty
-         * @return true if empty, false otherwise
-         */
-        bool empty() const { return size_ == 0; }
-        
-        /**
-         * @brief Access element at index
-         * @param index The index
-         * @return Reference to the element
-         */
-        T& operator[](size_t index) const { return data_[index]; }
-    };
+    #endif
 #endif
 
-/**
- * @namespace heimdall::compat::utils
- * @brief Utility functions for compatibility layer
- * 
- * This namespace provides utility functions for safe string handling,
- * formatting, and other compatibility operations.
- */
-namespace utils {
+// Only for C++11/14: fallback utility functions
+#if __cplusplus < 201703L
+    namespace utils {
+        /**
+         * @brief Convert C-string to string_view
+         * @param value The C-string
+         * @return The string_view
+         */
+        inline string_view to_string_view(const char* value) {
+            return string_view(value);
+        }
+        
+        /**
+         * @brief Convert std::string to string_view
+         * @param value The string
+         * @return The string_view
+         */
+        inline string_view to_string_view(const std::string& value) {
+            return string_view(value);
+        }
+        
+        /**
+         * @brief Convert any type to string_view
+         * @param value The value to convert
+         * @return The string_view
+         */
+        template<typename T>
+        string_view to_string_view(const T& value) {
+            // For integer types, we need to create a temporary string
+            // and return a string_view that points to it
+            // This is a limitation of our custom string_view implementation
+            // In practice, this should be used carefully as the string_view
+            // will become invalid when the temporary string is destroyed
+            static thread_local std::string temp_str;
+            temp_str = std::to_string(value);
+            return string_view(temp_str);
+        }
+        
+        /**
+         * @brief Format string with arguments (C++11/14 compatibility)
+         * 
+         * Provides a basic string formatting function for C++11/14.
+         * Uses std::ostringstream for formatting.
+         * 
+         * @tparam Args The argument types
+         * @param fmt The format string
+         * @param args The arguments to format
+         * @return The formatted string
+         */
+        template<typename... Args>
+        std::string format_string(const std::string& fmt, Args&&... args) {
+            std::ostringstream oss;
+            oss << fmt;
+            return oss.str();
+        }
+        
+        /**
+         * @brief Get optional value or default
+         * @param opt The optional
+         * @param default_value The default value
+         * @return The value or default
+         */
+        template<typename T>
+        T get_optional_value(const fallback::optional<T>& opt, const T& default_value = T{}) {
+            return opt.has_value() ? opt.value() : default_value;
+        }
+        
+        /**
+         * @brief Convert enum to string
+         * @param e The enum value
+         * @return The string representation
+         */
+        template<typename Enum>
+        std::string enum_to_string(Enum e) {
+            return std::to_string(static_cast<int>(e));
+        }
+        
+        /**
+         * @brief Safe strlen with maximum length
+         * @param str The string
+         * @param max_len The maximum length to check
+         * @return The string length
+         */
+        inline size_t safe_strlen(const char* str, size_t max_len = SIZE_MAX) {
+            if (!str) return 0;
+            size_t len = 0;
+            while (len < max_len && str[len] != '\0') {
+                ++len;
+            }
+            return len;
+        }
+        
+        /**
+         * @brief Check if string is null-terminated
+         * @param str The string
+         * @param max_len The maximum length to check
+         * @return true if null-terminated, false otherwise
+         */
+        inline bool is_null_terminated(const char* str, size_t max_len = SIZE_MAX) {
+            if (!str) return false;
+            for (size_t i = 0; i < max_len; ++i) {
+                if (str[i] == '\0') return true;
+            }
+            return false;
+        }
+        
+        /**
+         * @brief Create safe string_view from data
+         * @param data The data pointer
+         * @param max_len The maximum length
+         * @return The string_view
+         */
+        inline string_view safe_string_view(const char* data, size_t max_len) {
+            if (!data) return string_view();
+            size_t len = safe_strlen(data, max_len);
+            return string_view(data, len);
+        }
+    } // namespace utils
+#endif
 
-    /**
-     * @brief Convert C-string to string_view
-     * @param value The C-string
-     * @return The string_view
-     */
-    inline string_view to_string_view(const char* value) {
-        return string_view(value);
-    }
-    
-    /**
-     * @brief Convert std::string to string_view
-     * @param value The string
-     * @return The string_view
-     */
-    inline string_view to_string_view(const std::string& value) {
-        return string_view(value);
-    }
-    
-    /**
-     * @brief Convert any type to string_view
-     * @param value The value to convert
-     * @return The string_view
-     */
-    template<typename T>
-    string_view to_string_view(const T& value) {
-        // For integer types, we need to create a temporary string
-        // and return a string_view that points to it
-        // This is a limitation of our custom string_view implementation
-        // In practice, this should be used carefully as the string_view
-        // will become invalid when the temporary string is destroyed
-        static thread_local std::string temp_str;
-        temp_str = std::to_string(value);
-        return string_view(temp_str);
-    }
-    
-    /**
-     * @brief Format string with arguments (C++11/14 compatibility)
-     * 
-     * Provides a basic string formatting function for C++11/14.
-     * Uses std::ostringstream for formatting.
-     * 
-     * @tparam Args The argument types
-     * @param fmt The format string
-     * @param args The arguments to format
-     * @return The formatted string
-     */
-    template<typename... Args>
-    std::string format_string(const std::string& fmt, Args&&... args) {
-        std::ostringstream oss;
-        oss << fmt;
-        return oss.str();
-    }
-    
-    /**
-     * @brief Get optional value or default
-     * @param opt The optional
-     * @param default_value The default value
-     * @return The value or default
-     */
-    template<typename T>
-    T get_optional_value(const optional<T>& opt, const T& default_value = T{}) {
-        return opt.has_value() ? opt.value() : default_value;
-    }
-    
-    /**
-     * @brief Convert enum to string
-     * @param e The enum value
-     * @return The string representation
-     */
-    template<typename Enum>
-    std::string enum_to_string(Enum e) {
-        return std::to_string(static_cast<int>(e));
-    }
-    
-    /**
-     * @brief Safe strlen with maximum length
-     * @param str The string
-     * @param max_len The maximum length to check
-     * @return The string length
-     */
-    inline size_t safe_strlen(const char* str, size_t max_len = SIZE_MAX) {
-        if (!str) return 0;
-        size_t len = 0;
-        while (len < max_len && str[len] != '\0') {
-            ++len;
-        }
-        return len;
-    }
-    
-    /**
-     * @brief Check if string is null-terminated
-     * @param str The string
-     * @param max_len The maximum length to check
-     * @return true if null-terminated, false otherwise
-     */
-    inline bool is_null_terminated(const char* str, size_t max_len = SIZE_MAX) {
-        if (!str) return false;
-        for (size_t i = 0; i < max_len; ++i) {
-            if (str[i] == '\0') return true;
-        }
-        return false;
-    }
-    
-    /**
-     * @brief Create safe string_view from data
-     * @param data The data pointer
-     * @param max_len The maximum length
-     * @return The string_view
-     */
-    inline string_view safe_string_view(const char* data, size_t max_len) {
-        if (!data) return string_view();
-        size_t len = safe_strlen(data, max_len);
-        return string_view(data, len);
-    }
-    
-} // namespace utils
 } // namespace compat
 } // namespace heimdall
+

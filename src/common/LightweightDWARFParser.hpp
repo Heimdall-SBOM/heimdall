@@ -16,13 +16,18 @@ limitations under the License.
 
 /**
  * @file LightweightDWARFParser.hpp
- * @brief Lightweight DWARF parser for C++14 compatibility
+ * @brief Lightweight DWARF parser for C++11/14 compatibility
  * @author Trevor Bakker
  * @date 2025
  *
  * This file provides a lightweight DWARF parser that extracts debug information
- * without using LLVM's problematic template features. It's designed for C++14
+ * without using LLVM's problematic template features. It's designed for C++11/14
  * compatibility and provides the same interface as the LLVM-based DWARFExtractor.
+ * 
+ * C++11 Support:
+ * - Uses C++11-compatible features only
+ * - No dependency on LLVM headers for C++11 builds
+ * - Custom implementations of C++14/17 features when needed
  */
 
 #pragma once
@@ -32,11 +37,16 @@ limitations under the License.
 #include <vector>
 #include <fstream>
 #include <cstdint>
+#include <set>
+#include <algorithm>
+
+// C++11 compatibility includes
+#include "../compat/compatibility.hpp"
 
 namespace heimdall {
 
 /**
- * @brief Lightweight DWARF parser for C++14 compatibility
+ * @brief Lightweight DWARF parser for C++11/14 compatibility
  *
  * This class provides DWARF parsing capabilities without using LLVM's
  * problematic template features. It implements a subset of DWARF parsing
@@ -48,6 +58,7 @@ namespace heimdall {
  * - Extract function names from DWARF debug information
  * - Fallback to symbol table extraction when DWARF is not available
  * - Thread-safe implementation
+ * - C++11 compatible (no LLVM dependency for C++11 builds)
  */
 class LightweightDWARFParser {
 public:
@@ -242,21 +253,24 @@ private:
     };
 
     // DWARF parsing helpers
-    struct DWARFCompileUnit {
-        uint64_t offset;
-        uint64_t size;
-        uint16_t version;
-        uint8_t address_size;
-        uint8_t abbrev_offset;
-        std::string name;
+    struct DWARFAbbrevEntry {
+        uint32_t code;
+        uint32_t tag;
+        bool has_children;
+        std::vector<std::pair<uint32_t, uint32_t> > attributes; // form, name
     };
 
     struct DWARFDie {
-        uint64_t offset;
+        uint32_t offset;
         uint32_t tag;
-        std::string name;
-        std::vector<std::string> attributes;
+        bool has_children;
+        std::vector<std::pair<uint32_t, std::string> > attributes; // name, value
     };
+
+    // C++11 compatibility: Use std::set instead of std::unordered_set for better C++11 support
+    std::set<std::string> uniqueSourceFiles;
+    std::set<std::string> uniqueCompileUnits;
+    std::set<std::string> uniqueFunctions;
 };
 
-}  // namespace heimdall 
+} // namespace heimdall 

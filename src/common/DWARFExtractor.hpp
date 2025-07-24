@@ -40,7 +40,7 @@ limitations under the License.
 #include <llvm/Support/Error.h>
 #include <llvm/Support/MemoryBuffer.h>
 #else
-// Use lightweight DWARF parser for C++14 compatibility
+// Use lightweight DWARF parser for C++11/14 compatibility
 #include "LightweightDWARFParser.hpp"
 #endif
 

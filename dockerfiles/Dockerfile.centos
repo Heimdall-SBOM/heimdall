@@ -47,6 +47,14 @@ RUN if [ "$GCC_VERSION" = "13" ]; then \
       ln -sf /opt/rh/gcc-toolset-14/root/usr/bin/g++ /usr/bin/g++; \
     fi
 
+# Install Clang from CentOS Stream 9 repositories (latest available version)
+RUN dnf install -y \
+      clang \
+      clang-devel \
+      clang-tools-extra \
+      lldb \
+      lld
+
 # Install requested LLVM version from CentOS repos
 # CentOS Stream 9 only provides llvm-devel (no versioned packages)
 RUN dnf install -y \

@@ -213,7 +213,7 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath,
     // Fallback to heuristic if LLVM fails
     return extractSourceFilesHeuristic(filePath, sourceFiles);
 #else
-    // Use lightweight DWARF parser for C++14 compatibility
+    // Use lightweight DWARF parser for C++11/14 compatibility
     LightweightDWARFParser parser;
     return parser.extractSourceFiles(filePath, sourceFiles);
 #endif
@@ -255,7 +255,7 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath,
     }
     return false;
 #else
-    // Use lightweight DWARF parser for C++14 compatibility
+    // Use lightweight DWARF parser for C++11/14 compatibility
     LightweightDWARFParser parser;
     return parser.extractCompileUnits(filePath, compileUnits);
 #endif
@@ -295,7 +295,7 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath,
     // Fallback: Extract functions from symbol table
     return extractFunctionsFromSymbolTable(filePath, functions);
 #else
-    // Use lightweight DWARF parser for C++14 compatibility
+    // Use lightweight DWARF parser for C++11/14 compatibility
     LightweightDWARFParser parser;
     return parser.extractFunctions(filePath, functions);
 #endif
@@ -959,7 +959,7 @@ bool DWARFExtractor::extractAllDebugInfo(const std::string& filePath,
     
     return hasDebugInfo;
 #else
-    // Use lightweight DWARF parser for C++14 compatibility
+    // Use lightweight DWARF parser for C++11/14 compatibility
     LightweightDWARFParser parser;
     return parser.extractAllDebugInfo(filePath, sourceFiles, compileUnits, functions);
 #endif

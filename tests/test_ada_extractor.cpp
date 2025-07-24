@@ -201,11 +201,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         
         // Debug: Check current directory and list files before verification
-        try {
-            for (const auto& entry : heimdall::compat::fs::directory_iterator(".")) {
-            }
-        } catch (const std::exception& e) {
-        }
+        // Note: Removed directory iteration to avoid copy issues with non-copyable iterator
         
         // Verify files were created with retries for CI environments
         

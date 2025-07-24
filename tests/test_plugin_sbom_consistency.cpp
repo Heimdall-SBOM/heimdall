@@ -308,8 +308,9 @@ int main() {
         }
 
         // Debug output
-                  << std::endl;
+        std::cout << "SPDX Components:" << std::endl;
         for (const auto& name : data.components) {
+            std::cout << "  " << name << std::endl;
         }
 
         return data;
@@ -330,8 +331,9 @@ int main() {
             }
         }
         // Debug output
-                  << std::endl;
+        std::cout << "CycloneDX Components:" << std::endl;
         for (const auto& name : data.components) {
+            std::cout << "  " << name << std::endl;
         }
         return data;
     }
@@ -511,7 +513,7 @@ TEST_F(PluginSBOMConsistencyTest, LLDPluginCycloneDXGeneration) {
     SBOMData cyclonedxData = parseCycloneDX(outputPath);
 
     // Debug: write to stderr to ensure visibility
-              << std::endl;
+    std::cerr << "LLD CycloneDX generation completed" << std::endl;
 
     // Debug: print all parsed component names
     std::ofstream debugOut((testDir / "gold_cyclonedx_components.txt").string());
@@ -629,7 +631,7 @@ TEST_F(PluginSBOMConsistencyTest, GoldPluginCycloneDXGeneration) {
 
     // Parse and validate CycloneDX
     SBOMData cyclonedxData = parseCycloneDX(outputPath);
-              << std::endl;
+    std::cerr << "Gold CycloneDX parsing completed" << std::endl;
 
     // Debug: print all parsed component names
     std::ofstream debugOut((testDir / "gold_cyclonedx_components.txt").string());

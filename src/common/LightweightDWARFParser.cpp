@@ -16,13 +16,18 @@ limitations under the License.
 
 /**
  * @file LightweightDWARFParser.cpp
- * @brief Implementation of lightweight DWARF parser for C++14 compatibility
+ * @brief Implementation of lightweight DWARF parser for C++11/14 compatibility
  * @author Trevor Bakker
  * @date 2025
  *
  * This file implements a lightweight DWARF parser that extracts debug information
- * without using LLVM's problematic template features. It's designed for C++14
+ * without using LLVM's problematic template features. It's designed for C++11/14
  * compatibility and provides the same interface as the LLVM-based DWARFExtractor.
+ * 
+ * C++11 Support:
+ * - Uses C++11-compatible features only
+ * - No dependency on LLVM headers for C++11 builds
+ * - Custom implementations of C++14/17 features when needed
  */
 
 #include "LightweightDWARFParser.hpp"
@@ -85,18 +90,21 @@ constexpr uint32_t DW_TAG_call_site_parameter = 0x49;
 constexpr uint32_t DW_TAG_skeleton_unit = 0x4a;
 constexpr uint32_t DW_TAG_immutable_type = 0x4b;
 
-// DWARF attribute constants
+// DWARF attributes
 constexpr uint32_t DW_AT_sibling = 0x01;
 constexpr uint32_t DW_AT_location = 0x02;
 constexpr uint32_t DW_AT_name = 0x03;
 constexpr uint32_t DW_AT_ordering = 0x09;
+constexpr uint32_t DW_AT_subscr_data = 0x0a;
 constexpr uint32_t DW_AT_byte_size = 0x0b;
 constexpr uint32_t DW_AT_bit_offset = 0x0c;
 constexpr uint32_t DW_AT_bit_size = 0x0d;
+constexpr uint32_t DW_AT_element_list = 0x0f;
 constexpr uint32_t DW_AT_stmt_list = 0x10;
 constexpr uint32_t DW_AT_low_pc = 0x11;
 constexpr uint32_t DW_AT_high_pc = 0x12;
 constexpr uint32_t DW_AT_language = 0x13;
+constexpr uint32_t DW_AT_member = 0x0e;
 constexpr uint32_t DW_AT_discr = 0x15;
 constexpr uint32_t DW_AT_discr_value = 0x16;
 constexpr uint32_t DW_AT_visibility = 0x17;
@@ -114,7 +122,7 @@ constexpr uint32_t DW_AT_producer = 0x25;
 constexpr uint32_t DW_AT_prototyped = 0x27;
 constexpr uint32_t DW_AT_return_addr = 0x2a;
 constexpr uint32_t DW_AT_start_scope = 0x2c;
-constexpr uint32_t DW_AT_bit_stride = 0x2e;
+constexpr uint32_t DW_AT_stride_size = 0x2e;
 constexpr uint32_t DW_AT_upper_bound = 0x2f;
 constexpr uint32_t DW_AT_abstract_origin = 0x31;
 constexpr uint32_t DW_AT_accessibility = 0x32;
@@ -145,41 +153,8 @@ constexpr uint32_t DW_AT_use_location = 0x4a;
 constexpr uint32_t DW_AT_variable_parameter = 0x4b;
 constexpr uint32_t DW_AT_virtuality = 0x4c;
 constexpr uint32_t DW_AT_vtable_elem_location = 0x4d;
-constexpr uint32_t DW_AT_allocated = 0x4e;
-constexpr uint32_t DW_AT_associated = 0x4f;
-constexpr uint32_t DW_AT_data_location = 0x50;
-constexpr uint32_t DW_AT_byte_stride = 0x51;
-constexpr uint32_t DW_AT_entry_pc = 0x52;
-constexpr uint32_t DW_AT_use_UTF8 = 0x53;
-constexpr uint32_t DW_AT_extension = 0x54;
-constexpr uint32_t DW_AT_ranges = 0x55;
-constexpr uint32_t DW_AT_trampoline = 0x56;
-constexpr uint32_t DW_AT_call_column = 0x57;
-constexpr uint32_t DW_AT_call_file = 0x58;
-constexpr uint32_t DW_AT_call_line = 0x59;
-constexpr uint32_t DW_AT_description = 0x5a;
-constexpr uint32_t DW_AT_binary_scale = 0x5b;
-constexpr uint32_t DW_AT_decimal_scale = 0x5c;
-constexpr uint32_t DW_AT_small = 0x5d;
-constexpr uint32_t DW_AT_decimal_sign = 0x5e;
-constexpr uint32_t DW_AT_digit_count = 0x5f;
-constexpr uint32_t DW_AT_picture_string = 0x60;
-constexpr uint32_t DW_AT_mutable = 0x61;
-constexpr uint32_t DW_AT_threads_scaled = 0x62;
-constexpr uint32_t DW_AT_explicit = 0x63;
-constexpr uint32_t DW_AT_object_pointer = 0x64;
-constexpr uint32_t DW_AT_endianity = 0x65;
-constexpr uint32_t DW_AT_elemental = 0x66;
-constexpr uint32_t DW_AT_pure = 0x67;
-constexpr uint32_t DW_AT_recursive = 0x68;
-constexpr uint32_t DW_AT_signature = 0x69;
-constexpr uint32_t DW_AT_main_subprogram = 0x6a;
-constexpr uint32_t DW_AT_data_bit_offset = 0x6b;
-constexpr uint32_t DW_AT_const_expr = 0x6c;
-constexpr uint32_t DW_AT_enum_class = 0x6d;
-constexpr uint32_t DW_AT_linkage_name = 0x6e;
 
-// DWARF form constants
+// DWARF forms
 constexpr uint32_t DW_FORM_addr = 0x01;
 constexpr uint32_t DW_FORM_block2 = 0x03;
 constexpr uint32_t DW_FORM_block4 = 0x04;
@@ -204,13 +179,13 @@ constexpr uint32_t DW_FORM_indirect = 0x16;
 constexpr uint32_t DW_FORM_sec_offset = 0x17;
 constexpr uint32_t DW_FORM_exprloc = 0x18;
 constexpr uint32_t DW_FORM_flag_present = 0x19;
+constexpr uint32_t DW_FORM_ref_sig8 = 0x20;
 constexpr uint32_t DW_FORM_strx = 0x1a;
 constexpr uint32_t DW_FORM_addrx = 0x1b;
 constexpr uint32_t DW_FORM_ref_sup4 = 0x1c;
 constexpr uint32_t DW_FORM_strp_sup = 0x1d;
 constexpr uint32_t DW_FORM_data16 = 0x1e;
 constexpr uint32_t DW_FORM_line_strp = 0x1f;
-constexpr uint32_t DW_FORM_ref_sig8 = 0x20;
 constexpr uint32_t DW_FORM_implicit_const = 0x21;
 constexpr uint32_t DW_FORM_loclistx = 0x22;
 constexpr uint32_t DW_FORM_rnglistx = 0x23;
@@ -241,12 +216,24 @@ bool LightweightDWARFParser::extractSourceFiles(const std::string& filePath, std
     Utils::debugPrint("LightweightDWARFParser: extractSourceFiles called for " + filePath);
 #endif
 
+    // Clear previous results
+    uniqueSourceFiles.clear();
+    sourceFiles.clear();
+
     // Try DWARF debug line section first
     if (parseDWARFDebugLine(filePath, sourceFiles)) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        Utils::debugPrint("LightweightDWARFParser: DWARF debug line parsing succeeded");
+#endif
         return true;
     }
 
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("LightweightDWARFParser: DWARF debug line parsing failed, trying heuristic extraction");
+#endif
+
     // Fallback to heuristic extraction
+    std::cout << "DEBUG: Calling heuristic extraction for " << filePath << std::endl;
     return extractSourceFilesHeuristic(filePath, sourceFiles);
 }
 
@@ -254,6 +241,10 @@ bool LightweightDWARFParser::extractCompileUnits(const std::string& filePath, st
 #ifdef HEIMDALL_DEBUG_ENABLED
     Utils::debugPrint("LightweightDWARFParser: extractCompileUnits called for " + filePath);
 #endif
+
+    // Clear previous results
+    uniqueCompileUnits.clear();
+    compileUnits.clear();
 
     // Try DWARF debug info section
     std::vector<std::string> dummySourceFiles, dummyFunctions;
@@ -269,6 +260,10 @@ bool LightweightDWARFParser::extractFunctions(const std::string& filePath, std::
 #ifdef HEIMDALL_DEBUG_ENABLED
     Utils::debugPrint("LightweightDWARFParser: extractFunctions called for " + filePath);
 #endif
+
+    // Clear previous results
+    uniqueFunctions.clear();
+    functions.clear();
 
     // Try DWARF debug info section first
     std::vector<std::string> dummySourceFiles, dummyCompileUnits;
@@ -287,6 +282,14 @@ bool LightweightDWARFParser::extractAllDebugInfo(const std::string& filePath,
 #ifdef HEIMDALL_DEBUG_ENABLED
     Utils::debugPrint("LightweightDWARFParser: extractAllDebugInfo called for " + filePath);
 #endif
+
+    // Clear previous results
+    uniqueSourceFiles.clear();
+    uniqueCompileUnits.clear();
+    uniqueFunctions.clear();
+    sourceFiles.clear();
+    compileUnits.clear();
+    functions.clear();
 
     // Try DWARF debug info section first
     if (parseDWARFDebugInfo(filePath, sourceFiles, compileUnits, functions)) {
@@ -334,6 +337,13 @@ bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string& filePath,
         return false;
     }
 
+    // Check if file is empty
+    file.seekg(0, std::ios::end);
+    std::streampos fileSize = file.tellg();
+    if (fileSize <= 0) {
+        return false;
+    }
+
     // Read debug info section
     file.seekg(debugInfoOffset);
     std::vector<char> debugInfoData;
@@ -342,72 +352,63 @@ bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string& filePath,
     size_t bytesRead = file.gcount();
     debugInfoData.resize(bytesRead);
 
+    // Check if we have any data to parse
+    if (debugInfoData.empty()) {
+        return false;
+    }
+
     // Parse DWARF debug info
     uint32_t offset = 0;
-    std::set<std::string> uniqueSourceFiles;
-    std::set<std::string> uniqueCompileUnits;
-    std::set<std::string> uniqueFunctions;
-
-    while (offset < debugInfoData.size()) {
-        // Read compile unit header
-        if (offset + 11 > debugInfoData.size()) {
+    uint32_t maxIterations = 1000; // Prevent infinite loops
+    uint32_t iterationCount = 0;
+    
+    // Parse compilation units
+    while (offset < debugInfoData.size() && iterationCount < maxIterations) {
+        iterationCount++;
+        
+        // Check if we have enough data for a ULEB128
+        if (offset >= debugInfoData.size()) {
+            break;
+        }
+        
+        uint32_t abbrevCode = parseULEB128(debugInfoData.data(), offset);
+        
+        if (abbrevCode == 0) {
+            // End of DIEs
             break;
         }
 
-        uint32_t unitLength = *reinterpret_cast<uint32_t*>(&debugInfoData[offset]);
-        offset += 4;
-        
-        if (unitLength == 0xffffffff) {
-            // 64-bit length
-            if (offset + 8 > debugInfoData.size()) {
-                break;
-            }
-            unitLength = *reinterpret_cast<uint64_t*>(&debugInfoData[offset]);
-            offset += 8;
-        }
+        // Parse attributes based on abbrev code
+        // This is a simplified parser - in a full implementation,
+        // we would parse the abbreviation table to know which attributes
+        // are present for each DIE
 
-        uint16_t version = *reinterpret_cast<uint16_t*>(&debugInfoData[offset]);
-        offset += 2;
-
-        uint32_t debugAbbrevOffset = *reinterpret_cast<uint32_t*>(&debugInfoData[offset]);
-        offset += 4;
-
-        uint8_t addressSize = debugInfoData[offset];
-        offset += 1;
-
-        // Parse DIEs (Debugging Information Entries)
-        while (offset < debugInfoData.size()) {
-            uint32_t abbrevCode = parseULEB128(debugInfoData.data(), offset);
-            
-            if (abbrevCode == 0) {
-                // End of DIEs
-                break;
-            }
-
-            // Parse attributes based on abbrev code
-            // This is a simplified parser - in a full implementation,
-            // we would parse the abbreviation table to know which attributes
-            // are present for each DIE
-
-            // For now, we'll extract what we can from common patterns
-            if (abbrevCode == DW_TAG_compile_unit) {
-                // Extract compile unit name
+        // For now, we'll extract what we can from common patterns
+        if (abbrevCode == DW_TAG_compile_unit) {
+            // Extract compile unit name
+            if (offset < debugInfoData.size()) {
                 std::string name = readDWARFString(debugInfoData.data(), offset);
                 if (!name.empty()) {
                     uniqueCompileUnits.insert(name);
                 }
-            } else if (abbrevCode == DW_TAG_subprogram) {
-                // Extract function name
+            }
+        } else if (abbrevCode == DW_TAG_subprogram) {
+            // Extract function name
+            if (offset < debugInfoData.size()) {
                 std::string name = readDWARFString(debugInfoData.data(), offset);
                 if (!name.empty()) {
                     uniqueFunctions.insert(name);
                 }
             }
+        }
 
-            // Skip remaining attributes for this DIE
-            // In a full implementation, we would parse the abbreviation table
-            // to know exactly which attributes to expect
+        // Skip remaining attributes for this DIE
+        // In a full implementation, we would parse the abbreviation table
+        // to know exactly which attributes to expect
+        if (offset + 4 <= debugInfoData.size()) {
             offset += 4; // Simplified skip
+        } else {
+            break; // Not enough data left
         }
     }
 
@@ -434,6 +435,13 @@ bool LightweightDWARFParser::parseDWARFDebugLine(const std::string& filePath, st
         return false;
     }
 
+    // Check if file is empty
+    file.seekg(0, std::ios::end);
+    std::streampos fileSize = file.tellg();
+    if (fileSize <= 0) {
+        return false;
+    }
+
     // Read debug line section
     file.seekg(debugLineOffset);
     std::vector<char> debugLineData;
@@ -442,88 +450,125 @@ bool LightweightDWARFParser::parseDWARFDebugLine(const std::string& filePath, st
     size_t bytesRead = file.gcount();
     debugLineData.resize(bytesRead);
 
+    // Check if we have any data to parse
+    if (debugLineData.empty()) {
+        return false;
+    }
+
     // Parse DWARF debug line section
-    std::set<std::string> uniqueSourceFiles;
     uint32_t offset = 0;
+    
+    // Parse line program header
+    if (offset + 12 > debugLineData.size()) {
+        return false;
+    }
 
-    while (offset < debugLineData.size()) {
-        // Read line program header
-        if (offset + 8 > debugLineData.size()) {
-            break;
-        }
+    // Read unit length
+    uint32_t unitLength = *reinterpret_cast<const uint32_t*>(&debugLineData[offset]);
+    offset += 4;
 
-        uint32_t unitLength = *reinterpret_cast<uint32_t*>(&debugLineData[offset]);
-        offset += 4;
+    // Validate unit length to prevent buffer overruns
+    if (unitLength == 0 || unitLength > debugLineData.size() || offset + unitLength > debugLineData.size()) {
+        return false;
+    }
 
-        uint16_t version = *reinterpret_cast<uint16_t*>(&debugLineData[offset]);
-        offset += 2;
+    // Read version
+    uint16_t version = *reinterpret_cast<const uint16_t*>(&debugLineData[offset]);
+    offset += 2;
 
-        uint32_t headerLength = *reinterpret_cast<uint32_t*>(&debugLineData[offset]);
-        offset += 4;
+    // Read header length
+    uint32_t headerLength = *reinterpret_cast<const uint32_t*>(&debugLineData[offset]);
+    offset += 4;
 
-        uint8_t minimumInstructionLength = debugLineData[offset];
-        offset += 1;
+    // Validate header length
+    if (headerLength == 0 || offset + headerLength > debugLineData.size()) {
+        return false;
+    }
 
-        uint8_t defaultIsStmt = debugLineData[offset];
-        offset += 1;
+    // Read minimum instruction length
+    uint8_t minInstLength = debugLineData[offset];
+    offset += 1;
 
-        int8_t lineBase = debugLineData[offset];
-        offset += 1;
+    // Read default is statement
+    uint8_t defaultIsStmt = debugLineData[offset];
+    offset += 1;
 
-        uint8_t lineRange = debugLineData[offset];
-        offset += 1;
+    // Read line base
+    int8_t lineBase = static_cast<int8_t>(debugLineData[offset]);
+    offset += 1;
 
-        uint8_t opcodeBase = debugLineData[offset];
-        offset += 1;
+    // Read line range
+    uint8_t lineRange = debugLineData[offset];
+    offset += 1;
 
-        // Read standard opcode lengths
-        for (uint8_t i = 1; i < opcodeBase; ++i) {
-            if (offset >= debugLineData.size()) {
-                break;
-            }
-            uint8_t length = debugLineData[offset];
+    // Read opcode base
+    uint8_t opcodeBase = debugLineData[offset];
+    offset += 1;
+
+    // Validate opcode base
+    if (opcodeBase == 0 || offset + opcodeBase - 1 > debugLineData.size()) {
+        return false;
+    }
+
+    // Skip standard opcode lengths
+    offset += opcodeBase - 1;
+
+    // Parse include directories with bounds checking
+    while (offset < debugLineData.size() && debugLineData[offset] != 0) {
+        std::string dirName;
+        uint32_t startOffset = offset;
+        while (offset < debugLineData.size() && debugLineData[offset] != 0) {
+            dirName += debugLineData[offset];
             offset += 1;
-        }
-
-        // Read include directories
-        while (offset < debugLineData.size() && debugLineData[offset] != 0) {
-            std::string dir;
-            while (offset < debugLineData.size() && debugLineData[offset] != 0) {
-                dir += debugLineData[offset];
-                offset += 1;
-            }
-            if (offset < debugLineData.size()) {
-                offset += 1; // Skip null terminator
+            
+            // Prevent infinite loops by checking if we're making progress
+            if (offset - startOffset > 1024) { // Max directory name length
+                return false;
             }
         }
         if (offset < debugLineData.size()) {
-            offset += 1; // Skip final null terminator
+            offset += 1; // Skip null terminator
+        }
+    }
+    if (offset < debugLineData.size()) {
+        offset += 1; // Skip final null terminator
+    }
+
+    // Parse file names with bounds checking
+    while (offset < debugLineData.size() && debugLineData[offset] != 0) {
+        std::string fileName;
+        uint32_t startOffset = offset;
+        while (offset < debugLineData.size() && debugLineData[offset] != 0) {
+            fileName += debugLineData[offset];
+            offset += 1;
+            
+            // Prevent infinite loops by checking if we're making progress
+            if (offset - startOffset > 1024) { // Max filename length
+                return false;
+            }
+        }
+        if (offset < debugLineData.size()) {
+            offset += 1; // Skip null terminator
         }
 
-        // Read file names
-        while (offset < debugLineData.size() && debugLineData[offset] != 0) {
-            std::string fileName;
-            while (offset < debugLineData.size() && debugLineData[offset] != 0) {
-                fileName += debugLineData[offset];
-                offset += 1;
-            }
-            if (offset < debugLineData.size()) {
-                offset += 1; // Skip null terminator
-            }
-
-            // Skip directory index and modification time
+        // Skip directory index and modification time
+        if (offset + 4 <= debugLineData.size()) {
             offset += 4;
-
-            if (!fileName.empty()) {
-                uniqueSourceFiles.insert(fileName);
-            }
-        }
-        if (offset < debugLineData.size()) {
-            offset += 1; // Skip final null terminator
+        } else {
+            return false;
         }
 
-        // Skip line program instructions
-        // In a full implementation, we would parse these to get line numbers
+        if (!fileName.empty()) {
+            uniqueSourceFiles.insert(fileName);
+        }
+    }
+    if (offset < debugLineData.size()) {
+        offset += 1; // Skip final null terminator
+    }
+
+    // Skip line program instructions
+    // In a full implementation, we would parse these to get line numbers
+    if (offset + 4 <= debugLineData.size()) {
         offset += 4; // Simplified skip
     }
 
@@ -601,63 +646,103 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string& file
     Utils::debugPrint("LightweightDWARFParser: extractSourceFilesHeuristic called for " + filePath);
 #endif
 
-    // This is a heuristic approach that looks for common patterns in the binary
-    // that might indicate source file information
-
+    // This is a heuristic approach that tries to extract source file information
+    // from the binary without relying on DWARF information
+    
+    // For now, we'll use a simple approach: look for common source file extensions
+    // in the binary's string table or other sections
+    
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        Utils::debugPrint("LightweightDWARFParser: Failed to open file for heuristic extraction");
+#endif
         return false;
     }
 
-    // Read a portion of the file to look for source file patterns
-    std::vector<char> buffer(1024 * 1024); // 1MB buffer
-    file.read(buffer.data(), buffer.size());
-    size_t bytesRead = file.gcount();
-    buffer.resize(bytesRead);
-
-    // Look for common source file extensions
-    std::vector<std::string> extensions = {".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hxx"};
-    std::set<std::string> foundFiles;
-
-    std::string data(buffer.begin(), buffer.end());
+    // Check if file is empty
+    file.seekg(0, std::ios::end);
+    size_t fileSize = file.tellg();
+    if (fileSize <= 0) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        Utils::debugPrint("LightweightDWARFParser: File is empty for heuristic extraction");
+#endif
+        return false;
+    }
     
-    for (const auto& ext : extensions) {
-        size_t pos = 0;
-        while ((pos = data.find(ext, pos)) != std::string::npos) {
-            // Try to extract a filename around this position
-            size_t start = pos;
-            while (start > 0 && (isalnum(data[start - 1]) || data[start - 1] == '_' || data[start - 1] == '/')) {
-                start--;
-            }
-            
-            size_t end = pos + ext.length();
-            while (end < data.length() && (isalnum(data[end]) || data[end] == '_' || data[end] == '.')) {
-                end++;
-            }
-            
-            std::string filename = data.substr(start, end - start);
-            // Only include files with valid source extensions and paths
-            if (filename.length() > 3) {
-                // Check if the filename ends with a valid source extension
-                bool hasValidExtension = false;
-                for (const auto& validExt : extensions) {
-                    if (filename.length() >= validExt.length() && 
-                        filename.substr(filename.length() - validExt.length()) == validExt) {
-                        hasValidExtension = true;
+    file.seekg(0, std::ios::beg);
+    
+    std::vector<char> fileData(fileSize);
+    file.read(fileData.data(), fileSize);
+    
+    if (file.gcount() != fileSize) {
+#ifdef HEIMDALL_DEBUG_ENABLED
+        Utils::debugPrint("LightweightDWARFParser: Failed to read file data for heuristic extraction");
+#endif
+        return false;
+    }
+
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("LightweightDWARFParser: File size for heuristic extraction: " + std::to_string(fileSize));
+    std::string fileContent(fileData.begin(), fileData.end());
+    Utils::debugPrint("LightweightDWARFParser: File content: " + fileContent);
+#endif
+
+    // Look for common source file patterns
+    std::vector<std::string> extensions = {".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx"};
+    
+    std::cout << "DEBUG: Looking for extensions in file of size " << fileData.size() << std::endl;
+    
+    for (size_t i = 0; i < fileData.size() - 1; ++i) {
+        for (const auto& ext : extensions) {
+            if (i + ext.length() <= fileData.size()) {
+                bool match = true;
+                for (size_t j = 0; j < ext.length(); ++j) {
+                    if (fileData[i + j] != ext[j]) {
+                        match = false;
                         break;
                     }
                 }
                 
-                if (hasValidExtension) {
-                    foundFiles.insert(filename);
+                if (match) {
+                    std::cout << "DEBUG: Found extension match at position " << i << ": " << ext << std::endl;
+                    // Try to extract the full filename
+                    size_t start = i;
+                    size_t startIterations = 0;
+                    const size_t maxStartIterations = 2048; // Increased limit for heuristic extraction
+                    // Go backwards to find the start of the filename (stop at whitespace or null)
+                    while (start > 0 && fileData[start - 1] != '\0' && fileData[start - 1] != ' ' && fileData[start - 1] != '\t' && fileData[start - 1] != '\n' && fileData[start - 1] != '\r' && startIterations < maxStartIterations) {
+                        --start;
+                        startIterations++;
+                    }
+                    size_t end = i + ext.length();
+                    size_t endIterations = 0;
+                    const size_t maxEndIterations = 2048; // Increased limit for heuristic extraction
+                    // Go forwards to find the end of the filename (before a slash, space, or null)
+                    while (end < fileData.size() && fileData[end] != '\0' && fileData[end] != '/' && fileData[end] != '\\' && fileData[end] != ' ' && fileData[end] != '\t' && fileData[end] != '\n' && fileData[end] != '\r' && endIterations < maxEndIterations) {
+                        ++end;
+                        endIterations++;
+                    }
+                    if (end - start > 0 && end - start < 512) { // Increased reasonable filename length
+                        std::string filename(fileData.begin() + start, fileData.begin() + end);
+                        std::cout << "DEBUG: Extracted filename: '" << filename << "'" << std::endl;
+                        if (filename.find('.') != std::string::npos) {
+                            uniqueSourceFiles.insert(filename);
+                            std::cout << "DEBUG: Added source file: " << filename << std::endl;
+                        }
+                    }
                 }
             }
-            
-            pos = end;
         }
     }
 
-    sourceFiles.assign(foundFiles.begin(), foundFiles.end());
+    sourceFiles.assign(uniqueSourceFiles.begin(), uniqueSourceFiles.end());
+#ifdef HEIMDALL_DEBUG_ENABLED
+    Utils::debugPrint("LightweightDWARFParser: Heuristic extraction found " + std::to_string(sourceFiles.size()) + " source files");
+    for (const auto& file : sourceFiles) {
+        Utils::debugPrint("LightweightDWARFParser: Source file: " + file);
+    }
+#endif
     return !sourceFiles.empty();
 }
 
@@ -670,7 +755,20 @@ bool LightweightDWARFParser::findDWARFSections(const std::string& filePath,
         return false;
     }
 
+    // Check if file is empty
+    file.seekg(0, std::ios::end);
+    std::streampos fileSize = file.tellg();
+    if (fileSize <= 0) {
+        return false;
+    }
+
+    // Check if file is too small to be a valid ELF file
+    if (fileSize < sizeof(ELFHeader)) {
+        return false;
+    }
+
     // Read ELF header
+    file.seekg(0, std::ios::beg);
     ELFHeader header;
     file.read(reinterpret_cast<char*>(&header), sizeof(header));
     
@@ -684,12 +782,30 @@ bool LightweightDWARFParser::findDWARFSections(const std::string& filePath,
         return false;
     }
 
+    // Validate section header table offset
+    if (header.e_shoff == 0 || header.e_shoff >= fileSize) {
+        return false;
+    }
+
+    // Validate section header string table index
+    if (header.e_shstrndx >= header.e_shnum) {
+        return false;
+    }
+
     // Read section header string table
     file.seekg(header.e_shoff + header.e_shstrndx * sizeof(ELFSectionHeader));
     ELFSectionHeader stringTableHeader;
     file.read(reinterpret_cast<char*>(&stringTableHeader), sizeof(stringTableHeader));
     
     if (file.gcount() != sizeof(stringTableHeader)) {
+        return false;
+    }
+
+    // Validate string table offset and size
+    if (stringTableHeader.sh_offset == 0 || 
+        stringTableHeader.sh_offset >= fileSize ||
+        stringTableHeader.sh_size == 0 ||
+        stringTableHeader.sh_offset + stringTableHeader.sh_size > fileSize) {
         return false;
     }
 
@@ -744,9 +860,19 @@ std::string LightweightDWARFParser::readDWARFString(const char* data, uint32_t o
     const char* str = data + offset;
     std::string result;
     
-    while (*str != '\0') {
+    // Add bounds checking to prevent infinite loops
+    const uint32_t maxLength = 1024; // Maximum reasonable string length
+    uint32_t length = 0;
+    
+    while (*str != '\0' && length < maxLength) {
         result += *str;
         str++;
+        length++;
+    }
+    
+    // If we hit the max length without finding a null terminator, something is wrong
+    if (length >= maxLength) {
+        return "";
     }
     
     return result;
@@ -755,10 +881,22 @@ std::string LightweightDWARFParser::readDWARFString(const char* data, uint32_t o
 uint64_t LightweightDWARFParser::parseLEB128(const char* data, uint32_t& offset) {
     uint64_t result = 0;
     uint32_t shift = 0;
+    uint32_t originalOffset = offset;
     
-    while (true) {
+    // Add bounds checking to prevent infinite loops
+    const uint32_t maxBytes = 10; // LEB128 can be at most 10 bytes
+    uint32_t bytesRead = 0;
+    
+    while (bytesRead < maxBytes) {
+        // Check if we've reached the end of the data
+        if (offset >= 1024 * 1024) { // 1MB safety limit
+            offset = originalOffset; // Reset offset to prevent corruption
+            return 0;
+        }
+        
         uint8_t byte = static_cast<uint8_t>(data[offset]);
         offset++;
+        bytesRead++;
         
         result |= static_cast<uint64_t>(byte & 0x7f) << shift;
         
@@ -767,6 +905,18 @@ uint64_t LightweightDWARFParser::parseLEB128(const char* data, uint32_t& offset)
         }
         
         shift += 7;
+        
+        // Check for overflow
+        if (shift >= 64) {
+            offset = originalOffset; // Reset offset to prevent corruption
+            return 0;
+        }
+    }
+    
+    // If we read maxBytes without finding the end, something is wrong
+    if (bytesRead >= maxBytes) {
+        offset = originalOffset; // Reset offset to prevent corruption
+        return 0;
     }
     
     // Sign extend if the last byte had the sign bit set
@@ -780,10 +930,22 @@ uint64_t LightweightDWARFParser::parseLEB128(const char* data, uint32_t& offset)
 uint64_t LightweightDWARFParser::parseULEB128(const char* data, uint32_t& offset) {
     uint64_t result = 0;
     uint32_t shift = 0;
+    uint32_t originalOffset = offset;
     
-    while (true) {
+    // Add bounds checking to prevent infinite loops
+    const uint32_t maxBytes = 10; // ULEB128 can be at most 10 bytes
+    uint32_t bytesRead = 0;
+    
+    while (bytesRead < maxBytes) {
+        // Check if we've reached the end of the data
+        if (offset >= 1024 * 1024) { // 1MB safety limit
+            offset = originalOffset; // Reset offset to prevent corruption
+            return 0;
+        }
+        
         uint8_t byte = static_cast<uint8_t>(data[offset]);
         offset++;
+        bytesRead++;
         
         result |= static_cast<uint64_t>(byte & 0x7f) << shift;
         
@@ -792,9 +954,21 @@ uint64_t LightweightDWARFParser::parseULEB128(const char* data, uint32_t& offset
         }
         
         shift += 7;
+        
+        // Check for overflow
+        if (shift >= 64) {
+            offset = originalOffset; // Reset offset to prevent corruption
+            return 0;
+        }
+    }
+    
+    // If we read maxBytes without finding the end, something is wrong
+    if (bytesRead >= maxBytes) {
+        offset = originalOffset; // Reset offset to prevent corruption
+        return 0;
     }
     
     return result;
 }
 
-}  // namespace heimdall 
+} // namespace heimdall 

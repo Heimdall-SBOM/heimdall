@@ -158,15 +158,15 @@ protected:
             
             // Create process-unique test directory
             auto pid = std::to_string(getpid());
-            test_dir = heimdall::heimdall::compat::fs::temp_directory_path() / ("heimdall_plugin_test_" + pid);
+            test_dir = heimdall::compat::fs::temp_directory_path() / ("heimdall_plugin_test_" + pid);
             
             // Clean up any existing test directory first
-            if (heimdall::heimdall::compat::fs::exists(test_dir)) {
-                heimdall::heimdall::compat::fs::remove_all(test_dir);
+            if (heimdall::compat::fs::exists(test_dir)) {
+                heimdall::compat::fs::remove_all(test_dir);
             }
             
-            heimdall::heimdall::compat::fs::create_directories(test_dir);
-            heimdall::heimdall::compat::fs::current_path(test_dir);
+            heimdall::compat::fs::create_directories(test_dir);
+            heimdall::compat::fs::current_path(test_dir);
             
             // Create temporary test files
             createTestFiles();

@@ -33,10 +33,12 @@ set(HEIMDALL_CORE_SOURCES
 if(HEIMDALL_FULL_DWARF)
     list(APPEND HEIMDALL_CORE_SOURCES common/DWARFExtractor.cpp)
 elseif(HEIMDALL_BASIC_DWARF)
-    # For C++14, don't include DWARFExtractor.cpp (use lightweight parser instead)
-    if(NOT CMAKE_CXX_STANDARD EQUAL 14)
-        list(APPEND HEIMDALL_CORE_SOURCES common/DWARFExtractor.cpp)
-    endif()
+    # For C++11/14, don't include DWARFExtractor.cpp (use lightweight parser instead)
+    # The lightweight parser is always included and provides DWARF functionality
+    message(STATUS "Using lightweight DWARF parser for C++${CMAKE_CXX_STANDARD} compatibility")
+else()
+    # No DWARF support
+    message(STATUS "DWARF support disabled")
 endif()
 
 add_library(heimdall-core SHARED ${HEIMDALL_CORE_SOURCES})
@@ -79,8 +81,8 @@ target_link_libraries(heimdall-core PRIVATE nlohmann_json_schema_validator)
 if(HEIMDALL_FULL_DWARF)
     target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
 elseif(HEIMDALL_BASIC_DWARF)
-    # For C++14, use lightweight parser instead of LLVM
-    if(CMAKE_CXX_STANDARD EQUAL 14)
+    # For C++11/14, use lightweight parser instead of LLVM to avoid compatibility issues
+    if(CMAKE_CXX_STANDARD LESS 17)
         target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=0)
     else()
         target_compile_definitions(heimdall-core PRIVATE LLVM_DWARF_AVAILABLE=1)
@@ -126,8 +128,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     if(HEIMDALL_FULL_DWARF)
         target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
     elseif(HEIMDALL_BASIC_DWARF)
-        # For C++14, use lightweight parser instead of LLVM
-        if(CMAKE_CXX_STANDARD EQUAL 14)
+        # For C++11/14, use lightweight parser instead of LLVM to avoid compatibility issues
+        if(CMAKE_CXX_STANDARD LESS 17)
             target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
         else()
             target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
