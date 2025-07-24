@@ -132,47 +132,55 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MissingWLine) {
 }
 
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
-    AdaExtractor extractor;
-    ComponentInfo component;
-    std::string ali1 = (test_dir / "pkg1.ali").string();
-    std::string ali2 = (test_dir / "pkg2.ali").string();
-    
-    // Create test files with proper synchronization
-    std::ofstream file1(ali1);
-    if (!file1.is_open()) {
-        FAIL() << "Failed to create " << ali1;
+    try {
+        AdaExtractor extractor;
+        ComponentInfo component;
+        std::string ali1 = (test_dir / "pkg1.ali").string();
+        std::string ali2 = (test_dir / "pkg2.ali").string();
+        
+        // Create test files with proper synchronization
+        std::ofstream file1(ali1);
+        if (!file1.is_open()) {
+            FAIL() << "Failed to create " << ali1;
+        }
+        file1 << "V \"GNAT Lib v2022\"\nW pkg1%b file1.adb file1.ali\n";
+        file1.close();
+        
+        std::ofstream file2(ali2);
+        if (!file2.is_open()) {
+            FAIL() << "Failed to create " << ali2;
+        }
+        file2 << "V \"GNAT Lib v2022\"\nW pkg2%b file2.adb file2.ali\n";
+        file2.close();
+        
+        // Ensure files are written to disk
+        file1.flush();
+        file2.flush();
+        
+        // Small delay to ensure filesystem synchronization in CI environments
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
+        // Verify files were created
+        if (!std::filesystem::exists(ali1)) {
+            FAIL() << "File " << ali1 << " was not created";
+        }
+        if (!std::filesystem::exists(ali2)) {
+            FAIL() << "File " << ali2 << " was not created";
+        }
+        
+        std::vector<std::string> aliFiles = {ali1, ali2};
+        extractor.extractAdaMetadata(component, aliFiles);
+        
+        EXPECT_EQ(component.dependencies.size(), 2);
+        EXPECT_NE(std::find(component.dependencies.begin(), component.dependencies.end(), "pkg1"), component.dependencies.end());
+        EXPECT_NE(std::find(component.dependencies.begin(), component.dependencies.end(), "pkg2"), component.dependencies.end());
+    } catch (const std::exception& e) {
+        std::cerr << "ERROR: Exception in ExtractAdaMetadata_MultipleAliFiles test: " << e.what() << std::endl;
+        throw;
+    } catch (...) {
+        std::cerr << "ERROR: Unknown exception in ExtractAdaMetadata_MultipleAliFiles test" << std::endl;
+        throw;
     }
-    file1 << "V \"GNAT Lib v2022\"\nW pkg1%b file1.adb file1.ali\n";
-    file1.close();
-    
-    std::ofstream file2(ali2);
-    if (!file2.is_open()) {
-        FAIL() << "Failed to create " << ali2;
-    }
-    file2 << "V \"GNAT Lib v2022\"\nW pkg2%b file2.adb file2.ali\n";
-    file2.close();
-    
-    // Ensure files are written to disk
-    file1.flush();
-    file2.flush();
-    
-    // Small delay to ensure filesystem synchronization in CI environments
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    
-    // Verify files were created
-    if (!std::filesystem::exists(ali1)) {
-        FAIL() << "File " << ali1 << " was not created";
-    }
-    if (!std::filesystem::exists(ali2)) {
-        FAIL() << "File " << ali2 << " was not created";
-    }
-    
-    std::vector<std::string> aliFiles = {ali1, ali2};
-    extractor.extractAdaMetadata(component, aliFiles);
-    
-    EXPECT_EQ(component.dependencies.size(), 2);
-    EXPECT_NE(std::find(component.dependencies.begin(), component.dependencies.end(), "pkg1"), component.dependencies.end());
-    EXPECT_NE(std::find(component.dependencies.begin(), component.dependencies.end(), "pkg2"), component.dependencies.end());
 }
 
 TEST_F(AdaExtractorTest, ExtractAdaMetadata_VerboseMode) {
