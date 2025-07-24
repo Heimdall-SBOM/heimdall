@@ -27,6 +27,7 @@ limitations under the License.
 #include <sstream>
 #include <chrono>
 #include <thread>
+#include <unistd.h>
 #include "common/ComponentInfo.hpp"
 #include "common/PluginInterface.hpp"
 #include "common/SBOMGenerator.hpp"
@@ -157,6 +158,25 @@ protected:
             plugin = std::make_unique<TestPluginInterface>();
             std::cout << "DEBUG: TestPluginInterface created successfully" << std::endl;
             
+            // Create process-unique test directory
+            auto pid = std::to_string(getpid());
+            test_dir = std::filesystem::temp_directory_path() / ("heimdall_plugin_test_" + pid);
+            std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
+            
+            // Clean up any existing test directory first
+            if (std::filesystem::exists(test_dir)) {
+                std::cout << "DEBUG: Removing existing test directory..." << std::endl;
+                std::filesystem::remove_all(test_dir);
+            }
+            
+            std::cout << "DEBUG: Creating test directory..." << std::endl;
+            std::filesystem::create_directories(test_dir);
+            std::cout << "DEBUG: Test directory created successfully" << std::endl;
+            
+            std::cout << "DEBUG: Changing current directory to test directory..." << std::endl;
+            std::filesystem::current_path(test_dir);
+            std::cout << "DEBUG: Current directory changed to: " << std::filesystem::current_path() << std::endl;
+            
             // Create temporary test files
             std::cout << "DEBUG: Creating test files..." << std::endl;
             createTestFiles();
@@ -174,6 +194,9 @@ protected:
     void TearDown() override {
         // Clean up test files
         cleanupTestFiles();
+        
+        // Clean up the process-unique test directory
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     void createTestFiles() {
@@ -317,12 +340,11 @@ protected:
         std::filesystem::remove("test_config.json");
         std::filesystem::remove("test_output.json");
         
-        // Also clean up any test directories that might exist from older versions
-        std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
-        test_utils::safeRemoveDirectory(test_dir);
+        // Note: Process-unique test directory cleanup is handled in TearDown()
     }
 
     std::unique_ptr<TestPluginInterface> plugin;
+    std::filesystem::path test_dir;
 };
 
 // Constructor and Destructor Tests
