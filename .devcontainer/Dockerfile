@@ -58,12 +58,17 @@ RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 90
 RUN update-alternatives --set gcc /usr/bin/gcc-13
 RUN update-alternatives --set g++ /usr/bin/g++-13
 
-# Install Clang 18
-RUN apt install clang-18 lldb-18 lld-18 clangd-18
+# Install Clang from the LLVM repository (same version as LLVM)
+RUN apt-get update && \
+    apt-get install -y \
+      clang-${LLVM_VERSION} \
+      lldb-${LLVM_VERSION} \
+      lld-${LLVM_VERSION} \
+      clangd-${LLVM_VERSION}
 
 # Set as default
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-18 100
-RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-18 100
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} 100
+RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${LLVM_VERSION} 100
 
 # Install LLD headers for the selected LLVM version
 RUN mkdir -p /usr/local/include/lld/Common && \
