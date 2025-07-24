@@ -177,6 +177,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         // Create test files with proper synchronization
         std::cout << "DEBUG: Creating first ALI file..." << std::endl;
         std::cout << "DEBUG: About to open file: " << ali1 << std::endl;
+        std::cout << "DEBUG: Current directory before file creation: " << std::filesystem::current_path() << std::endl;
         std::ofstream file1(ali1);
         if (!file1.is_open()) {
             std::cerr << "ERROR: Failed to create " << ali1 << std::endl;
@@ -188,6 +189,19 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         file1.flush();
         file1.close();
         std::cout << "DEBUG: First ALI file created successfully" << std::endl;
+        std::cout << "DEBUG: Current directory after file creation: " << std::filesystem::current_path() << std::endl;
+        
+        // Check if file exists immediately after creation
+        std::cout << "DEBUG: Checking if file exists immediately after creation..." << std::endl;
+        bool file_exists_immediately = std::filesystem::exists(ali1);
+        std::cout << "DEBUG: File exists immediately: " << (file_exists_immediately ? "yes" : "no") << std::endl;
+        if (file_exists_immediately) {
+            try {
+                std::cout << "DEBUG: File size immediately: " << std::filesystem::file_size(ali1) << std::endl;
+            } catch (const std::exception& e) {
+                std::cout << "DEBUG: Error getting file size: " << e.what() << std::endl;
+            }
+        }
         
         std::cout << "DEBUG: Creating second ALI file..." << std::endl;
         std::ofstream file2(ali2);
