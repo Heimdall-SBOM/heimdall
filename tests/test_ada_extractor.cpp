@@ -33,12 +33,25 @@ protected:
     void SetUp() override {
         std::cout << "DEBUG: AdaExtractorTest::SetUp() starting" << std::endl;
         
-        // Use current working directory instead of temp directory for CI compatibility
-        test_dir = std::filesystem::current_path();
+        // Create a temporary test directory and change to it (same approach as PluginInterfaceTest)
+        test_dir = std::filesystem::temp_directory_path() / "heimdall_ada_test";
         std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
-        std::cout << "DEBUG: Current working directory: " << std::filesystem::current_path() << std::endl;
         
-        // Create a dummy ali file named my_package.ali in current directory
+        // Clean up any existing test directory first
+        if (std::filesystem::exists(test_dir)) {
+            std::cout << "DEBUG: Removing existing test directory..." << std::endl;
+            std::filesystem::remove_all(test_dir);
+        }
+        
+        std::cout << "DEBUG: Creating test directory..." << std::endl;
+        std::filesystem::create_directories(test_dir);
+        std::cout << "DEBUG: Test directory created successfully" << std::endl;
+        
+        std::cout << "DEBUG: Changing current directory to test directory..." << std::endl;
+        std::filesystem::current_path(test_dir);
+        std::cout << "DEBUG: Current directory changed to: " << std::filesystem::current_path() << std::endl;
+        
+        // Create a dummy ali file named my_package.ali in test directory
         std::cout << "DEBUG: Creating dummy ALI file..." << std::endl;
         std::ofstream ali_file("my_package.ali");
         if (!ali_file.is_open()) {
@@ -53,17 +66,8 @@ protected:
     }
 
     void TearDown() override {
-        // Clean up files created in current working directory
-        std::filesystem::remove("my_package.ali");
-        std::filesystem::remove("pkg1.ali");
-        std::filesystem::remove("pkg2.ali");
-        std::filesystem::remove("empty.ali");
-        std::filesystem::remove("corrupt.ali");
-        std::filesystem::remove("runtime.ali");
-        std::filesystem::remove("dup.ali");
-        std::filesystem::remove("no_w.ali");
-        std::filesystem::remove("verbose.ali");
-        std::filesystem::remove("testmode.ali");
+        // Clean up the test directory
+        test_utils::safeRemoveDirectory(test_dir);
     }
 
     std::filesystem::path test_dir;
