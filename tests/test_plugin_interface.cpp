@@ -150,11 +150,16 @@ public:
 class PluginInterfaceTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        std::cout << "DEBUG: PluginInterfaceTest::SetUp() starting" << std::endl;
         try {
+            std::cout << "DEBUG: Creating TestPluginInterface..." << std::endl;
             plugin = std::make_unique<TestPluginInterface>();
+            std::cout << "DEBUG: TestPluginInterface created successfully" << std::endl;
             
             // Create temporary test files
+            std::cout << "DEBUG: Creating test files..." << std::endl;
             createTestFiles();
+            std::cout << "DEBUG: Test files created successfully" << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "ERROR: Exception in SetUp: " << e.what() << std::endl;
             throw;
@@ -162,6 +167,7 @@ protected:
             std::cerr << "ERROR: Unknown exception in SetUp" << std::endl;
             throw;
         }
+        std::cout << "DEBUG: PluginInterfaceTest::SetUp() completed successfully" << std::endl;
     }
 
     void TearDown() override {
@@ -170,14 +176,20 @@ protected:
     }
 
     void createTestFiles() {
+        std::cout << "DEBUG: createTestFiles() starting" << std::endl;
+        
         // Create a specific test directory that doesn't contain package manager strings
         std::filesystem::path test_dir = std::filesystem::temp_directory_path() / "heimdall_plugin_test";
+        std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
         
         // Remove directory if it exists to avoid conflicts
         if (std::filesystem::exists(test_dir)) {
+            std::cout << "DEBUG: Removing existing test directory..." << std::endl;
             std::filesystem::remove_all(test_dir);
+            std::cout << "DEBUG: Existing test directory removed" << std::endl;
         }
         
+        std::cout << "DEBUG: Creating test directory..." << std::endl;
         std::filesystem::create_directories(test_dir);
         
         // Verify directory was created
@@ -185,12 +197,18 @@ protected:
             std::cerr << "ERROR: Failed to create test directory: " << test_dir << std::endl;
             return;
         }
+        std::cout << "DEBUG: Test directory created successfully" << std::endl;
         
         // Change to the test directory to avoid package manager detection issues
+        std::cout << "DEBUG: Changing current directory to test directory..." << std::endl;
         std::filesystem::current_path(test_dir);
+        std::cout << "DEBUG: Current directory changed to: " << std::filesystem::current_path() << std::endl;
         
         // Create test object file
+        std::cout << "DEBUG: Creating test object file..." << std::endl;
         std::filesystem::path objPath = test_dir / "test_object.o";
+        std::cout << "DEBUG: Object file path: " << objPath << std::endl;
+        
         std::ofstream objFile(objPath);
         if (!objFile.is_open()) {
             std::cerr << "ERROR: Failed to create test_object.o" << std::endl;
@@ -204,9 +222,13 @@ protected:
             std::cerr << "ERROR: test_object.o was not created" << std::endl;
             return;
         }
+        std::cout << "DEBUG: test_object.o created successfully" << std::endl;
 
         // Create test library file
+        std::cout << "DEBUG: Creating test library file..." << std::endl;
         std::filesystem::path libPath = test_dir / "libtest.so";
+        std::cout << "DEBUG: Library file path: " << libPath << std::endl;
+        
         std::ofstream libFile(libPath);
         if (!libFile.is_open()) {
             std::cerr << "ERROR: Failed to create libtest.so" << std::endl;
@@ -220,9 +242,13 @@ protected:
             std::cerr << "ERROR: libtest.so was not created" << std::endl;
             return;
         }
+        std::cout << "DEBUG: libtest.so created successfully" << std::endl;
 
         // Create test executable
+        std::cout << "DEBUG: Creating test executable..." << std::endl;
         std::filesystem::path exePath = test_dir / "test_executable.exe";
+        std::cout << "DEBUG: Executable file path: " << exePath << std::endl;
+        
         std::ofstream exeFile(exePath);
         if (!exeFile.is_open()) {
             std::cerr << "ERROR: Failed to create test_executable.exe" << std::endl;
@@ -236,9 +262,13 @@ protected:
             std::cerr << "ERROR: test_executable.exe was not created" << std::endl;
             return;
         }
+        std::cout << "DEBUG: test_executable.exe created successfully" << std::endl;
 
         // Create test archive
+        std::cout << "DEBUG: Creating test archive..." << std::endl;
         std::filesystem::path archivePath = test_dir / "libtest.a";
+        std::cout << "DEBUG: Archive file path: " << archivePath << std::endl;
+        
         std::ofstream archiveFile(archivePath);
         if (!archiveFile.is_open()) {
             std::cerr << "ERROR: Failed to create libtest.a" << std::endl;
@@ -252,16 +282,27 @@ protected:
             std::cerr << "ERROR: libtest.a was not created" << std::endl;
             return;
         }
+        std::cout << "DEBUG: libtest.a created successfully" << std::endl;
         
         // Small delay to ensure filesystem synchronization in CI environments
+        std::cout << "DEBUG: Waiting for filesystem synchronization..." << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         
         // Final verification that all files exist
-        std::cout << "DEBUG: Test files created successfully:" << std::endl;
+        std::cout << "DEBUG: Final verification of test files:" << std::endl;
         std::cout << "DEBUG: test_object.o exists: " << (std::filesystem::exists(objPath) ? "yes" : "no") << std::endl;
         std::cout << "DEBUG: libtest.so exists: " << (std::filesystem::exists(libPath) ? "yes" : "no") << std::endl;
         std::cout << "DEBUG: test_executable.exe exists: " << (std::filesystem::exists(exePath) ? "yes" : "no") << std::endl;
         std::cout << "DEBUG: libtest.a exists: " << (std::filesystem::exists(archivePath) ? "yes" : "no") << std::endl;
+        
+        // Check file sizes
+        std::cout << "DEBUG: File sizes:" << std::endl;
+        std::cout << "DEBUG: test_object.o size: " << std::filesystem::file_size(objPath) << std::endl;
+        std::cout << "DEBUG: libtest.so size: " << std::filesystem::file_size(libPath) << std::endl;
+        std::cout << "DEBUG: test_executable.exe size: " << std::filesystem::file_size(exePath) << std::endl;
+        std::cout << "DEBUG: libtest.a size: " << std::filesystem::file_size(archivePath) << std::endl;
+        
+        std::cout << "DEBUG: createTestFiles() completed successfully" << std::endl;
     }
 
     void cleanupTestFiles() {
@@ -336,29 +377,64 @@ TEST_F(PluginInterfaceTest, ProcessSymbol) {
 }
 
 TEST_F(PluginInterfaceTest, ProcessMultipleComponents) {
+    std::cout << "DEBUG: ProcessMultipleComponents test starting" << std::endl;
     try {
         // Disable metadata extraction to prevent component names from being overwritten
+        std::cout << "DEBUG: Disabling metadata extraction..." << std::endl;
         plugin->setExtractDebugInfo(false);
+        std::cout << "DEBUG: Metadata extraction disabled" << std::endl;
         
         // Verify test files exist before processing
+        std::cout << "DEBUG: Verifying test files exist..." << std::endl;
         if (!std::filesystem::exists("test_object.o")) {
+            std::cerr << "ERROR: test_object.o does not exist" << std::endl;
             FAIL() << "test_object.o does not exist";
         }
+        std::cout << "DEBUG: test_object.o exists" << std::endl;
+        
         if (!std::filesystem::exists("libtest.so")) {
+            std::cerr << "ERROR: libtest.so does not exist" << std::endl;
             FAIL() << "libtest.so does not exist";
         }
+        std::cout << "DEBUG: libtest.so exists" << std::endl;
+        
         if (!std::filesystem::exists("test_executable.exe")) {
+            std::cerr << "ERROR: test_executable.exe does not exist" << std::endl;
             FAIL() << "test_executable.exe does not exist";
         }
+        std::cout << "DEBUG: test_executable.exe exists" << std::endl;
         
+        std::cout << "DEBUG: About to process test_object.o..." << std::endl;
         plugin->processInputFile("test_object.o");
+        std::cout << "DEBUG: test_object.o processed, component count: " << plugin->getComponentCount() << std::endl;
+        
+        std::cout << "DEBUG: About to process libtest.so..." << std::endl;
         plugin->processLibrary("libtest.so");
+        std::cout << "DEBUG: libtest.so processed, component count: " << plugin->getComponentCount() << std::endl;
+        
+        std::cout << "DEBUG: About to process test_executable.exe..." << std::endl;
         plugin->processInputFile("test_executable.exe");
+        std::cout << "DEBUG: test_executable.exe processed, component count: " << plugin->getComponentCount() << std::endl;
 
+        std::cout << "DEBUG: Final component count: " << plugin->getComponentCount() << std::endl;
         EXPECT_EQ(plugin->getComponentCount(), 3u);
-        EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
-        EXPECT_EQ(plugin->processedComponents[1].name, "test");
-        EXPECT_EQ(plugin->processedComponents[2].name, "test_executable");
+        
+        if (plugin->getComponentCount() >= 1) {
+            std::cout << "DEBUG: First component name: '" << plugin->processedComponents[0].name << "'" << std::endl;
+            EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
+        }
+        
+        if (plugin->getComponentCount() >= 2) {
+            std::cout << "DEBUG: Second component name: '" << plugin->processedComponents[1].name << "'" << std::endl;
+            EXPECT_EQ(plugin->processedComponents[1].name, "test");
+        }
+        
+        if (plugin->getComponentCount() >= 3) {
+            std::cout << "DEBUG: Third component name: '" << plugin->processedComponents[2].name << "'" << std::endl;
+            EXPECT_EQ(plugin->processedComponents[2].name, "test_executable");
+        }
+        
+        std::cout << "DEBUG: ProcessMultipleComponents test completed successfully" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "ERROR: Exception in ProcessMultipleComponents test: " << e.what() << std::endl;
         throw;
@@ -424,12 +500,22 @@ TEST_F(PluginInterfaceTest, SetIncludeSystemLibraries) {
 
 // Statistics Tests
 TEST_F(PluginInterfaceTest, GetComponentCount) {
+    std::cout << "DEBUG: GetComponentCount test starting" << std::endl;
     try {
+        std::cout << "DEBUG: Initial component count: " << plugin->getComponentCount() << std::endl;
         EXPECT_EQ(plugin->getComponentCount(), 0u);
+        
+        std::cout << "DEBUG: About to process test_object.o..." << std::endl;
         plugin->processInputFile("test_object.o");
+        std::cout << "DEBUG: After processing test_object.o, component count: " << plugin->getComponentCount() << std::endl;
         EXPECT_EQ(plugin->getComponentCount(), 1u);
+        
+        std::cout << "DEBUG: About to process libtest.so..." << std::endl;
         plugin->processLibrary("libtest.so");
+        std::cout << "DEBUG: After processing libtest.so, component count: " << plugin->getComponentCount() << std::endl;
         EXPECT_EQ(plugin->getComponentCount(), 2u);
+        
+        std::cout << "DEBUG: GetComponentCount test completed successfully" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "ERROR: Exception in GetComponentCount test: " << e.what() << std::endl;
         throw;
@@ -736,10 +822,17 @@ TEST_F(PluginInterfaceTest, ProcessInvalidFileType) {
 }
 
 TEST_F(PluginInterfaceTest, ProcessSymbolWithoutComponent) {
+    std::cout << "DEBUG: ProcessSymbolWithoutComponent test starting" << std::endl;
     try {
+        std::cout << "DEBUG: Initial component count: " << plugin->getComponentCount() << std::endl;
+        
         // Process symbol without any component
+        std::cout << "DEBUG: About to process symbol 'test_function'..." << std::endl;
         plugin->processSymbol("test_function", 0x1000, 64);
+        std::cout << "DEBUG: Symbol processed, component count: " << plugin->getComponentCount() << std::endl;
+        
         EXPECT_EQ(plugin->getComponentCount(), 0u);
+        std::cout << "DEBUG: ProcessSymbolWithoutComponent test completed successfully" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "ERROR: Exception in ProcessSymbolWithoutComponent test: " << e.what() << std::endl;
         throw;
@@ -751,29 +844,61 @@ TEST_F(PluginInterfaceTest, ProcessSymbolWithoutComponent) {
 
 // Integration Tests
 TEST_F(PluginInterfaceTest, FullWorkflow) {
+    std::cout << "DEBUG: FullWorkflow test starting" << std::endl;
     try {
         // Set up plugin
+        std::cout << "DEBUG: Setting up plugin..." << std::endl;
         plugin->setVerbose(true);
+        std::cout << "DEBUG: Verbose mode enabled" << std::endl;
+        
         plugin->setOutputPath("test_output.json");
+        std::cout << "DEBUG: Output path set to test_output.json" << std::endl;
+        
         plugin->setFormat("spdx");
+        std::cout << "DEBUG: Format set to spdx" << std::endl;
 
         // Process files
+        std::cout << "DEBUG: About to process test_object.o..." << std::endl;
         plugin->processInputFile("test_object.o");
+        std::cout << "DEBUG: test_object.o processed, component count: " << plugin->getComponentCount() << std::endl;
+        
+        std::cout << "DEBUG: About to process libtest.so..." << std::endl;
         plugin->processLibrary("libtest.so");
+        std::cout << "DEBUG: libtest.so processed, component count: " << plugin->getComponentCount() << std::endl;
+        
+        std::cout << "DEBUG: About to process symbol 'function1'..." << std::endl;
         plugin->processSymbol("function1", 0x1000, 64);
+        std::cout << "DEBUG: function1 symbol processed" << std::endl;
+        
+        std::cout << "DEBUG: About to process symbol 'function2'..." << std::endl;
         plugin->processSymbol("function2", 0x2000, 128);
+        std::cout << "DEBUG: function2 symbol processed" << std::endl;
 
         // Verify results
+        std::cout << "DEBUG: Final component count: " << plugin->getComponentCount() << std::endl;
         EXPECT_EQ(plugin->getComponentCount(), 2u);
-        EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
-        EXPECT_EQ(plugin->processedComponents[1].name, "test");
-        EXPECT_EQ(plugin->processedComponents[1].symbols.size(), 2u);
+        
+        if (plugin->getComponentCount() >= 1) {
+            std::cout << "DEBUG: First component name: '" << plugin->processedComponents[0].name << "'" << std::endl;
+            EXPECT_EQ(plugin->processedComponents[0].name, "test_object");
+        }
+        
+        if (plugin->getComponentCount() >= 2) {
+            std::cout << "DEBUG: Second component name: '" << plugin->processedComponents[1].name << "'" << std::endl;
+            EXPECT_EQ(plugin->processedComponents[1].name, "test");
+            std::cout << "DEBUG: Second component symbol count: " << plugin->processedComponents[1].symbols.size() << std::endl;
+            EXPECT_EQ(plugin->processedComponents[1].symbols.size(), 2u);
+        }
 
         // Generate SBOM (should not crash)
+        std::cout << "DEBUG: About to generate SBOM..." << std::endl;
         EXPECT_NO_THROW(plugin->generateSBOM());
+        std::cout << "DEBUG: SBOM generated successfully" << std::endl;
 
         // Clean up
+        std::cout << "DEBUG: Cleaning up test_output.json..." << std::endl;
         std::filesystem::remove("test_output.json");
+        std::cout << "DEBUG: FullWorkflow test completed successfully" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "ERROR: Exception in FullWorkflow test: " << e.what() << std::endl;
         throw;

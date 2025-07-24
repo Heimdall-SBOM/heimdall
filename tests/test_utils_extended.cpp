@@ -28,42 +28,91 @@ using namespace heimdall;
 class UtilsExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
+        std::cout << "DEBUG: UtilsExtendedTest::SetUp() starting" << std::endl;
+        
         // Initialize OpenSSL for CI environments with more robust initialization
+        std::cout << "DEBUG: Initializing OpenSSL..." << std::endl;
         SSL_library_init();
+        std::cout << "DEBUG: SSL_library_init() completed" << std::endl;
+        
         OpenSSL_add_all_algorithms();
+        std::cout << "DEBUG: OpenSSL_add_all_algorithms() completed" << std::endl;
+        
         OpenSSL_add_all_ciphers();
+        std::cout << "DEBUG: OpenSSL_add_all_ciphers() completed" << std::endl;
+        
         OpenSSL_add_all_digests();
+        std::cout << "DEBUG: OpenSSL_add_all_digests() completed" << std::endl;
         
         // Additional initialization for CI environments
         SSL_load_error_strings();
+        std::cout << "DEBUG: SSL_load_error_strings() completed" << std::endl;
+        
         ERR_load_CRYPTO_strings();
+        std::cout << "DEBUG: ERR_load_CRYPTO_strings() completed" << std::endl;
         
         // Ensure OpenSSL is properly initialized
+        std::cout << "DEBUG: Testing OpenSSL initialization with EVP_MD_CTX_new()..." << std::endl;
         if (!EVP_MD_CTX_new()) {
             std::cerr << "WARNING: OpenSSL initialization may have failed" << std::endl;
+        } else {
+            std::cout << "DEBUG: OpenSSL initialization test passed" << std::endl;
         }
         
+        std::cout << "DEBUG: Creating test directory..." << std::endl;
         test_dir = std::filesystem::temp_directory_path() / "heimdall_utils_extended_test";
+        std::cout << "DEBUG: Test directory path: " << test_dir << std::endl;
+        
         std::filesystem::create_directories(test_dir);
+        std::cout << "DEBUG: Test directory created successfully" << std::endl;
 
         // Create test files
+        std::cout << "DEBUG: Creating test files..." << std::endl;
         test_file = test_dir / "test.txt";
-        std::ofstream(test_file) << "test content";
+        std::cout << "DEBUG: Test file path: " << test_file << std::endl;
+        
+        std::ofstream test_stream(test_file);
+        if (!test_stream.is_open()) {
+            std::cerr << "ERROR: Failed to create test file: " << test_file << std::endl;
+        } else {
+            test_stream << "test content";
+            test_stream.close();
+            std::cout << "DEBUG: Test file created successfully" << std::endl;
+        }
 
         // Create a larger file for checksum testing
+        std::cout << "DEBUG: Creating large test file..." << std::endl;
         large_file = test_dir / "large.bin";
+        std::cout << "DEBUG: Large file path: " << large_file << std::endl;
+        
         std::ofstream large_stream(large_file, std::ios::binary);
-        for (int i = 0; i < 1000; ++i) {
-            large_stream.write(reinterpret_cast<const char*>(&i), sizeof(i));
+        if (!large_stream.is_open()) {
+            std::cerr << "ERROR: Failed to create large file: " << large_file << std::endl;
+        } else {
+            for (int i = 0; i < 1000; ++i) {
+                large_stream.write(reinterpret_cast<const char*>(&i), sizeof(i));
+            }
+            large_stream.close();
+            std::cout << "DEBUG: Large file created successfully" << std::endl;
         }
-        large_stream.close();
 
         // Create test directories
+        std::cout << "DEBUG: Creating subdirectory..." << std::endl;
         sub_dir = test_dir / "subdir";
         std::filesystem::create_directories(sub_dir);
+        std::cout << "DEBUG: Subdirectory created successfully" << std::endl;
 
         // Set environment variable for testing
         setenv("TEST_VAR", "test_value", 1);
+        std::cout << "DEBUG: Environment variable set" << std::endl;
+        
+        // Verify all files exist
+        std::cout << "DEBUG: Verifying file existence..." << std::endl;
+        std::cout << "DEBUG: test_file exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: large_file exists: " << (std::filesystem::exists(large_file) ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: sub_dir exists: " << (std::filesystem::exists(sub_dir) ? "yes" : "no") << std::endl;
+        
+        std::cout << "DEBUG: UtilsExtendedTest::SetUp() completed successfully" << std::endl;
     }
 
     void TearDown() override {
@@ -110,28 +159,59 @@ TEST_F(UtilsExtendedTest, GetFileSize) {
 }
 
 TEST_F(UtilsExtendedTest, GetFileChecksum) {
+    std::cout << "DEBUG: GetFileChecksum test starting" << std::endl;
+    
     // Ensure OpenSSL is properly initialized for this test
+    std::cout << "DEBUG: Re-initializing OpenSSL for GetFileChecksum test..." << std::endl;
     SSL_library_init();
+    std::cout << "DEBUG: SSL_library_init() completed" << std::endl;
+    
     OpenSSL_add_all_algorithms();
+    std::cout << "DEBUG: OpenSSL_add_all_algorithms() completed" << std::endl;
+    
     OpenSSL_add_all_ciphers();
+    std::cout << "DEBUG: OpenSSL_add_all_ciphers() completed" << std::endl;
+    
     OpenSSL_add_all_digests();
+    std::cout << "DEBUG: OpenSSL_add_all_digests() completed" << std::endl;
+    
     SSL_load_error_strings();
+    std::cout << "DEBUG: SSL_load_error_strings() completed" << std::endl;
+    
     ERR_load_CRYPTO_strings();
+    std::cout << "DEBUG: ERR_load_CRYPTO_strings() completed" << std::endl;
+    
+    std::cout << "DEBUG: About to call Utils::getFileChecksum with file: " << test_file << std::endl;
+    std::cout << "DEBUG: File exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
+    std::cout << "DEBUG: File size: " << std::filesystem::file_size(test_file) << std::endl;
     
     std::string checksum = Utils::getFileChecksum(test_file.string());
+    std::cout << "DEBUG: getFileChecksum returned: '" << checksum << "'" << std::endl;
+    std::cout << "DEBUG: checksum length: " << checksum.length() << std::endl;
+    std::cout << "DEBUG: checksum empty: " << (checksum.empty() ? "yes" : "no") << std::endl;
+    
     EXPECT_FALSE(checksum.empty());
     EXPECT_EQ(checksum.length(), 64u);  // SHA256 is 32 bytes = 64 hex chars
 
     // Same file should have same checksum
+    std::cout << "DEBUG: Calling getFileChecksum again for same file..." << std::endl;
     std::string checksum2 = Utils::getFileChecksum(test_file.string());
+    std::cout << "DEBUG: Second getFileChecksum returned: '" << checksum2 << "'" << std::endl;
     EXPECT_EQ(checksum, checksum2);
 
     // Different files should have different checksums
+    std::cout << "DEBUG: Calling getFileChecksum for large file..." << std::endl;
     std::string large_checksum = Utils::getFileChecksum(large_file.string());
+    std::cout << "DEBUG: Large file checksum: '" << large_checksum << "'" << std::endl;
     EXPECT_NE(checksum, large_checksum);
 
     // Non-existent file should return empty string
-    EXPECT_TRUE(Utils::getFileChecksum((test_dir / "nonexistent.txt").string()).empty());
+    std::cout << "DEBUG: Testing non-existent file..." << std::endl;
+    std::string nonexistent_checksum = Utils::getFileChecksum((test_dir / "nonexistent.txt").string());
+    std::cout << "DEBUG: Non-existent file checksum: '" << nonexistent_checksum << "'" << std::endl;
+    EXPECT_TRUE(nonexistent_checksum.empty());
+    
+    std::cout << "DEBUG: GetFileChecksum test completed successfully" << std::endl;
 }
 
 TEST_F(UtilsExtendedTest, StringManipulation) {
@@ -187,18 +267,50 @@ TEST_F(UtilsExtendedTest, FileTypeDetection) {
 }
 
 TEST_F(UtilsExtendedTest, CalculateSHA256) {
+    std::cout << "DEBUG: CalculateSHA256 test starting" << std::endl;
+    
     // Ensure OpenSSL is properly initialized for this test
+    std::cout << "DEBUG: Re-initializing OpenSSL for CalculateSHA256 test..." << std::endl;
     SSL_library_init();
+    std::cout << "DEBUG: SSL_library_init() completed" << std::endl;
+    
     OpenSSL_add_all_algorithms();
+    std::cout << "DEBUG: OpenSSL_add_all_algorithms() completed" << std::endl;
+    
     OpenSSL_add_all_ciphers();
+    std::cout << "DEBUG: OpenSSL_add_all_ciphers() completed" << std::endl;
+    
     OpenSSL_add_all_digests();
+    std::cout << "DEBUG: OpenSSL_add_all_digests() completed" << std::endl;
+    
     SSL_load_error_strings();
+    std::cout << "DEBUG: SSL_load_error_strings() completed" << std::endl;
+    
     ERR_load_CRYPTO_strings();
+    std::cout << "DEBUG: ERR_load_CRYPTO_strings() completed" << std::endl;
+    
+    std::cout << "DEBUG: About to call Utils::getFileChecksum with file: " << test_file << std::endl;
+    std::cout << "DEBUG: File exists: " << (std::filesystem::exists(test_file) ? "yes" : "no") << std::endl;
+    std::cout << "DEBUG: File size: " << std::filesystem::file_size(test_file) << std::endl;
     
     // Should be same as getFileChecksum
     std::string checksum1 = Utils::getFileChecksum(test_file.string());
+    std::cout << "DEBUG: getFileChecksum returned: '" << checksum1 << "'" << std::endl;
+    std::cout << "DEBUG: checksum1 length: " << checksum1.length() << std::endl;
+    std::cout << "DEBUG: checksum1 empty: " << (checksum1.empty() ? "yes" : "no") << std::endl;
+    
+    std::cout << "DEBUG: About to call Utils::calculateSHA256 with file: " << test_file << std::endl;
     std::string checksum2 = Utils::calculateSHA256(test_file.string());
+    std::cout << "DEBUG: calculateSHA256 returned: '" << checksum2 << "'" << std::endl;
+    std::cout << "DEBUG: checksum2 length: " << checksum2.length() << std::endl;
+    std::cout << "DEBUG: checksum2 empty: " << (checksum2.empty() ? "yes" : "no") << std::endl;
+    
+    std::cout << "DEBUG: Comparing checksums..." << std::endl;
+    std::cout << "DEBUG: checksum1 == checksum2: " << (checksum1 == checksum2 ? "yes" : "no") << std::endl;
+    
     EXPECT_EQ(checksum1, checksum2);
+    
+    std::cout << "DEBUG: CalculateSHA256 test completed successfully" << std::endl;
 }
 
 TEST_F(UtilsExtendedTest, LicenseDetection) {
