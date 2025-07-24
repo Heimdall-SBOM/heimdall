@@ -214,12 +214,30 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles) {
         file2.close();
         std::cout << "DEBUG: Second ALI file created successfully" << std::endl;
         
+        // Check if both files exist after second file creation
+        std::cout << "DEBUG: Checking both files after second file creation..." << std::endl;
+        bool ali1_exists_after_second = std::filesystem::exists(ali1);
+        bool ali2_exists_after_second = std::filesystem::exists(ali2);
+        std::cout << "DEBUG: ali1 exists after second file: " << (ali1_exists_after_second ? "yes" : "no") << std::endl;
+        std::cout << "DEBUG: ali2 exists after second file: " << (ali2_exists_after_second ? "yes" : "no") << std::endl;
+        
         // Ensure files are written to disk and synchronized
         std::cout << "DEBUG: Ensuring filesystem synchronization..." << std::endl;
         
         // Small delay to ensure filesystem synchronization in CI environments
         std::cout << "DEBUG: Waiting for filesystem synchronization..." << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
+        // Debug: Check current directory and list files before verification
+        std::cout << "DEBUG: Current directory before verification: " << std::filesystem::current_path() << std::endl;
+        std::cout << "DEBUG: Listing files in current directory:" << std::endl;
+        try {
+            for (const auto& entry : std::filesystem::directory_iterator(".")) {
+                std::cout << "DEBUG:   " << entry.path().filename() << " (size: " << entry.file_size() << ")" << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cout << "DEBUG: Error listing directory: " << e.what() << std::endl;
+        }
         
         // Verify files were created with retries for CI environments
         std::cout << "DEBUG: Verifying file creation..." << std::endl;
