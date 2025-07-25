@@ -99,13 +99,30 @@ Heimdall supports multiple C++ standards with automatic compiler and LLVM versio
 
 ### Automatic Setup (Recommended)
 
-We provide an automated setup script that detects your Linux distribution and installs all necessary dependencies:
+We provide automated setup scripts that detect your operating system and install all necessary dependencies:
+
+#### Quick Dependency Installation
 
 ```bash
 git clone --recurse-submodules https://github.com/your-org/heimdall.git
 
 cd heimdall
 
+# Install dependencies automatically
+./scripts/install_dependencies.sh
+
+# Build with default settings (GCC, C++17)
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+# Or build all compatible standards
+./scripts/build_all_standards.sh
+```
+
+#### Linux Setup Script (Advanced)
+
+For Linux users, we also provide a more comprehensive setup script:
+
+```bash
 # Run the automated setup script
 sudo ./setup.sh
 

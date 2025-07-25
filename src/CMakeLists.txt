@@ -99,70 +99,113 @@ endif()
 
 # LLD Plugin (compatible with C++11+)
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
+    # Check if LLD is available
+    set(LLD_AVAILABLE FALSE)
     set(LLD_INCLUDE_DIR "")
+    set(LLD_LIBRARY_DIR "")
+    
     if(APPLE)
-        set(LLD_INCLUDE_DIR "/opt/homebrew/opt/lld/include")
-    endif()
-    add_library(heimdall-lld SHARED
-        lld/LLDAdapter.cpp
-        lld/LLDAdapter.hpp
-        lld/LLDPlugin.cpp
-        common/MetadataExtractor.hpp
-        common/SBOMGenerator.hpp
-        common/Utils.hpp
-    )
-
-    set_target_properties(heimdall-lld PROPERTIES
-        CXX_STANDARD ${CMAKE_CXX_STANDARD}
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        PREFIX ""
-        SUFFIX ".so"
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
-    )
-
-    target_include_directories(heimdall-lld PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
-        ${LLVM_INCLUDE_DIRS}
-        ${LLD_INCLUDE_DIR}
-    )
-
-    target_compile_definitions(heimdall-lld PRIVATE LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
-
-    if(HEIMDALL_FULL_DWARF)
-        target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
-    elseif(HEIMDALL_BASIC_DWARF)
-        # For C++11/14, use lightweight parser instead of LLVM to avoid compatibility issues
-        if(CMAKE_CXX_STANDARD LESS 17)
-            target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
-        else()
-            target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+        # Check for Homebrew LLD
+        if(EXISTS "/opt/homebrew/opt/lld/include/lld/Common/Driver.h")
+            set(LLD_INCLUDE_DIR "/opt/homebrew/opt/lld/include")
+            set(LLD_LIBRARY_DIR "/opt/homebrew/opt/lld/lib")
+            set(LLD_AVAILABLE TRUE)
+            message(STATUS "Found Homebrew LLD headers at ${LLD_INCLUDE_DIR}")
+        elseif(EXISTS "/usr/local/opt/lld/include/lld/Common/Driver.h")
+            set(LLD_INCLUDE_DIR "/usr/local/opt/lld/include")
+            set(LLD_LIBRARY_DIR "/usr/local/opt/lld/lib")
+            set(LLD_AVAILABLE TRUE)
+            message(STATUS "Found Homebrew LLD headers at ${LLD_INCLUDE_DIR}")
         endif()
-    elseif(HEIMDALL_NO_DWARF)
-        # Explicitly disable DWARF support
-        target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
+        
+        # Also check if LLD is available via llvm-config
+        find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config)
+        if(LLVM_CONFIG_EXECUTABLE)
+            execute_process(
+                COMMAND ${LLVM_CONFIG_EXECUTABLE} --components
+                OUTPUT_VARIABLE LLVM_COMPONENTS
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            if(LLVM_COMPONENTS MATCHES "lld")
+                set(LLD_AVAILABLE TRUE)
+                message(STATUS "LLD component found in LLVM installation")
+            endif()
+        endif()
     endif()
-
-    # Try to get LLD libraries from llvm-config if available
-    find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config)
-    if(LLVM_CONFIG_EXECUTABLE)
-        execute_process(
-            COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs lld
-            OUTPUT_VARIABLE LLD_LIBS_RAW
-            OUTPUT_STRIP_TRAILING_WHITESPACE
+    
+    if(LLD_AVAILABLE)
+        message(STATUS "Building LLD plugin - LLD headers found")
+        
+        add_library(heimdall-lld SHARED
+            lld/LLDAdapter.cpp
+            lld/LLDAdapter.hpp
+            lld/LLDPlugin.cpp
+            common/MetadataExtractor.hpp
+            common/SBOMGenerator.hpp
+            common/Utils.hpp
         )
-        string(REPLACE "\n" " " LLD_LIBS "${LLD_LIBS_RAW}")
-        separate_arguments(LLD_LIBS)
-    else()
-        set(LLD_LIBS "")
-    endif()
 
-    target_link_libraries(heimdall-lld PRIVATE
-        heimdall-core
-        ${LLVM_LIBRARIES}
-        ${LLD_LIBS}
-    )
+        set_target_properties(heimdall-lld PROPERTIES
+            CXX_STANDARD ${CMAKE_CXX_STANDARD}
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+            PREFIX ""
+            SUFFIX ".so"
+            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+        )
+
+        target_include_directories(heimdall-lld PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/..
+            ${LLVM_INCLUDE_DIRS}
+            ${LLD_INCLUDE_DIR}
+        )
+
+        target_compile_definitions(heimdall-lld PRIVATE LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1)
+
+        if(HEIMDALL_FULL_DWARF)
+            target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+        elseif(HEIMDALL_BASIC_DWARF)
+            # For C++11/14, use lightweight parser instead of LLVM to avoid compatibility issues
+            if(CMAKE_CXX_STANDARD LESS 17)
+                target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
+            else()
+                target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=1)
+            endif()
+        elseif(HEIMDALL_NO_DWARF)
+            # Explicitly disable DWARF support
+            target_compile_definitions(heimdall-lld PRIVATE LLVM_DWARF_AVAILABLE=0)
+        endif()
+
+        # Try to get LLD libraries from llvm-config if available
+        if(LLVM_CONFIG_EXECUTABLE)
+            execute_process(
+                COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs lld
+                OUTPUT_VARIABLE LLD_LIBS_RAW
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_VARIABLE LLD_LIBS_ERROR
+            )
+            if(NOT LLD_LIBS_ERROR)
+                string(REPLACE "\n" " " LLD_LIBS "${LLD_LIBS_RAW}")
+                separate_arguments(LLD_LIBS)
+                message(STATUS "LLD libraries from llvm-config: ${LLD_LIBS}")
+            else()
+                message(STATUS "LLD libraries not available via llvm-config, using basic LLVM libraries")
+                set(LLD_LIBS "")
+            endif()
+        else()
+            set(LLD_LIBS "")
+        endif()
+
+        target_link_libraries(heimdall-lld PRIVATE
+            heimdall-core
+            ${LLVM_LIBRARIES}
+            ${LLD_LIBS}
+        )
+    else()
+        message(WARNING "LLD headers not found - skipping LLD plugin build")
+        message(STATUS "To enable LLD plugin, install LLD: brew install lld")
+    endif()
 endif()
 
 # Gold Plugin (Linux only)
