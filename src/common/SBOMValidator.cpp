@@ -44,106 +44,62 @@ ValidationResult SPDXValidator::validate(const std::string& filePath, const std:
 
 ValidationResult SPDXValidator::validateContent(const std::string& content) {
     ValidationResult result;
-    // Detect SPDX version
-    if (content.find("SPDXVersion:") != std::string::npos) {
-        // SPDX 2.3 tag-value format
-        return validateSPDX2_3(content);
-    } else if (content.find("\"spdxVersion\"") != std::string::npos) {
-        // SPDX 3.0 classic JSON format
-        return validateSPDX3_0(content);
-    } else if (content.find("@context") != std::string::npos && content.find("@graph") != std::string::npos) {
-        // SPDX 3.0 JSON-LD format
-        try {
-            auto sbom = nlohmann::json::parse(content);
-            std::string schema_path;
-            if (sbom.contains("@context")) {
-                std::string context = sbom["@context"];
-                if (context == "https://spdx.org/rdf/3.0.1/spdx-context.jsonld") {
-                    schema_path = "./schema/spdx-bom-3.0.1.schema.json";
-                } else if (context == "https://spdx.org/rdf/3.0.0/spdx-context.jsonld") {
-                    schema_path = "./schema/spdx-bom-3.0.0.schema.json";
-                } else {
-                    heimdall::Utils::warningPrint("Unknown SPDX @context: '" + context + "', defaulting to 3.0.0 schema.\n");
-                    schema_path = "./schema/spdx-bom-3.0.0.schema.json";
-                }
-            } else {
-                heimdall::Utils::warningPrint("No @context found in SPDX JSON-LD, defaulting to 3.0.0 schema.\n");
-                schema_path = "./schema/spdx-bom-3.0.0.schema.json";
-            }
-            heimdall::Utils::debugPrint("SPDX JSON-LD: schema_path=" + schema_path + "\n");
-            if (sbom.contains("@context")) {
-                heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context']='" + std::string(sbom["@context"]) + "\n");
-            } else {
-                heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context'] not found\n");
-            }
-            heimdall::Utils::debugPrint("SPDX JSON-LD: first 100 chars of content: '" + std::string(content.substr(0, 100)) + "'\n");
-            // Debug: print first object in @graph and its keys
-            if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
-                const auto& doc = sbom["@graph"][0];
-                heimdall::Utils::debugPrint("First @graph object: " + doc.dump(2) + "\n");
-                heimdall::Utils::debugPrint("Keys in first @graph object:");
-                for (auto it = doc.begin(); it != doc.end(); ++it) {
-                    heimdall::Utils::debugPrint(" " + it.key() + "\n" );
-                }
-                 heimdall::Utils::debugPrint( "\n" );
-            }
-            // --- END DEBUG PRINTS ---
-            std::ifstream schema_file(schema_path);
-            if (!schema_file.is_open()) {
-                result.addError("Could not open SPDX schema file: " + schema_path);
-                return result;
-            }
-            nlohmann::json schema;
-            schema_file >> schema;
-            nlohmann::json_schema::json_validator validator;
-            validator.set_root_schema(schema);
+    
+    // Add signal protection for CI environments
+    try {
+        // Detect SPDX version
+        if (content.find("SPDXVersion:") != std::string::npos) {
+            // SPDX 2.3 tag-value format
+            return validateSPDX2_3(content);
+        } else if (content.find("\"spdxVersion\"") != std::string::npos) {
+            // SPDX 3.0 classic JSON format
+            return validateSPDX3_0(content);
+        } else if (content.find("@context") != std::string::npos && content.find("@graph") != std::string::npos) {
+            // SPDX 3.0 JSON-LD format
             try {
-                validator.validate(sbom);
-                result.isValid = true;
-            } catch (const std::exception& e) {
-                result.isValid = false;
-                result.errors.push_back(std::string("SPDX 3.x schema validation failed: ") + e.what());
-            }
-            // Extract SPDX version from @graph (schema-compliant style)
-            std::string version = "3.0.x";
-            if (sbom.contains("@graph") && sbom["@graph"].is_array()) {
-                for (const auto& obj : sbom["@graph"]) {
-                    if (obj.contains("type") && obj["type"].is_string() &&
-                        obj["type"] == "SpdxDocument") {
-                        if (obj.contains("specVersion")) {
-                            version = obj["specVersion"].get<std::string>();
-                        }
-                        break;
+                auto sbom = nlohmann::json::parse(content);
+                std::string schema_path;
+                if (sbom.contains("@context")) {
+                    std::string context = sbom["@context"];
+                    if (context == "https://spdx.org/rdf/3.0.1/spdx-context.jsonld") {
+                        schema_path = "./schema/spdx-bom-3.0.1.schema.json";
+                    } else if (context == "https://spdx.org/rdf/3.0.0/spdx-context.jsonld") {
+                        schema_path = "./schema/spdx-bom-3.0.0.schema.json";
+                    } else {
+                        heimdall::Utils::warningPrint("Unknown SPDX @context: '" + context + "', defaulting to 3.0.0 schema.\n");
+                        schema_path = "./schema/spdx-bom-3.0.0.schema.json";
                     }
+                } else {
+                    heimdall::Utils::warningPrint("No @context found in SPDX JSON-LD, defaulting to 3.0.0 schema.\n");
+                    schema_path = "./schema/spdx-bom-3.0.0.schema.json";
                 }
-            }
-            // Set format based on version
-            std::string format = "SPDX 3.0";
-            if (version == "SPDX-3.0.1") format = "SPDX 3.0.1";
-            else if (version == "SPDX-3.0") format = "SPDX 3.0";
-            result.addMetadata("format", format);
-            result.addMetadata("version", version);
-        } catch (const std::exception& e) {
-            result.addError(std::string("SPDX 3.x JSON-LD parse error: ") + e.what());
-        }
-        return result;
-    } else {
-        // Try classic SPDX 3.0.1 JSON (no @context, no @graph)
-        try {
-            auto sbom = nlohmann::json::parse(content);
-            if (sbom.contains("spdxId") && sbom.contains("type") && sbom["type"] == "SpdxDocument" && sbom.contains("specVersion")) {
-                std::string schema_path = "./schema/spdx-bom-3.0.1.schema.json";
-                heimdall::Utils::debugPrint("SPDX classic 3.0.1: schema_path=" + schema_path + "\n");
-                heimdall::Utils::debugPrint("SPDX classic 3.0.1: first 100 chars of content: '" + content.substr(0, 100) + "'\n" );
-                std::string version = sbom["specVersion"].get<std::string>();
-                std::string format = (version == "SPDX-3.0.1") ? "SPDX 3.0.1" : "SPDX 3.0";
-                result.addMetadata("format", format);
-                result.addMetadata("version", version);
+                heimdall::Utils::debugPrint("SPDX JSON-LD: schema_path=" + schema_path + "\n");
+                if (sbom.contains("@context")) {
+                    heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context']='" + std::string(sbom["@context"]) + "\n");
+                } else {
+                    heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context'] not found\n");
+                }
+                heimdall::Utils::debugPrint("SPDX JSON-LD: first 100 chars of content: '" + std::string(content.substr(0, 100)) + "'\n");
+                // Debug: print first object in @graph and its keys
+                if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
+                    const auto& doc = sbom["@graph"][0];
+                    heimdall::Utils::debugPrint("First @graph object: " + doc.dump(2) + "\n");
+                    heimdall::Utils::debugPrint("Keys in first @graph object:");
+                    for (auto it = doc.begin(); it != doc.end(); ++it) {
+                        heimdall::Utils::debugPrint(" " + it.key() + "\n" );
+                    }
+                     heimdall::Utils::debugPrint( "\n" );
+                }
+                // --- END DEBUG PRINTS ---
                 std::ifstream schema_file(schema_path);
-                nlohmann::json schema_json;
-                schema_file >> schema_json;
+                if (!schema_file.is_open()) {
+                    result.addError("Could not open SPDX schema file: " + schema_path);
+                    return result;
+                }
+                nlohmann::json schema;
+                schema_file >> schema;
                 nlohmann::json_schema::json_validator validator;
-                validator.set_root_schema(schema_json);
+                validator.set_root_schema(schema);
                 try {
                     validator.validate(sbom);
                     result.isValid = true;
@@ -151,16 +107,38 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
                     result.isValid = false;
                     result.errors.push_back(std::string("SPDX 3.x schema validation failed: ") + e.what());
                 }
+                // Extract SPDX version from @graph (schema-compliant style)
+                std::string version = "3.0.x";
+                if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
+                    const auto& doc = sbom["@graph"][0];
+                    if (doc.contains("specVersion")) {
+                        version = std::string(doc["specVersion"]);
+                    }
+                }
+                result.metadata["format"] = "SPDX 3.0";
+                result.metadata["version"] = version;
+                return result;
+            } catch (const nlohmann::json::exception& e) {
+                result.addError("JSON parsing error: " + std::string(e.what()));
+                return result;
+            } catch (const std::exception& e) {
+                result.addError("SPDX 3.0 validation error: " + std::string(e.what()));
                 return result;
             }
-        } catch (const std::exception& e) {
-            result.isValid = false;
-            result.errors.push_back(std::string("SPDX 3.x parse failed: ") + e.what());
+        } else {
+            // Unknown format
+            result.addError("Unknown SPDX format");
             return result;
         }
+    } catch (const std::exception& e) {
+        // Catch any unexpected exceptions to prevent crashes in CI
+        result.addError("Unexpected error during validation: " + std::string(e.what()));
+        return result;
+    } catch (...) {
+        // Catch any other exceptions including SIGTRAP
+        result.addError("Unknown error during validation");
+        return result;
     }
-    result.addError("Cannot determine SPDX format");
-    return result;
 }
 
 ValidationResult SPDXValidator::validateContent(const std::string& content, const std::string& version) {

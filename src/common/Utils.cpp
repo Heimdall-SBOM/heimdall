@@ -219,6 +219,9 @@ uint64_t getFileSize(const std::string& filePath) {
  * @return The SHA256 hash as a hexadecimal string
  */
 std::string getFileChecksum(const std::string& filePath) {
+    // Ensure OpenSSL is properly initialized (modern API)
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+    
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         return "";
@@ -228,7 +231,13 @@ std::string getFileChecksum(const std::string& filePath) {
     if (!mdctx) {
         return "";
     }
+    
     const EVP_MD* md = EVP_sha256();
+    if (!md) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+    
     if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1) {
         EVP_MD_CTX_free(mdctx);
         return "";
@@ -264,6 +273,9 @@ std::string getFileChecksum(const std::string& filePath) {
 }
 
 std::string getFileSHA1Checksum(const std::string& filePath) {
+    // Ensure OpenSSL is properly initialized (modern API)
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+    
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
         return "";
@@ -273,7 +285,13 @@ std::string getFileSHA1Checksum(const std::string& filePath) {
     if (!mdctx) {
         return "";
     }
+    
     const EVP_MD* md = EVP_sha1();
+    if (!md) {
+        EVP_MD_CTX_free(mdctx);
+        return "";
+    }
+    
     if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1) {
         EVP_MD_CTX_free(mdctx);
         return "";
