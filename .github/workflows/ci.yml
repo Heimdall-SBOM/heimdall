@@ -36,7 +36,7 @@ jobs:
   cpp11-gcc:
     name: C++11 GCC Build & Test
     runs-on: ubuntu-22.04
-    if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc'
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-gcc-cpp11
     strategy:
@@ -81,7 +81,7 @@ jobs:
   cpp11-clang:
     name: C++11 Clang Build & Test
     runs-on: ubuntu-22.04
-    if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang'
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-clang-cpp11
     strategy:
@@ -127,7 +127,7 @@ jobs:
   cpp23-gcc:
     name: C++23 GCC Build & Test
     runs-on: ubuntu-22.04
-    if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc'
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-gcc-cpp23
     strategy:
@@ -172,7 +172,7 @@ jobs:
   cpp23-clang:
     name: C++23 Clang Build & Test
     runs-on: ubuntu-22.04
-    if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang'
+    if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-clang-cpp23
     strategy:
@@ -306,7 +306,7 @@ jobs:
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [cpp11-gcc, cpp11-clang, cpp23-gcc, cpp23-clang]
+    needs: [cpp11-gcc, cpp11-clang, cpp23-gcc, cpp23-clang, coverage, examples]
     if: always()
     steps:
       - name: Checkout Repository
