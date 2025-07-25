@@ -136,7 +136,7 @@ jobs:
 
       - name: Build C++23 with GCC
         run: |
-          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean --tests
+          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
 
       - name: Run Unit Tests
         run: |
