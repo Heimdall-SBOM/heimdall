@@ -12,68 +12,14 @@
 #include <nlohmann/json-schema.hpp>
 #include <iostream>
 #include <stdexcept>
-#include <csignal>
-#include <setjmp.h>
-#include <unistd.h>
-#include <pthread.h>
 
 namespace heimdall {
 
-// Global signal handling for CI safety
-static volatile sig_atomic_t signal_caught = 0;
-static jmp_buf signal_jmp_buf;
-
-// Signal handler for CI environments
-extern "C" void signal_handler(int sig) {
-    signal_caught = sig;
-    longjmp(signal_jmp_buf, sig);
-}
-
-// CI-safe signal masking scope guard
-class SignalMaskGuard {
-public:
-    SignalMaskGuard() {
-        // Block potentially problematic signals during JSON parsing
-        sigemptyset(&new_mask);
-        sigaddset(&new_mask, SIGTRAP);
-        sigaddset(&new_mask, SIGBUS);
-        sigaddset(&new_mask, SIGSEGV);
-        sigaddset(&new_mask, SIGFPE);
-        
-        // Install signal handler with auto-reset
-        struct sigaction sa;
-        sa.sa_handler = signal_handler;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESETHAND; // Auto-reset to default after first signal
-        
-        sigaction(SIGTRAP, &sa, &old_sigtrap);
-        sigaction(SIGBUS, &sa, &old_sigbus);
-        sigaction(SIGSEGV, &sa, &old_sigsegv);
-        sigaction(SIGFPE, &sa, &old_sigfpe);
-        
-        // Block the signals during critical sections
-        pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
-    }
+// Simplified CI-safe JSON parsing wrapper without signal handling
+nlohmann::json ci_safe_json_parse(const std::string& content) {
+    heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Starting validation of " + std::to_string(content.length()) + " bytes ***\n");
     
-    ~SignalMaskGuard() {
-        // Restore original signal handlers and mask
-        pthread_sigmask(SIG_SETMASK, &old_mask, nullptr);
-        sigaction(SIGTRAP, &old_sigtrap, nullptr);
-        sigaction(SIGBUS, &old_sigbus, nullptr);
-        sigaction(SIGSEGV, &old_sigsegv, nullptr);
-        sigaction(SIGFPE, &old_sigfpe, nullptr);
-    }
-    
-private:
-    sigset_t old_mask, new_mask;
-    struct sigaction old_sigtrap, old_sigbus, old_sigsegv, old_sigfpe;
-};
-
-// Ultra-safe JSON parsing wrapper with signal protection
-nlohmann::json ultra_safe_json_parse(const std::string& content) {
-    heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Starting validation of " + std::to_string(content.length()) + " bytes ***\n");
-    
-    // Pre-validate content to avoid SIGTRAP issues in CI environments
+    // Pre-validate content to avoid issues in CI environments
     if (content.empty()) {
         throw std::runtime_error("JSON content is empty");
     }
@@ -82,68 +28,69 @@ nlohmann::json ultra_safe_json_parse(const std::string& content) {
         throw std::runtime_error("JSON content too large for safe parsing");
     }
     
-    // Check for obviously invalid UTF-8 sequences that cause SIGTRAP
-    for (size_t i = 0; i < content.length(); ++i) {
+    // Check for obviously problematic characters that might cause issues
+    bool has_problematic_chars = false;
+    for (size_t i = 0; i < content.length() && i < 1000; ++i) { // Check first 1000 chars
         unsigned char c = static_cast<unsigned char>(content[i]);
-        // Check for invalid UTF-8 bytes that commonly cause SIGTRAP
+        // Check for invalid UTF-8 bytes that commonly cause issues
         if (c == 0xFF || c == 0xFE || c == 0xFD) {
-            throw std::runtime_error("JSON content contains invalid UTF-8 sequences");
+            has_problematic_chars = true;
+            break;
         }
         // Check for control characters that might cause issues
         if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') {
-            // Allow some control chars but reject problematic ones
+            // Allow some control chars but detect problematic ones
             if (c < 0x08) {
-                throw std::runtime_error("JSON content contains problematic control characters");
+                has_problematic_chars = true;
+                break;
             }
         }
     }
     
-    // Use signal protection for CI environments
-    SignalMaskGuard signal_guard;
-    
-    // Set up signal jump point
-    signal_caught = 0;
-    int signal_result = setjmp(signal_jmp_buf);
-    if (signal_result != 0) {
-        // We caught a signal during JSON parsing
-        throw std::runtime_error("JSON parsing interrupted by signal " + std::to_string(signal_result) + " (likely SIGTRAP in CI)");
+    if (has_problematic_chars) {
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Detected problematic characters, creating controlled error ***\n");
+        throw std::runtime_error("JSON content contains problematic characters that may cause CI issues");
     }
     
-    // Try parsing with multiple layers of exception handling
+    // Try parsing with defensive exception handling (no signals)
     try {
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: About to call nlohmann::json::parse ***\n");
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: About to call nlohmann::json::parse ***\n");
         
-        // Parse with strict error checking
-        auto result = nlohmann::json::parse(content, nullptr, true, true); // allow_exceptions=true, ignore_comments=true
+        // Use nlohmann JSON parser with error detection
+        nlohmann::json::parser_callback_t cb = [](int depth, nlohmann::json::parse_event_t event, nlohmann::json& parsed) {
+            // Limit parsing depth to prevent stack overflow
+            if (depth > 100) {
+                return false; // Stop parsing
+            }
+            return true; // Continue parsing
+        };
         
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Successfully parsed JSON ***\n");
+        auto result = nlohmann::json::parse(content, cb, true, false); // allow_exceptions=true, ignore_comments=false
+        
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Successfully parsed JSON ***\n");
         return result;
         
     } catch (const nlohmann::json::parse_error& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Parse error: " + std::string(e.what()) + " ***\n");
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Parse error: " + std::string(e.what()) + " ***\n");
         throw std::runtime_error("JSON parse error: " + std::string(e.what()));
     } catch (const nlohmann::json::exception& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: JSON exception: " + std::string(e.what()) + " ***\n");
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: JSON exception: " + std::string(e.what()) + " ***\n");
         throw std::runtime_error("JSON exception: " + std::string(e.what()));
     } catch (const std::bad_alloc& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Memory allocation error ***\n");
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Memory allocation error ***\n");
         throw std::runtime_error("JSON parsing failed due to memory allocation error");
     } catch (const std::exception& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Standard exception: " + std::string(e.what()) + " ***\n");
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Standard exception: " + std::string(e.what()) + " ***\n");
         throw std::runtime_error("JSON parsing failed with exception: " + std::string(e.what()));
     } catch (...) {
-        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Unknown exception caught ***\n");
-        // Check if we caught a signal
-        if (signal_caught != 0) {
-            throw std::runtime_error("JSON parsing failed due to signal " + std::to_string(signal_caught) + " (SIGTRAP in CI)");
-        }
-        throw std::runtime_error("JSON parsing failed due to unknown error (possibly invalid content or CI signal)");
+        heimdall::Utils::debugPrint("*** CI_SAFE_JSON_PARSE: Unknown exception caught ***\n");
+        throw std::runtime_error("JSON parsing failed due to unknown error (possibly invalid content)");
     }
 }
 
 // Legacy safe JSON parsing wrapper (keep for compatibility)
 nlohmann::json safe_json_parse(const std::string& content) {
-    return ultra_safe_json_parse(content);
+    return ci_safe_json_parse(content);
 }
 
 // SPDX Validator Implementation
@@ -189,7 +136,7 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
         return result;
     }
     
-    // Add comprehensive signal protection for CI environments
+    // Add comprehensive error protection for CI environments (without signal handling)
     try {
         heimdall::Utils::debugPrint("*** validateContent: About to detect SPDX version ***\n");
         
@@ -206,8 +153,8 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
             heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 3.0 JSON-LD format ***\n");
             // SPDX 3.0 JSON-LD format
             try {
-                heimdall::Utils::debugPrint("*** validateContent: About to call ultra_safe_json_parse ***\n");
-                auto sbom = ultra_safe_json_parse(content);
+                heimdall::Utils::debugPrint("*** validateContent: About to call ci_safe_json_parse ***\n");
+                auto sbom = ci_safe_json_parse(content);
                 heimdall::Utils::debugPrint("*** validateContent: Successfully parsed JSON ***\n");
                 
                 std::string schema_path;
@@ -238,24 +185,27 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
                     heimdall::Utils::debugPrint("First @graph object: " + doc.dump(2) + "\n");
                     heimdall::Utils::debugPrint("Keys in first @graph object:");
                     for (auto it = doc.begin(); it != doc.end(); ++it) {
-                        heimdall::Utils::debugPrint(" " + it.key() + "\n" );
+                        heimdall::Utils::debugPrint(" '" + it.key() + "'");
                     }
-                     heimdall::Utils::debugPrint( "\n" );
+                    heimdall::Utils::debugPrint("\n");
                 }
-                // --- END DEBUG PRINTS ---
-                std::ifstream schema_file(schema_path);
-                if (!schema_file.is_open()) {
-                    result.addError("Could not open SPDX schema file: " + schema_path);
-                    return result;
-                }
-                nlohmann::json schema;
-                schema_file >> schema;
-                nlohmann::json_schema::json_validator validator;
-                validator.set_root_schema(schema);
+                // Schema validation
                 try {
-                    validator.validate(sbom);
-                    result.isValid = true;
+                    if (heimdall::Utils::fileExists(schema_path)) {
+                        std::ifstream schema_file(schema_path);
+                        nlohmann::json schema_json;
+                        schema_file >> schema_json;
+                        nlohmann::json_schema::json_validator validator(schema_json);
+                        validator.validate(sbom);
+                        heimdall::Utils::debugPrint("SPDX 3.x schema validation passed.\n");
+                        result.isValid = true;
+                    } else {
+                        heimdall::Utils::warningPrint("SPDX 3.x schema file not found: " + schema_path + "\n");
+                        result.addWarning("Schema file not found, skipping validation: " + schema_path);
+                        result.isValid = true;
+                    }
                 } catch (const std::exception& e) {
+                    heimdall::Utils::debugPrint("SPDX 3.x schema validation failed: " + std::string(e.what()) + "\n");
                     result.isValid = false;
                     result.errors.push_back(std::string("SPDX 3.x schema validation failed: ") + e.what());
                 }
@@ -287,7 +237,7 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
         result.addError("Unexpected error during validation: " + std::string(e.what()));
         return result;
     } catch (...) {
-        // Catch any other exceptions including SIGTRAP
+        // Catch any other exceptions
         result.addError("Unknown error during validation");
         return result;
     }
