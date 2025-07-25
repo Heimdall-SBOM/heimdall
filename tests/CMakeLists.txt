@@ -13,6 +13,18 @@ if(NOT GTest_FOUND)
     )
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
+    
+    # Fix RPATH for macOS to ensure dynamic libraries are found
+    if(APPLE)
+        set_target_properties(gtest PROPERTIES
+            INSTALL_RPATH "@loader_path/../lib"
+            BUILD_WITH_INSTALL_RPATH TRUE
+        )
+        set_target_properties(gtest_main PROPERTIES
+            INSTALL_RPATH "@loader_path/../lib"
+            BUILD_WITH_INSTALL_RPATH TRUE
+        )
+    endif()
 endif()
 
 find_package(OpenSSL REQUIRED)
@@ -91,6 +103,23 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
     )
+    
+    # Fix RPATH for macOS to find Google Test dynamic libraries
+    if(APPLE)
+        # Get the directory where GTest libraries are located
+        if(GTest_FOUND AND TARGET GTest::gtest)
+            get_target_property(GTEST_LOCATION GTest::gtest LOCATION)
+            get_filename_component(GTEST_LIB_DIR "${GTEST_LOCATION}" DIRECTORY)
+        else()
+            set(GTEST_LIB_DIR "@loader_path/../lib")
+        endif()
+        
+        set_target_properties(heimdall-tests PROPERTIES
+            INSTALL_RPATH "@executable_path;@executable_path/../lib;@loader_path;@loader_path/../lib;${GTEST_LIB_DIR}"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            MACOSX_RPATH TRUE
+        )
+    endif()
 
     # Include directories
     target_include_directories(heimdall-tests PRIVATE

@@ -11,8 +11,71 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json-schema.hpp>
 #include <iostream>
+#include <csignal>
+#include <csetjmp>
+#include <stdexcept>
 
 namespace heimdall {
+
+// Signal handling for CI environments to prevent SIGTRAP crashes
+thread_local jmp_buf json_parse_jmp_buf;
+thread_local bool signal_handler_active = false;
+
+static void sigtrap_handler(int sig) {
+    if (signal_handler_active && sig == SIGTRAP) {
+        heimdall::Utils::debugPrint("Caught SIGTRAP during JSON parsing, converting to exception\n");
+        longjmp(json_parse_jmp_buf, 1);
+    }
+}
+
+// Safe JSON parsing wrapper that handles SIGTRAP signals
+nlohmann::json safe_json_parse(const std::string& content) {
+    // Set up signal handler for SIGTRAP
+    struct sigaction old_action;
+    struct sigaction new_action;
+    new_action.sa_handler = sigtrap_handler;
+    sigemptyset(&new_action.sa_mask);
+    new_action.sa_flags = 0;
+    
+    bool handler_installed = (sigaction(SIGTRAP, &new_action, &old_action) == 0);
+    signal_handler_active = true;
+    
+    nlohmann::json result;
+    bool parse_successful = false;
+    
+    if (setjmp(json_parse_jmp_buf) == 0) {
+        // Normal execution path
+        try {
+            result = nlohmann::json::parse(content);
+            parse_successful = true;
+        } catch (const nlohmann::json::exception& e) {
+            signal_handler_active = false;
+            if (handler_installed) {
+                sigaction(SIGTRAP, &old_action, nullptr);
+            }
+            throw; // Re-throw JSON parsing exceptions normally
+        }
+    } else {
+        // Signal handler jumped here due to SIGTRAP
+        signal_handler_active = false;
+        if (handler_installed) {
+            sigaction(SIGTRAP, &old_action, nullptr);
+        }
+        throw std::runtime_error("JSON parsing failed due to signal (likely invalid UTF-8 or malformed content)");
+    }
+    
+    // Clean up signal handler
+    signal_handler_active = false;
+    if (handler_installed) {
+        sigaction(SIGTRAP, &old_action, nullptr);
+    }
+    
+    if (!parse_successful) {
+        throw std::runtime_error("JSON parsing failed for unknown reason");
+    }
+    
+    return result;
+}
 
 // SPDX Validator Implementation
 
@@ -57,7 +120,7 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
         } else if (content.find("@context") != std::string::npos && content.find("@graph") != std::string::npos) {
             // SPDX 3.0 JSON-LD format
             try {
-                auto sbom = nlohmann::json::parse(content);
+                auto sbom = safe_json_parse(content);
                 std::string schema_path;
                 if (sbom.contains("@context")) {
                     std::string context = sbom["@context"];
@@ -228,7 +291,7 @@ ValidationResult SPDXValidator::validateSPDX2_3(const std::string& content) {
 ValidationResult SPDXValidator::validateSPDX3_0(const std::string& content) {
     ValidationResult result;
     try {
-        nlohmann::json sbom = nlohmann::json::parse(content);
+        nlohmann::json sbom = safe_json_parse(content);
         std::string version = "3.0";
         
         // Check for specVersion in the @graph array (JSON-LD format)

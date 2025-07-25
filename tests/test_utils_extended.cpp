@@ -21,6 +21,7 @@ limitations under the License.
 #include <sstream>
 #include <openssl/ssl.h>
 #include <openssl/evp.h>
+#include <openssl/crypto.h>
 #include "common/Utils.hpp"
 #include "test_utils.hpp"
 
@@ -30,19 +31,11 @@ class UtilsExtendedTest : public ::testing::Test {
 protected:
     void SetUp() override {
         
-        // Initialize OpenSSL for CI environments with more robust initialization
-        SSL_library_init();
-        
-        OpenSSL_add_all_algorithms();
-        
-        OpenSSL_add_all_ciphers();
-        
-        OpenSSL_add_all_digests();
-        
-        // Additional initialization for CI environments
-        SSL_load_error_strings();
-        
-        ERR_load_CRYPTO_strings();
+        // Initialize OpenSSL for CI environments using modern API
+        // This ensures consistent behavior across different OpenSSL versions and platforms
+        OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | 
+                           OPENSSL_INIT_ADD_ALL_CIPHERS | 
+                           OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
         
         // Ensure OpenSSL is properly initialized
         if (!EVP_MD_CTX_new()) {
@@ -134,18 +127,10 @@ TEST_F(UtilsExtendedTest, GetFileSize) {
 
 TEST_F(UtilsExtendedTest, GetFileChecksum) {
     
-    // Ensure OpenSSL is properly initialized for this test
-    SSL_library_init();
-    
-    OpenSSL_add_all_algorithms();
-    
-    OpenSSL_add_all_ciphers();
-    
-    OpenSSL_add_all_digests();
-    
-    SSL_load_error_strings();
-    
-    ERR_load_CRYPTO_strings();
+    // Ensure OpenSSL is properly initialized for this test using modern API
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | 
+                       OPENSSL_INIT_ADD_ALL_CIPHERS | 
+                       OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     
     
     std::string checksum = heimdall::Utils::getFileChecksum(test_file.string());
@@ -155,13 +140,10 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
 
     // Same file should have same checksum
     
-    // Re-initialize OpenSSL to prevent state corruption in CI
-    SSL_library_init();
-    OpenSSL_add_all_algorithms();
-    OpenSSL_add_all_ciphers();
-    OpenSSL_add_all_digests();
-    SSL_load_error_strings();
-    ERR_load_CRYPTO_strings();
+    // Re-initialize OpenSSL to prevent state corruption in CI using modern API
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | 
+                       OPENSSL_INIT_ADD_ALL_CIPHERS | 
+                       OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     
     std::string checksum2 = heimdall::Utils::getFileChecksum(test_file.string());
     
@@ -199,13 +181,10 @@ TEST_F(UtilsExtendedTest, GetFileChecksum) {
 
     // Different files should have different checksums
     
-    // Re-initialize OpenSSL before large file test
-    SSL_library_init();
-    OpenSSL_add_all_algorithms();
-    OpenSSL_add_all_ciphers();
-    OpenSSL_add_all_digests();
-    SSL_load_error_strings();
-    ERR_load_CRYPTO_strings();
+    // Re-initialize OpenSSL before large file test using modern API
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | 
+                       OPENSSL_INIT_ADD_ALL_CIPHERS | 
+                       OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     
     std::string large_checksum = heimdall::Utils::getFileChecksum(large_file.string());
     
@@ -277,31 +256,21 @@ TEST_F(UtilsExtendedTest, FileTypeDetection) {
 
 TEST_F(UtilsExtendedTest, CalculateSHA256) {
     
-    // Ensure OpenSSL is properly initialized for this test
-    SSL_library_init();
-    
-    OpenSSL_add_all_algorithms();
-    
-    OpenSSL_add_all_ciphers();
-    
-    OpenSSL_add_all_digests();
-    
-    SSL_load_error_strings();
-    
-    ERR_load_CRYPTO_strings();
-    
+    // Ensure OpenSSL is properly initialized for this test using modern API
+    // This matches the initialization used in Utils.cpp getFileChecksum
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | 
+                       OPENSSL_INIT_ADD_ALL_CIPHERS | 
+                       OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     
     // Should be same as getFileChecksum
     std::string checksum1 = heimdall::Utils::getFileChecksum(test_file.string());
     
     
     // Re-initialize OpenSSL before calculateSHA256 call to prevent state corruption
-    SSL_library_init();
-    OpenSSL_add_all_algorithms();
-    OpenSSL_add_all_ciphers();
-    OpenSSL_add_all_digests();
-    SSL_load_error_strings();
-    ERR_load_CRYPTO_strings();
+    // Use the same modern API for consistent behavior across platforms
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | 
+                       OPENSSL_INIT_ADD_ALL_CIPHERS | 
+                       OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     
     std::string checksum2 = heimdall::Utils::calculateSHA256(test_file.string());
     
