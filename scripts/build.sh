@@ -49,7 +49,7 @@ show_usage() {
     echo "Options:"
     echo "  --standard <version>    C++ standard to build (11, 14, 17, 20, 23)"
     echo "  --compiler <name>       Compiler to use (gcc, clang). Default: gcc"
-    echo "  --build-dir <dir>       Build directory (default: build-cpp<standard>)"
+    echo "  --build-dir <dir>       Build directory (default: build-<compiler>-cpp<standard>)"
     echo "  --clean                 Clean build directory before building"
     echo "  --tests                 Run tests after building"
     echo "  --sboms                 Generate SBOMs after building"
@@ -60,10 +60,10 @@ show_usage() {
     echo "  --help                  Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 --standard 17 --compiler clang           # Build C++17 with Clang"
-    echo "  $0 --standard 20 --compiler gcc --all       # Build C++20 with GCC, tests, and SBOMs"
-    echo "  $0 --standard 17 --clean --tests            # Clean build C++17 with tests (default: gcc)"
-    echo "  $0 --standard 17 --examples                 # Build C++17 with examples"
+echo "  $0 --standard 17 --compiler clang           # Build C++17 with Clang (build-clang-cpp17)"
+echo "  $0 --standard 20 --compiler gcc --all       # Build C++20 with GCC, tests, and SBOMs (build-gcc-cpp20)"
+echo "  $0 --standard 17 --clean --tests            # Clean build C++17 with tests (default: gcc, build-gcc-cpp17)"
+echo "  $0 --standard 17 --examples                 # Build C++17 with examples (examples/*/build-gcc-cpp17/)"
     echo ""
     echo "Available standards: 11, 14, 17, 20, 23"
 }
@@ -153,7 +153,7 @@ esac
 
 # Set default build directory if not specified
 if [ -z "$BUILD_DIR" ]; then
-    BUILD_DIR="build-cpp${STANDARD}"
+    BUILD_DIR="build-${COMPILER}-cpp${STANDARD}"
 fi
 
 print_status "Building Heimdall with C++${STANDARD} using ${COMPILER}"
@@ -285,7 +285,7 @@ fi
 
 # Build examples if requested
 if [ "$EXAMPLES" = true ]; then
-    print_status "Building examples..."
+    print_status "Building examples as standalone projects..."
 
     # Save the absolute path to the build directory
     BUILD_DIR_ABS="$(pwd)"
@@ -293,26 +293,57 @@ if [ "$EXAMPLES" = true ]; then
     # Go back to project root to find standalone examples
     cd ../..
 
+    # Define examples that are built as part of the main build (should be skipped)
+    MAIN_BUILD_EXAMPLES=(
+        "openssl_pthread_demo"
+    )
+
     # Find all example directories with CMakeLists.txt
     for example_dir in examples/*/; do
         if [ -d "$example_dir" ] && [ -f "${example_dir}CMakeLists.txt" ]; then
-            print_status "Building example: $example_dir"
+            # Extract example name from directory path
+            example_name=$(basename "$example_dir")
+            
+            # Skip examples that are built as part of the main build
+            skip_example=false
+            for main_example in "${MAIN_BUILD_EXAMPLES[@]}"; do
+                if [ "$example_name" = "$main_example" ]; then
+                    print_status "Skipping example built as part of main build: $example_dir"
+                    skip_example=true
+                    break
+                fi
+            done
+            
+            if [ "$skip_example" = true ]; then
+                continue
+            fi
+
+            print_status "Building standalone example: $example_dir"
             cd "$example_dir"
 
-            # Create build directory
-            mkdir -p build
-            cd build
+            # Create build directory with new naming convention
+            EXAMPLE_BUILD_DIR="build-${COMPILER}-cpp${STANDARD}"
+            mkdir -p "$EXAMPLE_BUILD_DIR"
+            cd "$EXAMPLE_BUILD_DIR"
 
+            # Configure with CMake, passing the main build directory for finding Heimdall
+            CMAKE_OPTS="-DCMAKE_CXX_STANDARD=${STANDARD} -DCMAKE_CXX_STANDARD_REQUIRED=ON"
+            CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX"
+            
+            # Add Heimdall build directory and source directory to help find libraries and headers
+            CMAKE_OPTS="$CMAKE_OPTS -DHEIMDALL_BUILD_DIR=${BUILD_DIR_ABS}"
+            CMAKE_OPTS="$CMAKE_OPTS -DHEIMDALL_SOURCE_DIR=${BUILD_DIR_ABS}/.."
+            
             # Configure and build
-            cmake ..
+            cmake .. $CMAKE_OPTS
             make -j$JOBS
 
-            print_success "Built example: $example_dir"
+            print_success "Built standalone example: $example_dir (in $EXAMPLE_BUILD_DIR)"
             cd ../..
         fi
     done
 
-    print_success "All examples built successfully!"
+    print_success "All standalone examples built successfully!"
     # Go back to original build directory
     cd "$BUILD_DIR_ABS"
 fi
