@@ -219,6 +219,9 @@ uint64_t getFileSize(const std::string& filePath) {
  * @return The SHA256 hash as a hexadecimal string
  */
 std::string getFileChecksum(const std::string& filePath) {
+    // COMPILATION VERIFICATION: This should appear if getFileChecksum is called
+    debugPrint("*** CHECKSUM: getFileChecksum called with file: " + filePath + " ***\n");
+    
     // Ensure OpenSSL is properly initialized (modern API)
     OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     

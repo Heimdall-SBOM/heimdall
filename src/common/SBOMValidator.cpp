@@ -17,6 +17,9 @@ namespace heimdall {
 
 // Safe JSON parsing wrapper that validates content before parsing
 nlohmann::json safe_json_parse(const std::string& content) {
+    // COMPILATION VERIFICATION: This should appear if safe_json_parse is called
+    heimdall::Utils::debugPrint("*** SAFE_JSON_PARSE: Starting validation of " + std::to_string(content.length()) + " bytes ***\n");
+    
     // Pre-validate content to avoid SIGTRAP issues in CI environments
     if (content.empty()) {
         throw std::runtime_error("JSON content is empty");
@@ -80,6 +83,9 @@ ValidationResult SPDXValidator::validate(const std::string& filePath, const std:
 
 ValidationResult SPDXValidator::validateContent(const std::string& content) {
     ValidationResult result;
+    
+    // COMPILATION VERIFICATION: This message should appear if our code is compiled
+    heimdall::Utils::debugPrint("*** COMPILATION CHECK: validateContent called with " + std::to_string(content.length()) + " bytes ***\n");
     
     // Add signal protection for CI environments
     try {
