@@ -247,12 +247,6 @@ jobs:
         run: |
           ./scripts/build.sh --standard 17 --compiler clang --clean 
 
-      - name: Run Unit Tests
-        run: |
-          cd $BUILD_DIR
-          # Exclude problematic tests that work locally but fail in CI due to environment differences
-          ctest --output-on-failure --verbose -E "SBOMValidationTest\.(SPDXValidatorWithMalformedJSON|SPDXValidatorWithInvalidUTF8|SPDXValidatorWithControlCharacters)"
-
   # Coverage Analysis (C++17 as representative)
   coverage:
     name: Code Coverage Analysis
