@@ -12,17 +12,74 @@
 #include <nlohmann/json-schema.hpp>
 #include <iostream>
 #include <stdexcept>
+#include <csignal>
+#include <setjmp.h>
+#include <unistd.h>
+#include <pthread.h>
 
 namespace heimdall {
 
-// Safe JSON parsing wrapper that validates content before parsing
-nlohmann::json safe_json_parse(const std::string& content) {
-    // COMPILATION VERIFICATION: This should appear if safe_json_parse is called
-    heimdall::Utils::debugPrint("*** SAFE_JSON_PARSE: Starting validation of " + std::to_string(content.length()) + " bytes ***\n");
+// Global signal handling for CI safety
+static volatile sig_atomic_t signal_caught = 0;
+static jmp_buf signal_jmp_buf;
+
+// Signal handler for CI environments
+extern "C" void signal_handler(int sig) {
+    signal_caught = sig;
+    longjmp(signal_jmp_buf, sig);
+}
+
+// CI-safe signal masking scope guard
+class SignalMaskGuard {
+public:
+    SignalMaskGuard() {
+        // Block potentially problematic signals during JSON parsing
+        sigemptyset(&new_mask);
+        sigaddset(&new_mask, SIGTRAP);
+        sigaddset(&new_mask, SIGBUS);
+        sigaddset(&new_mask, SIGSEGV);
+        sigaddset(&new_mask, SIGFPE);
+        
+        // Install signal handler with auto-reset
+        struct sigaction sa;
+        sa.sa_handler = signal_handler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESETHAND; // Auto-reset to default after first signal
+        
+        sigaction(SIGTRAP, &sa, &old_sigtrap);
+        sigaction(SIGBUS, &sa, &old_sigbus);
+        sigaction(SIGSEGV, &sa, &old_sigsegv);
+        sigaction(SIGFPE, &sa, &old_sigfpe);
+        
+        // Block the signals during critical sections
+        pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask);
+    }
+    
+    ~SignalMaskGuard() {
+        // Restore original signal handlers and mask
+        pthread_sigmask(SIG_SETMASK, &old_mask, nullptr);
+        sigaction(SIGTRAP, &old_sigtrap, nullptr);
+        sigaction(SIGBUS, &old_sigbus, nullptr);
+        sigaction(SIGSEGV, &old_sigsegv, nullptr);
+        sigaction(SIGFPE, &old_sigfpe, nullptr);
+    }
+    
+private:
+    sigset_t old_mask, new_mask;
+    struct sigaction old_sigtrap, old_sigbus, old_sigsegv, old_sigfpe;
+};
+
+// Ultra-safe JSON parsing wrapper with signal protection
+nlohmann::json ultra_safe_json_parse(const std::string& content) {
+    heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Starting validation of " + std::to_string(content.length()) + " bytes ***\n");
     
     // Pre-validate content to avoid SIGTRAP issues in CI environments
     if (content.empty()) {
         throw std::runtime_error("JSON content is empty");
+    }
+    
+    if (content.length() > 1000000) { // 1MB limit for safety
+        throw std::runtime_error("JSON content too large for safe parsing");
     }
     
     // Check for obviously invalid UTF-8 sequences that cause SIGTRAP
@@ -41,16 +98,52 @@ nlohmann::json safe_json_parse(const std::string& content) {
         }
     }
     
-    // Try parsing with proper exception handling
-    try {
-        return nlohmann::json::parse(content);
-    } catch (const nlohmann::json::exception& e) {
-        // Convert JSON parsing errors to more descriptive errors
-        throw std::runtime_error("JSON parsing failed: " + std::string(e.what()));
-    } catch (...) {
-        // Catch any other exceptions (including potential SIGTRAP-related issues)
-        throw std::runtime_error("JSON parsing failed due to unknown error (possibly invalid content)");
+    // Use signal protection for CI environments
+    SignalMaskGuard signal_guard;
+    
+    // Set up signal jump point
+    signal_caught = 0;
+    int signal_result = setjmp(signal_jmp_buf);
+    if (signal_result != 0) {
+        // We caught a signal during JSON parsing
+        throw std::runtime_error("JSON parsing interrupted by signal " + std::to_string(signal_result) + " (likely SIGTRAP in CI)");
     }
+    
+    // Try parsing with multiple layers of exception handling
+    try {
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: About to call nlohmann::json::parse ***\n");
+        
+        // Parse with strict error checking
+        auto result = nlohmann::json::parse(content, nullptr, true, true); // allow_exceptions=true, ignore_comments=true
+        
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Successfully parsed JSON ***\n");
+        return result;
+        
+    } catch (const nlohmann::json::parse_error& e) {
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Parse error: " + std::string(e.what()) + " ***\n");
+        throw std::runtime_error("JSON parse error: " + std::string(e.what()));
+    } catch (const nlohmann::json::exception& e) {
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: JSON exception: " + std::string(e.what()) + " ***\n");
+        throw std::runtime_error("JSON exception: " + std::string(e.what()));
+    } catch (const std::bad_alloc& e) {
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Memory allocation error ***\n");
+        throw std::runtime_error("JSON parsing failed due to memory allocation error");
+    } catch (const std::exception& e) {
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Standard exception: " + std::string(e.what()) + " ***\n");
+        throw std::runtime_error("JSON parsing failed with exception: " + std::string(e.what()));
+    } catch (...) {
+        heimdall::Utils::debugPrint("*** ULTRA_SAFE_JSON_PARSE: Unknown exception caught ***\n");
+        // Check if we caught a signal
+        if (signal_caught != 0) {
+            throw std::runtime_error("JSON parsing failed due to signal " + std::to_string(signal_caught) + " (SIGTRAP in CI)");
+        }
+        throw std::runtime_error("JSON parsing failed due to unknown error (possibly invalid content or CI signal)");
+    }
+}
+
+// Legacy safe JSON parsing wrapper (keep for compatibility)
+nlohmann::json safe_json_parse(const std::string& content) {
+    return ultra_safe_json_parse(content);
 }
 
 // SPDX Validator Implementation
@@ -86,20 +179,37 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
     
     // COMPILATION VERIFICATION: This message should appear if our code is compiled
     heimdall::Utils::debugPrint("*** COMPILATION CHECK: validateContent called with " + std::to_string(content.length()) + " bytes ***\n");
+    std::cerr << "*** STDERR DEBUG: validateContent called with " << content.length() << " bytes ***" << std::endl;
+    std::cout << "*** STDOUT DEBUG: validateContent called with " << content.length() << " bytes ***" << std::endl;
     
-    // Add signal protection for CI environments
+    // Immediate safety check for CI environments
+    if (content.empty()) {
+        heimdall::Utils::debugPrint("*** validateContent: Content is empty ***\n");
+        result.addError("Content is empty");
+        return result;
+    }
+    
+    // Add comprehensive signal protection for CI environments
     try {
-        // Detect SPDX version
+        heimdall::Utils::debugPrint("*** validateContent: About to detect SPDX version ***\n");
+        
+        // Detect SPDX version with safety checks
         if (content.find("SPDXVersion:") != std::string::npos) {
+            heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 2.3 tag-value format ***\n");
             // SPDX 2.3 tag-value format
             return validateSPDX2_3(content);
         } else if (content.find("\"spdxVersion\"") != std::string::npos) {
+            heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 3.0 classic JSON format ***\n");
             // SPDX 3.0 classic JSON format
             return validateSPDX3_0(content);
         } else if (content.find("@context") != std::string::npos && content.find("@graph") != std::string::npos) {
+            heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 3.0 JSON-LD format ***\n");
             // SPDX 3.0 JSON-LD format
             try {
-                auto sbom = safe_json_parse(content);
+                heimdall::Utils::debugPrint("*** validateContent: About to call ultra_safe_json_parse ***\n");
+                auto sbom = ultra_safe_json_parse(content);
+                heimdall::Utils::debugPrint("*** validateContent: Successfully parsed JSON ***\n");
+                
                 std::string schema_path;
                 if (sbom.contains("@context")) {
                     std::string context = sbom["@context"];

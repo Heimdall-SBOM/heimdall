@@ -22,6 +22,10 @@ echo "Installing required dependencies..."
 echo "Installing LLVM..."
 brew install llvm@18 llvm
 
+ # Install LLD separately (in case it's not included in LLVM)
+echo "Installing LLD..."
+brew install lld
+
 # Install GCC (optional, for testing)
 echo "Installing GCC..."
 brew install gcc
