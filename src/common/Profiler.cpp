@@ -9,6 +9,10 @@ std::mutex heimdall::Profiler::instance_mutex_;
 
 #ifdef _WIN32
 #include <psapi.h>
+#elif defined(__APPLE__)
+#include <unistd.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
 #else
 #include <unistd.h>
 #include <sys/sysinfo.h>
@@ -59,6 +63,13 @@ size_t get_system_total_memory() {
         return memInfo.ullTotalPhys;
     }
     return 0;
+#elif defined(__APPLE__)
+    uint64_t total_memory;
+    size_t len = sizeof(total_memory);
+    if (sysctlbyname("hw.memsize", &total_memory, &len, NULL, 0) == 0) {
+        return static_cast<size_t>(total_memory);
+    }
+    return 0;
 #else
     struct sysinfo si;
     if (sysinfo(&si) == 0) {
@@ -77,6 +88,14 @@ size_t get_system_available_memory() {
     memInfo.dwLength = sizeof(MEMORYSTATUSEX);
     if (GlobalMemoryStatusEx(&memInfo)) {
         return memInfo.ullAvailPhys;
+    }
+    return 0;
+#elif defined(__APPLE__)
+    vm_statistics64_data_t vm_stats;
+    mach_msg_type_number_t info_count = HOST_VM_INFO64_COUNT;
+    host_t host = mach_host_self();
+    if (host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stats, &info_count) == KERN_SUCCESS) {
+        return static_cast<size_t>(vm_stats.free_count * vm_page_size);
     }
     return 0;
 #else

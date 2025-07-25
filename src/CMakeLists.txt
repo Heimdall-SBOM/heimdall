@@ -57,10 +57,11 @@ target_include_directories(heimdall-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${OPENSSL_INCLUDE_DIR}
+    ${LLVM_INCLUDE_DIRS}
 )
 
 target_link_libraries(heimdall-core PUBLIC
-    LLVM-19
+    ${LLVM_LIBRARIES}
     ${ELF_LIBRARY}
     ${OPENSSL_LIBRARIES}
 )

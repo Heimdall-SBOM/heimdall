@@ -33,7 +33,8 @@ limitations under the License.
 #include <vector>
 #include <cstdint>
 
-namespace heimdall::Utils {
+namespace heimdall {
+namespace Utils {
 
 /**
  * @brief Extract the filename from a file path
@@ -328,4 +329,5 @@ std::string detectLicenseFromPath(const std::string& filePath);
  */
 std::string generateUUID();
 
-}  // namespace heimdall::Utils
+}  // namespace Utils
+}  // namespace heimdall

@@ -170,55 +170,23 @@ fi
 
 eval "$LLVM_ENV"
 
-# Compiler selection logic
+# Check compiler compatibility
+print_status "Checking compiler compatibility for C++${STANDARD}..."
 if [ "$COMPILER" = "clang" ]; then
-    if ! command -v clang >/dev/null 2>&1 || ! command -v clang++ >/dev/null 2>&1; then
-        print_error "Clang not found in PATH. Please install clang and clang++."
-        exit 1
-    fi
-    export CC=clang
-    export CXX=clang++
-    print_status "Using Clang: $(clang --version | head -n1)"
+    # Force Clang selection
+    COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD" clang)
 else
-    # For GCC, check what's available and guide the user
-    print_status "Checking GCC compatibility for C++${STANDARD}..."
-    
-    # Check if we have a compatible GCC version in PATH
-    gcc_version=$(gcc --version | head -n1 | cut -d' ' -f3)
-    gcc_major=$(echo "$gcc_version" | cut -d'.' -f1)
-    
-    # Check if we need SCL for this C++ standard
-    needs_scl=false
-    required_gcc_major=0
-    
-    case $STANDARD in
-        11) required_gcc_major=4 ;;
-        14) required_gcc_major=6 ;;
-        17) required_gcc_major=7 ;;
-        20|23) required_gcc_major=13 ;;
-    esac
-    
-    if [ "$gcc_major" -lt "$required_gcc_major" ]; then
-        needs_scl=true
-    fi
-    
-    if [ "$needs_scl" = true ]; then
-        print_error "Your system GCC version ($gcc_version) is not compatible with C++${STANDARD}."
-        print_error "C++${STANDARD} requires GCC ${required_gcc_major}+."
-        print_error ""
-        print_error "To build with GCC, please activate an SCL toolset first:"
-        print_error "  scl enable gcc-toolset-14 bash"
-        print_error "  ./scripts/build.sh --standard ${STANDARD} --compiler gcc --tests"
-        print_error ""
-        print_error "Or use Clang instead:"
-        print_error "  ./scripts/build.sh --standard ${STANDARD} --compiler clang --tests"
-        exit 1
-    else
-        export CC=gcc
-        export CXX=g++
-        print_status "Using system GCC: $gcc_version"
-    fi
+    # Use default selection (prefers GCC)
+    COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD")
 fi
+
+if [ $? -ne 0 ] || [ -z "$COMPILER_ENV" ]; then
+    print_error "No compatible compiler found for C++${STANDARD}"
+    print_error "Run './scripts/show_build_compatibility.sh' for installation guidance"
+    exit 1
+fi
+
+eval "$COMPILER_ENV"
 
 # Clean build directory if requested
 if [ "$CLEAN" = true ]; then

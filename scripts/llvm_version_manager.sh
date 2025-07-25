@@ -33,11 +33,52 @@ detect_llvm_versions() {
     local versions=()
     local found_versioned=0
     
+    # On macOS, check for Homebrew LLVM installations first
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # Check for Homebrew LLVM installations
+        if [ -x "/opt/homebrew/opt/llvm/bin/llvm-config" ]; then
+            local llvm_version=$("/opt/homebrew/opt/llvm/bin/llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
+                versions+=("homebrew-llvm:${llvm_version}")
+                found_versioned=1
+            fi
+        fi
+        
+        if [ -x "/opt/homebrew/opt/llvm@18/bin/llvm-config" ]; then
+            local llvm_version=$("/opt/homebrew/opt/llvm@18/bin/llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
+                versions+=("homebrew-llvm18:${llvm_version}")
+                found_versioned=1
+            fi
+        fi
+        
+        # Also check for Intel Mac Homebrew paths
+        if [ -x "/usr/local/opt/llvm/bin/llvm-config" ]; then
+            local llvm_version=$("/usr/local/opt/llvm/bin/llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
+                versions+=("homebrew-llvm-intel:${llvm_version}")
+                found_versioned=1
+            fi
+        fi
+        
+        if [ -x "/usr/local/opt/llvm@18/bin/llvm-config" ]; then
+            local llvm_version=$("/usr/local/opt/llvm@18/bin/llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
+                versions+=("homebrew-llvm18-intel:${llvm_version}")
+                found_versioned=1
+            fi
+        fi
+    fi
+    
     # Check for system-installed LLVM versions (e.g., llvm-config-19)
     for version in {7..25}; do
         if command -v "llvm-config-${version}" >/dev/null 2>&1; then
-            # Use timeout to prevent hanging
-            local llvm_version=$(timeout 5 "llvm-config-${version}" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            # Use timeout to prevent hanging (if available)
+            if command -v timeout >/dev/null 2>&1; then
+                local llvm_version=$(timeout 5 "llvm-config-${version}" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            else
+                local llvm_version=$("llvm-config-${version}" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+            fi
             if [ $? -eq 0 ] && [ -n "$llvm_version" ]; then
                 versions+=("${version}:${llvm_version}")
                 found_versioned=1
@@ -47,8 +88,12 @@ detect_llvm_versions() {
     
     # Check for default llvm-config
     if command -v "llvm-config" >/dev/null 2>&1; then
-        # Use timeout to prevent hanging
-        local default_version=$(timeout 5 "llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+        # Use timeout to prevent hanging (if available)
+        if command -v timeout >/dev/null 2>&1; then
+            local default_version=$(timeout 5 "llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+        else
+            local default_version=$("llvm-config" --version 2>/dev/null | head -n1 | cut -d' ' -f3)
+        fi
         if [ $? -eq 0 ] && [ -n "$default_version" ]; then
             # Only add unversioned if no versioned found, or if on OpenSUSE
             if [ $found_versioned -eq 0 ] || grep -qi 'opensuse' /etc/os-release 2>/dev/null; then
@@ -156,7 +201,16 @@ select_llvm_version() {
 setup_llvm_environment() {
     local llvm_version="$1"
     
-    if [ "$llvm_version" = "default" ]; then
+    # Handle Homebrew LLVM installations on macOS
+    if [[ "$llvm_version" == "homebrew-llvm" ]]; then
+        export LLVM_CONFIG="/opt/homebrew/opt/llvm/bin/llvm-config"
+    elif [[ "$llvm_version" == "homebrew-llvm18" ]]; then
+        export LLVM_CONFIG="/opt/homebrew/opt/llvm@18/bin/llvm-config"
+    elif [[ "$llvm_version" == "homebrew-llvm-intel" ]]; then
+        export LLVM_CONFIG="/usr/local/opt/llvm/bin/llvm-config"
+    elif [[ "$llvm_version" == "homebrew-llvm18-intel" ]]; then
+        export LLVM_CONFIG="/usr/local/opt/llvm@18/bin/llvm-config"
+    elif [ "$llvm_version" = "default" ]; then
         # Use default llvm-config
         export LLVM_CONFIG="llvm-config"
     else
@@ -165,7 +219,7 @@ setup_llvm_environment() {
     fi
     
     # Verify the LLVM version is available
-    if ! command -v "$LLVM_CONFIG" >/dev/null 2>&1; then
+    if ! command -v "$LLVM_CONFIG" >/dev/null 2>&1 && [ ! -x "$LLVM_CONFIG" ]; then
         print_error "LLVM config not found: $LLVM_CONFIG"
         return 1
     fi

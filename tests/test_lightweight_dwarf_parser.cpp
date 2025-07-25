@@ -363,7 +363,15 @@ TEST_F(LightweightDWARFParserTest, VeryLongFilePaths) {
     
     // Create a very long file path
     std::string long_path = test_dir.string();
-    for (int i = 0; i < 20; ++i) {
+    
+    // Use fewer iterations on macOS to avoid path length limits
+    #ifdef __APPLE__
+    int iterations = 5;   // Reduced for macOS compatibility
+    #else
+    int iterations = 20;  // Original value for Linux
+    #endif
+    
+    for (int i = 0; i < iterations; ++i) {
         long_path += "/very/deep/nested/directory/structure/";
     }
     heimdall::compat::fs::create_directories(long_path);
@@ -575,7 +583,15 @@ TEST_F(LightweightDWARFParserTest, BoundaryConditions) {
     
     // Test with very large file paths
     std::string long_path = test_dir.string();
-    for (int i = 0; i < 50; ++i) {
+    
+    // Use fewer iterations on macOS to avoid path length limits
+    #ifdef __APPLE__
+    int iterations = 10;  // Reduced for macOS compatibility
+    #else
+    int iterations = 50;  // Original value for Linux
+    #endif
+    
+    for (int i = 0; i < iterations; ++i) {
         long_path += "/very/deep/nested/directory/structure/";
     }
     heimdall::compat::fs::create_directories(long_path);

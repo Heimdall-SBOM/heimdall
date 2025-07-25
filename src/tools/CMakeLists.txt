@@ -3,7 +3,6 @@
 
 find_package(OpenSSL REQUIRED)
 find_library(ELF_LIBRARY NAMES elf)
-find_package(LLVM REQUIRED CONFIG)
 
 
 # Build validation tools

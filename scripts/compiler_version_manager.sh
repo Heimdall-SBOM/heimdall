@@ -30,6 +30,27 @@ print_error() {
 detect_gcc_versions() {
     local versions=()
     
+    # On macOS, check for Homebrew GCC installations first
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # Check for Homebrew GCC installations
+        if [ -x "/opt/homebrew/opt/gcc/bin/gcc-15" ]; then
+            local gcc_version=$("/opt/homebrew/opt/gcc/bin/gcc-15" --version | head -n1 | cut -d' ' -f4 | sed 's/)//')
+            if [ $? -eq 0 ] && [ -n "$gcc_version" ]; then
+                echo "[DEBUG] Found Homebrew gcc-15: $gcc_version" 1>&2
+                versions+=("homebrew-gcc-15:${gcc_version}")
+            fi
+        fi
+        
+        # Also check for Intel Mac Homebrew paths
+        if [ -x "/usr/local/opt/gcc/bin/gcc-15" ]; then
+            local gcc_version=$("/usr/local/opt/gcc/bin/gcc-15" --version | head -n1 | cut -d' ' -f4 | sed 's/)//')
+            if [ $? -eq 0 ] && [ -n "$gcc_version" ]; then
+                echo "[DEBUG] Found Homebrew Intel gcc-15: $gcc_version" 1>&2
+                versions+=("homebrew-gcc-15-intel:${gcc_version}")
+            fi
+        fi
+    fi
+    
     # Check for system-installed GCC versions
     for version in {7..20}; do
         if command -v "gcc-${version}" >/dev/null 2>&1; then
@@ -82,7 +103,7 @@ detect_clang_versions() {
     
     # Check for default clang
     if command -v "clang" >/dev/null 2>&1; then
-        local default_version=$(clang --version | head -n1 | cut -d' ' -f3)
+        local default_version=$(clang --version | head -n1 | cut -d' ' -f4)
         versions+=("clang:${default_version}")
     fi
     
@@ -98,18 +119,32 @@ get_compiler_major_version() {
 # Function to select appropriate compiler for C++ standard
 select_compiler() {
     local cxx_standard="$1"
-    local available_gcc=("${@:2}")
-    local available_clang=("${@:3}")
+    local compiler_preference="$2"
+    local available_gcc=("${@:3}")
+    local available_clang=("${@:4}")
     
     case $cxx_standard in
         11)
             # C++11: GCC 4.8+ or Clang 3.3+
-            # Prefer newer versions for better support
+            # Check compiler preference first
+            if [ "$compiler_preference" = "clang" ]; then
+                for version_info in "${available_clang[@]}"; do
+                    local version_name=$(echo "$version_info" | cut -d':' -f1)
+                    local version_number=$(echo "$version_info" | cut -d':' -f2)
+                    local major_version=$(get_compiler_major_version "$version_number")
+                    if [ "$major_version" -ge 3 ]; then
+                        echo "clang:${version_name}"
+                        return 0
+                    fi
+                done
+            fi
+            
+            # Default: prefer newer versions for better support
             for version_info in "${available_gcc[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-) ]] && [ "$major_version" -ge 4 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 4 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -126,11 +161,25 @@ select_compiler() {
             ;;
         14)
             # C++14: GCC 6+ or Clang 3.4+
+            # Check compiler preference first
+            if [ "$compiler_preference" = "clang" ]; then
+                for version_info in "${available_clang[@]}"; do
+                    local version_name=$(echo "$version_info" | cut -d':' -f1)
+                    local version_number=$(echo "$version_info" | cut -d':' -f2)
+                    local major_version=$(get_compiler_major_version "$version_number")
+                    if [ "$major_version" -ge 3 ]; then
+                        echo "clang:${version_name}"
+                        return 0
+                    fi
+                done
+            fi
+            
+            # Default: prefer GCC
             for version_info in "${available_gcc[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-) ]] && [ "$major_version" -ge 6 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 6 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -147,11 +196,25 @@ select_compiler() {
             ;;
         17)
             # C++17: GCC 7+ or Clang 5+
+            # Check compiler preference first
+            if [ "$compiler_preference" = "clang" ]; then
+                for version_info in "${available_clang[@]}"; do
+                    local version_name=$(echo "$version_info" | cut -d':' -f1)
+                    local version_number=$(echo "$version_info" | cut -d':' -f2)
+                    local major_version=$(get_compiler_major_version "$version_number")
+                    if [ "$major_version" -ge 5 ]; then
+                        echo "clang:${version_name}"
+                        return 0
+                    fi
+                done
+            fi
+            
+            # Default: prefer GCC
             for version_info in "${available_gcc[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-) ]] && [ "$major_version" -ge 7 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 7 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -168,11 +231,25 @@ select_compiler() {
             ;;
         20)
             # C++20: GCC 13+ or Clang 14+ (for <format> support)
+            # Check compiler preference first
+            if [ "$compiler_preference" = "clang" ]; then
+                for version_info in "${available_clang[@]}"; do
+                    local version_name=$(echo "$version_info" | cut -d':' -f1)
+                    local version_number=$(echo "$version_info" | cut -d':' -f2)
+                    local major_version=$(get_compiler_major_version "$version_number")
+                    if [ "$major_version" -ge 14 ]; then
+                        echo "clang:${version_name}"
+                        return 0
+                    fi
+                done
+            fi
+            
+            # Default: prefer GCC
             for version_info in "${available_gcc[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-) ]] && [ "$major_version" -ge 13 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 13 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -189,11 +266,25 @@ select_compiler() {
             ;;
         23)
             # C++23: GCC 13+ or Clang 14+ (for <format> support)
+            # Check compiler preference first
+            if [ "$compiler_preference" = "clang" ]; then
+                for version_info in "${available_clang[@]}"; do
+                    local version_name=$(echo "$version_info" | cut -d':' -f1)
+                    local version_number=$(echo "$version_info" | cut -d':' -f2)
+                    local major_version=$(get_compiler_major_version "$version_number")
+                    if [ "$major_version" -ge 14 ]; then
+                        echo "clang:${version_name}"
+                        return 0
+                    fi
+                done
+            fi
+            
+            # Default: prefer GCC
             for version_info in "${available_gcc[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-) ]] && [ "$major_version" -ge 13 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 13 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -224,7 +315,13 @@ setup_compiler_environment() {
     local compiler_type=$(echo "$compiler_info" | cut -d':' -f1)
     local compiler_name=$(echo "$compiler_info" | cut -d':' -f2)
     
-    if [ "$compiler_type" = "gcc" ]; then
+    if [[ "$compiler_type" == "homebrew-gcc-15" ]]; then
+        export CC="/opt/homebrew/opt/gcc/bin/gcc-15"
+        export CXX="/opt/homebrew/opt/gcc/bin/g++-15"
+    elif [[ "$compiler_type" == "homebrew-gcc-15-intel" ]]; then
+        export CC="/usr/local/opt/gcc/bin/gcc-15"
+        export CXX="/usr/local/opt/gcc/bin/g++-15"
+    elif [ "$compiler_type" = "gcc" ]; then
         export CC="$compiler_name"
         export CXX="${compiler_name/gcc/g++}"
     elif [ "$compiler_type" = "clang" ]; then
@@ -262,6 +359,17 @@ EOF
             print_error "SCL compiler wrapper not found: $script_path"
             return 1
         fi
+    elif [[ "$compiler_type" =~ ^homebrew-gcc- ]]; then
+        # For Homebrew GCC, check if the executable exists
+        if [ ! -x "$CC" ]; then
+            print_error "Homebrew GCC compiler not found: $CC"
+            return 1
+        fi
+        
+        if [ ! -x "$CXX" ]; then
+            print_error "Homebrew GCC++ compiler not found: $CXX"
+            return 1
+        fi
     else
         # For regular compilers, use command -v
         if ! command -v "$CC" >/dev/null 2>&1; then
@@ -276,10 +384,24 @@ EOF
     fi
     
     # Get compiler versions
-    export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3)"
-    export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3)"
-    export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
-    export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
+    if [[ "$compiler_type" =~ ^homebrew-gcc- ]]; then
+        # For Homebrew GCC, use the version we already parsed
+        export CC_VERSION="$compiler_name"
+        export CXX_VERSION="$compiler_name"
+        export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
+        export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
+    elif [[ "$compiler_type" == "clang" ]]; then
+        # For Clang, parse version correctly
+        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f4)"
+        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f4)"
+        export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
+        export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
+    else
+        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3)"
+        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3)"
+        export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
+        export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
+    fi
     
     print_success "Using compiler: $CC_VERSION (major: $CC_MAJOR_VERSION)"
     print_status "C compiler: $CC"
@@ -322,12 +444,14 @@ main() {
         shift
     fi
     local cxx_standard="$1"
+    local compiler_preference="$2"
     
     if [ -z "$cxx_standard" ]; then
         if [[ $quiet -eq 0 ]]; then
             print_error "C++ standard not specified"
-            echo "Usage: $0 [--quiet] <cxx_standard>"
+            echo "Usage: $0 [--quiet] <cxx_standard> [compiler_preference]"
             echo "  cxx_standard: 11, 14, 17, 20, or 23"
+            echo "  compiler_preference: gcc, clang (optional)"
         fi
         exit 1
     fi
@@ -344,7 +468,7 @@ main() {
     fi
     
     # Select appropriate compiler
-    local selected_compiler=$(select_compiler "$cxx_standard" "${available_gcc[@]}" "${available_clang[@]}")
+    local selected_compiler=$(select_compiler "$cxx_standard" "$compiler_preference" "${available_gcc[@]}" "${available_clang[@]}")
     
     if [ $? -ne 0 ]; then
         if [[ $quiet -eq 0 ]]; then

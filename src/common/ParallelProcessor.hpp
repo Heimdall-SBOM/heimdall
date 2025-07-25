@@ -17,10 +17,10 @@ class ParallelProcessor {
 public:
     template <typename FileList, typename Func>
     static auto process(const FileList& files, Func&& func)
-        -> std::vector<typename std::result_of<Func(const std::string&)>::type>
+        -> std::vector<typename std::invoke_result_t<Func, const std::string&>>
     {
 #if HEIMDALL_CPP17_AVAILABLE
-        using Result = typename std::result_of<Func(const std::string&)>::type;
+        using Result = typename std::invoke_result_t<Func, const std::string&>;
         std::vector<std::future<Result>> futures;
         std::vector<Result> results;
         results.reserve(files.size());
@@ -33,7 +33,7 @@ public:
         return results;
 #else
         // C++14: Serial fallback
-        using Result = typename std::result_of<Func(const std::string&)>::type;
+        using Result = typename std::invoke_result_t<Func, const std::string&>;
         std::vector<Result> results;
         results.reserve(files.size());
         for (const auto& file : files) {

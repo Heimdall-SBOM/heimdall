@@ -42,7 +42,8 @@ limitations under the License.
 #include <unistd.h>
 #endif
 
-namespace heimdall::Utils {
+namespace heimdall {
+namespace Utils {
 
 std::string getFileName(const std::string& filePath) {
     if (filePath.empty()) {
@@ -901,4 +902,5 @@ std::string resolveLibraryPath(const std::string& libraryName) {
     return libraryName;
 }
 
-}  // namespace heimdall::Utils
+}  // namespace Utils
+}  // namespace heimdall

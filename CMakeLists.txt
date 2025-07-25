@@ -86,11 +86,55 @@ if(DEFINED LLVM_CONFIG)
     # Use specific LLVM config if provided
     set(LLVM_CONFIG_EXECUTABLE "${LLVM_CONFIG}")
     message(STATUS "Using LLVM config: ${LLVM_CONFIG_EXECUTABLE}")
+    
+    # Get LLVM version from the config
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --version
+        OUTPUT_VARIABLE LLVM_VERSION_RAW
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    string(REGEX REPLACE ".*LLVM version ([0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1" LLVM_PACKAGE_VERSION "${LLVM_VERSION_RAW}")
+    string(REGEX REPLACE "^([0-9]+)\\..*" "\\1" LLVM_VERSION_MAJOR "${LLVM_PACKAGE_VERSION}")
+    
+    # Get LLVM paths
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --includedir
+        OUTPUT_VARIABLE LLVM_INCLUDE_DIRS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --libdir
+        OUTPUT_VARIABLE LLVM_LIBRARY_DIRS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --cxxflags
+        OUTPUT_VARIABLE LLVM_CXXFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --ldflags
+        OUTPUT_VARIABLE LLVM_LDFLAGS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    execute_process(
+        COMMAND ${LLVM_CONFIG_EXECUTABLE} --libs
+        OUTPUT_VARIABLE LLVM_LIBRARIES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    
+    # Set LLVM definitions
+    set(LLVM_DEFINITIONS "-DLLVM_VERSION_MAJOR=${LLVM_VERSION_MAJOR}")
+    
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} (major: ${LLVM_VERSION_MAJOR})")
+    message(STATUS "LLVM include dirs: ${LLVM_INCLUDE_DIRS}")
+    message(STATUS "LLVM library dirs: ${LLVM_LIBRARY_DIRS}")
+else()
+    # Fallback to find_package if LLVM_CONFIG not provided
+    find_package(LLVM REQUIRED CONFIG)
+    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+    add_definitions(${LLVM_DEFINITIONS})
 endif()
-
-find_package(LLVM REQUIRED CONFIG)
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-add_definitions(${LLVM_DEFINITIONS})
 
 # Detect available LLVM targets
 execute_process(
@@ -146,9 +190,18 @@ if(ENABLE_CPP11_14)
 endif()
 
 # Compiler flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXXFLAGS}")
+# Extract LLVM flags but exclude -fno-exceptions for external libraries
+string(REPLACE "-fno-exceptions" "" LLVM_CXXFLAGS_CLEAN "${LLVM_CXXFLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXXFLAGS_CLEAN}")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+# Linker flags
+if(DEFINED LLVM_LIBRARY_DIRS)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${LLVM_LIBRARY_DIRS}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${LLVM_LIBRARY_DIRS}")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -L${LLVM_LIBRARY_DIRS}")
+endif()
 
 # Coverage
 if(ENABLE_COVERAGE)
