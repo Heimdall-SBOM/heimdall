@@ -6,6 +6,9 @@
 #include <future>
 #include <type_traits>
 
+// Use the compatibility result_of_t
+using result_of_t = heimdall::compat::result_of_t;
+
 // Heimdall ParallelProcessor: File-level parallelism for C++17+, serial fallback for C++14.
 // DWARF/LLVM debug info extraction must NOT be run in parallel (see README_PROFILING.md).
 // Uses heimdall::compat for C++14/17 compatibility.
@@ -17,10 +20,10 @@ class ParallelProcessor {
 public:
     template <typename FileList, typename Func>
     static auto process(const FileList& files, Func&& func)
-        -> std::vector<typename std::result_of_t<Func(const std::string&)>>
+        -> std::vector<typename result_of_t<Func(const std::string&)>>
     {
 #if HEIMDALL_CPP17_AVAILABLE
-        using Result = typename std::result_of_t<Func(const std::string&)>;
+        using Result = typename result_of_t<Func(const std::string&)>;
         std::vector<std::future<Result>> futures;
         std::vector<Result> results;
         results.reserve(files.size());
@@ -33,7 +36,7 @@ public:
         return results;
 #else
         // C++14: Serial fallback
-        using Result = typename std::result_of_t<Func(const std::string&)>;
+        using Result = typename result_of_t<Func(const std::string&)>;
         std::vector<Result> results;
         results.reserve(files.size());
         for (const auto& file : files) {
