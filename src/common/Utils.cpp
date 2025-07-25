@@ -25,6 +25,7 @@ limitations under the License.
 #include "Utils.hpp"
 #include <openssl/evp.h>
 #include <openssl/sha.h>
+#include <openssl/crypto.h>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -222,8 +223,15 @@ std::string getFileChecksum(const std::string& filePath) {
     // COMPILATION VERIFICATION: This should appear if getFileChecksum is called
     debugPrint("*** CHECKSUM: getFileChecksum called with file: " + filePath + " ***\n");
     
+    // Check if file exists first
+    if (!fileExists(filePath)) {
+        debugPrint("ERROR: File does not exist: " + filePath + "\n");
+        return "";
+    }
+    
     // Ensure OpenSSL is properly initialized (modern API)
-    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+    int init_result = OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS | OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+    debugPrint("OpenSSL init result: " + std::to_string(init_result) + "\n");
     
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
@@ -251,18 +259,29 @@ std::string getFileChecksum(const std::string& filePath) {
     }
 
     char buffer[4096];
+    size_t total_bytes_read = 0;
     while (file.read(buffer, sizeof(buffer))) {
-        if (EVP_DigestUpdate(mdctx, buffer, file.gcount()) != 1) {
+        std::streamsize bytes_read = file.gcount();
+        total_bytes_read += bytes_read;
+        if (EVP_DigestUpdate(mdctx, buffer, bytes_read) != 1) {
+            debugPrint("ERROR: EVP_DigestUpdate() failed during loop\n");
             EVP_MD_CTX_free(mdctx);
             return "";
         }
     }
-    if (file.gcount() > 0) {
-        if (EVP_DigestUpdate(mdctx, buffer, file.gcount()) != 1) {
+    
+    // Handle any remaining bytes
+    std::streamsize remaining_bytes = file.gcount();
+    if (remaining_bytes > 0) {
+        total_bytes_read += remaining_bytes;
+        if (EVP_DigestUpdate(mdctx, buffer, remaining_bytes) != 1) {
+            debugPrint("ERROR: EVP_DigestUpdate() failed for remaining bytes\n");
             EVP_MD_CTX_free(mdctx);
             return "";
         }
     }
+    
+    debugPrint("Total bytes read: " + std::to_string(total_bytes_read) + "\n");
 
     unsigned char hash[EVP_MAX_MD_SIZE];
     unsigned int hash_len = 0;
