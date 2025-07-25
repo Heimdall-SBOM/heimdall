@@ -215,7 +215,7 @@ jobs:
 
       - name: Build C++17 with Clang on macOS
         run: |
-          ./scripts/build.sh --standard 17 --compiler clang --clean --tests
+          ./scripts/build.sh --standard 17 --compiler clang --clean 
 
       - name: Run Unit Tests
         run: |
