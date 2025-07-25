@@ -161,32 +161,85 @@ print_status "Build directory: $BUILD_DIR"
 
 # Check LLVM compatibility
 print_status "Checking LLVM compatibility for C++${STANDARD}..."
-LLVM_ENV=$(./scripts/llvm_version_manager.sh --quiet "$STANDARD")
-if [ $? -ne 0 ] || [ -z "$LLVM_ENV" ]; then
-    print_error "No compatible LLVM version found for C++${STANDARD}"
-    print_error "Run './scripts/show_build_compatibility.sh' for installation guidance"
-    exit 1
-fi
 
-eval "$LLVM_ENV"
+# Check if LLVM environment variables are already set (e.g., in CI)
+if [ -n "$LLVM_CONFIG" ] && [ -n "$LLVM_VERSION" ]; then
+    print_status "Using pre-configured LLVM environment:"
+    print_status "  LLVM_CONFIG: $LLVM_CONFIG"
+    print_status "  LLVM_VERSION: $LLVM_VERSION"
+    
+    # Verify the LLVM config is available
+    if ! command -v "$LLVM_CONFIG" >/dev/null 2>&1 && [ ! -x "$LLVM_CONFIG" ]; then
+        print_error "Pre-configured LLVM_CONFIG not found: $LLVM_CONFIG"
+        exit 1
+    fi
+    
+    # Get additional LLVM paths if not already set
+    if [ -z "$LLVM_INCLUDE_DIRS" ]; then
+        LLVM_INCLUDE_DIRS="$($LLVM_CONFIG --includedir)"
+        export LLVM_INCLUDE_DIRS
+    fi
+    if [ -z "$LLVM_LIBRARY_DIRS" ]; then
+        LLVM_LIBRARY_DIRS="$($LLVM_CONFIG --libdir)"
+        export LLVM_LIBRARY_DIRS
+    fi
+    if [ -z "$LLVM_MAJOR_VERSION" ]; then
+        LLVM_MAJOR_VERSION="$($LLVM_CONFIG --version | head -n1 | cut -d' ' -f3 | cut -d'.' -f1)"
+        export LLVM_MAJOR_VERSION
+    fi
+else
+    # Use version manager to detect and configure LLVM
+    LLVM_ENV=$(./scripts/llvm_version_manager.sh --quiet "$STANDARD")
+    if [ $? -ne 0 ] || [ -z "$LLVM_ENV" ]; then
+        print_error "No compatible LLVM version found for C++${STANDARD}"
+        print_error "Run './scripts/show_build_compatibility.sh' for installation guidance"
+        exit 1
+    fi
+    eval "$LLVM_ENV"
+fi
 
 # Check compiler compatibility
 print_status "Checking compiler compatibility for C++${STANDARD}..."
-if [ "$COMPILER" = "clang" ]; then
-    # Force Clang selection
-    COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD" clang)
+
+# Check if compiler environment variables are already set (e.g., in CI)
+if [ -n "$CC" ] && [ -n "$CXX" ]; then
+    print_status "Using pre-configured compiler environment:"
+    print_status "  CC: $CC"
+    print_status "  CXX: $CXX"
+    
+    # Verify the compilers are available
+    if ! command -v "$CC" >/dev/null 2>&1; then
+        print_error "Pre-configured CC not found: $CC"
+        exit 1
+    fi
+    if ! command -v "$CXX" >/dev/null 2>&1; then
+        print_error "Pre-configured CXX not found: $CXX"
+        exit 1
+    fi
+    
+    # Get compiler versions for display
+    CC_VERSION="$($CC --version | head -n1)"
+    CXX_VERSION="$($CXX --version | head -n1)"
+    export CC_VERSION
+    export CXX_VERSION
 else
-    # Use default selection (prefers GCC)
-    COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD")
-fi
+    # Use version manager to detect and configure compiler
+    if [ "$COMPILER" = "clang" ]; then
+        # Force Clang selection
+        COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD" clang)
+    else
+        # Use default selection (prefers GCC)
+        COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD")
+    fi
 
-if [ $? -ne 0 ] || [ -z "$COMPILER_ENV" ]; then
-    print_error "No compatible compiler found for C++${STANDARD}"
-    print_error "Run './scripts/show_build_compatibility.sh' for installation guidance"
-    exit 1
-fi
+    if [ $? -ne 0 ] || [ -z "$COMPILER_ENV" ]; then
+        print_error "No compatible compiler found for C++${STANDARD}"
+        print_error "Run './scripts/show_build_compatibility.sh' for installation guidance"
+        exit 1
+    fi
 
-eval "$COMPILER_ENV"
+    eval "$COMPILER_ENV"
+fi
 
 # Clean build directory if requested
 if [ "$CLEAN" = true ]; then
