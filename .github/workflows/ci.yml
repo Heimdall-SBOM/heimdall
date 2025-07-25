@@ -229,7 +229,7 @@ jobs:
   examples:
     name: Build Examples
     runs-on: ubuntu-22.04
-    needs: [coverage]
+    needs: [macos-cpp17-clang]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       BUILD_DIR: build-gcc-cpp17
