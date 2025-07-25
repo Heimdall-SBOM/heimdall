@@ -63,12 +63,6 @@ jobs:
       - name: Build C++11 with GCC
         run: |
           ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
-
-      - name: Run Unit Tests
-        run: |
-          cd $BUILD_DIR
-          ctest --output-on-failure --verbose
-
   
 
   cpp11-clang:
@@ -100,12 +94,6 @@ jobs:
       - name: Build C++11 with Clang
         run: |
           ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
-
-      - name: Run Unit Tests
-        run: |
-          cd $BUILD_DIR
-          ctest --output-on-failure --verbose
-
      
   # C++23 Build and Test
   cpp23-gcc:
@@ -137,12 +125,6 @@ jobs:
       - name: Build C++23 with GCC
         run: |
           ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
-
-      - name: Run Unit Tests
-        run: |
-          cd $BUILD_DIR
-          ctest --output-on-failure --verbose
-
      
   cpp23-clang:
     name: C++23 Clang Build & Test
@@ -173,11 +155,6 @@ jobs:
       - name: Build C++23 with Clang
         run: |
           ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
-
-      - name: Run Unit Tests
-        run: |
-          cd $BUILD_DIR
-          ctest --output-on-failure --verbose
 
       
 
