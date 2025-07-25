@@ -855,8 +855,8 @@ TEST_F(SBOMValidationTest, SPDXValidatorWithMalformedJSON) {
         std::cout << "[DEBUG] About to call validateContent" << std::endl;
         ValidationResult result = validator->validateContent(malformed_json);
         std::cout << "[DEBUG] validateContent completed successfully" << std::endl;
-        std::cout << "[DEBUG] Result valid: " << (result.isValid() ? "true" : "false") << std::endl;
-        std::cout << "[DEBUG] Result errors: " << result.getErrors().size() << std::endl;
+        std::cout << "[DEBUG] Result valid: " << (result.isValid ? "true" : "false") << std::endl;
+        std::cout << "[DEBUG] Result errors: " << result.errors.size() << std::endl;
         EXPECT_NO_THROW(validator->validateContent(malformed_json));
         std::cout << "[DEBUG] Second validateContent call completed" << std::endl;
     } catch (const std::exception& e) {
@@ -1207,8 +1207,8 @@ TEST_F(SBOMValidationTest, SPDXValidatorWithInvalidUTF8) {
         std::cout << "[DEBUG] About to call validateContent" << std::endl;
         ValidationResult result = validator->validateContent(invalid_utf8);
         std::cout << "[DEBUG] validateContent completed successfully" << std::endl;
-        std::cout << "[DEBUG] Result valid: " << (result.isValid() ? "true" : "false") << std::endl;
-        std::cout << "[DEBUG] Result errors: " << result.getErrors().size() << std::endl;
+        std::cout << "[DEBUG] Result valid: " << (result.isValid ? "true" : "false") << std::endl;
+        std::cout << "[DEBUG] Result errors: " << result.errors.size() << std::endl;
         EXPECT_NO_THROW(validator->validateContent(invalid_utf8));
         std::cout << "[DEBUG] Second validateContent call completed" << std::endl;
     } catch (const std::exception& e) {
@@ -1248,8 +1248,8 @@ TEST_F(SBOMValidationTest, SPDXValidatorWithControlCharacters) {
         std::cout << "[DEBUG] About to call validateContent" << std::endl;
         ValidationResult result = validator->validateContent(control_chars);
         std::cout << "[DEBUG] validateContent completed successfully" << std::endl;
-        std::cout << "[DEBUG] Result valid: " << (result.isValid() ? "true" : "false") << std::endl;
-        std::cout << "[DEBUG] Result errors: " << result.getErrors().size() << std::endl;
+        std::cout << "[DEBUG] Result valid: " << (result.isValid ? "true" : "false") << std::endl;
+        std::cout << "[DEBUG] Result errors: " << result.errors.size() << std::endl;
         EXPECT_NO_THROW(validator->validateContent(control_chars));
         std::cout << "[DEBUG] Second validateContent call completed" << std::endl;
     } catch (const std::exception& e) {
