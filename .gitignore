@@ -5,6 +5,7 @@ build-cpp14/
 build-cpp17/
 build-cpp20/
 build-cpp23/
+build-*
 install/
 CMakeFiles/
 clean
