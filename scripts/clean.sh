@@ -70,12 +70,16 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "This script removes all build artifacts including:"
 echo "  - Build directory and all contents"
-echo "  - C++ standard-specific build directories (build-cpp11, build-cpp14, etc.)"
+echo "  - C++ standard-specific build directories:"
+echo "    * Old naming: build-cpp11, build-cpp14, etc."
+echo "    * New naming: build-gcc-cpp11, build-clang-cpp17, etc."
 echo "  - Install directory and all contents"
 echo "  - CMake cache files"
 echo "  - Compiled binaries and libraries"
 echo "  - Test outputs"
-echo "  - Example build artifacts (all heimdall-usage-* examples)"
+echo "  - Example build artifacts:"
+echo "    * Old naming: examples/*/build/"
+echo "    * New naming: examples/*/build-{compiler}-cpp{standard}/"
             echo ""
             exit 0
             ;;
@@ -103,10 +107,12 @@ else
     print_warning "Build directory not found: $BUILD_DIR"
 fi
 
-# Clean C++ standard-specific build directories (both naming conventions)
+# Clean C++ standard-specific build directories (all naming conventions)
 CXX_BUILD_DIRS=(
     "build_cpp11" "build_cpp14" "build_cpp17" "build_cpp20" "build_cpp23"  # Old naming
-    "build-cpp11" "build-cpp14" "build-cpp17" "build-cpp20" "build-cpp23"  # New naming
+    "build-cpp11" "build-cpp14" "build-cpp17" "build-cpp20" "build-cpp23"  # New naming (without compiler)
+    "build-gcc-cpp11" "build-gcc-cpp14" "build-gcc-cpp17" "build-gcc-cpp20" "build-gcc-cpp23"  # GCC naming
+    "build-clang-cpp11" "build-clang-cpp14" "build-clang-cpp17" "build-clang-cpp20" "build-clang-cpp23"  # Clang naming
 )
 for dir in "${CXX_BUILD_DIRS[@]}"; do
     if [[ -d "$dir" ]]; then
@@ -130,11 +136,41 @@ print_status "Cleaning all example build artifacts generically..."
 for exdir in examples/*/; do
     if [[ -d "$exdir" ]]; then
         print_status "Cleaning $exdir..."
+        
+        # Clean old build directories (backward compatibility)
         rm -rf "$exdir/build" "$exdir/CMakeFiles" 2>/dev/null || true
-        rm -f "$exdir/CMakeCache.txt" "$exdir/Makefile" 2>/dev/null || true
+        
+        # Clean new build directories with naming convention
+        for compiler in gcc clang; do
+            for standard in 11 14 17 20 23; do
+                build_dir="$exdir/build-${compiler}-cpp${standard}"
+                if [[ -d "$build_dir" ]]; then
+                    print_status "Removing example build directory: $build_dir"
+                    rm -rf "$build_dir"
+                fi
+            done
+        done
+        
+        rm -f "$exdir/CMakeCache.txt" 2>/dev/null || true
+        # Don't remove Makefile for Ada demo
+        if [[ "$exdir" != *"heimdall-ada-demo"* ]]; then
+            rm -f "$exdir/Makefile" 2>/dev/null || true
+        fi
         find "$exdir" -maxdepth 1 -type f \( -name "*.o" -o -name "*.so" -o -name "*.a" -o -name "*.dylib" -o -name "*.spdx" -o -name "*.cyclonedx.json" -o -name "*sbom*.json" -o -name "*.json" \) -delete 2>/dev/null || true
         # Remove executables (files with execute permission, not directories)
-        find "$exdir" -maxdepth 1 -type f -executable -exec rm -f {} + 2>/dev/null || true
+        # Don't remove build.sh for Ada demo
+        if [[ "$exdir" != *"heimdall-ada-demo"* ]]; then
+            find "$exdir" -maxdepth 1 -type f -executable -exec rm -f {} + 2>/dev/null || true
+        else
+            find "$exdir" -maxdepth 1 -type f -executable ! -name "build.sh" -exec rm -f {} + 2>/dev/null || true
+        fi
+        # Clean Ada-specific build artifacts
+        rm -rf "$exdir/bin" "$exdir/lib" 2>/dev/null || true
+        find "$exdir" -name "*.ali" -delete 2>/dev/null || true
+        find "$exdir" -name "b~*.c" -delete 2>/dev/null || true
+        find "$exdir" -name "b~*.o" -delete 2>/dev/null || true
+        find "$exdir" -name "s~*.c" -delete 2>/dev/null || true
+        find "$exdir" -name "s~*.o" -delete 2>/dev/null || true
     fi
     print_success "Cleaned $exdir"
 done
@@ -174,16 +210,18 @@ find . -name "CMakeCache.txt" -delete 2>/dev/null || true
 find . -name "cmake_install.cmake" -delete 2>/dev/null || true
 find . -name "CTestTestfile.cmake" -delete 2>/dev/null || true
 
-# Remove any Makefiles in subdirectories (except the root one)
-find . -name "Makefile" -not -path "./Makefile" -delete 2>/dev/null || true
+# Remove any Makefiles in subdirectories (except the root one and Ada demo)
+find . -name "Makefile" -not -path "./Makefile" -not -path "./examples/heimdall-ada-demo/Makefile" -delete 2>/dev/null || true
 
 # Remove any CMakeFiles directories in subdirectories
 find . -name "CMakeFiles" -type d -exec rm -rf {} + 2>/dev/null || true
 
-# Clean any build directories that match our new naming pattern
+# Clean any build directories that match our naming patterns
 print_status "Cleaning any remaining build directories..."
 find . -maxdepth 1 -type d -name "build-cpp*" -exec rm -rf {} + 2>/dev/null || true
 find . -maxdepth 1 -type d -name "build_cpp*" -exec rm -rf {} + 2>/dev/null || true
+find . -maxdepth 1 -type d -name "build-gcc-cpp*" -exec rm -rf {} + 2>/dev/null || true
+find . -maxdepth 1 -type d -name "build-clang-cpp*" -exec rm -rf {} + 2>/dev/null || true
 
 print_success "All build artifacts cleaned successfully!"
 
@@ -191,7 +229,7 @@ print_status "Cleanup summary:"
 echo "  ✓ Build directory removed"
 echo "  ✓ C++ standard-specific build directories removed"
 echo "  ✓ Install directory removed"
-echo "  ✓ All example build artifacts removed (heimdall-usage-*, openssl_pthread_demo)"
+echo "  ✓ All example build artifacts removed (old and new naming conventions)"
 echo "  ✓ Test outputs removed"
 echo "  ✓ Stray object files and libraries removed"
 echo "  ✓ Generated SBOM files removed"

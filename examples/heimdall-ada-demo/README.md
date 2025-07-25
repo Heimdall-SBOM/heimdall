@@ -24,13 +24,32 @@ This example demonstrates a complex Ada application with both statically and dyn
 1. Install GNAT (GNU Ada compiler):
    - RHEL/Fedora: `sudo dnf install gcc-gnat`
    - Ubuntu/Debian: `sudo apt-get install gnat`
-2. Build both static and dynamic versions:
+
+2. Build using the provided build script:
+   ```sh
+   cd examples/heimdall-ada-demo
+   ./build.sh
+   ```
+
+3. Or build using make directly:
    ```sh
    cd examples/heimdall-ada-demo
    make clean && make all
    ```
+
+4. Available build options:
+   ```sh
+   ./build.sh --static    # Build static version only
+   ./build.sh --dynamic   # Build dynamic version only
+   ./build.sh --test      # Build and test both versions
+   ./build.sh --clean     # Clean build artifacts
+   ./build.sh --help      # Show help
+   ```
+
+5. Built executables:
    - Statically linked: `bin/main_static`
    - Dynamically linked: `bin/main_dynamic`
+   - Shared library: `lib/libstring_utils.so`
 
 ## Generate SBOMs
 

@@ -8,6 +8,7 @@ ARG LLVM_TAG=llvmorg-18.1.8
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
       base-devel \
+      gcc-ada \
       cmake \
       ninja \
       python \

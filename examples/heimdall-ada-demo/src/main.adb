@@ -4,7 +4,7 @@ with String_Utils; -- dynamic library
 with Data_Reader;
 
 procedure Main is
-   Data : String := Data_Reader.Read_Data_File ("../data/sample_data.txt");
+   Data : String := Data_Reader.Read_Data_File ("sample_data.txt");
    Result : Integer := Math_Lib.Factorial (5);
    Upper : String := String_Utils.To_Upper ("heimdall sbom ada demo");
 begin

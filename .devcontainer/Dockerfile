@@ -22,6 +22,7 @@ RUN apt-get update && \
       build-essential \
       gcc-11 g++-11 \
       gcc-13 g++-13 \
+      gnat \
       cmake \
       ninja-build \
       python3 \

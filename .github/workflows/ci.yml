@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc'
     env:
-      BUILD_DIR: build-cpp11
+      BUILD_DIR: build-gcc-cpp11
     strategy:
       matrix:
         cpp_standard: [11]
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang'
     env:
-      BUILD_DIR: build-cpp11
+      BUILD_DIR: build-clang-cpp11
     strategy:
       matrix:
         cpp_standard: [11]
@@ -129,7 +129,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc'
     env:
-      BUILD_DIR: build-cpp23
+      BUILD_DIR: build-gcc-cpp23
     strategy:
       matrix:
         cpp_standard: [23]
@@ -174,7 +174,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang'
     env:
-      BUILD_DIR: build-cpp23
+      BUILD_DIR: build-clang-cpp23
     strategy:
       matrix:
         cpp_standard: [23]
@@ -220,7 +220,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
-      BUILD_DIR: build-cpp17
+      BUILD_DIR: build-gcc-cpp17
     container:
       image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
@@ -269,7 +269,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
-      BUILD_DIR: build-cpp17
+      BUILD_DIR: build-gcc-cpp17
     container:
       image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root

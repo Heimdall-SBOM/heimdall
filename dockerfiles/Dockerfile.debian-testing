@@ -12,6 +12,7 @@ RUN apt-get update && \
       gcc-12 g++-12 \
       gcc-13 g++-13 \
       gcc-14 g++-14 \
+      gnat \
       cmake \
       ninja-build \
       python3 \

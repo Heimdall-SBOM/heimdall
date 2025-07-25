@@ -2,6 +2,17 @@
 
 This document describes the mapping between Heimdall Docker image names, compiler (GCC) versions, and C++ standards for each supported Linux distribution.
 
+## GNAT Support
+
+All Docker images now include GNAT (GNU Ada compiler) support for building the Ada demo examples:
+
+- **Ubuntu/Debian**: `gnat` package
+- **Fedora/CentOS/Rocky**: `gcc-gnat` package  
+- **OpenSUSE**: `gcc-gnat` package
+- **Arch**: `gcc-ada` package
+
+This enables building the `examples/heimdall-ada-demo` application in all containerized environments.
+
 ## Ubuntu
 | C++ Standard | GCC Version | Image Name                |
 |--------------|-------------|---------------------------|
