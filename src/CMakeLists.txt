@@ -62,9 +62,13 @@ target_include_directories(heimdall-core PUBLIC
 
 target_link_libraries(heimdall-core PUBLIC
     ${LLVM_LIBRARIES}
-    ${ELF_LIBRARY}
     ${OPENSSL_LIBRARIES}
 )
+
+# Only link ELF library on Linux (not macOS)
+if(UNIX AND NOT APPLE AND ELF_LIBRARY)
+    target_link_libraries(heimdall-core PUBLIC ${ELF_LIBRARY})
+endif()
 
 target_compile_definitions(heimdall-core PRIVATE
     ${LLVM_DEFINITIONS}

@@ -16,7 +16,13 @@ if(NOT GTest_FOUND)
 endif()
 
 find_package(OpenSSL REQUIRED)
-find_library(ELF_LIBRARY NAMES elf)
+
+# ELF library - Linux only
+if(UNIX AND NOT APPLE)
+    find_library(ELF_LIBRARY NAMES elf)
+else()
+    set(ELF_LIBRARY "")
+endif()
 
 # Test executable and test setup for C++11+
 if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
@@ -56,8 +62,11 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         
         # Platform-specific exclusions
         if(APPLE)
-            # On macOS, exclude Gold-related tests
-            if(filename STREQUAL "test_gold_plugin.cpp" OR filename STREQUAL "test_integration_gold.cpp")
+            # On macOS, exclude ELF-related tests (Gold plugin and Linux-specific tests)
+            if(filename STREQUAL "test_gold_plugin.cpp" OR 
+               filename STREQUAL "test_integration_gold.cpp" OR
+               filename STREQUAL "test_linux_support.cpp" OR
+               filename STREQUAL "test_dwarf_cross_platform.cpp")
                 continue()
             endif()
         endif()
@@ -102,8 +111,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
                 GTest::gtest
                 GTest::gtest_main
                 ${OPENSSL_LIBRARIES}
-                ${ELF_LIBRARY}
             )
+            if(ELF_LIBRARY)
+                target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
+            endif()
         else()
             target_link_libraries(heimdall-tests PRIVATE
                 heimdall-core
@@ -111,8 +122,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
                 GTest::gtest
                 GTest::gtest_main
                 ${OPENSSL_LIBRARIES}
-                ${ELF_LIBRARY}
             )
+            if(ELF_LIBRARY)
+                target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
+            endif()
         endif()
     elseif(TARGET gtest_main)
         if(UNIX AND NOT APPLE)
@@ -123,8 +136,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
                 gtest
                 gtest_main
                 ${OPENSSL_LIBRARIES}
-                ${ELF_LIBRARY}
             )
+            if(ELF_LIBRARY)
+                target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
+            endif()
         else()
             target_link_libraries(heimdall-tests PRIVATE
                 heimdall-core
@@ -132,8 +147,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
                 gtest
                 gtest_main
                 ${OPENSSL_LIBRARIES}
-                ${ELF_LIBRARY}
             )
+            if(ELF_LIBRARY)
+                target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
+            endif()
         endif()
     else()
         message(FATAL_ERROR "No suitable GTest target found!")

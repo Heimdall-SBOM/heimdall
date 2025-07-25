@@ -173,12 +173,18 @@ if(CMAKE_CXX_STANDARD LESS 17)
     endif()
 endif()
 
-# ELF library dependency (for Gold plugin)
-find_library(ELF_LIBRARY NAMES elf)
-if(ELF_LIBRARY)
-    message(STATUS "Found ELF library: ${ELF_LIBRARY}")
+# ELF library dependency (for Gold plugin) - Linux only
+if(UNIX AND NOT APPLE)
+    find_library(ELF_LIBRARY NAMES elf)
+    if(ELF_LIBRARY)
+        message(STATUS "Found ELF library: ${ELF_LIBRARY}")
+    else()
+        message(WARNING "ELF library not found. Gold plugin may not work correctly.")
+    endif()
 else()
-    message(WARNING "ELF library not found. Gold plugin may not work correctly.")
+    # On macOS, ELF library is not needed (uses Mach-O format)
+    set(ELF_LIBRARY "")
+    message(STATUS "ELF library not needed on macOS (using Mach-O format)")
 endif()
 
 # LLVM version compatibility check
