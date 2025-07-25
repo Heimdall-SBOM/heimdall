@@ -223,63 +223,7 @@ jobs:
           # Exclude problematic tests that work locally but fail in CI due to environment differences
           ctest --output-on-failure --verbose -E "SBOMValidationTest\.(SPDXValidatorWithMalformedJSON|SPDXValidatorWithInvalidUTF8|SPDXValidatorWithControlCharacters)"
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-macos-cpp17-clang
-          path: $BUILD_DIR/Testing/
-          retention-days: 7
 
-  # Coverage Analysis (C++17 as representative)
-  coverage:
-    name: Code Coverage Analysis
-    runs-on: ubuntu-22.04
-    needs: [macos-cpp17-clang]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    env:
-      BUILD_DIR: build-gcc-cpp17
-    container:
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
-      options: --user root
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Coverage Tools
-        run: |
-          # Install additional coverage tools not in the devcontainer
-          apt-get update
-          apt-get install -y lcov gcovr
-
-      - name: Set up Environment
-        run: |
-          # The devcontainer image already has all build dependencies
-          echo "LLVM_CONFIG=/usr/bin/llvm-config-19" >> $GITHUB_ENV
-          echo "LLVM_VERSION=19" >> $GITHUB_ENV
-          echo "CC=gcc" >> $GITHUB_ENV
-          echo "CXX=g++" >> $GITHUB_ENV
-
-      - name: Run Coverage Analysis
-        run: |
-          ./tests/coverage.sh
-
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 30
-
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: coverage/coverage.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
 
   # Build Examples
   examples:
