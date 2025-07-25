@@ -221,7 +221,7 @@ jobs:
     runs-on: macos-latest
     if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '17' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang') || github.event_name != 'workflow_dispatch'
     env:
-      BUILD_DIR: build-macos-clang-cpp17
+      BUILD_DIR: build-clang-cpp17
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
