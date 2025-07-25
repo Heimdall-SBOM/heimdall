@@ -243,24 +243,12 @@ jobs:
           echo "CXX=clang++" >> $GITHUB_ENV
           echo "PATH=/opt/homebrew/opt/llvm@18/bin:$PATH" >> $GITHUB_ENV
 
-      - name: Build C++17 with Clang on macOS
+      - name: Build C++17 and Test with Clang on macOS
         run: |
           ./scripts/build.sh --standard 17 --compiler clang --clean 
-
-      - name: Run Unit Tests
-        run: |
-          ./scripts/build.sh --standard 17 --compiler clang
           cd $BUILD_DIR
           # Exclude problematic tests that work locally but fail in CI due to environment differences
           ctest --output-on-failure --verbose -E "SBOMValidationTest\.(SPDXValidatorWithMalformedJSON|SPDXValidatorWithInvalidUTF8|SPDXValidatorWithControlCharacters)"
-
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-macos-cpp17-clang
-          path: $BUILD_DIR/Testing/
-          retention-days: 7
 
   # Coverage Analysis (C++17 as representative)
   coverage:
