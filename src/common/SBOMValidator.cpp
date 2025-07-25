@@ -15,140 +15,6 @@
 
 namespace heimdall {
 
-// Extremely defensive CI-safe content validator that prevents any problematic parsing
-bool isContentSafeForParsing(const std::string& content) {
-    heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Checking " + std::to_string(content.length()) + " bytes for problematic content ***\n");
-    
-    if (content.empty()) {
-        heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Content is empty ***\n");
-        return false;
-    }
-    
-    if (content.length() > 1000000) { // 1MB limit
-        heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Content too large ***\n");
-        return false;
-    }
-    
-    // Check every character for problematic sequences that cause SIGTRAP in CI
-    for (size_t i = 0; i < content.length(); ++i) {
-        unsigned char c = static_cast<unsigned char>(content[i]);
-        
-        // Reject invalid UTF-8 bytes that cause SIGTRAP
-        if (c == 0xFF || c == 0xFE || c == 0xFD) {
-            heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Found invalid UTF-8 byte 0x" + 
-                                        std::to_string(c) + " at position " + std::to_string(i) + " ***\n");
-            return false;
-        }
-        
-        // Reject problematic control characters
-        if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') {
-            if (c < 0x08) {
-                heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Found problematic control character 0x" + 
-                                            std::to_string(c) + " at position " + std::to_string(i) + " ***\n");
-                return false;
-            }
-        }
-    }
-    
-    // Additional check for malformed JSON structure that could cause issues
-    // Count braces to detect obviously malformed JSON without parsing
-    int brace_count = 0;
-    int bracket_count = 0;
-    bool in_string = false;
-    bool escaped = false;
-    
-    for (size_t i = 0; i < content.length(); ++i) {
-        char c = content[i];
-        
-        if (escaped) {
-            escaped = false;
-            continue;
-        }
-        
-        if (c == '\\' && in_string) {
-            escaped = true;
-            continue;
-        }
-        
-        if (c == '"') {
-            in_string = !in_string;
-            continue;
-        }
-        
-        if (!in_string) {
-            if (c == '{') brace_count++;
-            else if (c == '}') brace_count--;
-            else if (c == '[') bracket_count++;
-            else if (c == ']') bracket_count--;
-            
-            // Detect obviously malformed structure
-            if (brace_count < 0 || bracket_count < 0) {
-                heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Malformed JSON structure detected ***\n");
-                return false;
-            }
-        }
-    }
-    
-    // Check for unclosed strings (potential malformed JSON)
-    if (in_string) {
-        heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Unclosed string detected ***\n");
-        return false;
-    }
-    
-    heimdall::Utils::debugPrint("*** CONTENT_SAFETY_CHECK: Content appears safe for parsing ***\n");
-    return true;
-}
-
-// Ultra-safe JSON parsing wrapper that only parses pre-validated content
-nlohmann::json ultra_defensive_json_parse(const std::string& content) {
-    heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Starting with " + std::to_string(content.length()) + " bytes ***\n");
-    
-    // Pre-check content safety - completely skip parsing if problematic
-    if (!isContentSafeForParsing(content)) {
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Content deemed unsafe, throwing controlled error ***\n");
-        throw std::runtime_error("Content contains characters or structure that may cause parsing issues in CI environments");
-    }
-    
-    // Only attempt parsing if content passed all safety checks
-    try {
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Content passed safety checks, attempting parse ***\n");
-        
-        // Use nlohmann JSON parser with depth limiting
-        nlohmann::json::parser_callback_t cb = [](int depth, nlohmann::json::parse_event_t event, nlohmann::json& parsed) {
-            if (depth > 50) { // More conservative depth limit
-                return false;
-            }
-            return true;
-        };
-        
-        auto result = nlohmann::json::parse(content, cb, true, false);
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Successfully parsed JSON ***\n");
-        return result;
-        
-    } catch (const nlohmann::json::parse_error& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Parse error: " + std::string(e.what()) + " ***\n");
-        throw std::runtime_error("JSON parse error: " + std::string(e.what()));
-    } catch (const nlohmann::json::exception& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: JSON exception: " + std::string(e.what()) + " ***\n");
-        throw std::runtime_error("JSON exception: " + std::string(e.what()));
-    } catch (const std::exception& e) {
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Standard exception: " + std::string(e.what()) + " ***\n");
-        throw std::runtime_error("JSON parsing failed: " + std::string(e.what()));
-    } catch (...) {
-        heimdall::Utils::debugPrint("*** ULTRA_DEFENSIVE_JSON_PARSE: Unknown exception ***\n");
-        throw std::runtime_error("JSON parsing failed due to unknown error");
-    }
-}
-
-// Legacy wrappers
-nlohmann::json ci_safe_json_parse(const std::string& content) {
-    return ultra_defensive_json_parse(content);
-}
-
-nlohmann::json safe_json_parse(const std::string& content) {
-    return ultra_defensive_json_parse(content);
-}
-
 // SPDX Validator Implementation
 
 ValidationResult SPDXValidator::validate(const std::string& filePath) {
@@ -180,39 +46,25 @@ ValidationResult SPDXValidator::validate(const std::string& filePath, const std:
 ValidationResult SPDXValidator::validateContent(const std::string& content) {
     ValidationResult result;
     
-    // COMPILATION VERIFICATION: This message should appear if our code is compiled
-    heimdall::Utils::debugPrint("*** COMPILATION CHECK: validateContent called with " + std::to_string(content.length()) + " bytes ***\n");
-    std::cerr << "*** STDERR DEBUG: validateContent called with " << content.length() << " bytes ***" << std::endl;
-    std::cout << "*** STDOUT DEBUG: validateContent called with " << content.length() << " bytes ***" << std::endl;
-    
-    // Immediate safety check for CI environments
+    // Immediate safety check for empty content
     if (content.empty()) {
-        heimdall::Utils::debugPrint("*** validateContent: Content is empty ***\n");
         result.addError("Content is empty");
         return result;
     }
     
-    // Add comprehensive error protection for CI environments (without signal handling)
+    // Add basic error protection
     try {
-        heimdall::Utils::debugPrint("*** validateContent: About to detect SPDX version ***\n");
-        
-        // Detect SPDX version with safety checks
+        // Detect SPDX version
         if (content.find("SPDXVersion:") != std::string::npos) {
-            heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 2.3 tag-value format ***\n");
             // SPDX 2.3 tag-value format
             return validateSPDX2_3(content);
         } else if (content.find("\"spdxVersion\"") != std::string::npos) {
-            heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 3.0 classic JSON format ***\n");
             // SPDX 3.0 classic JSON format
             return validateSPDX3_0(content);
         } else if (content.find("@context") != std::string::npos && content.find("@graph") != std::string::npos) {
-            heimdall::Utils::debugPrint("*** validateContent: Detected SPDX 3.0 JSON-LD format ***\n");
             // SPDX 3.0 JSON-LD format
             try {
-                heimdall::Utils::debugPrint("*** validateContent: About to call ultra_defensive_json_parse ***\n");
-                auto sbom = ultra_defensive_json_parse(content);
-                heimdall::Utils::debugPrint("*** validateContent: Successfully parsed JSON ***\n");
-                
+                auto sbom = nlohmann::json::parse(content);
                 std::string schema_path;
                 if (sbom.contains("@context")) {
                     std::string context = sbom["@context"];
@@ -228,23 +80,7 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
                     heimdall::Utils::warningPrint("No @context found in SPDX JSON-LD, defaulting to 3.0.0 schema.\n");
                     schema_path = "./schema/spdx-bom-3.0.0.schema.json";
                 }
-                heimdall::Utils::debugPrint("SPDX JSON-LD: schema_path=" + schema_path + "\n");
-                if (sbom.contains("@context")) {
-                    heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context']='" + std::string(sbom["@context"]) + "\n");
-                } else {
-                    heimdall::Utils::debugPrint("SPDX JSON-LD: sbom['@context'] not found\n");
-                }
-                heimdall::Utils::debugPrint("SPDX JSON-LD: first 100 chars of content: '" + std::string(content.substr(0, 100)) + "'\n");
-                // Debug: print first object in @graph and its keys
-                if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
-                    const auto& doc = sbom["@graph"][0];
-                    heimdall::Utils::debugPrint("First @graph object: " + doc.dump(2) + "\n");
-                    heimdall::Utils::debugPrint("Keys in first @graph object:");
-                    for (auto it = doc.begin(); it != doc.end(); ++it) {
-                        heimdall::Utils::debugPrint(" '" + it.key() + "'");
-                    }
-                    heimdall::Utils::debugPrint("\n");
-                }
+                
                 // Schema validation
                 try {
                     if (heimdall::Utils::fileExists(schema_path)) {
@@ -253,7 +89,6 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
                         schema_file >> schema_json;
                         nlohmann::json_schema::json_validator validator(schema_json);
                         validator.validate(sbom);
-                        heimdall::Utils::debugPrint("SPDX 3.x schema validation passed.\n");
                         result.isValid = true;
                     } else {
                         heimdall::Utils::warningPrint("SPDX 3.x schema file not found: " + schema_path + "\n");
@@ -261,26 +96,25 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
                         result.isValid = true;
                     }
                 } catch (const std::exception& e) {
-                    heimdall::Utils::debugPrint("SPDX 3.x schema validation failed: " + std::string(e.what()) + "\n");
                     result.isValid = false;
                     result.errors.push_back(std::string("SPDX 3.x schema validation failed: ") + e.what());
                 }
-                // Extract SPDX version from @graph (schema-compliant style)
-                std::string version = "3.0";  // Default to "3.0" format expected by tests
+                
+                // Extract SPDX version from @graph
+                std::string version = "3.0";
                 if (sbom.contains("@graph") && sbom["@graph"].is_array() && !sbom["@graph"].empty()) {
                     const auto& doc = sbom["@graph"][0];
                     if (doc.contains("specVersion")) {
                         std::string spec_version = std::string(doc["specVersion"]);
-                        // Normalize version format: "SPDX-3.0.0" -> "3.0", "3.0.0" -> "3.0", etc.
+                        // Simple version normalization
                         if (spec_version.find("SPDX-") == 0) {
-                            spec_version = spec_version.substr(5); // Remove "SPDX-" prefix
+                            spec_version = spec_version.substr(5);
                         }
                         if (spec_version.find("3.0") == 0) {
-                            version = "3.0"; // Normalize to expected format
+                            version = "3.0";
                         } else {
-                            version = spec_version; // Use as-is for other versions
+                            version = spec_version;
                         }
-                        heimdall::Utils::debugPrint("*** validateContent: Extracted and normalized version: '" + version + "' ***\n");
                     }
                 }
                 result.metadata["format"] = "SPDX 3.0";
@@ -299,11 +133,9 @@ ValidationResult SPDXValidator::validateContent(const std::string& content) {
             return result;
         }
     } catch (const std::exception& e) {
-        // Catch any unexpected exceptions to prevent crashes in CI
         result.addError("Unexpected error during validation: " + std::string(e.what()));
         return result;
     } catch (...) {
-        // Catch any other exceptions
         result.addError("Unknown error during validation");
         return result;
     }
@@ -396,7 +228,7 @@ ValidationResult SPDXValidator::validateSPDX2_3(const std::string& content) {
 ValidationResult SPDXValidator::validateSPDX3_0(const std::string& content) {
     ValidationResult result;
     try {
-        nlohmann::json sbom = safe_json_parse(content);
+        nlohmann::json sbom = nlohmann::json::parse(content);
         std::string version = "3.0";
         
         // Check for specVersion in the @graph array (JSON-LD format)
