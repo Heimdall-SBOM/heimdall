@@ -11,70 +11,43 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json-schema.hpp>
 #include <iostream>
-#include <csignal>
-#include <csetjmp>
 #include <stdexcept>
 
 namespace heimdall {
 
-// Signal handling for CI environments to prevent SIGTRAP crashes
-thread_local jmp_buf json_parse_jmp_buf;
-thread_local bool signal_handler_active = false;
-
-static void sigtrap_handler(int sig) {
-    if (signal_handler_active && sig == SIGTRAP) {
-        heimdall::Utils::debugPrint("Caught SIGTRAP during JSON parsing, converting to exception\n");
-        longjmp(json_parse_jmp_buf, 1);
-    }
-}
-
-// Safe JSON parsing wrapper that handles SIGTRAP signals
+// Safe JSON parsing wrapper that validates content before parsing
 nlohmann::json safe_json_parse(const std::string& content) {
-    // Set up signal handler for SIGTRAP
-    struct sigaction old_action;
-    struct sigaction new_action;
-    new_action.sa_handler = sigtrap_handler;
-    sigemptyset(&new_action.sa_mask);
-    new_action.sa_flags = 0;
+    // Pre-validate content to avoid SIGTRAP issues in CI environments
+    if (content.empty()) {
+        throw std::runtime_error("JSON content is empty");
+    }
     
-    bool handler_installed = (sigaction(SIGTRAP, &new_action, &old_action) == 0);
-    signal_handler_active = true;
-    
-    nlohmann::json result;
-    bool parse_successful = false;
-    
-    if (setjmp(json_parse_jmp_buf) == 0) {
-        // Normal execution path
-        try {
-            result = nlohmann::json::parse(content);
-            parse_successful = true;
-        } catch (const nlohmann::json::exception& e) {
-            signal_handler_active = false;
-            if (handler_installed) {
-                sigaction(SIGTRAP, &old_action, nullptr);
+    // Check for obviously invalid UTF-8 sequences that cause SIGTRAP
+    for (size_t i = 0; i < content.length(); ++i) {
+        unsigned char c = static_cast<unsigned char>(content[i]);
+        // Check for invalid UTF-8 bytes that commonly cause SIGTRAP
+        if (c == 0xFF || c == 0xFE || c == 0xFD) {
+            throw std::runtime_error("JSON content contains invalid UTF-8 sequences");
+        }
+        // Check for control characters that might cause issues
+        if (c < 0x20 && c != '\t' && c != '\n' && c != '\r') {
+            // Allow some control chars but reject problematic ones
+            if (c < 0x08) {
+                throw std::runtime_error("JSON content contains problematic control characters");
             }
-            throw; // Re-throw JSON parsing exceptions normally
         }
-    } else {
-        // Signal handler jumped here due to SIGTRAP
-        signal_handler_active = false;
-        if (handler_installed) {
-            sigaction(SIGTRAP, &old_action, nullptr);
-        }
-        throw std::runtime_error("JSON parsing failed due to signal (likely invalid UTF-8 or malformed content)");
     }
     
-    // Clean up signal handler
-    signal_handler_active = false;
-    if (handler_installed) {
-        sigaction(SIGTRAP, &old_action, nullptr);
+    // Try parsing with proper exception handling
+    try {
+        return nlohmann::json::parse(content);
+    } catch (const nlohmann::json::exception& e) {
+        // Convert JSON parsing errors to more descriptive errors
+        throw std::runtime_error("JSON parsing failed: " + std::string(e.what()));
+    } catch (...) {
+        // Catch any other exceptions (including potential SIGTRAP-related issues)
+        throw std::runtime_error("JSON parsing failed due to unknown error (possibly invalid content)");
     }
-    
-    if (!parse_successful) {
-        throw std::runtime_error("JSON parsing failed for unknown reason");
-    }
-    
-    return result;
 }
 
 // SPDX Validator Implementation

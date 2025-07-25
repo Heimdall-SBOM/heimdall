@@ -224,21 +224,25 @@ std::string getFileChecksum(const std::string& filePath) {
     
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
+        debugPrint("ERROR: Could not open file for checksum: " + filePath + "\n");
         return "";
     }
 
     EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
+        debugPrint("ERROR: EVP_MD_CTX_new() failed\n");
         return "";
     }
     
     const EVP_MD* md = EVP_sha256();
     if (!md) {
+        debugPrint("ERROR: EVP_sha256() failed\n");
         EVP_MD_CTX_free(mdctx);
         return "";
     }
     
     if (EVP_DigestInit_ex(mdctx, md, nullptr) != 1) {
+        debugPrint("ERROR: EVP_DigestInit_ex() failed\n");
         EVP_MD_CTX_free(mdctx);
         return "";
     }
@@ -260,16 +264,21 @@ std::string getFileChecksum(const std::string& filePath) {
     unsigned char hash[EVP_MAX_MD_SIZE];
     unsigned int hash_len = 0;
     if (EVP_DigestFinal_ex(mdctx, hash, &hash_len) != 1) {
+        debugPrint("ERROR: EVP_DigestFinal_ex() failed\n");
         EVP_MD_CTX_free(mdctx);
         return "";
     }
     EVP_MD_CTX_free(mdctx);
 
+    debugPrint("SUCCESS: Hash calculated, length=" + std::to_string(hash_len) + "\n");
+    
     std::stringstream ss;
     for (unsigned int i = 0; i < hash_len; i++) {
         ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
     }
-    return ss.str();
+    std::string result = ss.str();
+    debugPrint("SUCCESS: Final checksum: " + result + "\n");
+    return result;
 }
 
 std::string getFileSHA1Checksum(const std::string& filePath) {

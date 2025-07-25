@@ -263,7 +263,9 @@ TEST_F(UtilsExtendedTest, CalculateSHA256) {
                        OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
     
     // Should be same as getFileChecksum
+    std::cout << "[DEBUG] About to call getFileChecksum with file: " << test_file.string() << std::endl;
     std::string checksum1 = heimdall::Utils::getFileChecksum(test_file.string());
+    std::cout << "[DEBUG] getFileChecksum returned: '" << checksum1 << "' (length: " << checksum1.length() << ")" << std::endl;
     
     
     // Re-initialize OpenSSL before calculateSHA256 call to prevent state corruption
