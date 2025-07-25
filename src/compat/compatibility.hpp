@@ -51,13 +51,7 @@ limitations under the License.
 #include <tuple>
 #include <type_traits>
 
-// C++11 compatibility for result_of_t
-namespace heimdall {
-namespace compat {
-    template<typename F, typename... Args>
-    using result_of_t = typename std::result_of<F(Args...)>::type;
-}
-}
+
 #include <utility>
 #include <sstream>
 #include <cstdint>
