@@ -249,6 +249,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
+          ./scripts/build.sh --standard 17 --compiler clang
           cd $BUILD_DIR
           # Exclude problematic tests that work locally but fail in CI due to environment differences
           ctest --output-on-failure --verbose -E "SBOMValidationTest\.(SPDXValidatorWithMalformedJSON|SPDXValidatorWithInvalidUTF8|SPDXValidatorWithControlCharacters)"
