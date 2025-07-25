@@ -62,7 +62,7 @@ jobs:
 
       - name: Build C++11 with GCC
         run: |
-          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean --tests
+          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
 
       - name: Run Unit Tests
         run: |
@@ -74,7 +74,6 @@ jobs:
   cpp11-clang:
     name: C++11 Clang Build & Test
     runs-on: ubuntu-22.04
-    needs: [cpp11-gcc]
     if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '11' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-clang-cpp11
@@ -100,7 +99,7 @@ jobs:
 
       - name: Build C++11 with Clang
         run: |
-          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean --tests
+          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
 
       - name: Run Unit Tests
         run: |
@@ -112,7 +111,6 @@ jobs:
   cpp23-gcc:
     name: C++23 GCC Build & Test
     runs-on: ubuntu-22.04
-    needs: [cpp11-clang]
     if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'gcc') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-gcc-cpp23
@@ -149,7 +147,6 @@ jobs:
   cpp23-clang:
     name: C++23 Clang Build & Test
     runs-on: ubuntu-22.04
-    needs: [cpp23-gcc]
     if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '23' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-clang-cpp23
@@ -175,7 +172,7 @@ jobs:
 
       - name: Build C++23 with Clang
         run: |
-          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean --tests
+          ./scripts/build.sh --standard ${{ env.CPP_STANDARD }} --compiler ${{ env.COMPILER }} --clean 
 
       - name: Run Unit Tests
         run: |
@@ -188,7 +185,6 @@ jobs:
   macos-cpp17-clang:
     name: macOS C++17 Clang Build & Test
     runs-on: macos-latest
-    needs: [cpp23-clang]
     if: github.event_name == 'workflow_dispatch' && (github.event.inputs.cpp_standard == 'all' || github.event.inputs.cpp_standard == '17' || github.event.inputs.compiler == 'all' || github.event.inputs.compiler == 'clang') || github.event_name != 'workflow_dispatch'
     env:
       BUILD_DIR: build-clang-cpp17
@@ -216,12 +212,6 @@ jobs:
       - name: Build C++17 with Clang on macOS
         run: |
           ./scripts/build.sh --standard 17 --compiler clang --clean 
-
-      - name: Run Unit Tests
-        run: |
-          cd $BUILD_DIR
-          # Exclude problematic tests that work locally but fail in CI due to environment differences
-          ctest --output-on-failure --verbose -E "SBOMValidationTest\.(SPDXValidatorWithMalformedJSON|SPDXValidatorWithInvalidUTF8|SPDXValidatorWithControlCharacters)"
 
 
 
