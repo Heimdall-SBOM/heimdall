@@ -299,7 +299,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: example-builds
-          path: examples/*/build/
+          path: examples/*/build-*/
           retention-days: 7
 
   # Summary Job
