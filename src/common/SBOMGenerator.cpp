@@ -231,6 +231,50 @@ void SBOMGenerator::processComponent(const ComponentInfo& component) {
 
         pImpl->components[key] = processedComponent;
         Utils::debugPrint("Processed component: " + component.name);
+        
+        // Process discovered dependencies as separate components
+        for (const auto& depPath : processedComponent.dependencies) {
+            std::string resolvedPath = depPath;
+            
+            // Handle @rpath dependencies (resolve relative to app bundle)
+            if (depPath.find("@rpath/") == 0) {
+                std::string appDir = processedComponent.filePath;
+                size_t lastSlash = appDir.rfind('/');
+                if (lastSlash != std::string::npos) {
+                    appDir = appDir.substr(0, lastSlash);
+                    resolvedPath = appDir + "/" + depPath.substr(7); // Remove "@rpath/"
+                }
+            }
+            
+            std::string depKey = Utils::getFileName(resolvedPath) + ":" + resolvedPath;
+            
+            // Skip if this dependency is already processed
+            if (pImpl->components.find(depKey) != pImpl->components.end()) {
+                continue;
+            }
+            
+            // Create a new ComponentInfo for the dependency
+            ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
+            depComponent.fileType = FileType::SharedLibrary; // Most dependencies are shared libraries
+            
+            // Check if it's a system library
+            if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0) {
+                depComponent.isSystemLibrary = true;
+                depComponent.packageManager = "system";
+            }
+            
+            // Try to extract metadata for the dependency if it exists
+            if (Utils::fileExists(resolvedPath) && pImpl->metadataExtractor) {
+                pImpl->metadataExtractor->extractMetadata(depComponent);
+            } else {
+                // For non-existent files (like system libraries), set basic info
+                depComponent.version = "system";
+                depComponent.supplier = "Apple Inc.";
+            }
+            
+            pImpl->components[depKey] = depComponent;
+            Utils::debugPrint("Added dependency component: " + depComponent.name + " at " + resolvedPath);
+        }
     } else {
         // Update existing component
         ComponentInfo& existing = pImpl->components[key];
@@ -742,18 +786,75 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument() {
     ss << "    ],\n";
     ss << "    \"component\": {\n";
     ss << "      \"type\": \"application\",\n";
-    ss << "      \"name\": "
-       << Utils::formatJsonValue(buildInfo.targetName.empty() ? "Unknown" : buildInfo.targetName)
-       << ",\n";
-    ss << "      \"version\": "
-       << Utils::formatJsonValue(buildInfo.buildId.empty() ? "Unknown" : buildInfo.buildId) << "\n";
+    ss << "      \"name\": ";
+    
+    // Try to get a better application name
+    std::string appName = buildInfo.targetName;
+    std::string appVersion = buildInfo.buildId;
+    
+    if (appName.empty() && !components.empty()) {
+        // Find the main executable in an app bundle
+        for (const auto& pair : components) {
+            const auto& component = pair.second;
+            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos && 
+                (component.fileType == FileType::Executable || component.fileType == FileType::Unknown)) {
+                appName = component.name;
+                if (!component.version.empty()) {
+                    appVersion = component.version;
+                }
+                break;
+            }
+        }
+    }
+    
+    ss << Utils::formatJsonValue(appName.empty() ? "Unknown" : appName) << ",\n";
+    ss << "      \"version\": " << Utils::formatJsonValue(appVersion.empty() ? "Unknown" : appVersion) << "\n";
     ss << "    }\n";
     ss << "  },\n";
     ss << "  \"components\": [\n";
 
     bool first = true;
+    
+    // Get the main application info for filtering
+    std::string mainAppName = buildInfo.targetName;
+    std::string mainAppPath;
+    
+    if (mainAppName.empty() && !components.empty()) {
+        // Find the main executable in an app bundle
+        for (const auto& pair : components) {
+            const auto& component = pair.second;
+            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos && 
+                (component.fileType == FileType::Executable || component.fileType == FileType::Unknown)) {
+                mainAppName = component.name;
+                mainAppPath = component.filePath;
+                break;
+            }
+        }
+    }
+    
+    
     for (const auto& pair : components) {
         const auto& component = pair.second;
+        
+        // Skip the main application - it should only appear in metadata.component
+        bool isMainApp = false;
+        if (!mainAppName.empty() && component.name == mainAppName) {
+            // If we have a main app path, check it matches too
+            if (mainAppPath.empty() || component.filePath == mainAppPath) {
+                isMainApp = true;
+            }
+        }
+        
+        // Also check if this is an executable in an app bundle (likely the main app)
+        if (!isMainApp && component.filePath.find(".app/Contents/MacOS/") != std::string::npos && 
+            (component.fileType == FileType::Executable || component.fileType == FileType::Unknown)) {
+            isMainApp = true;
+        }
+        
+        if (isMainApp) {
+            continue; // Skip the main application
+        }
+        
         if (!first)
             ss << ",\n";
         ss << generateCycloneDXComponent(component);
@@ -852,8 +953,18 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "        }\n";
     ss << "      ]";
     
-    // Add all component properties (including enhanced Ada metadata)
-    if (!component.properties.empty() || component.containsDebugInfo) {
+    // Add all component properties (including enhanced Ada metadata and Mach-O metadata)
+    if (!component.properties.empty() || component.containsDebugInfo || 
+        !component.buildConfig.targetPlatform.empty() || 
+        !component.platformInfo.architecture.empty() ||
+        component.codeSignInfo.isHardenedRuntime ||
+        component.codeSignInfo.isAdHocSigned ||
+        !component.codeSignInfo.signer.empty() ||
+        !component.codeSignInfo.teamId.empty() ||
+        !component.codeSignInfo.certificateHash.empty() ||
+        !component.architectures.empty() ||
+        !component.entitlements.empty() ||
+        !component.frameworks.empty()) {
         ss << ",\n" << generateAllProperties(component);
     }
     
@@ -1055,6 +1166,257 @@ std::string SBOMGenerator::Impl::generateAllProperties(const ComponentInfo& comp
         ss << "        {\n";
         ss << "          \"name\": \"system_library\",\n";
         ss << "          \"value\": \"" << (component.isSystemLibrary ? "true" : "false") << "\"\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    // Add enhanced Mach-O metadata if available
+    if (!component.buildConfig.targetPlatform.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_target_platform\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.buildConfig.targetPlatform) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.buildConfig.minOSVersion.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_min_os_version\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.buildConfig.minOSVersion) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.buildConfig.sdkVersion.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_sdk_version\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.buildConfig.sdkVersion) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.buildConfig.buildVersion.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_build_version\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.buildConfig.buildVersion) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.buildConfig.sourceVersion.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_source_version\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.buildConfig.sourceVersion) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (component.buildConfig.isSimulator) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_is_simulator\",\n";
+        ss << "          \"value\": \"true\"\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.platformInfo.architecture.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_architecture\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.platformInfo.architecture) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.platformInfo.platform.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_platform\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.platformInfo.platform) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (component.platformInfo.minVersion > 0) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_platform_min_version\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(std::to_string(component.platformInfo.minVersion)) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (component.platformInfo.sdkVersion > 0) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_platform_sdk_version\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(std::to_string(component.platformInfo.sdkVersion)) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (component.platformInfo.isSimulator) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_platform_is_simulator\",\n";
+        ss << "          \"value\": \"true\"\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    // Add code signing information
+    if (!component.codeSignInfo.signer.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_code_signer\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.codeSignInfo.signer) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.codeSignInfo.teamId.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_team_id\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.codeSignInfo.teamId) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.codeSignInfo.certificateHash.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_certificate_hash\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.codeSignInfo.certificateHash) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.codeSignInfo.signingTime.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_signing_time\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(component.codeSignInfo.signingTime) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (component.codeSignInfo.isAdHocSigned) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_ad_hoc_signed\",\n";
+        ss << "          \"value\": \"true\"\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (component.codeSignInfo.isHardenedRuntime) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_hardened_runtime\",\n";
+        ss << "          \"value\": \"true\"\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    if (!component.architectures.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_architectures\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(std::to_string(component.architectures.size())) << "\n";
+        ss << "        }";
+        firstProperty = false;
+    }
+    
+    // Add entitlements information
+    if (!component.entitlements.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_entitlements_count\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(std::to_string(component.entitlements.size())) << "\n";
+        ss << "        }";
+        firstProperty = false;
+        
+        // Add individual entitlements as comma-separated string
+        if (!component.entitlements.empty()) {
+            std::stringstream entitlementsStr;
+            for (size_t i = 0; i < component.entitlements.size(); ++i) {
+                entitlementsStr << component.entitlements[i];
+                if (i + 1 < component.entitlements.size()) entitlementsStr << ", ";
+            }
+            ss << ",\n";
+            ss << "        {\n";
+            ss << "          \"name\": \"macho_entitlements\",\n";
+            ss << "          \"value\": " << Utils::formatJsonValue(entitlementsStr.str()) << "\n";
+            ss << "        }";
+        }
+    }
+    
+    // Add frameworks information
+    if (!component.frameworks.empty()) {
+        if (!firstProperty) {
+            ss << ",\n";
+        }
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_frameworks_count\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(std::to_string(component.frameworks.size())) << "\n";
+        ss << "        }";
+        firstProperty = false;
+        
+        // Add individual frameworks as comma-separated string
+        std::stringstream frameworksStr;
+        for (size_t i = 0; i < component.frameworks.size(); ++i) {
+            frameworksStr << component.frameworks[i];
+            if (i + 1 < component.frameworks.size()) frameworksStr << ", ";
+        }
+        ss << ",\n";
+        ss << "        {\n";
+        ss << "          \"name\": \"macho_frameworks\",\n";
+        ss << "          \"value\": " << Utils::formatJsonValue(frameworksStr.str()) << "\n";
         ss << "        }";
     }
     

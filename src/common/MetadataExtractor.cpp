@@ -82,6 +82,44 @@ limitations under the License.
 #include <mach-o/fat.h>
 #include <mach-o/loader.h>
 #include <mach-o/nlist.h>
+
+// Additional Mach-O constants (only define if not already defined)
+#ifndef LC_SOURCE_VERSION
+#define LC_SOURCE_VERSION 0x2A
+#endif
+
+#ifndef LC_BUILD_VERSION
+#define LC_BUILD_VERSION 0x32
+#endif
+
+#ifndef LC_VERSION_MIN_MACOSX
+#define LC_VERSION_MIN_MACOSX 0x24
+#endif
+
+#ifndef LC_VERSION_MIN_IPHONEOS
+#define LC_VERSION_MIN_IPHONEOS 0x25
+#endif
+
+#ifndef MH_HARDENED_RUNTIME
+#define MH_HARDENED_RUNTIME 0x800000
+#endif
+
+#ifndef PLATFORM_MACOS
+#define PLATFORM_MACOS 1
+#endif
+
+#ifndef PLATFORM_IOS
+#define PLATFORM_IOS 2
+#endif
+
+#ifndef PLATFORM_TVOS
+#define PLATFORM_TVOS 3
+#endif
+
+#ifndef PLATFORM_WATCHOS
+#define PLATFORM_WATCHOS 4
+#endif
+
 #endif
 
 namespace heimdall {
@@ -199,6 +237,16 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
         }
 
         success &= extractDependencyInfo(component);
+
+        // Enhanced Mach-O metadata extraction
+        if (isMachO(component.filePath)) {
+            std::cerr << "[DEBUG] MetadataExtractor: Detected Mach-O file, calling enhanced extraction: " + component.filePath << std::endl;
+            heimdall::Utils::debugPrint("MetadataExtractor: Detected Mach-O file, calling enhanced extraction: " + component.filePath);
+            success &= extractEnhancedMachOMetadata(component);
+        } else {
+            std::cerr << "[DEBUG] MetadataExtractor: File is not Mach-O: " + component.filePath << std::endl;
+            heimdall::Utils::debugPrint("MetadataExtractor: File is not Mach-O: " + component.filePath);
+        }
 
         // Enhanced package manager detection and metadata extraction
         bool packageManagerDetected = false;
@@ -450,6 +498,165 @@ bool MetadataExtractor::extractDependencyInfo(ComponentInfo& component) {
     return !deps.empty();
 }
 
+bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        std::cerr << "[DEBUG] Enhanced Mach-O extraction: File is not a Mach-O binary: " + component.filePath << std::endl;
+        heimdall::Utils::debugPrint("Enhanced Mach-O extraction: File is not a Mach-O binary: " + component.filePath);
+        return false;
+    }
+
+    std::cerr << "[DEBUG] Enhanced Mach-O extraction: Starting extraction for: " + component.filePath << std::endl;
+    heimdall::Utils::debugPrint("Enhanced Mach-O extraction: Starting extraction for: " + component.filePath);
+    bool anySuccess = false;
+    
+    // Extract all enhanced Mach-O metadata
+    bool codeSignSuccess = extractMachOCodeSignInfo(component);
+    std::cerr << "[DEBUG] Code signing extraction: " << (codeSignSuccess ? "success" : "failed") << std::endl;
+    anySuccess |= codeSignSuccess;
+    
+    bool buildConfigSuccess = extractMachOBuildConfig(component);
+    std::cerr << "[DEBUG] Build config extraction: " << (buildConfigSuccess ? "success" : "failed") << std::endl;
+    if (buildConfigSuccess) {
+        std::cerr << "[DEBUG] Build config - targetPlatform: " << component.buildConfig.targetPlatform << std::endl;
+        std::cerr << "[DEBUG] Build config - minOSVersion: " << component.buildConfig.minOSVersion << std::endl;
+        std::cerr << "[DEBUG] Build config - sdkVersion: " << component.buildConfig.sdkVersion << std::endl;
+        std::cerr << "[DEBUG] Build config - buildVersion: " << component.buildConfig.buildVersion << std::endl;
+        std::cerr << "[DEBUG] Build config - sourceVersion: " << component.buildConfig.sourceVersion << std::endl;
+    }
+    anySuccess |= buildConfigSuccess;
+    
+    bool platformSuccess = extractMachOPlatformInfo(component);
+    std::cerr << "[DEBUG] Platform info extraction: " << (platformSuccess ? "success" : "failed") << std::endl;
+    anySuccess |= platformSuccess;
+    
+    bool entitlementsSuccess = extractMachOEntitlements(component);
+    std::cerr << "[DEBUG] Entitlements extraction: " << (entitlementsSuccess ? "success" : "failed") << std::endl;
+    anySuccess |= entitlementsSuccess;
+    
+    bool architecturesSuccess = extractMachOArchitectures(component);
+    std::cerr << "[DEBUG] Architectures extraction: " << (architecturesSuccess ? "success" : "failed") << std::endl;
+    anySuccess |= architecturesSuccess;
+    
+    bool frameworksSuccess = extractMachOFrameworks(component);
+    std::cerr << "[DEBUG] Frameworks extraction: " << (frameworksSuccess ? "success" : "failed") << std::endl;
+    anySuccess |= frameworksSuccess;
+    
+    // Update component name and version from enhanced Mach-O metadata
+    if (anySuccess) {
+        std::cerr << "[DEBUG] Current component name: " << component.name << std::endl;
+        std::cerr << "[DEBUG] Current component version: " << component.version << std::endl;
+        
+        // Try to get a better name from the file path (for macOS apps)
+        std::string fileName = heimdall::Utils::getFileName(component.filePath);
+        if (!fileName.empty() && fileName != component.name) {
+            // For macOS apps, try to extract the app name from the bundle path
+            std::string filePath = component.filePath;
+            if (filePath.find(".app/Contents/MacOS/") != std::string::npos) {
+                // Extract app name from bundle path
+                size_t appPos = filePath.find(".app/");
+                if (appPos != std::string::npos) {
+                    size_t lastSlash = filePath.rfind('/', appPos);
+                    if (lastSlash != std::string::npos) {
+                        std::string appName = filePath.substr(lastSlash + 1, appPos - lastSlash - 1);
+                        if (!appName.empty()) {
+                            component.name = appName;
+                            std::cerr << "[DEBUG] Updated component name to: " << appName << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // First priority: Try to extract version from Info.plist for macOS apps
+        std::string originalVersion = component.version;
+        std::cerr << "[DEBUG] Version extraction - originalVersion: '" << originalVersion << "'" << std::endl;
+        bool appBundleSuccess = extractMacOSAppBundleMetadata(component);
+        bool versionSetFromInfoPlist = false;
+        std::cerr << "[DEBUG] Version extraction - after Info.plist: '" << component.version << "'" << std::endl;
+        
+        // If Info.plist parsing was successful and returned a non-empty version, consider it set from Info.plist
+        if (appBundleSuccess && !component.version.empty()) {
+            if (component.version != originalVersion) {
+                std::cerr << "[DEBUG] Updated component version from Info.plist to: " << component.version << std::endl;
+            } else {
+                std::cerr << "[DEBUG] Component version confirmed from Info.plist: " << component.version << std::endl;
+            }
+            versionSetFromInfoPlist = true;
+        }
+        
+        // Only use fallback versions if Info.plist didn't provide one
+        std::cerr << "[DEBUG] Version logic check - versionSetFromInfoPlist: " << versionSetFromInfoPlist << ", version.empty(): " << component.version.empty() << ", version == original: " << (component.version == originalVersion) << std::endl;
+        if (!versionSetFromInfoPlist) {
+            // Fallback: Try to set version from build config if Info.plist didn't provide one
+            if (!component.buildConfig.sourceVersion.empty()) {
+                component.version = component.buildConfig.sourceVersion;
+                std::cerr << "[DEBUG] Updated component version to: " << component.buildConfig.sourceVersion << std::endl;
+            } else if (!component.buildConfig.buildVersion.empty()) {
+                component.version = component.buildConfig.buildVersion;
+                std::cerr << "[DEBUG] Updated component version to: " << component.buildConfig.buildVersion << std::endl;
+            } else if (!component.buildConfig.minOSVersion.empty()) {
+                // Use minOSVersion as a fallback version only if no Info.plist version was found
+                component.version = component.buildConfig.minOSVersion;
+                std::cerr << "[DEBUG] Updated component version to minOSVersion: " << component.buildConfig.minOSVersion << std::endl;
+            }
+        } else if (versionSetFromInfoPlist) {
+            std::cerr << "[DEBUG] Info.plist version preserved: " << component.version << std::endl;
+        }
+    }
+    
+    std::cerr << "[DEBUG] Enhanced Mach-O extraction: Completed with success: " << anySuccess << std::endl;
+    heimdall::Utils::debugPrint("Enhanced Mach-O extraction: Completed with success: " + std::to_string(anySuccess));
+    return anySuccess;
+}
+
+bool MetadataExtractor::extractMachOCodeSignInfo(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        return false;
+    }
+    
+    return MetadataHelpers::extractMachOCodeSignInfo(component.filePath, component.codeSignInfo);
+}
+
+bool MetadataExtractor::extractMachOBuildConfig(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        return false;
+    }
+    
+    return MetadataHelpers::extractMachOBuildConfig(component.filePath, component.buildConfig);
+}
+
+bool MetadataExtractor::extractMachOPlatformInfo(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        return false;
+    }
+    
+    return MetadataHelpers::extractMachOPlatformInfo(component.filePath, component.platformInfo);
+}
+
+bool MetadataExtractor::extractMachOEntitlements(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        return false;
+    }
+    
+    return MetadataHelpers::extractMachOEntitlements(component.filePath, component.entitlements);
+}
+
+bool MetadataExtractor::extractMachOArchitectures(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        return false;
+    }
+    
+    return MetadataHelpers::extractMachOArchitectures(component.filePath, component.architectures);
+}
+
+bool MetadataExtractor::extractMachOFrameworks(ComponentInfo& component) {
+    if (!isMachO(component.filePath)) {
+        return false;
+    }
+    
+    return MetadataHelpers::extractMachOFrameworks(component.filePath, component.frameworks);
+}
+
 bool MetadataExtractor::isELF(const std::string& filePath) {
     std::ifstream file(filePath, std::ios::binary);
     if (!file.is_open()) {
@@ -593,6 +800,22 @@ bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component
     }
 
     return true;
+}
+
+bool MetadataExtractor::extractMacOSAppBundleMetadata(ComponentInfo& component) {
+    std::string appVersion, bundleName;
+    
+    if (MetadataHelpers::extractMacOSAppBundleInfo(component.filePath, appVersion, bundleName)) {
+        if (!appVersion.empty()) {
+            component.version = appVersion;
+        }
+        if (!bundleName.empty() && component.name != bundleName) {
+            component.name = bundleName;
+        }
+        return true;
+    }
+    
+    return false;
 }
 
 void MetadataExtractor::setVerbose(bool verbose) {
@@ -1600,10 +1823,145 @@ bool extractMachOSections(const std::string& filePath,
 #endif
 }
 
-bool extractMachOVersion([[maybe_unused]] const std::string& filePath, std::string& version) {
-    // Implementation would use Mach-O APIs
-    Utils::debugPrint("Mach-O version extraction not implemented");
+bool extractMachOVersion(const std::string& filePath, std::string& version) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for version extraction: " + filePath);
+        return false;
+    }
+
+    // Handle fat binaries
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+        struct fat_arch arch;
+        file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+        uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+        file.seekg(offset);
+        file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+        file.seekg(offset);
+    }
+
+    bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+    std::string dylibVersion, sourceVersion, symbolVersion;
+
+    // Read Mach-O header
+    if (is64) {
+        struct mach_header_64 mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        // Iterate load commands
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            // Extract dylib version from LC_ID_DYLIB
+            if (lc.cmd == LC_ID_DYLIB) {
+                struct dylib_command dylib_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&dylib_cmd), sizeof(dylib_cmd));
+                
+                uint32_t major = dylib_cmd.dylib.current_version >> 16;
+                uint32_t minor = (dylib_cmd.dylib.current_version >> 8) & 0xFF;
+                uint32_t patch = dylib_cmd.dylib.current_version & 0xFF;
+                
+                dylibVersion = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+            }
+            // Extract source version from LC_SOURCE_VERSION
+            else if (lc.cmd == LC_SOURCE_VERSION) {
+                struct source_version_command source_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&source_cmd), sizeof(source_cmd));
+                
+                uint64_t version = source_cmd.version;
+                uint32_t major = (version >> 40) & 0xFFFFFF;
+                uint32_t minor = (version >> 30) & 0x3FF;
+                uint32_t patch = (version >> 20) & 0x3FF;
+                uint32_t build = (version >> 10) & 0x3FF;
+                uint32_t revision = version & 0x3FF;
+                
+                sourceVersion = std::to_string(major) + "." + std::to_string(minor) + "." + 
+                               std::to_string(patch) + "." + std::to_string(build) + "." + 
+                               std::to_string(revision);
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    } else {
+        struct mach_header mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            // Extract dylib version from LC_ID_DYLIB
+            if (lc.cmd == LC_ID_DYLIB) {
+                struct dylib_command dylib_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&dylib_cmd), sizeof(dylib_cmd));
+                
+                uint32_t major = dylib_cmd.dylib.current_version >> 16;
+                uint32_t minor = (dylib_cmd.dylib.current_version >> 8) & 0xFF;
+                uint32_t patch = dylib_cmd.dylib.current_version & 0xFF;
+                
+                dylibVersion = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+            }
+            // Extract source version from LC_SOURCE_VERSION
+            else if (lc.cmd == LC_SOURCE_VERSION) {
+                struct source_version_command source_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&source_cmd), sizeof(source_cmd));
+                
+                uint64_t version = source_cmd.version;
+                uint32_t major = (version >> 40) & 0xFFFFFF;
+                uint32_t minor = (version >> 30) & 0x3FF;
+                uint32_t patch = (version >> 20) & 0x3FF;
+                uint32_t build = (version >> 10) & 0x3FF;
+                uint32_t revision = version & 0x3FF;
+                
+                sourceVersion = std::to_string(major) + "." + std::to_string(minor) + "." + 
+                               std::to_string(patch) + "." + std::to_string(build) + "." + 
+                               std::to_string(revision);
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    }
+
+    // Try to extract version from symbols as fallback
+    std::vector<SymbolInfo> symbols;
+    if (extractMachOSymbols(filePath, symbols)) {
+        symbolVersion = detectVersionFromSymbols(symbols);
+    }
+
+    // Priority: source version > dylib version > symbol version
+    if (!sourceVersion.empty()) {
+        version = sourceVersion;
+        return true;
+    } else if (!dylibVersion.empty()) {
+        version = dylibVersion;
+        return true;
+    } else if (!symbolVersion.empty()) {
+        version = symbolVersion;
+        return true;
+    }
+
     return false;
+#else
+    Utils::debugPrint("Mach-O version extraction not supported on this platform");
+    return false;
+#endif
 }
 
 bool extractMachOUUID(const std::string& filePath, std::string& uuid) {
@@ -2587,7 +2945,7 @@ std::vector<std::string> extractDynamicDependencies(const std::string& filePath)
 
 #ifdef __APPLE__
     if (isMachO(filePath)) {
-        dependencies = extractMachOLinkedLibraries(filePath);
+        dependencies = MetadataHelpers::extractMachOLinkedLibraries(filePath);
     }
 #endif
 
@@ -2703,6 +3061,668 @@ std::vector<std::string> extractMachOLinkedLibraries(const std::string& filePath
 #endif
 
     return libraries;
+}
+
+bool extractMachOCodeSignInfo(const std::string& filePath, CodeSignInfo& codeSignInfo) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for code signing extraction: " + filePath);
+        return false;
+    }
+
+    // Handle fat binaries
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+        struct fat_arch arch;
+        file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+        uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+        file.seekg(offset);
+        file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+        file.seekg(offset);
+    }
+
+    bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+    // Read Mach-O header
+    if (is64) {
+        struct mach_header_64 mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        // Iterate load commands
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_CODE_SIGNATURE) {
+                struct linkedit_data_command code_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&code_cmd), sizeof(code_cmd));
+                
+                // Basic code signing info extraction
+                // Note: Full code signing parsing would require parsing the CMS signature
+                codeSignInfo.isAdHocSigned = true; // Default assumption
+                codeSignInfo.isHardenedRuntime = (mh.flags & MH_HARDENED_RUNTIME) != 0;
+                
+                return true;
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    } else {
+        struct mach_header mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_CODE_SIGNATURE) {
+                struct linkedit_data_command code_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&code_cmd), sizeof(code_cmd));
+                
+                codeSignInfo.isAdHocSigned = true;
+                codeSignInfo.isHardenedRuntime = (mh.flags & MH_HARDENED_RUNTIME) != 0;
+                
+                return true;
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    }
+
+    return false;
+#else
+    Utils::debugPrint("Mach-O code signing extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractMachOBuildConfig(const std::string& filePath, BuildConfigInfo& buildConfig) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for build config extraction: " + filePath);
+        return false;
+    }
+
+    // Handle fat binaries
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+        struct fat_arch arch;
+        file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+        uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+        file.seekg(offset);
+        file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+        file.seekg(offset);
+    }
+
+    bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+    // Read Mach-O header
+    if (is64) {
+        struct mach_header_64 mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        // Iterate load commands
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_BUILD_VERSION) {
+                struct build_version_command build_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&build_cmd), sizeof(build_cmd));
+                
+                // Extract platform info
+                switch (build_cmd.platform) {
+                    case PLATFORM_MACOS:
+                        buildConfig.targetPlatform = "macos";
+                        break;
+                    case PLATFORM_IOS:
+                        buildConfig.targetPlatform = "ios";
+                        break;
+                    case PLATFORM_TVOS:
+                        buildConfig.targetPlatform = "tvos";
+                        break;
+                    case PLATFORM_WATCHOS:
+                        buildConfig.targetPlatform = "watchos";
+                        break;
+                    default:
+                        buildConfig.targetPlatform = "unknown";
+                        break;
+                }
+                
+                // Extract version info
+                uint32_t major = (build_cmd.minos >> 16) & 0xFFFF;
+                uint32_t minor = (build_cmd.minos >> 8) & 0xFF;
+                uint32_t patch = build_cmd.minos & 0xFF;
+                buildConfig.minOSVersion = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+                
+                major = (build_cmd.sdk >> 16) & 0xFFFF;
+                minor = (build_cmd.sdk >> 8) & 0xFF;
+                patch = build_cmd.sdk & 0xFF;
+                buildConfig.sdkVersion = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+                
+                return true;
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    } else {
+        struct mach_header mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_VERSION_MIN_MACOSX || lc.cmd == LC_VERSION_MIN_IPHONEOS) {
+                struct version_min_command version_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&version_cmd), sizeof(version_cmd));
+                
+                if (lc.cmd == LC_VERSION_MIN_MACOSX) {
+                    buildConfig.targetPlatform = "macos";
+                } else {
+                    buildConfig.targetPlatform = "ios";
+                }
+                
+                uint32_t major = (version_cmd.version >> 16) & 0xFFFF;
+                uint32_t minor = (version_cmd.version >> 8) & 0xFF;
+                uint32_t patch = version_cmd.version & 0xFF;
+                buildConfig.minOSVersion = std::to_string(major) + "." + std::to_string(minor) + "." + std::to_string(patch);
+                
+                return true;
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    }
+
+    return false;
+#else
+    Utils::debugPrint("Mach-O build config extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractMachOPlatformInfo(const std::string& filePath, PlatformInfo& platformInfo) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for platform info extraction: " + filePath);
+        return false;
+    }
+
+    // Handle fat binaries
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+        struct fat_arch arch;
+        file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+        uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+        file.seekg(offset);
+        file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+        file.seekg(offset);
+    }
+
+    bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+    // Read Mach-O header
+    if (is64) {
+        struct mach_header_64 mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        
+        // Extract architecture
+        switch (mh.cputype) {
+            case CPU_TYPE_X86_64:
+                platformInfo.architecture = "x86_64";
+                break;
+            case CPU_TYPE_ARM64:
+                platformInfo.architecture = "arm64";
+                break;
+            case CPU_TYPE_ARM:
+                platformInfo.architecture = "arm";
+                break;
+            default:
+                platformInfo.architecture = "unknown";
+                break;
+        }
+        
+        // Extract platform from flags
+        if (mh.flags & MH_HARDENED_RUNTIME) {
+            platformInfo.platform = "macos"; // Hardened runtime is typically macOS
+        }
+        
+        return true;
+    } else {
+        struct mach_header mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        
+        // Extract architecture
+        switch (mh.cputype) {
+            case CPU_TYPE_X86:
+                platformInfo.architecture = "x86";
+                break;
+            case CPU_TYPE_ARM:
+                platformInfo.architecture = "arm";
+                break;
+            default:
+                platformInfo.architecture = "unknown";
+                break;
+        }
+        
+        return true;
+    }
+
+    return false;
+#else
+    Utils::debugPrint("Mach-O platform info extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractMachOEntitlements(const std::string& filePath, std::vector<std::string>& entitlements) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for entitlements extraction: " + filePath);
+        return false;
+    }
+
+    // Handle fat binaries
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+        struct fat_arch arch;
+        file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+        uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+        file.seekg(offset);
+        file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+        file.seekg(offset);
+    }
+
+    bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+    // Read Mach-O header
+    if (is64) {
+        struct mach_header_64 mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        // Iterate load commands
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_CODE_SIGNATURE) {
+                struct linkedit_data_command code_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&code_cmd), sizeof(code_cmd));
+                
+                // Note: Full entitlements parsing would require parsing the code signature
+                // For now, we'll add basic entitlements based on file flags
+                if (mh.flags & MH_HARDENED_RUNTIME) {
+                    entitlements.push_back("com.apple.security.hardened-runtime");
+                }
+                
+                return !entitlements.empty();
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    } else {
+        struct mach_header mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_CODE_SIGNATURE) {
+                struct linkedit_data_command code_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&code_cmd), sizeof(code_cmd));
+                
+                if (mh.flags & MH_HARDENED_RUNTIME) {
+                    entitlements.push_back("com.apple.security.hardened-runtime");
+                }
+                
+                return !entitlements.empty();
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    }
+
+    return false;
+#else
+    Utils::debugPrint("Mach-O entitlements extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractMachOArchitectures(const std::string& filePath, std::vector<ArchitectureInfo>& architectures) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for architecture extraction: " + filePath);
+        return false;
+    }
+
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+
+        for (uint32_t i = 0; i < nfat_arch; ++i) {
+            struct fat_arch arch;
+            file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+            
+            ArchitectureInfo archInfo;
+            archInfo.cpuType = OSSwapBigToHostInt32(arch.cputype);
+            archInfo.cpuSubtype = OSSwapBigToHostInt32(arch.cpusubtype);
+            archInfo.offset = OSSwapBigToHostInt32(arch.offset);
+            archInfo.size = OSSwapBigToHostInt32(arch.size);
+            archInfo.align = OSSwapBigToHostInt32(arch.align);
+            
+            // Set architecture name
+            switch (archInfo.cpuType) {
+                case CPU_TYPE_X86_64:
+                    archInfo.name = "x86_64";
+                    break;
+                case CPU_TYPE_ARM64:
+                    archInfo.name = "arm64";
+                    break;
+                case CPU_TYPE_ARM:
+                    archInfo.name = "arm";
+                    break;
+                case CPU_TYPE_X86:
+                    archInfo.name = "x86";
+                    break;
+                default:
+                    archInfo.name = "unknown";
+                    break;
+            }
+            
+            architectures.push_back(archInfo);
+        }
+        
+        return !architectures.empty();
+    } else {
+        // Single architecture
+        bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+        
+        if (is64) {
+            struct mach_header_64 mh;
+            file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+            
+            ArchitectureInfo archInfo;
+            archInfo.cpuType = mh.cputype;
+            archInfo.cpuSubtype = mh.cpusubtype;
+            archInfo.offset = 0;
+            archInfo.size = 0; // Would need to calculate from file size
+            archInfo.align = 0;
+            
+            switch (archInfo.cpuType) {
+                case CPU_TYPE_X86_64:
+                    archInfo.name = "x86_64";
+                    break;
+                case CPU_TYPE_ARM64:
+                    archInfo.name = "arm64";
+                    break;
+                case CPU_TYPE_ARM:
+                    archInfo.name = "arm";
+                    break;
+                default:
+                    archInfo.name = "unknown";
+                    break;
+            }
+            
+            architectures.push_back(archInfo);
+        } else {
+            struct mach_header mh;
+            file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+            
+            ArchitectureInfo archInfo;
+            archInfo.cpuType = mh.cputype;
+            archInfo.cpuSubtype = mh.cpusubtype;
+            archInfo.offset = 0;
+            archInfo.size = 0;
+            archInfo.align = 0;
+            
+            switch (archInfo.cpuType) {
+                case CPU_TYPE_X86:
+                    archInfo.name = "x86";
+                    break;
+                case CPU_TYPE_ARM:
+                    archInfo.name = "arm";
+                    break;
+                default:
+                    archInfo.name = "unknown";
+                    break;
+            }
+            
+            architectures.push_back(archInfo);
+        }
+        
+        return !architectures.empty();
+    }
+
+    return false;
+#else
+    Utils::debugPrint("Mach-O architecture extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractMachOFrameworks(const std::string& filePath, std::vector<std::string>& frameworks) {
+#ifdef __APPLE__
+    std::ifstream file(filePath, std::ios::binary);
+    if (!file.is_open()) {
+        Utils::debugPrint("Failed to open Mach-O file for framework extraction: " + filePath);
+        return false;
+    }
+
+    // Handle fat binaries
+    uint32_t magic = 0;
+    file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+    file.seekg(0);
+
+    if (magic == FAT_MAGIC || magic == FAT_CIGAM) {
+        struct fat_header fatHeader;
+        file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+        uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+        struct fat_arch arch;
+        file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+        uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+        file.seekg(offset);
+        file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+        file.seekg(offset);
+    }
+
+    bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+    // Read Mach-O header
+    if (is64) {
+        struct mach_header_64 mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        // Iterate load commands
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            // Check for framework load commands
+            if (lc.cmd == LC_LOAD_DYLIB || lc.cmd == LC_LOAD_WEAK_DYLIB ||
+                lc.cmd == LC_REEXPORT_DYLIB || lc.cmd == LC_LAZY_LOAD_DYLIB) {
+                struct dylib_command dylib_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&dylib_cmd), sizeof(dylib_cmd));
+
+                // Read library name
+                std::string libName;
+                char ch;
+                file.seekg(cmdStart + static_cast<std::streamoff>(dylib_cmd.dylib.name.offset));
+                while (file.get(ch) && ch != '\0') {
+                    libName += ch;
+                }
+
+                // Check if it's a framework
+                if (!libName.empty() && libName.find(".framework") != std::string::npos) {
+                    frameworks.push_back(libName);
+                }
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    } else {
+        struct mach_header mh;
+        file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+        uint32_t ncmds = mh.ncmds;
+
+        for (uint32_t i = 0; i < ncmds; ++i) {
+            std::streampos cmdStart = file.tellg();
+            struct load_command lc;
+            file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+            if (lc.cmd == LC_LOAD_DYLIB || lc.cmd == LC_LOAD_WEAK_DYLIB ||
+                lc.cmd == LC_REEXPORT_DYLIB || lc.cmd == LC_LAZY_LOAD_DYLIB) {
+                struct dylib_command dylib_cmd;
+                file.seekg(cmdStart);
+                file.read(reinterpret_cast<char*>(&dylib_cmd), sizeof(dylib_cmd));
+
+                std::string libName;
+                char ch;
+                file.seekg(cmdStart + static_cast<std::streamoff>(dylib_cmd.dylib.name.offset));
+                while (file.get(ch) && ch != '\0') {
+                    libName += ch;
+                }
+
+                if (!libName.empty() && libName.find(".framework") != std::string::npos) {
+                    frameworks.push_back(libName);
+                }
+            }
+
+            file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+        }
+    }
+
+    return !frameworks.empty();
+#else
+    Utils::debugPrint("Mach-O framework extraction not supported on this platform");
+    return false;
+#endif
+}
+
+bool extractMacOSAppBundleInfo(const std::string& appBundlePath, std::string& version, std::string& bundleName) {
+    std::string infoPlistPath;
+    
+    // Detect if we have an executable path within an app bundle
+    if (appBundlePath.find(".app/Contents/MacOS/") != std::string::npos) {
+        // Extract the .app bundle path
+        size_t appPos = appBundlePath.find(".app/Contents/MacOS/");
+        if (appPos != std::string::npos) {
+            std::string appBundleRoot = appBundlePath.substr(0, appPos + 4); // Include ".app"
+            infoPlistPath = appBundleRoot + "/Contents/Info.plist";
+        }
+    } else if (appBundlePath.find(".app") != std::string::npos) {
+        // Assume it's already the app bundle path
+        infoPlistPath = appBundlePath + "/Contents/Info.plist";
+    } else {
+        return false;
+    }
+    
+    std::ifstream file(infoPlistPath);
+    if (!file.is_open()) {
+        return false;
+    }
+    
+    std::string line;
+    bool foundVersionKey = false;
+    bool foundNameKey = false;
+    
+    while (std::getline(file, line)) {
+        // Look for CFBundleShortVersionString key
+        if (line.find("<key>CFBundleShortVersionString</key>") != std::string::npos) {
+            foundVersionKey = true;
+            continue;
+        }
+        
+        // Look for CFBundleName key
+        if (line.find("<key>CFBundleName</key>") != std::string::npos) {
+            foundNameKey = true;
+            continue;
+        }
+        
+        // Extract version value after finding the key
+        if (foundVersionKey && line.find("<string>") != std::string::npos) {
+            size_t start = line.find("<string>") + 8;
+            size_t end = line.find("</string>");
+            if (end != std::string::npos && end > start) {
+                version = line.substr(start, end - start);
+                foundVersionKey = false;
+            }
+        }
+        
+        // Extract bundle name value after finding the key
+        if (foundNameKey && line.find("<string>") != std::string::npos) {
+            size_t start = line.find("<string>") + 8;
+            size_t end = line.find("</string>");
+            if (end != std::string::npos && end > start) {
+                bundleName = line.substr(start, end - start);
+                foundNameKey = false;
+            }
+        }
+        
+        // Stop if we found both
+        if (!version.empty() && !bundleName.empty()) {
+            break;
+        }
+    }
+    
+    return !version.empty() || !bundleName.empty();
 }
 
 }  // namespace MetadataHelpers
