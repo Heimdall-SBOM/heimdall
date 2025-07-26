@@ -123,12 +123,6 @@ if(DEFINED LLVM_CONFIG)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     
-    # Fallback: if LLVM_LIBRARIES is empty, set it manually based on LLVM version
-    if(NOT LLVM_LIBRARIES)
-        set(LLVM_LIBRARIES "-lLLVM-${LLVM_VERSION_MAJOR}")
-        message(STATUS "LLVM_LIBRARIES was empty, setting to: ${LLVM_LIBRARIES}")
-    endif()
-    
     # Set LLVM definitions
     set(LLVM_DEFINITIONS "-DLLVM_VERSION_MAJOR=${LLVM_VERSION_MAJOR}")
     
@@ -141,6 +135,12 @@ else()
     find_package(LLVM REQUIRED CONFIG)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     add_definitions(${LLVM_DEFINITIONS})
+endif()
+
+# Fallback: if LLVM_LIBRARIES is empty, set it manually based on LLVM version (always run this)
+if(NOT LLVM_LIBRARIES OR LLVM_LIBRARIES STREQUAL "")
+    set(LLVM_LIBRARIES "-lLLVM-${LLVM_VERSION_MAJOR}" CACHE STRING "LLVM libraries fallback" FORCE)
+    message(STATUS "LLVM_LIBRARIES was empty, setting to: ${LLVM_LIBRARIES}")
 endif()
 
 # Detect available LLVM targets
@@ -253,7 +253,7 @@ add_custom_command(
     COMMENT "Copying json-schema.hpp to include directory"
 )
 
-add_custom_target(copy_json_schema_header ALL
+add_custom_target(copy_json_schema_header
     DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
 )
 

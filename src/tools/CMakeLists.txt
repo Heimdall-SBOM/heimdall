@@ -14,6 +14,7 @@ endif()
 # Build validation tools
 add_executable(debug_validator debug_validator.cpp)
 target_link_libraries(debug_validator PRIVATE nlohmann_json_schema_validator)
+add_dependencies(debug_validator copy_json_schema_header)
 target_link_libraries(debug_validator PRIVATE heimdall-core ${OPENSSL_LIBRARIES})
 if(UNIX AND NOT APPLE AND ELF_LIBRARY)
     target_link_libraries(debug_validator PRIVATE ${ELF_LIBRARY})

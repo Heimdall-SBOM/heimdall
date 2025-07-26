@@ -80,6 +80,7 @@ if(ENABLE_DEBUG)
 endif()
 
 target_link_libraries(heimdall-core PRIVATE nlohmann_json_schema_validator)
+add_dependencies(heimdall-core copy_json_schema_header)
 
 
 # Add DWARF support definitions
