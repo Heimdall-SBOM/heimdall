@@ -330,22 +330,31 @@ setup_compiler_environment() {
     elif [[ "$compiler_type" =~ ^scl-gcc-toolset- ]]; then
         # Extract version from compiler type (e.g., scl-gcc-toolset-14 -> 14)
         local version=$(echo "$compiler_type" | sed 's/scl-gcc-toolset-//')
-        # Create unique wrapper scripts in /tmp
-        local cc_wrapper="/tmp/heimdall-cc-scl-gcc-toolset-${version}-$$.sh"
-        local cxx_wrapper="/tmp/heimdall-cxx-scl-gcc-toolset-${version}-$$.sh"
-        cat > "$cc_wrapper" <<EOF
+        
+        # Create temporary wrapper scripts for SCL compilers
+        local random_suffix="$$"
+        local cc_wrapper="/tmp/heimdall-cc-scl-gcc-toolset-${version}-${random_suffix}.sh"
+        local cxx_wrapper="/tmp/heimdall-cxx-scl-gcc-toolset-${version}-${random_suffix}.sh"
+        
+        # Create CC wrapper script
+        cat > "$cc_wrapper" << EOF
 #!/bin/bash
 exec scl enable gcc-toolset-${version} -- gcc "\$@"
 EOF
-        cat > "$cxx_wrapper" <<EOF
+        chmod +x "$cc_wrapper"
+        
+        # Create CXX wrapper script
+        cat > "$cxx_wrapper" << EOF
 #!/bin/bash
 exec scl enable gcc-toolset-${version} -- g++ "\$@"
 EOF
-        chmod +x "$cc_wrapper" "$cxx_wrapper"
+        chmod +x "$cxx_wrapper"
+        
         export CC="$cc_wrapper"
         export CXX="$cxx_wrapper"
-        # Clean up wrappers on exit
-        trap "rm -f '$cc_wrapper' '$cxx_wrapper'" EXIT
+        export SCL_GCC_TOOLSET_VERSION="$version"
+        # Set environment variables that will be used by the build script
+        export SCL_ENV="gcc-toolset-${version}"
     else
         print_error "Unknown compiler type: $compiler_type"
         return 1
@@ -353,10 +362,13 @@ EOF
     
     # Verify the compiler is available
     if [[ "$compiler_type" =~ ^scl-gcc-toolset- ]]; then
-        # For SCL compilers, check if the wrapper script exists and is executable
-        local script_path="$CC"
-        if [ ! -x "$script_path" ]; then
-            print_error "SCL compiler wrapper not found: $script_path"
+        # For SCL compilers, check if the wrapper scripts exist and are executable
+        if [ ! -x "$CC" ]; then
+            print_error "SCL CC wrapper script not found: $CC"
+            return 1
+        fi
+        if [ ! -x "$CXX" ]; then
+            print_error "SCL CXX wrapper script not found: $CXX"
             return 1
         fi
     elif [[ "$compiler_type" =~ ^homebrew-gcc- ]]; then
@@ -384,7 +396,13 @@ EOF
     fi
     
     # Get compiler versions
-    if [[ "$compiler_type" =~ ^homebrew-gcc- ]]; then
+    if [[ "$compiler_type" =~ ^scl-gcc-toolset- ]]; then
+        # For SCL compilers, use the version we already detected
+        export CC_VERSION="$compiler_name"
+        export CXX_VERSION="$compiler_name"
+        export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
+        export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
+    elif [[ "$compiler_type" =~ ^homebrew-gcc- ]]; then
         # For Homebrew GCC, use the version we already parsed
         export CC_VERSION="$compiler_name"
         export CXX_VERSION="$compiler_name"
@@ -490,6 +508,14 @@ main() {
         echo "CXX_VERSION=$CXX_VERSION"
         echo "CC_MAJOR_VERSION=$CC_MAJOR_VERSION"
         echo "CXX_MAJOR_VERSION=$CXX_MAJOR_VERSION"
+        
+        # Export SCL environment variables if they exist
+        if [ -n "$SCL_ENV" ]; then
+            echo "SCL_ENV=$SCL_ENV"
+        fi
+        if [ -n "$SCL_GCC_TOOLSET_VERSION" ]; then
+            echo "SCL_GCC_TOOLSET_VERSION=$SCL_GCC_TOOLSET_VERSION"
+        fi
     else
         exit 1
     fi
