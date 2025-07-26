@@ -19,11 +19,11 @@ limitations under the License.
  * @brief Debug tool for testing SBOM validation functionality
  * @author Trevor Bakker
  * @date 2025
- * 
+ *
  * This file provides a simple debug tool for testing the SBOM validation
  * functionality. It includes a hardcoded SPDX test document and validates
  * it using the SBOMValidator framework.
- * 
+ *
  * The tool is useful for:
  * - Testing validation logic during development
  * - Debugging validation issues
@@ -31,20 +31,21 @@ limitations under the License.
  * - Testing error and warning reporting
  */
 
-#include "../common/SBOMValidator.hpp"
 #include <iostream>
+#include "../common/SBOMValidator.hpp"
 
 /**
  * @brief Main function for the debug validator tool
- * 
+ *
  * Creates a test SPDX document and validates it using the SBOMValidator
  * framework. Outputs validation results including any errors or warnings.
- * 
+ *
  * @return 0 on success, 1 on failure
  */
-int main() {
-    // Test SPDX content for validation
-    std::string spdx_content = R"(
+int main()
+{
+  // Test SPDX content for validation
+  std::string spdx_content = R"(
 SPDXVersion: SPDX-2.3
 DataLicense: CC0-1.0
 SPDXID: SPDXRef-DOCUMENT
@@ -60,34 +61,39 @@ PackageLicenseConcluded: MIT
 PackageDownloadLocation: https://example.com/test
 )";
 
-    // Create SPDX validator
-    auto validator = heimdall::SBOMValidatorFactory::createValidator("spdx");
-    if (!validator) {
-        std::cout << "Failed to create validator\n";
-        return 1;
-    }
+  // Create SPDX validator
+  auto validator = heimdall::SBOMValidatorFactory::createValidator("spdx");
+  if (!validator)
+  {
+    std::cout << "Failed to create validator\n";
+    return 1;
+  }
 
-    // Validate the test content
-    auto result = validator->validateContent(spdx_content);
-    std::cout << "Valid: " << (result.isValid ? "true" : "false") << "\n";
-    std::cout << "Format: " << result.metadata["format"] << "\n";
-    std::cout << "Version: " << result.metadata["version"] << "\n";
-    
-    // Report any validation errors
-    if (!result.errors.empty()) {
-        std::cout << "Errors:\n";
-        for (const auto& error : result.errors) {
-            std::cout << "  " << error << "\n";
-        }
-    }
-    
-    // Report any validation warnings
-    if (!result.warnings.empty()) {
-        std::cout << "Warnings:\n";
-        for (const auto& warning : result.warnings) {
-            std::cout << "  " << warning << "\n";
-        }
-    }
+  // Validate the test content
+  auto result = validator->validateContent(spdx_content);
+  std::cout << "Valid: " << (result.isValid ? "true" : "false") << "\n";
+  std::cout << "Format: " << result.metadata["format"] << "\n";
+  std::cout << "Version: " << result.metadata["version"] << "\n";
 
-    return 0;
-} 
+  // Report any validation errors
+  if (!result.errors.empty())
+  {
+    std::cout << "Errors:\n";
+    for (const auto& error : result.errors)
+    {
+      std::cout << "  " << error << "\n";
+    }
+  }
+
+  // Report any validation warnings
+  if (!result.warnings.empty())
+  {
+    std::cout << "Warnings:\n";
+    for (const auto& warning : result.warnings)
+    {
+      std::cout << "  " << warning << "\n";
+    }
+  }
+
+  return 0;
+}

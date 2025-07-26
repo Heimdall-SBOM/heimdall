@@ -26,31 +26,32 @@ limitations under the License.
 #include <cstdint>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-// Gold Plugin C-style function declarations
-int onload(void* handle);
-void onunload(void);
-const char* heimdall_gold_version(void);
-const char* heimdall_gold_description(void);
-int heimdall_set_output_path(const char* path);
-int heimdall_set_format(const char* fmt);
-void heimdall_set_verbose(bool v);
-int heimdall_process_input_file(const char* filePath);
-int heimdall_process_library(const char* libraryPath);
-int heimdall_process_symbol(const char* symbolName, uint64_t address, uint64_t size);
-int heimdall_set_cyclonedx_version(const char* version);
-void heimdall_finalize(void);
-int heimdall_gold_set_plugin_option(const char* option);
+  // Gold Plugin C-style function declarations
+  int         onload(void* handle);
+  void        onunload(void);
+  const char* heimdall_gold_version(void);
+  const char* heimdall_gold_description(void);
+  int         heimdall_set_output_path(const char* path);
+  int         heimdall_set_format(const char* fmt);
+  void        heimdall_set_verbose(bool v);
+  int         heimdall_process_input_file(const char* filePath);
+  int         heimdall_process_library(const char* libraryPath);
+  int         heimdall_process_symbol(const char* symbolName, uint64_t address, uint64_t size);
+  int         heimdall_set_cyclonedx_version(const char* version);
+  void        heimdall_finalize(void);
+  int         heimdall_gold_set_plugin_option(const char* option);
 
-// LLD Plugin C-style function declarations
-const char* heimdall_lld_version(void);
-const char* heimdall_lld_description(void);
-void heimdall_set_verbose(bool v);
-int heimdall_set_cyclonedx_version(const char* version);
-int heimdall_lld_set_plugin_option(const char* option);
+  // LLD Plugin C-style function declarations
+  const char* heimdall_lld_version(void);
+  const char* heimdall_lld_description(void);
+  void        heimdall_set_verbose(bool v);
+  int         heimdall_set_cyclonedx_version(const char* version);
+  int         heimdall_lld_set_plugin_option(const char* option);
 
 #ifdef __cplusplus
 }
-#endif 
+#endif

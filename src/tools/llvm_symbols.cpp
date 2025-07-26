@@ -19,11 +19,11 @@ limitations under the License.
  * @brief LLVM symbols for plugin compatibility
  * @author Trevor Bakker
  * @date 2025
- * 
+ *
  * This file provides LLVM symbols that are required for plugin compatibility
  * when linking against LLVM libraries. It ensures that plugins can be loaded
  * without missing symbol errors.
- * 
+ *
  * The symbols are exported with default visibility to ensure they are
  * available to the dynamic linker when loading plugins.
  */
@@ -31,12 +31,13 @@ limitations under the License.
 // LLVM symbols for plugin compatibility
 #include <cstddef>
 
-namespace llvm {
-    /**
-     * @brief LLVM ABI breaking checks control flag
-     * 
-     * This symbol is required by some LLVM components and is set to false
-     * to disable ABI breaking checks in plugin contexts.
-     */
-    __attribute__((visibility("default"))) const bool DisableABIBreakingChecks = false;
-} 
+namespace llvm
+{
+/**
+ * @brief LLVM ABI breaking checks control flag
+ *
+ * This symbol is required by some LLVM components and is set to false
+ * to disable ABI breaking checks in plugin contexts.
+ */
+__attribute__((visibility("default"))) const bool DisableABIBreakingChecks = false;
+}  // namespace llvm
