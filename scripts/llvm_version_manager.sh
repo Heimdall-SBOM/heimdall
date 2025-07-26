@@ -147,48 +147,72 @@ select_llvm_version() {
     case $cxx_standard in
         11|14)
             # C++11/14 requires LLVM 7+ (LLVM 19 is backward compatible)
+            # Find the highest compatible version
+            local best_version=""
+            local best_major=0
             for version_info in "${available_versions[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_llvm_major_version "$version_number")
                 
-                if [ "$major_version" -ge 7 ]; then
-                    echo "$version_name"
-                    return 0
+                if [ "$major_version" -ge 7 ] && [ "$major_version" -gt "$best_major" ]; then
+                    best_version="$version_name"
+                    best_major="$major_version"
                 fi
             done
-            print_error "No compatible LLVM version (7+) found for C++${cxx_standard}"
-            return 1
+            if [ -n "$best_version" ]; then
+                echo "$best_version"
+                return 0
+            else
+                print_error "No compatible LLVM version (7+) found for C++${cxx_standard}"
+                return 1
+            fi
             ;;
         17)
             # C++17 requires LLVM 11+ (LLVM 19 is backward compatible)
+            # Find the highest compatible version
+            local best_version=""
+            local best_major=0
             for version_info in "${available_versions[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_llvm_major_version "$version_number")
                 
-                if [ "$major_version" -ge 11 ]; then
-                    echo "$version_name"
-                    return 0
+                if [ "$major_version" -ge 11 ] && [ "$major_version" -gt "$best_major" ]; then
+                    best_version="$version_name"
+                    best_major="$major_version"
                 fi
             done
-            print_error "No compatible LLVM version (11+) found for C++${cxx_standard}"
-            return 1
+            if [ -n "$best_version" ]; then
+                echo "$best_version"
+                return 0
+            else
+                print_error "No compatible LLVM version (11+) found for C++${cxx_standard}"
+                return 1
+            fi
             ;;
         20|23)
             # C++20/23 requires LLVM 18+ (LLVM 18 is compatible with C++20/23)
+            # Find the highest compatible version
+            local best_version=""
+            local best_major=0
             for version_info in "${available_versions[@]}"; do
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_llvm_major_version "$version_number")
                 
-                if [ "$major_version" -ge 18 ]; then
-                    echo "$version_name"
-                    return 0
+                if [ "$major_version" -ge 18 ] && [ "$major_version" -gt "$best_major" ]; then
+                    best_version="$version_name"
+                    best_major="$major_version"
                 fi
             done
-            print_error "No compatible LLVM version (18+) found for C++${cxx_standard}"
-            return 1
+            if [ -n "$best_version" ]; then
+                echo "$best_version"
+                return 0
+            else
+                print_error "No compatible LLVM version (18+) found for C++${cxx_standard}"
+                return 1
+            fi
             ;;
         *)
             print_error "Unsupported C++ standard: $cxx_standard"
