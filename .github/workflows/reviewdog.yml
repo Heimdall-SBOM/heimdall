@@ -1,0 +1,54 @@
+name: clang-format and clang-tidy reviewdog
+
+on:
+  pull_request:
+    branches:
+      - main  # Adjust this if needed
+
+jobs:
+  clang-tools:
+    name: Clang Tools via Reviewdog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python (for run-clang-tidy.py)
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install clang tools and reviewdog
+        run: |
+          sudo apt update
+          sudo apt install -y clang-format clang-tidy cmake ninja-build curl
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /usr/local/bin
+
+      ############################################
+      # 1. CLANG-FORMAT via reviewdog
+      ############################################
+      - name: Run clang-format with reviewdog
+        run: |
+          FILES=$(git diff --name-only origin/main | grep -E '\.(c|cpp|h|hpp)$' || true)
+          echo "Changed files: $FILES"
+          if [ -n "$FILES" ]; then
+            for file in $FILES; do
+              clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -fail-on-error=true
+            done
+          fi
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      ############################################
+      # 2. CLANG-TIDY via reviewdog
+      ############################################
+      - name: Run clang-tidy with reviewdog
+        run: |
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
+          wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
+          chmod +x run-clang-tidy.py
+          ./run-clang-tidy.py -p build -export-fixes tidy-fixes.yaml -quiet \
+            | reviewdog -f=clang-tidy -name="clang-tidy" -reporter=github-pr-review -fail-on-error=true
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
