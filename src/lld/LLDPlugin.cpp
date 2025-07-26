@@ -256,6 +256,21 @@ extern "C"
     return -1;
   }
 
+  int heimdall_set_transitive_dependencies(int transitive)
+  {
+    std::cout << "Plugin: heimdall_set_transitive_dependencies called with: " << transitive << std::endl;
+    if (globalAdapter)
+    {
+      globalAdapter->setTransitiveDependencies(transitive != 0);
+      if (verbose)
+      {
+        std::cout << "Heimdall: Transitive dependencies " << (transitive ? "enabled" : "disabled") << "\n";
+      }
+      return 0;
+    }
+    return -1;
+  }
+
   // LLD plugin option handler
   int heimdall_lld_set_plugin_option(const char* option)
   {

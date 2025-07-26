@@ -142,6 +142,14 @@ class TestPluginInterface : public PluginInterface
     this->includeSystemLibraries = include;
   }
 
+  void setTransitiveDependencies(bool transitive) override
+  {
+    if (sbomGenerator)
+    {
+      sbomGenerator->setTransitiveDependencies(transitive);
+    }
+  }
+
   size_t getComponentCount() const override
   {
     return processedComponents.size();

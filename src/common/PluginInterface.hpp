@@ -132,6 +132,12 @@ class PluginInterface
   virtual void setIncludeSystemLibraries(bool include) = 0;
 
   /**
+   * @brief Set whether to recursively include transitive dependencies
+   * @param transitive true to include transitive dependencies, false for direct only
+   */
+  virtual void setTransitiveDependencies(bool transitive) = 0;
+
+  /**
    * @brief Get the number of components processed
    * @return Number of components
    */
@@ -193,6 +199,7 @@ struct PluginConfig
   bool                     includeSystemLibraries = false;  ///< System library inclusion flag
   bool                     generateChecksums      = true;   ///< Checksum generation flag
   bool                     extractMetadata        = true;   ///< Metadata extraction flag
+  bool                     transitiveDependencies = true;
   std::vector<std::string> excludePatterns;                 ///< File exclusion patterns
   std::vector<std::string> includePatterns;                 ///< File inclusion patterns
 };

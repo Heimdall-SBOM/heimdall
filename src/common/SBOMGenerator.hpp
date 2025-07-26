@@ -87,6 +87,12 @@ class SBOMGenerator
   void setSuppressWarnings(bool suppress);
 
   /**
+   * @brief Set whether to recursively include transitive dependencies
+   * @param transitive true to include transitive dependencies, false for direct only
+   */
+  void setTransitiveDependencies(bool transitive);
+
+  /**
    * @brief Get the number of components in the SBOM
    * @return Number of components
    */

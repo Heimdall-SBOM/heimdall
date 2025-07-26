@@ -29,6 +29,7 @@ limitations under the License.
 #include <iomanip>
 #include <sstream>
 #include "Utils.hpp"
+#include <iostream>
 
 namespace heimdall
 {
@@ -114,6 +115,7 @@ ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
     isStripped(false)
 {
   checksum = calculateSHA256(path);
+  std::cerr << "[DEBUG] ComponentInfo: Constructed for '" << path << "' with checksum '" << checksum << "'\n";
 }
 
 /**

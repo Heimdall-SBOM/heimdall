@@ -47,6 +47,7 @@ public:
     std::string spdxVersion = "2.3";                            ///< SPDX specification version (default to 2.3 for compatibility)
     std::unique_ptr<MetadataExtractor> metadataExtractor;       ///< Metadata extractor instance
     BuildInfo buildInfo;                                        ///< Build information
+    bool transitiveDependencies = true;                         ///< Whether to include transitive dependencies
 
     /**
      * @brief Generate SBOM in SPDX format
@@ -200,6 +201,13 @@ public:
      * @return The generated element ID with namespace
      */
     std::string generateSPDXElementId(const std::string& name);
+
+    /**
+     * @brief Process dependencies recursively
+     * @param component The component whose dependencies to process
+     * @param processedKeys Set of already processed component keys to avoid cycles
+     */
+    void processDependenciesRecursively(const ComponentInfo& component, std::set<std::string>& processedKeys);
 };
 
 /**
@@ -219,7 +227,9 @@ SBOMGenerator::~SBOMGenerator() = default;
  * @param component The component to process
  */
 void SBOMGenerator::processComponent(const ComponentInfo& component) {
-    std::string key = component.name + ":" + component.filePath;
+    // Resolve library paths to canonical absolute paths for consistent key generation
+    std::string canonicalPath = Utils::resolveLibraryPath(component.filePath);
+    std::string key = canonicalPath; // Use canonical file path as unique key
 
     if (pImpl->components.find(key) == pImpl->components.end()) {
         // New component, extract metadata
@@ -232,48 +242,69 @@ void SBOMGenerator::processComponent(const ComponentInfo& component) {
         pImpl->components[key] = processedComponent;
         Utils::debugPrint("Processed component: " + component.name);
         
-        // Process discovered dependencies as separate components
-        for (const auto& depPath : processedComponent.dependencies) {
-            std::string resolvedPath = depPath;
-            
-            // Handle @rpath dependencies (resolve relative to app bundle)
-            if (depPath.find("@rpath/") == 0) {
-                std::string appDir = processedComponent.filePath;
-                size_t lastSlash = appDir.rfind('/');
-                if (lastSlash != std::string::npos) {
-                    appDir = appDir.substr(0, lastSlash);
-                    resolvedPath = appDir + "/" + depPath.substr(7); // Remove "@rpath/"
+        // Process dependencies based on transitiveDependencies setting
+        if (pImpl->transitiveDependencies) {
+            // Process dependencies recursively
+            std::set<std::string> processedKeys;
+            pImpl->processDependenciesRecursively(processedComponent, processedKeys);
+        } else {
+            // Process only direct dependencies
+            for (const auto& depPath : processedComponent.dependencies) {
+                std::string resolvedPath = depPath;
+                
+                // Handle @rpath dependencies (resolve relative to app bundle)
+                if (depPath.find("@rpath/") == 0) {
+                    std::string appDir = processedComponent.filePath;
+                    size_t lastSlash = appDir.rfind('/');
+                    if (lastSlash != std::string::npos) {
+                        appDir = appDir.substr(0, lastSlash);
+                        resolvedPath = appDir + "/" + depPath.substr(7); // Remove "@rpath/"
+                    }
                 }
+                
+                // Resolve library paths to canonical absolute paths for consistent key generation
+                std::string canonicalPath = Utils::resolveLibraryPath(resolvedPath);
+                std::string depKey = canonicalPath; // Use canonical file path as unique key
+                
+                // Skip if this dependency is already processed
+                if (pImpl->components.find(depKey) != pImpl->components.end()) {
+                    continue;
+                }
+                
+                // Create a new ComponentInfo for the dependency
+                ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
+                depComponent.fileType = FileType::SharedLibrary; // Most dependencies are shared libraries
+                
+                // Check if it's a system library
+                if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0) {
+                    depComponent.isSystemLibrary = true;
+                    depComponent.packageManager = "system";
+                }
+                
+                // Preserve the checksum that was calculated in the constructor
+                std::string originalChecksum = depComponent.checksum;
+                
+                // Try to extract metadata for the dependency if it exists
+                if (Utils::fileExists(resolvedPath) && pImpl->metadataExtractor) {
+                    pImpl->metadataExtractor->extractMetadata(depComponent);
+                } else {
+                    // For non-existent files (like system libraries), set basic info
+                    depComponent.version = "system";
+#if defined(__APPLE__)
+                    depComponent.supplier = "Apple Inc.";
+#else
+                    depComponent.supplier = "NOASSERTION";
+#endif
+                }
+                
+                // Always restore the checksum if it was lost during metadata extraction
+                if (depComponent.checksum.empty() && !originalChecksum.empty()) {
+                    depComponent.checksum = originalChecksum;
+                }
+                
+                pImpl->components[depKey] = depComponent;
+                Utils::debugPrint("Added dependency component: " + depComponent.name + " at " + resolvedPath);
             }
-            
-            std::string depKey = Utils::getFileName(resolvedPath) + ":" + resolvedPath;
-            
-            // Skip if this dependency is already processed
-            if (pImpl->components.find(depKey) != pImpl->components.end()) {
-                continue;
-            }
-            
-            // Create a new ComponentInfo for the dependency
-            ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
-            depComponent.fileType = FileType::SharedLibrary; // Most dependencies are shared libraries
-            
-            // Check if it's a system library
-            if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0) {
-                depComponent.isSystemLibrary = true;
-                depComponent.packageManager = "system";
-            }
-            
-            // Try to extract metadata for the dependency if it exists
-            if (Utils::fileExists(resolvedPath) && pImpl->metadataExtractor) {
-                pImpl->metadataExtractor->extractMetadata(depComponent);
-            } else {
-                // For non-existent files (like system libraries), set basic info
-                depComponent.version = "system";
-                depComponent.supplier = "Apple Inc.";
-            }
-            
-            pImpl->components[depKey] = depComponent;
-            Utils::debugPrint("Added dependency component: " + depComponent.name + " at " + resolvedPath);
         }
     } else {
         // Update existing component
@@ -387,6 +418,15 @@ void SBOMGenerator::setSuppressWarnings(bool suppress) {
     if (pImpl && pImpl->metadataExtractor) {
         pImpl->metadataExtractor->setSuppressWarnings(suppress);
     }
+}
+
+/**
+ * @brief Set whether to include transitive dependencies in the SBOM
+ * @param include True to include, false to exclude
+ */
+void SBOMGenerator::setTransitiveDependencies(bool include) {
+    pImpl->transitiveDependencies = include;
+    std::cout << "SBOMGenerator::setTransitiveDependencies called with: " << (include ? "true" : "false") << std::endl;
 }
 
 /**
@@ -517,6 +557,13 @@ bool SBOMGenerator::Impl::generateCycloneDX(const std::string& outputPath) {
 }
 
 std::string SBOMGenerator::Impl::generateSPDXDocument() {
+    std::stringstream ss;
+    // DEBUG: Print all keys and file paths in the components map
+    ss << "# DEBUG: Components map keys and file paths\n";
+    for (const auto& pair : components) {
+        ss << "# key: '" << pair.first << "' filePath: '" << pair.second.filePath << "' name: '" << pair.second.name << "'\n";
+    }
+    ss << "\n";
     if (spdxVersion == "3.0.1") {
         return generateSPDX3_0_1_Document();
     } else if (spdxVersion == "3.0.0" || spdxVersion == "3.0") {
@@ -602,6 +649,17 @@ std::string SBOMGenerator::Impl::generateSPDX2_3_Document() {
     for (const auto& pair : components) {
         const auto& component = pair.second;
         ss << "Relationship: SPDXRef-Package CONTAINS " << generateSPDXId(component.name) << "\n";
+        
+        // Add DEPENDS_ON relationships for all dependencies
+        for (const auto& dep : component.dependencies) {
+            // Find the component that matches this dependency
+            // Resolve library paths to canonical absolute paths for consistent key generation
+            std::string canonicalPath = Utils::resolveLibraryPath(dep);
+            std::string depKey = canonicalPath; // Use canonical file path as unique key
+            if (components.find(depKey) != components.end()) {
+                ss << "Relationship: " << generateSPDXId(component.name) << " DEPENDS_ON " << generateSPDXId(Utils::getFileName(dep)) << "\n";
+            }
+        }
     }
     // Note: Source file relationships removed to avoid validation errors
     // Source files are referenced in FileComment instead
@@ -680,6 +738,23 @@ std::string SBOMGenerator::Impl::generateSPDX3_0_0_Document() {
         ss << "          \"relationshipType\": \"CONTAINS\",\n";
         ss << "          \"relatedSpdxElement\": \"spdx:" << generateSPDXElementId(component.name) << "\"\n";
         ss << "        }";
+    }
+    
+    // Add DEPENDS_ON relationships for all dependencies
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        for (const auto& dep : component.dependencies) {
+            // Find the component that matches this dependency
+            std::string depKey = Utils::getFileName(dep) + ":" + dep;
+            if (components.find(depKey) != components.end()) {
+                ss << ",\n        {\n";
+                ss << "          \"type\": \"Relationship\",\n";
+                ss << "          \"relationshipType\": \"DEPENDS_ON\",\n";
+                ss << "          \"spdxElementId\": \"spdx:" << generateSPDXElementId(component.name) << "\",\n";
+                ss << "          \"relatedSpdxElement\": \"spdx:" << generateSPDXElementId(Utils::getFileName(dep)) << "\"\n";
+                ss << "        }";
+            }
+        }
     }
     ss << "\n      ]\n";
     ss << "    }\n";
@@ -760,6 +835,23 @@ std::string SBOMGenerator::Impl::generateSPDX3_0_1_Document() {
         ss << "          \"relationshipType\": \"CONTAINS\",\n";
         ss << "          \"relatedSpdxElement\": \"spdx:" << generateSPDXElementId(component.name) << "\"\n";
         ss << "        }";
+    }
+    
+    // Add DEPENDS_ON relationships for all dependencies
+    for (const auto& pair : components) {
+        const auto& component = pair.second;
+        for (const auto& dep : component.dependencies) {
+            // Find the component that matches this dependency
+            std::string depKey = Utils::getFileName(dep) + ":" + dep;
+            if (components.find(depKey) != components.end()) {
+                ss << ",\n        {\n";
+                ss << "          \"type\": \"Relationship\",\n";
+                ss << "          \"relationshipType\": \"DEPENDS_ON\",\n";
+                ss << "          \"spdxElementId\": \"spdx:" << generateSPDXElementId(component.name) << "\",\n";
+                ss << "          \"relatedSpdxElement\": \"spdx:" << generateSPDXElementId(Utils::getFileName(dep)) << "\"\n";
+                ss << "        }";
+            }
+        }
     }
     ss << "\n      ]\n";
     ss << "    }\n";
@@ -935,13 +1027,15 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
     ss << "      \"supplier\": {\n";
     ss << "        \"name\": " << Utils::formatJsonValue(component.supplier.empty() ? "system-package-manager" : component.supplier) << "\n";
     ss << "      },\n";
-    ss << "      \"hashes\": [\n";
-    ss << "        {\n";
-    ss << "          \"alg\": \"SHA-256\",\n";
-    ss << "          \"content\": \""
-       << (component.checksum.empty() ? "UNKNOWN" : component.checksum) << "\"\n";
-    ss << "        }\n";
-    ss << "      ],\n";
+    // Only include hash if we have a valid checksum
+    if (!component.checksum.empty() && component.checksum.length() == 64) {
+        ss << "      \"hashes\": [\n";
+        ss << "        {\n";
+        ss << "          \"alg\": \"SHA-256\",\n";
+        ss << "          \"content\": \"" << component.checksum << "\"\n";
+        ss << "        }\n";
+        ss << "      ],\n";
+    }
     ss << "      \"purl\": \"" << generatePURL(component) << "\",\n";
     ss << "      \"externalReferences\": [\n";
     ss << "        {\n";
@@ -1479,6 +1573,88 @@ std::string SBOMGenerator::Impl::generateSPDXLicenseId(const std::string& licens
         return "BSD-3-Clause";
     } else {
         return "NOASSERTION";
+    }
+}
+
+/**
+ * @brief Process dependencies recursively
+ * @param component The component whose dependencies to process
+ * @param processedKeys Set of already processed component keys to avoid cycles
+ */
+void SBOMGenerator::Impl::processDependenciesRecursively(const ComponentInfo& component, std::set<std::string>& processedKeys) {
+    // Resolve library paths to canonical absolute paths for consistent key generation
+    std::string canonicalPath = Utils::resolveLibraryPath(component.filePath);
+    std::string key = canonicalPath; // Use canonical file path as unique key
+    if (processedKeys.count(key) > 0) {
+        return; // Already processed this component
+    }
+    processedKeys.insert(key);
+    
+    Utils::debugPrint("Processing dependencies recursively for: " + component.name + " (dependencies: " + std::to_string(component.dependencies.size()) + ")");
+
+    for (const auto& depPath : component.dependencies) {
+        std::string resolvedPath = depPath;
+        
+        // Handle @rpath dependencies (resolve relative to app bundle)
+        if (depPath.find("@rpath/") == 0) {
+            std::string appDir = component.filePath;
+            size_t lastSlash = appDir.rfind('/');
+            if (lastSlash != std::string::npos) {
+                appDir = appDir.substr(0, lastSlash);
+                resolvedPath = appDir + "/" + depPath.substr(7); // Remove "@rpath/"
+            }
+        }
+        
+        // Always resolve to canonical absolute path
+        std::string canonicalPath = Utils::resolveLibraryPath(resolvedPath);
+        if (!canonicalPath.empty()) {
+            resolvedPath = canonicalPath;
+        }
+        // Resolve library paths to canonical absolute paths for consistent key generation
+        std::string depKey = resolvedPath; // Use canonical file path as unique key
+        
+        // Skip if this dependency is already processed
+        if (components.find(depKey) != components.end()) {
+            continue;
+        }
+        
+        // Create a new ComponentInfo for the dependency
+        ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
+        depComponent.fileType = FileType::SharedLibrary; // Most dependencies are shared libraries
+        std::cerr << "[DEBUG] SBOMGenerator::processDependenciesRecursively: Created depComponent for '" << resolvedPath << "' with checksum '" << depComponent.checksum << "'\n";
+        
+        // Check if it's a system library
+        if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0) {
+            depComponent.isSystemLibrary = true;
+            depComponent.packageManager = "system";
+        }
+        
+        // Preserve the checksum that was calculated in the constructor
+        std::string originalChecksum = depComponent.checksum;
+        
+        // Try to extract metadata for the dependency if it exists
+        if (Utils::fileExists(resolvedPath) && metadataExtractor) {
+            metadataExtractor->extractMetadata(depComponent);
+        } else {
+            // For non-existent files (like system libraries), set basic info
+            depComponent.version = "system";
+#if defined(__APPLE__)
+            depComponent.supplier = "Apple Inc.";
+#else
+            depComponent.supplier = "NOASSERTION";
+#endif
+        }
+        
+        // Always restore the checksum if it was lost during metadata extraction
+        if (depComponent.checksum.empty() && !originalChecksum.empty()) {
+            depComponent.checksum = originalChecksum;
+        }
+        
+        components[depKey] = depComponent;
+        Utils::debugPrint("Added dependency component: " + depComponent.name + " at " + resolvedPath);
+
+        // Recursively process the dependency's dependencies
+        processDependenciesRecursively(depComponent, processedKeys);
     }
 }
 

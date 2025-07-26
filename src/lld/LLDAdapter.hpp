@@ -114,10 +114,16 @@ class LLDAdapter
   void setExtractDebugInfo(bool extract);
 
   /**
-   * @brief Set whether to include system libraries
-   * @param include Whether to include system libraries in SBOM
+   * @brief Set whether to include system libraries in the SBOM
+   * @param include true to include system libraries, false to exclude them
    */
   void setIncludeSystemLibraries(bool include);
+
+  /**
+   * @brief Set whether to recursively include transitive dependencies
+   * @param transitive true to include transitive dependencies, false for direct only
+   */
+  void setTransitiveDependencies(bool transitive);
 
   /**
    * @brief Process a symbol with metadata extraction

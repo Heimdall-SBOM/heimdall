@@ -154,6 +154,14 @@ void GoldAdapter::Impl::setIncludeSystemLibraries(bool include)
 {
   includeSystemLibraries = include;
 }
+
+void GoldAdapter::Impl::setTransitiveDependencies(bool transitive)
+{
+  if (sbomGenerator)
+  {
+    sbomGenerator->setTransitiveDependencies(transitive);
+  }
+}
 void GoldAdapter::Impl::setSuppressWarnings(bool suppress)
 {
   suppressWarnings = suppress;
@@ -234,6 +242,10 @@ void GoldAdapter::setExtractDebugInfo(bool extract)
 void GoldAdapter::setIncludeSystemLibraries(bool include)
 {
   pImpl->setIncludeSystemLibraries(include);
+}
+void GoldAdapter::setTransitiveDependencies(bool transitive)
+{
+  pImpl->setTransitiveDependencies(transitive);
 }
 void GoldAdapter::setSuppressWarnings(bool suppress)
 {

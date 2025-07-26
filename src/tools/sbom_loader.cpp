@@ -179,12 +179,13 @@ int main(int argc, char* argv[])
   if (argc < 5)
   {
     std::cerr << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output "
-                 "<output_path> [--cyclonedx-version <version>] [--spdx-version <version>]"
+                 "<output_path> [--cyclonedx-version <version>] [--spdx-version <version>] [--no-transitive-dependencies]"
               << std::endl;
     std::cerr << "  Supported formats: spdx, spdx-2.3, spdx-3.0, spdx-3.0.0, spdx-3.0.1, "
                  "cyclonedx, cyclonedx-1.4, cyclonedx-1.6"
               << std::endl;
     std::cerr << "  Default versions: cyclonedx-1.6, spdx-2.3" << std::endl;
+    std::cerr << "  --no-transitive-dependencies: Include only direct dependencies (default: include all transitive dependencies)" << std::endl;
     return 1;
   }
 
@@ -194,11 +195,18 @@ int main(int argc, char* argv[])
   const char* output_path       = "sbom.json";
   const char* cyclonedx_version = "1.6";
   const char* spdx_version      = "2.3";
+  bool transitive_dependencies = true;
 
   // Parse command line arguments
+  std::cout << "Parsing " << (argc - 3) << " arguments starting from index 3" << std::endl;
   for (int i = 3; i < argc; i++)
   {
-    if (strcmp(argv[i], "--format") == 0 && i + 1 < argc)
+    std::cout << "Processing argument " << i << ": " << argv[i] << std::endl;
+    if (strcmp(argv[i], "--no-transitive-dependencies") == 0) {
+      transitive_dependencies = false;
+      std::cout << "Found --no-transitive-dependencies flag, setting transitive_dependencies to false" << std::endl;
+    }
+    else if (strcmp(argv[i], "--format") == 0 && i + 1 < argc)
     {
       format = argv[++i];
       // Extract version from format string for SPDX
@@ -226,6 +234,98 @@ int main(int argc, char* argv[])
     }
   }
 
-  return generate_sbom(plugin_path, binary_path, format, output_path, cyclonedx_version,
-                       spdx_version);
+  // Load the plugin shared library
+  void* handle = dlopen(plugin_path, RTLD_LAZY);
+  if (!handle)
+  {
+    std::cerr << "Failed to load plugin " << plugin_path << ": " << dlerror() << std::endl;
+    return 1;
+  }
+
+  // Get function pointers from the plugin
+  init_func_t                  onload     = (init_func_t)dlsym(handle, "onload");
+  set_format_func_t            set_format = (set_format_func_t)dlsym(handle, "heimdall_set_format");
+  set_cyclonedx_version_func_t set_cyclonedx_version =
+    (set_cyclonedx_version_func_t)dlsym(handle, "heimdall_set_cyclonedx_version");
+  set_spdx_version_func_t set_spdx_version =
+    (set_spdx_version_func_t)dlsym(handle, "heimdall_set_spdx_version");
+  set_output_path_func_t set_output_path =
+    (set_output_path_func_t)dlsym(handle, "heimdall_set_output_path");
+  process_input_file_func_t process_input_file =
+    (process_input_file_func_t)dlsym(handle, "heimdall_process_input_file");
+  finalize_func_t finalize = (finalize_func_t)dlsym(handle, "heimdall_finalize");
+  typedef int (*set_transitive_func_t)(int);
+  set_transitive_func_t set_transitive = (set_transitive_func_t)dlsym(handle, "heimdall_set_transitive_dependencies");
+
+  // Check that all required functions are available
+  if (!onload || !set_format || !set_output_path || !process_input_file || !finalize)
+  {
+    std::cerr << "Failed to get function symbols: " << dlerror() << std::endl;
+    dlclose(handle);
+    return 1;
+  }
+
+  // Initialize the plugin
+  if (onload(nullptr) != 0)
+  {
+    std::cerr << "Failed to initialize plugin" << std::endl;
+    dlclose(handle);
+    return 1;
+  }
+
+  // Set transitive dependencies flag after plugin is initialized
+  if (set_transitive) {
+    set_transitive(transitive_dependencies ? 1 : 0);
+  }
+
+  // Set the output format
+  if (set_format(format) != 0)
+  {
+    std::cerr << "Failed to set format" << std::endl;
+    dlclose(handle);
+    return 1;
+  }
+
+  // Handle CycloneDX version configuration
+  if (strncmp(format, "cyclonedx", 9) == 0 && set_cyclonedx_version)
+  {
+    if (set_cyclonedx_version(cyclonedx_version) != 0)
+    {
+      std::cerr << "Failed to set CycloneDX version" << std::endl;
+      dlclose(handle);
+      return 1;
+    }
+  }
+
+  // Handle SPDX version configuration
+  if (strncmp(format, "spdx", 4) == 0 && set_spdx_version)
+  {
+    if (set_spdx_version(spdx_version) != 0)
+    {
+      std::cerr << "Failed to set SPDX version" << std::endl;
+      dlclose(handle);
+      return 1;
+    }
+  }
+
+  // Set output path
+  if (set_output_path(output_path) != 0)
+  {
+    std::cerr << "Failed to set output path" << std::endl;
+    dlclose(handle);
+    return 1;
+  }
+
+  // Process the binary file
+  if (process_input_file(binary_path) != 0)
+  {
+    std::cerr << "Failed to process binary" << std::endl;
+    dlclose(handle);
+    return 1;
+  }
+
+  // Finalize and generate the SBOM
+  finalize();
+  dlclose(handle);
+  return 0;
 }

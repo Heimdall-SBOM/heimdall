@@ -481,6 +481,20 @@ extern "C"
     return -1;
   }
 
+  int heimdall_set_transitive_dependencies(int transitive)
+  {
+    if (globalAdapter)
+    {
+      globalAdapter->setTransitiveDependencies(transitive != 0);
+      if (verbose)
+      {
+        std::cout << "Heimdall: Transitive dependencies " << (transitive ? "enabled" : "disabled") << "\n";
+      }
+      return 0;
+    }
+    return -1;
+  }
+
   // Plugin cleanup and finalization
   void heimdall_finalize()
   {

@@ -47,6 +47,7 @@ class LLDAdapter::Impl
   void   setVerbose(bool verbose);
   void   setExtractDebugInfo(bool extract);
   void   setIncludeSystemLibraries(bool include);
+  void   setTransitiveDependencies(bool transitive);
   size_t getComponentCount() const;
   void   printStatistics() const;
 
@@ -124,11 +125,19 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
   ComponentInfo component(Utils::getFileName(filePath), filePath);
   component.setDetectedBy(LinkerType::LLD);
 
+  // Preserve the checksum that was calculated in the constructor
+  std::string originalChecksum = component.checksum;
+
   // Use MetadataExtractor to get comprehensive metadata including DWARF data
   MetadataExtractor extractor;
   extractor.setExtractDebugInfo(extractDebugInfo);
   extractor.setVerbose(verbose);
   extractor.extractMetadata(component);
+
+  // Always restore the checksum if it was lost during metadata extraction
+  if (component.checksum.empty() && !originalChecksum.empty()) {
+    component.checksum = originalChecksum;
+  }
 
   // Add to SBOM generator
   sbomGenerator->processComponent(component);
@@ -172,11 +181,19 @@ void LLDAdapter::Impl::processLibrary(const std::string& libraryPath)
   component.setDetectedBy(LinkerType::LLD);
   component.fileType = FileType::SharedLibrary;
 
+  // Preserve the checksum that was calculated in the constructor
+  std::string originalChecksum = component.checksum;
+
   // Use MetadataExtractor to get comprehensive metadata including DWARF data
   MetadataExtractor extractor;
   extractor.setExtractDebugInfo(extractDebugInfo);
   extractor.setVerbose(verbose);
   extractor.extractMetadata(component);
+
+  // Always restore the checksum if it was lost during metadata extraction
+  if (component.checksum.empty() && !originalChecksum.empty()) {
+    component.checksum = originalChecksum;
+  }
 
   // Add to SBOM generator
   sbomGenerator->processComponent(component);
@@ -189,10 +206,20 @@ void LLDAdapter::Impl::processFilesParallel(const std::vector<std::string>& file
   {
     ComponentInfo component(Utils::getFileName(filePath), filePath);
     component.setDetectedBy(LinkerType::LLD);
+    
+    // Preserve the checksum that was calculated in the constructor
+    std::string originalChecksum = component.checksum;
+    
     MetadataExtractor extractor;
     extractor.setSuppressWarnings(false);  // Use default for now
     extractor.setExtractDebugInfo(false);  // Disable DWARF for parallel
     extractor.extractMetadata(component);
+    
+    // Always restore the checksum if it was lost during metadata extraction
+    if (component.checksum.empty() && !originalChecksum.empty()) {
+      component.checksum = originalChecksum;
+    }
+    
     return component;
   };
   auto results = ParallelProcessor::process(filePaths, processFile);
@@ -259,6 +286,15 @@ void LLDAdapter::Impl::setExtractDebugInfo(bool extract)
 void LLDAdapter::Impl::setIncludeSystemLibraries(bool include)
 {
   includeSystemLibraries = include;
+}
+
+void LLDAdapter::Impl::setTransitiveDependencies(bool transitive)
+{
+  std::cout << "Adapter: setTransitiveDependencies called with: " << (transitive ? "true" : "false") << std::endl;
+  if (sbomGenerator)
+  {
+    sbomGenerator->setTransitiveDependencies(transitive);
+  }
 }
 
 size_t LLDAdapter::Impl::getComponentCount() const
@@ -335,6 +371,11 @@ void LLDAdapter::setExtractDebugInfo(bool extract)
 void LLDAdapter::setIncludeSystemLibraries(bool include)
 {
   pImpl->setIncludeSystemLibraries(include);
+}
+
+void LLDAdapter::setTransitiveDependencies(bool transitive)
+{
+  pImpl->setTransitiveDependencies(transitive);
 }
 
 void LLDAdapter::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size)

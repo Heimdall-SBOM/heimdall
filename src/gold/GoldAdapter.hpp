@@ -134,6 +134,12 @@ class GoldAdapter
   void setIncludeSystemLibraries(bool include);
 
   /**
+   * @brief Set whether to recursively include transitive dependencies
+   * @param transitive true to include transitive dependencies, false for direct only
+   */
+  void setTransitiveDependencies(bool transitive);
+
+  /**
    * @brief Set whether to suppress warnings (for test mode)
    * @param suppress true to suppress warnings
    */
@@ -212,6 +218,7 @@ public:
     void setVerbose(bool verbose);
     void setExtractDebugInfo(bool extract);
     void setIncludeSystemLibraries(bool include);
+    void setTransitiveDependencies(bool transitive);
     void setSuppressWarnings(bool suppress);
     [[nodiscard]] size_t getComponentCount() const;
     void                 printStatistics() const;
