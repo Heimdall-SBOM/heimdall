@@ -77,6 +77,53 @@ struct SectionInfo {
 };
 
 /**
+ * @brief Structure representing code signing information
+ */
+struct CodeSignInfo {
+    std::string signer;           ///< Code signer identity
+    std::string teamId;           ///< Development team ID
+    std::string certificateHash;  ///< Certificate hash
+    bool isAdHocSigned = false;   ///< Whether ad-hoc signed
+    bool isHardenedRuntime = false; ///< Whether hardened runtime enabled
+    std::string signingTime;      ///< Signing timestamp
+};
+
+/**
+ * @brief Structure representing build configuration information
+ */
+struct BuildConfigInfo {
+    std::string sdkVersion;       ///< SDK version used for build
+    std::string minOSVersion;     ///< Minimum OS version required
+    std::string targetPlatform;   ///< Target platform (ios, macos, etc.)
+    bool isSimulator = false;     ///< Whether built for simulator
+    std::string buildVersion;     ///< Build version string
+    std::string sourceVersion;    ///< Source code version
+};
+
+/**
+ * @brief Structure representing platform information
+ */
+struct PlatformInfo {
+    std::string platform;         ///< Platform name (ios, macos, tvos, watchos)
+    uint32_t minVersion = 0;      ///< Minimum platform version
+    uint32_t sdkVersion = 0;      ///< SDK version
+    bool isSimulator = false;     ///< Whether simulator build
+    std::string architecture;     ///< Target architecture
+};
+
+/**
+ * @brief Structure representing architecture information
+ */
+struct ArchitectureInfo {
+    std::string name;             ///< Architecture name (x86_64, arm64, etc.)
+    uint32_t cpuType = 0;         ///< CPU type
+    uint32_t cpuSubtype = 0;      ///< CPU subtype
+    uint64_t offset = 0;          ///< File offset for this architecture
+    uint64_t size = 0;            ///< Size of this architecture
+    uint32_t align = 0;           ///< Alignment requirement
+};
+
+/**
  * @brief Structure representing a software component with all its metadata
  */
 struct ComponentInfo {
@@ -99,6 +146,14 @@ struct ComponentInfo {
     std::vector<std::string> functions;     ///< List of function names from DWARF
     std::vector<std::string> compileUnits;  ///< List of compile units from DWARF
     std::map<std::string, std::string> properties; ///< Additional properties/metadata
+
+    // Enhanced Mach-O metadata
+    CodeSignInfo codeSignInfo;                 ///< Code signing information
+    BuildConfigInfo buildConfig;               ///< Build configuration information
+    PlatformInfo platformInfo;                 ///< Platform information
+    std::vector<std::string> entitlements;     ///< List of entitlements
+    std::vector<ArchitectureInfo> architectures; ///< List of architectures
+    std::vector<std::string> frameworks;       ///< List of framework dependencies
 
     bool wasProcessed = false;                    ///< Whether the component has been processed
     std::string processingError;                  ///< Error message if processing failed

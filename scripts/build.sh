@@ -260,6 +260,15 @@ print_status "Configuring with CMake..."
 # Build CMake options
 CMAKE_OPTS="-DCMAKE_CXX_STANDARD=${STANDARD} -DCMAKE_CXX_STANDARD_REQUIRED=ON -DLLVM_CONFIG=$LLVM_CONFIG -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX"
 
+# Handle SCL compilers
+if [ -n "$SCL_ENV" ]; then
+    print_status "Using SCL environment: $SCL_ENV"
+    # For SCL, we need to run cmake and make within the SCL environment
+    SCL_CMD="scl enable $SCL_ENV --"
+else
+    SCL_CMD=""
+fi
+
 # Add compatibility mode for C++11/14
 if [[ "${STANDARD}" == "11" || "${STANDARD}" == "14" ]]; then
     CMAKE_OPTS="$CMAKE_OPTS -DHEIMDALL_CXX11_14_MODE=ON"
@@ -276,7 +285,7 @@ if [ "$BENCHMARKS" = true ]; then
     print_status "Benchmarks enabled"
 fi
 
-cmake .. $CMAKE_OPTS
+$SCL_CMD cmake .. $CMAKE_OPTS
 
 # Build
 print_status "Building Heimdall..."
@@ -286,14 +295,14 @@ if command -v nproc >/dev/null 2>&1; then
 else
     JOBS=$(sysctl -n hw.ncpu)
 fi
-make -j$JOBS
+$SCL_CMD make -j$JOBS
 
 print_success "Build completed successfully!"
 
 # Run tests if requested
 if [ "$TESTS" = true ] || [ "$ALL" = true ]; then
     print_status "Running tests..."
-    ctest --output-on-failure
+    $SCL_CMD ctest --output-on-failure
     print_success "Tests completed successfully!"
 fi
 

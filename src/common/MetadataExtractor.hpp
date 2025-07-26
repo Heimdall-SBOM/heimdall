@@ -100,6 +100,55 @@ public:
     bool extractDependencyInfo(ComponentInfo& component);
 
     /**
+     * @brief Extract enhanced Mach-O metadata from a component
+     * @param component The component to extract enhanced metadata from
+     * @return true if enhanced metadata was extracted successfully
+     */
+    bool extractEnhancedMachOMetadata(ComponentInfo& component);
+
+    /**
+     * @brief Extract code signing information from a Mach-O component
+     * @param component The component to extract code signing info from
+     * @return true if code signing info was extracted successfully
+     */
+    bool extractMachOCodeSignInfo(ComponentInfo& component);
+
+    /**
+     * @brief Extract build configuration from a Mach-O component
+     * @param component The component to extract build config from
+     * @return true if build configuration was extracted successfully
+     */
+    bool extractMachOBuildConfig(ComponentInfo& component);
+
+    /**
+     * @brief Extract platform information from a Mach-O component
+     * @param component The component to extract platform info from
+     * @return true if platform info was extracted successfully
+     */
+    bool extractMachOPlatformInfo(ComponentInfo& component);
+
+    /**
+     * @brief Extract entitlements from a Mach-O component
+     * @param component The component to extract entitlements from
+     * @return true if entitlements were extracted successfully
+     */
+    bool extractMachOEntitlements(ComponentInfo& component);
+
+    /**
+     * @brief Extract architecture information from a Mach-O component
+     * @param component The component to extract architecture info from
+     * @return true if architecture info was extracted successfully
+     */
+    bool extractMachOArchitectures(ComponentInfo& component);
+
+    /**
+     * @brief Extract framework dependencies from a Mach-O component
+     * @param component The component to extract framework dependencies from
+     * @return true if framework dependencies were extracted successfully
+     */
+    bool extractMachOFrameworks(ComponentInfo& component);
+
+    /**
      * @brief Check if a file is in ELF format
      * @param filePath The path to the file
      * @return true if the file is in ELF format
@@ -147,6 +196,13 @@ public:
      * @return true if metadata was extracted successfully
      */
     bool extractSystemMetadata(ComponentInfo& component);
+
+    /**
+     * @brief Extract macOS app bundle metadata from Info.plist
+     * @param component The component to extract metadata from
+     * @return true if metadata was extracted successfully
+     */
+    bool extractMacOSAppBundleMetadata(ComponentInfo& component);
 
     /**
      * @brief Detect RPM package manager metadata
@@ -331,6 +387,63 @@ bool extractMachOVersion(const std::string& filePath, std::string& version);
  * @return true if UUID was extracted successfully
  */
 bool extractMachOUUID(const std::string& filePath, std::string& uuid);
+
+/**
+ * @brief Extract code signing information from a Mach-O file
+ * @param filePath The path to the Mach-O file
+ * @param codeSignInfo Structure to store code signing information
+ * @return true if code signing info was extracted successfully
+ */
+bool extractMachOCodeSignInfo(const std::string& filePath, CodeSignInfo& codeSignInfo);
+
+/**
+ * @brief Extract build configuration from a Mach-O file
+ * @param filePath The path to the Mach-O file
+ * @param buildConfig Structure to store build configuration
+ * @return true if build configuration was extracted successfully
+ */
+bool extractMachOBuildConfig(const std::string& filePath, BuildConfigInfo& buildConfig);
+
+/**
+ * @brief Extract version information from macOS app bundle Info.plist
+ * @param appBundlePath The path to the app bundle or executable within it
+ * @param version Reference to store the extracted version
+ * @param bundleName Reference to store the bundle name
+ * @return true if version was extracted successfully
+ */
+bool extractMacOSAppBundleInfo(const std::string& appBundlePath, std::string& version, std::string& bundleName);
+
+/**
+ * @brief Extract platform information from a Mach-O file
+ * @param filePath The path to the Mach-O file
+ * @param platformInfo Structure to store platform information
+ * @return true if platform info was extracted successfully
+ */
+bool extractMachOPlatformInfo(const std::string& filePath, PlatformInfo& platformInfo);
+
+/**
+ * @brief Extract entitlements from a Mach-O file
+ * @param filePath The path to the Mach-O file
+ * @param entitlements Vector to store extracted entitlements
+ * @return true if entitlements were extracted successfully
+ */
+bool extractMachOEntitlements(const std::string& filePath, std::vector<std::string>& entitlements);
+
+/**
+ * @brief Extract all architectures from a fat Mach-O file
+ * @param filePath The path to the Mach-O file
+ * @param architectures Vector to store architecture information
+ * @return true if architectures were extracted successfully
+ */
+bool extractMachOArchitectures(const std::string& filePath, std::vector<ArchitectureInfo>& architectures);
+
+/**
+ * @brief Extract framework dependencies from a Mach-O file
+ * @param filePath The path to the Mach-O file
+ * @param frameworks Vector to store framework dependencies
+ * @return true if frameworks were extracted successfully
+ */
+bool extractMachOFrameworks(const std::string& filePath, std::vector<std::string>& frameworks);
 
 /**
  * @brief Extract linked libraries from a Mach-O file

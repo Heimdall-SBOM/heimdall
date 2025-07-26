@@ -81,6 +81,11 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
                filename STREQUAL "test_dwarf_cross_platform.cpp")
                 continue()
             endif()
+        else()
+            # On non-Apple platforms, exclude Mach-O specific tests
+            if(filename STREQUAL "test_enhanced_macho.cpp")
+                continue()
+            endif()
         endif()
         
         # Docker container exclusions

@@ -444,7 +444,11 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
         testFile.close();
 
         // Create memory buffer from file
+#if LLVM_VERSION_MAJOR >= 12
+        auto bufferOrErr = llvm::MemoryBuffer::getFile(filePath, false, false, false);
+#else
         auto bufferOrErr = llvm::MemoryBuffer::getFile(filePath);
+#endif
         if (!bufferOrErr) {
 #ifdef HEIMDALL_DEBUG_ENABLED
             std::cout << "DWARFExtractor: Failed to read file: " << filePath << std::endl;
@@ -473,8 +477,10 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
 
         g_objectFile = std::move(objOrErr.get());
 
-        // Create DWARF context with new LLVM 19.1.7 API
+        // Create DWARF context with version-specific API
         try {
+#if LLVM_VERSION_MAJOR >= 12
+            // LLVM 12+ API (including 19.1.7)
             auto newContext = llvm::DWARFContext::create(
                 *g_objectFile, llvm::DWARFContext::ProcessDebugRelocations::Process, nullptr, "",
                 [](llvm::Error) {
@@ -486,6 +492,17 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
                     // to avoid cluttering output with non-critical debug info issues
                 },
                 false);              // ThreadSafe - single-threaded for now
+#else
+            // LLVM 11 and earlier API
+            auto newContext = llvm::DWARFContext::create(
+                *g_objectFile, nullptr, "",
+                [](llvm::Error) {
+                    // Intentionally empty: Ignore recoverable DWARF parsing errors
+                },
+                [](llvm::Error) {
+                    // Intentionally empty: Ignore DWARF parsing warnings
+                });
+#endif
 
             // Additional safety check - ensure the context is valid
             if (!newContext) {
