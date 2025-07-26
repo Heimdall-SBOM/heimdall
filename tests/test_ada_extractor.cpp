@@ -25,7 +25,6 @@ limitations under the License.
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
-#include "src/compat/compatibility.hpp"
 #include "src/common/AdaExtractor.hpp"
 #include "src/common/ComponentInfo.hpp"
 #include "test_utils.hpp"

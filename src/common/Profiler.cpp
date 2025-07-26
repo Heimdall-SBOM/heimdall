@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <cstring>
+#include <utility>
+#include <utility>
 
 // Static member definitions
 heimdall::Profiler* heimdall::Profiler::instance_ = nullptr;
@@ -71,7 +73,7 @@ size_t get_system_total_memory() {
     }
     return 0;
 #else
-    struct sysinfo si;
+    struct sysinfo si{};
     if (sysinfo(&si) == 0) {
         return si.totalram * si.mem_unit;
     }
@@ -99,7 +101,7 @@ size_t get_system_available_memory() {
     }
     return 0;
 #else
-    struct sysinfo si;
+    struct sysinfo si{};
     if (sysinfo(&si) == 0) {
         return si.freeram * si.mem_unit;
     }
@@ -119,8 +121,8 @@ private:
     std::vector<size_t> memory_usage_;
     
 public:
-    PerformanceBenchmark(const std::string& name, std::function<void()> func, int iterations = 1)
-        : name_(name), test_function_(func), iterations_(iterations) {}
+    PerformanceBenchmark(std::string  name, std::function<void()> func, int iterations = 1)
+        : name_(std::move(name)), test_function_(std::move(std::move(func))), iterations_(iterations) {}
     
     void run() {
         times_.clear();
@@ -261,9 +263,9 @@ private:
     FILETIME last_kernel_time_;
     FILETIME last_user_time_;
 #else
-    clock_t last_cpu_time_;
-    clock_t last_sys_time_;
-    clock_t last_user_time_;
+    clock_t last_cpu_time_{};
+    clock_t last_sys_time_{};
+    clock_t last_user_time_{};
 #endif
     
 public:
@@ -349,7 +351,7 @@ namespace performance_utils {
  * @brief Run a performance benchmark
  */
 void run_benchmark(const std::string& name, std::function<void()> func, int iterations) {
-    PerformanceBenchmark benchmark(name, func, iterations);
+    PerformanceBenchmark benchmark(name, std::move(func), iterations);
     benchmark.run();
     benchmark.print_statistics();
 }

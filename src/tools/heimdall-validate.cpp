@@ -60,7 +60,7 @@ std::string detectFormat(const std::string& filePath) {
     
     if (firstLine.find("SPDXVersion:") != std::string::npos) {
         return "spdx";
-    } else if (firstLine.find("{") != std::string::npos) {
+    } else if (firstLine.find('{') != std::string::npos) {
         // Read more to determine if it's SPDX 3.0 or CycloneDX
         std::string content;
         file.seekg(0);
@@ -90,8 +90,8 @@ int validateCommand(const std::vector<std::string>& args) {
     }
     
     std::string filePath = args[1];
-    std::string format = "";
-    std::string version = "";
+    std::string format;
+    std::string version;
     
     // Parse options
     for (size_t i = 2; i < args.size(); ++i) {
@@ -241,7 +241,7 @@ int compareCommand(const std::vector<std::string>& args) {
     
     std::string oldFile = args[1];
     std::string newFile = args[2];
-    std::string format = "";
+    std::string format;
     
     // Parse options
     for (size_t i = 3; i < args.size(); ++i) {
@@ -298,7 +298,7 @@ int diffCommand(const std::vector<std::string>& args) {
     
     std::string oldFile = args[1];
     std::string newFile = args[2];
-    std::string format = "";
+    std::string format;
     std::string reportFormat = "text";
     
     // Parse options
@@ -348,7 +348,7 @@ int mergeCommand(const std::vector<std::string>& args) {
     }
     
     std::vector<std::string> inputFiles;
-    std::string outputFile = "";
+    std::string outputFile;
     std::string format = "cyclonedx";
     std::string version = "1.6";
     

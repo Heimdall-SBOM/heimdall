@@ -33,7 +33,7 @@ limitations under the License.
 #include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 #include <ctime>
 #include <mutex>
 #include <atomic>
@@ -559,7 +559,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory,
                         if (entry->d_type == DT_REG || entry->d_type == DT_UNKNOWN) {
                             // For DT_UNKNOWN, we need to stat the file
                             if (entry->d_type == DT_UNKNOWN) {
-                                struct stat st;
+                                struct stat st{};
                                 if (stat(full_path.c_str(), &st) == 0) {
                                     if (!S_ISREG(st.st_mode)) {
                                         continue;
@@ -581,7 +581,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory,
                         else if (entry->d_type == DT_DIR || entry->d_type == DT_UNKNOWN) {
                             // For DT_UNKNOWN, we need to stat the directory
                             if (entry->d_type == DT_UNKNOWN) {
-                                struct stat st;
+                                struct stat st{};
                                 if (stat(full_path.c_str(), &st) == 0) {
                                     if (!S_ISDIR(st.st_mode)) {
                                         continue;

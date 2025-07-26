@@ -191,11 +191,11 @@ bool DWARFExtractor::extractSourceFiles(const std::string& filePath,
                                         std::vector<std::string>& sourceFiles) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
-    auto context = createDWARFContext(filePath);
+    auto *context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
         for (uint32_t i = 0; i < numUnits; ++i) {
-            auto unit = context->getUnitAtIndex(i);
+            auto *unit = context->getUnitAtIndex(i);
             if (unit) {
                 extractSourceFilesFromDie(unit->getUnitDIE(), sourceFiles);
             }
@@ -233,11 +233,11 @@ bool DWARFExtractor::extractCompileUnits(const std::string& filePath,
                                          std::vector<std::string>& compileUnits) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
-    auto context = createDWARFContext(filePath);
+    auto *context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
         for (uint32_t i = 0; i < numUnits; ++i) {
-            auto unit = context->getUnitAtIndex(i);
+            auto *unit = context->getUnitAtIndex(i);
             if (unit) {
                 extractCompileUnitFromDie(unit->getUnitDIE(), compileUnits);
             }
@@ -275,11 +275,11 @@ bool DWARFExtractor::extractFunctions(const std::string& filePath,
                                       std::vector<std::string>& functions) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
-    auto context = createDWARFContext(filePath);
+    auto *context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
         for (uint32_t i = 0; i < numUnits; ++i) {
-            auto unit = context->getUnitAtIndex(i);
+            auto *unit = context->getUnitAtIndex(i);
             if (unit) {
                 extractFunctionsFromDie(unit->getUnitDIE(), functions);
             }
@@ -315,13 +315,13 @@ bool DWARFExtractor::extractLineInfo(const std::string& filePath,
                                      std::vector<std::string>& lineInfo) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
-    auto context = createDWARFContext(filePath);
+    auto *context = createDWARFContext(filePath);
     if (context) {
         auto numUnits = context->getNumCompileUnits();
         for (uint32_t i = 0; i < numUnits; ++i) {
-            auto unit = context->getUnitAtIndex(i);
+            auto *unit = context->getUnitAtIndex(i);
             if (unit) {
-                auto lineTable = context->getLineTableForUnit(unit);
+                const auto *lineTable = context->getLineTableForUnit(unit);
                 if (lineTable) {
                     for (const auto& row : lineTable->Rows) {
                         lineInfo.push_back(std::to_string(row.Line));
@@ -350,7 +350,7 @@ bool DWARFExtractor::extractLineInfo(const std::string& filePath,
 bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) {
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
-    auto context = createDWARFContext(filePath);
+    auto *context = createDWARFContext(filePath);
     if (context) {
         return context->getNumCompileUnits() > 0;
     }
@@ -907,7 +907,7 @@ bool DWARFExtractor::extractAllDebugInfo(const std::string& filePath,
 
 #ifdef LLVM_DWARF_AVAILABLE
     ensureLLVMInitialized();
-    auto context = createDWARFContext(filePath);
+    auto *context = createDWARFContext(filePath);
     if (context) {
 #ifdef HEIMDALL_DEBUG_ENABLED
         heimdall::Utils::debugPrint("DWARFExtractor: LLVM context created successfully for extractAllDebugInfo");
@@ -919,7 +919,7 @@ bool DWARFExtractor::extractAllDebugInfo(const std::string& filePath,
         
         // Extract all information in a single pass through the DWARF data
         for (uint32_t i = 0; i < numUnits; ++i) {
-            auto unit = context->getUnitAtIndex(i);
+            auto *unit = context->getUnitAtIndex(i);
             if (unit) {
                 auto die = unit->getUnitDIE();
                 if (die.isValid()) {

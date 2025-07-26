@@ -58,7 +58,7 @@ limitations under the License.
 #include <cstdlib>
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
+#include <cerrno>
 #include <ctime>
 #include "ComponentInfo.hpp"
 #include "Utils.hpp"
@@ -73,9 +73,7 @@ limitations under the License.
 
 #ifdef __linux__
 #include <elf.h>
-#include <fcntl.h>
 #include <libelf.h>
-#include <unistd.h>
 #endif
 
 #ifdef __APPLE__
@@ -704,11 +702,7 @@ bool MetadataExtractor::isPE(const std::string& filePath) {
     // Check for PE magic number (MZ)
     char magic[2] = {0};  // Initialize to zero
     file.read(magic, 2);
-    if (file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z') {
-        return true;
-    }
-
-    return false;
+    return file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z';
 }
 
 bool MetadataExtractor::isArchive(const std::string& filePath) {
@@ -720,11 +714,7 @@ bool MetadataExtractor::isArchive(const std::string& filePath) {
     // Check for Unix archive magic number (!<arch>)
     char magic[8] = {0};  // Initialize to zero
     file.read(magic, 8);
-    if (file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0) {
-        return true;
-    }
-
-    return false;
+    return file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0;
 }
 
 bool MetadataExtractor::extractConanMetadata(heimdall::ComponentInfo& component) {
@@ -951,7 +941,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                         if (entry->d_type == DT_REG || entry->d_type == DT_UNKNOWN) {
                             // For DT_UNKNOWN, we need to stat the file
                             if (entry->d_type == DT_UNKNOWN) {
-                                struct stat st;
+                                struct stat st{};
                                 if (stat(full_path.c_str(), &st) == 0) {
                                     if (!S_ISREG(st.st_mode)) {
                                         continue;
@@ -973,7 +963,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                         else if (entry->d_type == DT_DIR || entry->d_type == DT_UNKNOWN) {
                             // For DT_UNKNOWN, we need to stat the directory
                             if (entry->d_type == DT_UNKNOWN) {
-                                struct stat st;
+                                struct stat st{};
                                 if (stat(full_path.c_str(), &st) == 0) {
                                     if (!S_ISDIR(st.st_mode)) {
                                         continue;
@@ -1087,10 +1077,7 @@ namespace MetadataHelpers {
  */
 bool openFileSafely(const std::string& filePath, std::ifstream& file) {
     file.open(filePath, std::ios::binary);
-    if (!file.is_open()) {
-        return false;
-    }
-    return true;
+    return file.is_open();
 }
 
 /**
@@ -1152,11 +1139,7 @@ bool isPE(const std::string& filePath) {
     // Check for PE magic number (MZ)
     char magic[2] = {0};  // Initialize to zero
     file.read(magic, 2);
-    if (file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z') {
-        return true;
-    }
-
-    return false;
+    return file.gcount() == 2 && magic[0] == 'M' && magic[1] == 'Z';
 }
 
 bool isArchive(const std::string& filePath) {
@@ -1168,11 +1151,7 @@ bool isArchive(const std::string& filePath) {
     // Check for Unix archive magic number (!<arch>)
     char magic[8] = {0};  // Initialize to zero
     file.read(magic, 8);
-    if (file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0) {
-        return true;
-    }
-
-    return false;
+    return file.gcount() == 8 && strncmp(magic, "!<arch>", 7) == 0;
 }
 
 bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::SymbolInfo>& symbols) {

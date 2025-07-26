@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <string>
 #include <map>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <functional>
@@ -81,9 +83,7 @@ public:
     
     void update_memory_usage(size_t bytes) {
         current_memory_ = bytes;
-        if (bytes > peak_memory_) {
-            peak_memory_ = bytes;
-        }
+        peak_memory_ = std::max(bytes, peak_memory_);
     }
     
     size_t get_current_memory() const { return current_memory_; }
@@ -106,7 +106,7 @@ private:
         size_t virtual_memory_kb;
     };
     
-    ResourceUsage last_usage_;
+    ResourceUsage last_usage_{};
     
 public:
     SystemResourceTracker() {
@@ -133,7 +133,7 @@ public:
             usage.virtual_memory_kb = pmc.PrivateUsage / 1024;
         }
 #else
-        struct rusage rusage_data;
+        struct rusage rusage_data{};
         if (getrusage(RUSAGE_SELF, &rusage_data) == 0) {
             usage.memory_kb = rusage_data.ru_maxrss;
             // CPU usage calculation would need more complex tracking
@@ -166,7 +166,7 @@ private:
     std::map<std::string, double> metrics_;
     
 public:
-    explicit PerformanceSession(const std::string& name) : name_(name) {
+    explicit PerformanceSession(std::string  name) : name_(std::move(name)) {
         timer_.start();
         resource_tracker_.reset();
     }

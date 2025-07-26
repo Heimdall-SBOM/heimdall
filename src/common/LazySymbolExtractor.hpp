@@ -99,7 +99,7 @@ private:
      */
     bool shouldCache(const std::string& filePath) const;
 
-private:
+
     std::unordered_map<std::string, std::vector<SymbolInfo>> symbolCache;
     mutable std::mutex cacheMutex;
     size_t cacheHits{0};

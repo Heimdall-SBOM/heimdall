@@ -22,8 +22,10 @@ limitations under the License.
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 
-#define NUM_THREADS 3
-#define BUFFER_SIZE 1024
+enum {
+NUM_THREADS = 3,
+BUFFER_SIZE = 1024
+};
 
 // Thread function that performs OpenSSL operations
 void* openssl_worker(void* arg)

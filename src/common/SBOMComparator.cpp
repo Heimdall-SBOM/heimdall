@@ -56,22 +56,22 @@ std::vector<SBOMComponent> SPDXParser::parseContent(const std::string& content) 
 
 bool SPDXParser::processSPDXLine(const std::string& line, SBOMComponent& component) {
     if (line.find("PackageVersion:") != std::string::npos) {
-        component.version = line.substr(line.find(":") + 1);
+        component.version = line.substr(line.find(':') + 1);
         component.version.erase(0, component.version.find_first_not_of(" \t"));
         component.version.erase(component.version.find_last_not_of(" \t") + 1);
         return false;
     } else if (line.find("PackageSPDXID:") != std::string::npos) {
-        component.id = line.substr(line.find(":") + 1);
+        component.id = line.substr(line.find(':') + 1);
         component.id.erase(0, component.id.find_first_not_of(" \t"));
         component.id.erase(component.id.find_last_not_of(" \t") + 1);
         return false;
     } else if (line.find("PackageLicenseConcluded:") != std::string::npos) {
-        component.license = line.substr(line.find(":") + 1);
+        component.license = line.substr(line.find(':') + 1);
         component.license.erase(0, component.license.find_first_not_of(" \t"));
         component.license.erase(component.license.find_last_not_of(" \t") + 1);
         return false;
     } else if (line.find("PackageDownloadLocation:") != std::string::npos) {
-        component.purl = line.substr(line.find(":") + 1);
+        component.purl = line.substr(line.find(':') + 1);
         component.purl.erase(0, component.purl.find_first_not_of(" \t"));
         component.purl.erase(component.purl.find_last_not_of(" \t") + 1);
         return false;
@@ -90,7 +90,7 @@ std::vector<SBOMComponent> SPDXParser::parseSPDX2_3(const std::string& content) 
     while (std::getline(iss, line)) {
         if (line.find("PackageName:") != std::string::npos) {
             SBOMComponent component;
-            component.name = line.substr(line.find(":") + 1);
+            component.name = line.substr(line.find(':') + 1);
             // Trim whitespace
             component.name.erase(0, component.name.find_first_not_of(" \t"));
             component.name.erase(component.name.find_last_not_of(" \t") + 1);
@@ -159,12 +159,12 @@ std::string CycloneDXParser::extractVersion(const std::string& content) const {
         return "";
     }
     
-    size_t start = content.find("\"", pos + 13) + 1;
+    size_t start = content.find('\"', pos + 13) + 1;
     if (start == std::string::npos) {
         return "";
     }
     
-    size_t end = content.find("\"", start);
+    size_t end = content.find('\"', start);
     if (end == std::string::npos) {
         return "";
     }
@@ -234,7 +234,7 @@ std::string SBOMComparator::detectFormatFromFile(const std::string& filePath) {
     std::getline(file, firstLine);
     if (firstLine.find("SPDXVersion:") != std::string::npos) {
         return "spdx";
-    } else if (firstLine.find("{") != std::string::npos) {
+    } else if (firstLine.find('{') != std::string::npos) {
         std::string content;
         file.seekg(0);
         std::stringstream buffer;
@@ -426,7 +426,8 @@ std::string SBOMComparator::mergeComponents(const std::vector<std::vector<SBOMCo
     
     // Convert to vector
     std::vector<SBOMComponent> result;
-    for (const auto& pair : mergedComponents) {
+    result.reserve(mergedComponents.size());
+for (const auto& pair : mergedComponents) {
         result.push_back(pair.second);
     }
     
@@ -659,7 +660,7 @@ std::string SBOMComparator::getCurrentTimestamp() {
     auto time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
 #if defined(_POSIX_VERSION)
-    struct tm tm_buf;
+    struct tm tm_buf{};
     gmtime_r(&time_t, &tm_buf);
     ss << std::put_time(&tm_buf, "%Y-%m-%dT%H:%M:%SZ");
 #else

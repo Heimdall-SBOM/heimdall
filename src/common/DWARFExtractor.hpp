@@ -186,7 +186,7 @@ private:
     bool extractFunctionsFromSymbolTable(const std::string& filePath,
                                          std::vector<std::string>& functions);
 
-private:
+
 #ifdef LLVM_DWARF_AVAILABLE
     /**
      * @brief Initialize LLVM DWARF context for a file

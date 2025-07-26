@@ -47,8 +47,8 @@ int heimdall_gold_set_plugin_option(const char* option);
 // LLD Plugin C-style function declarations
 const char* heimdall_lld_version(void);
 const char* heimdall_lld_description(void);
-void heimdall_set_verbose(bool v);
-int heimdall_set_cyclonedx_version(const char* version);
+
+
 int heimdall_lld_set_plugin_option(const char* option);
 
 #ifdef __cplusplus

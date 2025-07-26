@@ -597,7 +597,7 @@ bool LightweightDWARFParser::extractFunctionsFromSymbolTable(const std::string& 
     }
 
     // Read ELF header
-    ELFHeader header;
+    ELFHeader header{};
     file.read(reinterpret_cast<char*>(&header), sizeof(header));
     
     if (file.gcount() != sizeof(header)) {
@@ -613,7 +613,7 @@ bool LightweightDWARFParser::extractFunctionsFromSymbolTable(const std::string& 
     // Find symbol table section
     file.seekg(header.e_shoff);
     for (uint16_t i = 0; i < header.e_shnum; ++i) {
-        ELFSectionHeader section;
+        ELFSectionHeader section{};
         file.read(reinterpret_cast<char*>(&section), sizeof(section));
         
         if (file.gcount() != sizeof(section)) {
@@ -769,7 +769,7 @@ bool LightweightDWARFParser::findDWARFSections(const std::string& filePath,
 
     // Read ELF header
     file.seekg(0, std::ios::beg);
-    ELFHeader header;
+    ELFHeader header{};
     file.read(reinterpret_cast<char*>(&header), sizeof(header));
     
     if (file.gcount() != sizeof(header)) {
@@ -794,7 +794,7 @@ bool LightweightDWARFParser::findDWARFSections(const std::string& filePath,
 
     // Read section header string table
     file.seekg(header.e_shoff + header.e_shstrndx * sizeof(ELFSectionHeader));
-    ELFSectionHeader stringTableHeader;
+    ELFSectionHeader stringTableHeader{};
     file.read(reinterpret_cast<char*>(&stringTableHeader), sizeof(stringTableHeader));
     
     if (file.gcount() != sizeof(stringTableHeader)) {
@@ -825,7 +825,7 @@ bool LightweightDWARFParser::findDWARFSections(const std::string& filePath,
 
     file.seekg(header.e_shoff);
     for (uint16_t i = 0; i < header.e_shnum; ++i) {
-        ELFSectionHeader section;
+        ELFSectionHeader section{};
         file.read(reinterpret_cast<char*>(&section), sizeof(section));
         
         if (file.gcount() != sizeof(section)) {

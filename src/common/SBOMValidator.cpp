@@ -7,7 +7,6 @@
 #include <filesystem>
 #include "Utils.hpp"
 #include "../compat/compatibility.hpp"
-#include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json-schema.hpp>
 #include <iostream>
@@ -328,12 +327,12 @@ std::string CycloneDXValidator::extractVersion(const std::string& content) {
         return "";
     }
     
-    size_t start = content.find("\"", pos + 13) + 1;
+    size_t start = content.find('\"', pos + 13) + 1;
     if (start == std::string::npos) {
         return "";
     }
     
-    size_t end = content.find("\"", start);
+    size_t end = content.find('\"', start);
     if (end == std::string::npos) {
         return "";
     }

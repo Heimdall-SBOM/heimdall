@@ -28,7 +28,6 @@ limitations under the License.
 #include <chrono>
 #include <thread>
 #include <unistd.h>
-#include "src/compat/compatibility.hpp"
 #include "src/common/ComponentInfo.hpp"
 #include "src/common/PluginInterface.hpp"
 #include "src/common/SBOMGenerator.hpp"

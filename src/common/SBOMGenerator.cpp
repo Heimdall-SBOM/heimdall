@@ -1009,7 +1009,7 @@ std::string SBOMGenerator::Impl::getCurrentTimestamp() {
 
     std::stringstream ss;
 #if defined(_POSIX_VERSION)
-    struct tm tm_buf;
+    struct tm tm_buf{};
     gmtime_r(&time_t, &tm_buf);
     ss << std::put_time(&tm_buf, "%Y-%m-%dT%H:%M:%SZ");
 #else
@@ -1464,13 +1464,13 @@ std::string SBOMGenerator::Impl::generateSPDXLicenseId(const std::string& licens
     } else if (upperLicense.find("MIT") != std::string::npos) {
         return "MIT";
     } else if (upperLicense.find("GPL") != std::string::npos) {
-        if (upperLicense.find("3") != std::string::npos) {
+        if (upperLicense.find('3') != std::string::npos) {
             return "GPL-3.0-only";
         } else {
             return "GPL-2.0-only";
         }
     } else if (upperLicense.find("LGPL") != std::string::npos) {
-        if (upperLicense.find("3") != std::string::npos) {
+        if (upperLicense.find('3') != std::string::npos) {
             return "LGPL-3.0-only";
         } else {
             return "LGPL-2.1-only";

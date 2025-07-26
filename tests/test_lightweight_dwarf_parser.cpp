@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <cerrno>
 #include <cstring>
-#include "src/compat/compatibility.hpp"
 #include "src/common/LightweightDWARFParser.hpp"
 #include "src/common/ComponentInfo.hpp"
 #include "test_utils.hpp"
@@ -526,7 +525,8 @@ TEST_F(LightweightDWARFParserTest, MultipleParserInstancesConcurrent) {
         EXPECT_NO_THROW(parsers[index].extractAllDebugInfo(test_elf_path, sourceFiles, compileUnits, functions));
     };
     
-    for (int i = 0; i < 5; ++i) {
+    threads.reserve(5);
+for (int i = 0; i < 5; ++i) {
         threads.emplace_back(test_function, i);
     }
     

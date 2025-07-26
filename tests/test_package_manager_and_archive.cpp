@@ -25,7 +25,7 @@ using namespace heimdall;
 // Helper: Only run if file exists
 #define REQUIRE_FILE(path)                               \
     if (!heimdall::compat::fs::exists(path)) {                \
-        GTEST_SKIP() << "Test file not found: " << path; \
+        GTEST_SKIP() << "Test file not found: " << (path); \
     }
 
 // -------- Package Manager Integration Tests --------

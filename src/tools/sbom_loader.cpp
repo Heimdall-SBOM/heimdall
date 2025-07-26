@@ -49,13 +49,13 @@ limitations under the License.
 /**
  * @brief Function pointer types for plugin interface
  */
-typedef int (*init_func_t)(void*);
-typedef int (*set_format_func_t)(const char*);
-typedef int (*set_cyclonedx_version_func_t)(const char*);
-typedef int (*set_spdx_version_func_t)(const char*);
-typedef int (*set_output_path_func_t)(const char*);
-typedef int (*process_input_file_func_t)(const char*);
-typedef void (*finalize_func_t)(void);
+using init_func_t = int (*)(void *);
+using set_format_func_t = int (*)(const char *);
+using set_cyclonedx_version_func_t = int (*)(const char *);
+using set_spdx_version_func_t = int (*)(const char *);
+using set_output_path_func_t = int (*)(const char *);
+using process_input_file_func_t = int (*)(const char *);
+using finalize_func_t = void (*)();
 
 /**
  * @brief Generate SBOM from binary file using a dynamic plugin

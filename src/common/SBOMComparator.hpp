@@ -44,6 +44,7 @@ limitations under the License.
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <map>
@@ -92,15 +93,15 @@ struct SBOMComponent {
      * @param properties Additional properties
      * @param dependencies List of dependencies
      */
-    SBOMComponent(const std::string& id,
-                  const std::string& name,
-                  const std::string& version,
-                  const std::string& type,
-                  const std::string& purl,
-                  const std::string& license,
+    SBOMComponent(std::string  id,
+                  std::string  name,
+                  std::string  version,
+                  std::string  type,
+                  std::string  purl,
+                  std::string  license,
                   const std::map<std::string, std::string>& properties = {},
                   const std::vector<std::string>& dependencies = {})
-        : id(id), name(name), version(version), type(type), purl(purl), license(license),
+        : id(std::move(std::move(id))), name(std::move(std::move(name))), version(std::move(std::move(version))), type(std::move(std::move(type))), purl(std::move(std::move(purl))), license(std::move(std::move(license))),
           properties(properties), dependencies(dependencies) {}
     
     // Hash for comparison
@@ -142,9 +143,9 @@ struct SBOMDifference {
     SBOMDifference& operator=(const SBOMDifference& other) = default;
     
     // Parameterized constructors
-    SBOMDifference(Type t, const SBOMComponent& comp) : type(t), component(comp) {}
-    SBOMDifference(Type t, const SBOMComponent& comp, const SBOMComponent& oldComp) 
-        : type(t), component(comp), oldComponent(oldComp) {}
+    SBOMDifference(Type t, SBOMComponent  comp) : type(t), component(std::move(std::move(comp))) {}
+    SBOMDifference(Type t, SBOMComponent  comp, const SBOMComponent& oldComp) 
+        : type(t), component(std::move(std::move(comp))), oldComponent(oldComp) {}
 };
 
 /**

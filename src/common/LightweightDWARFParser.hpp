@@ -220,7 +220,7 @@ private:
      */
     uint64_t parseULEB128(const char* data, uint32_t& offset);
 
-private:
+
     // ELF file parsing helpers
     struct ELFHeader {
         uint8_t e_ident[16];

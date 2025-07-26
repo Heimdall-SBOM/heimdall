@@ -452,7 +452,7 @@ TEST_F(SBOMValidationTest, DiffReportGenerationCSV) {
     std::string report = comparator.generateDiffReport(differences, "csv");
     EXPECT_FALSE(report.empty());
     EXPECT_NE(report.find("Component1"), std::string::npos);
-    EXPECT_NE(report.find(","), std::string::npos);
+    EXPECT_NE(report.find(','), std::string::npos);
 }
 
 TEST_F(SBOMValidationTest, DiffReportGenerationInvalidFormat) {

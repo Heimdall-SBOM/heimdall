@@ -486,7 +486,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithConcurrentAccess) {
     std::vector<std::thread> threads;
     std::vector<bool> results(3, false);
     
-    for (int i = 0; i < 3; ++i) {
+    threads.reserve(3);
+for (int i = 0; i < 3; ++i) {
         threads.emplace_back([&, i]() {
             ComponentInfo component("test.o", test_object_file.string());
             results[i] = extractor->extractMetadata(component);

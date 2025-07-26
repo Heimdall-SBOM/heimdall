@@ -123,12 +123,19 @@ if(DEFINED LLVM_CONFIG)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     
+    # Fallback: if LLVM_LIBRARIES is empty, set it manually based on LLVM version
+    if(NOT LLVM_LIBRARIES)
+        set(LLVM_LIBRARIES "-lLLVM-${LLVM_VERSION_MAJOR}")
+        message(STATUS "LLVM_LIBRARIES was empty, setting to: ${LLVM_LIBRARIES}")
+    endif()
+    
     # Set LLVM definitions
     set(LLVM_DEFINITIONS "-DLLVM_VERSION_MAJOR=${LLVM_VERSION_MAJOR}")
     
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION} (major: ${LLVM_VERSION_MAJOR})")
     message(STATUS "LLVM include dirs: ${LLVM_INCLUDE_DIRS}")
     message(STATUS "LLVM library dirs: ${LLVM_LIBRARY_DIRS}")
+    message(STATUS "LLVM libraries: ${LLVM_LIBRARIES}")
 else()
     # Fallback to find_package if LLVM_CONFIG not provided
     find_package(LLVM REQUIRED CONFIG)
@@ -138,7 +145,7 @@ endif()
 
 # Detect available LLVM targets
 execute_process(
-    COMMAND llvm-config --components
+    COMMAND ${LLVM_CONFIG_EXECUTABLE} --components
     OUTPUT_VARIABLE LLVM_AVAILABLE_COMPONENTS
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
