@@ -19,10 +19,10 @@ limitations under the License.
  * @brief SBOM comparison, merging, and diff generation functionality
  * @author Trevor Bakker
  * @date 2025
- * 
+ *
  * This file provides comprehensive functionality for comparing, merging, and
  * analyzing Software Bill of Materials (SBOM) documents. It includes:
- * 
+ *
  * - SBOM component representation and comparison
  * - Abstract parser interface for different SBOM formats
  * - Concrete implementations for SPDX and CycloneDX parsers
@@ -30,11 +30,11 @@ limitations under the License.
  * - SBOM merging capabilities
  * - Diff report generation in multiple formats
  * - Factory pattern for creating parsers
- * 
+ *
  * Supported SBOM Formats:
  * - SPDX 2.3 and 3.0
  * - CycloneDX 1.4, 1.5, and 1.6
- * 
+ *
  * Output Formats:
  * - Text reports
  * - JSON reports
@@ -43,16 +43,17 @@ limitations under the License.
 
 #pragma once
 
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
-#include <memory>
-#include <map>
-#include <set>
-#include <optional>
 #include "../compat/compatibility.hpp"
 
-namespace heimdall {
+namespace heimdall
+{
 
 /**
  * @brief Represents a component in an SBOM
@@ -151,149 +152,158 @@ struct SBOMDifference {
 /**
  * @brief Abstract base class for SBOM parsers
  */
-class SBOMParser {
-public:
-    virtual ~SBOMParser() = default;
-    
-    /**
-     * @brief Parse SBOM file and extract components
-     * @param filePath Path to SBOM file
-     * @return Vector of components
-     */
-    virtual std::vector<SBOMComponent> parse(const std::string& filePath) = 0;
-    
-    /**
-     * @brief Parse SBOM content from string
-     * @param content SBOM content
-     * @return Vector of components
-     */
-    virtual std::vector<SBOMComponent> parseContent(const std::string& content) = 0;
-    
-    /**
-     * @brief Get parser name
-     * @return Parser name
-     */
-    virtual std::string getName() const = 0;
+class SBOMParser
+{
+  public:
+  virtual ~SBOMParser() = default;
+
+  /**
+   * @brief Parse SBOM file and extract components
+   * @param filePath Path to SBOM file
+   * @return Vector of components
+   */
+  virtual std::vector<SBOMComponent> parse(const std::string& filePath) = 0;
+
+  /**
+   * @brief Parse SBOM content from string
+   * @param content SBOM content
+   * @return Vector of components
+   */
+  virtual std::vector<SBOMComponent> parseContent(const std::string& content) = 0;
+
+  /**
+   * @brief Get parser name
+   * @return Parser name
+   */
+  virtual std::string getName() const = 0;
 };
 
 /**
  * @brief SPDX parser implementation
  */
-class SPDXParser : public SBOMParser {
-public:
-    std::vector<SBOMComponent> parse(const std::string& filePath) override;
-    std::vector<SBOMComponent> parseContent(const std::string& content) override;
-    std::string getName() const override { return "SPDX Parser"; }
-    
-private:
-    bool processSPDXLine(const std::string& line, SBOMComponent& component);
-    std::vector<SBOMComponent> parseSPDX2_3(const std::string& content);
-    std::vector<SBOMComponent> parseSPDX3_0(const std::string& content);
+class SPDXParser : public SBOMParser
+{
+  public:
+  std::vector<SBOMComponent> parse(const std::string& filePath) override;
+  std::vector<SBOMComponent> parseContent(const std::string& content) override;
+  std::string                getName() const override
+  {
+    return "SPDX Parser";
+  }
+
+  private:
+  bool                       processSPDXLine(const std::string& line, SBOMComponent& component);
+  std::vector<SBOMComponent> parseSPDX2_3(const std::string& content);
+  std::vector<SBOMComponent> parseSPDX3_0(const std::string& content);
 };
 
 /**
  * @brief CycloneDX parser implementation
  */
-class CycloneDXParser : public SBOMParser {
-public:
-    std::vector<SBOMComponent> parse(const std::string& filePath) override;
-    std::vector<SBOMComponent> parseContent(const std::string& content) override;
-    std::string getName() const override { return "CycloneDX Parser"; }
-    
-private:
-    std::string extractVersion(const std::string& content) const;
-    std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content) const;
-    std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content) const;
-    std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content) const;
+class CycloneDXParser : public SBOMParser
+{
+  public:
+  std::vector<SBOMComponent> parse(const std::string& filePath) override;
+  std::vector<SBOMComponent> parseContent(const std::string& content) override;
+  std::string                getName() const override
+  {
+    return "CycloneDX Parser";
+  }
+
+  private:
+  std::string                extractVersion(const std::string& content) const;
+  std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content) const;
+  std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content) const;
+  std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content) const;
 };
 
 /**
  * @brief SBOM comparison and merging functionality
  */
-class SBOMComparator {
-public:
-    /**
-     * @brief Compare two SBOM files
-     * @param oldSBOM Path to old SBOM file
-     * @param newSBOM Path to new SBOM file
-     * @return Vector of differences
-     */
-    std::vector<SBOMDifference> compare(const std::string& oldSBOM, const std::string& newSBOM);
-    
-    /**
-     * @brief Compare two SBOM contents
-     * @param oldContent Old SBOM content
-     * @param newContent New SBOM content
-     * @param format SBOM format ("spdx" or "cyclonedx")
-     * @return Vector of differences
-     */
-    std::vector<SBOMDifference> compareContent(const std::string& oldContent, 
-                                              const std::string& newContent, 
-                                              const std::string& format);
-    
-    /**
-     * @brief Merge multiple SBOMs into one
-     * @param sbomFiles Vector of SBOM file paths
-     * @param outputFormat Output format ("spdx" or "cyclonedx")
-     * @param outputVersion Output version
-     * @return Merged SBOM content
-     */
-    std::string merge(const std::vector<std::string>& sbomFiles, 
-                     const std::string& outputFormat, 
-                     const std::string& outputVersion);
-    
-    /**
-     * @brief Generate diff report
-     * @param differences Vector of differences
-     * @param format Output format ("text", "json", "csv")
-     * @return Diff report
-     */
-    std::string generateDiffReport(const std::vector<SBOMDifference>& differences, 
-                                  const std::string& format = "text");
-    
-    /**
-     * @brief Get statistics about differences
-     * @param differences Vector of differences
-     * @return Map of statistics
-     */
-    std::map<std::string, int> getDiffStatistics(const std::vector<SBOMDifference>& differences);
-    
-private:
-    std::string detectFormatFromFile(const std::string& filePath);
-    std::unique_ptr<SBOMParser> createParser(const std::string& format);
-    std::vector<SBOMDifference> compareComponents(const std::vector<SBOMComponent>& oldComponents,
-                                                 const std::vector<SBOMComponent>& newComponents);
-    std::string mergeComponents(const std::vector<std::vector<SBOMComponent>>& componentLists,
-                               const std::string& outputFormat, 
-                               const std::string& outputVersion);
-    std::string generateSPDXOutput(const std::vector<SBOMComponent>& components, 
-                                   const std::string& version);
-    std::string generateCycloneDXOutput(const std::vector<SBOMComponent>& components, 
-                                       const std::string& version);
-    std::string generateJSONReport(const std::vector<SBOMDifference>& differences);
-    std::string generateCSVReport(const std::vector<SBOMDifference>& differences);
-    std::string generateTextReport(const std::vector<SBOMDifference>& differences);
-    std::string getDifferenceTypeString(SBOMDifference::Type type);
-    std::string getCurrentTimestamp();
+class SBOMComparator
+{
+  public:
+  /**
+   * @brief Compare two SBOM files
+   * @param oldSBOM Path to old SBOM file
+   * @param newSBOM Path to new SBOM file
+   * @return Vector of differences
+   */
+  std::vector<SBOMDifference> compare(const std::string& oldSBOM, const std::string& newSBOM);
+
+  /**
+   * @brief Compare two SBOM contents
+   * @param oldContent Old SBOM content
+   * @param newContent New SBOM content
+   * @param format SBOM format ("spdx" or "cyclonedx")
+   * @return Vector of differences
+   */
+  std::vector<SBOMDifference> compareContent(const std::string& oldContent,
+                                             const std::string& newContent,
+                                             const std::string& format);
+
+  /**
+   * @brief Merge multiple SBOMs into one
+   * @param sbomFiles Vector of SBOM file paths
+   * @param outputFormat Output format ("spdx" or "cyclonedx")
+   * @param outputVersion Output version
+   * @return Merged SBOM content
+   */
+  std::string merge(const std::vector<std::string>& sbomFiles, const std::string& outputFormat,
+                    const std::string& outputVersion);
+
+  /**
+   * @brief Generate diff report
+   * @param differences Vector of differences
+   * @param format Output format ("text", "json", "csv")
+   * @return Diff report
+   */
+  std::string generateDiffReport(const std::vector<SBOMDifference>& differences,
+                                 const std::string&                 format = "text");
+
+  /**
+   * @brief Get statistics about differences
+   * @param differences Vector of differences
+   * @return Map of statistics
+   */
+  std::map<std::string, int> getDiffStatistics(const std::vector<SBOMDifference>& differences);
+
+  private:
+  std::string                 detectFormatFromFile(const std::string& filePath);
+  std::unique_ptr<SBOMParser> createParser(const std::string& format);
+  std::vector<SBOMDifference> compareComponents(const std::vector<SBOMComponent>& oldComponents,
+                                                const std::vector<SBOMComponent>& newComponents);
+  std::string mergeComponents(const std::vector<std::vector<SBOMComponent>>& componentLists,
+                              const std::string& outputFormat, const std::string& outputVersion);
+  std::string generateSPDXOutput(const std::vector<SBOMComponent>& components,
+                                 const std::string&                version);
+  std::string generateCycloneDXOutput(const std::vector<SBOMComponent>& components,
+                                      const std::string&                version);
+  std::string generateJSONReport(const std::vector<SBOMDifference>& differences);
+  std::string generateCSVReport(const std::vector<SBOMDifference>& differences);
+  std::string generateTextReport(const std::vector<SBOMDifference>& differences);
+  std::string getDifferenceTypeString(SBOMDifference::Type type);
+  std::string getCurrentTimestamp();
 };
 
 /**
  * @brief Factory class for creating SBOM parsers
  */
-class SBOMParserFactory {
-public:
-    /**
-     * @brief Create a parser for the given format
-     * @param format SBOM format ("spdx" or "cyclonedx")
-     * @return Unique pointer to the created parser, or nullptr if format is not supported
-     */
-    static std::unique_ptr<SBOMParser> createParser(const std::string& format);
-    
-    /**
-     * @brief Get list of supported SBOM formats
-     * @return Vector of supported format names
-     */
-    static std::vector<std::string> getSupportedFormats();
+class SBOMParserFactory
+{
+  public:
+  /**
+   * @brief Create a parser for the given format
+   * @param format SBOM format ("spdx" or "cyclonedx")
+   * @return Unique pointer to the created parser, or nullptr if format is not supported
+   */
+  static std::unique_ptr<SBOMParser> createParser(const std::string& format);
+
+  /**
+   * @brief Get list of supported SBOM formats
+   * @return Vector of supported format names
+   */
+  static std::vector<std::string> getSupportedFormats();
 };
 
-} // namespace heimdall 
+}  // namespace heimdall

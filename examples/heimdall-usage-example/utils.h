@@ -6,4 +6,4 @@
 // Utility function declarations
 int getStringLength(const std::string& str);
 
-#endif // UTILS_H 
+#endif  // UTILS_H

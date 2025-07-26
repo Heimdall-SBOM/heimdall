@@ -25,16 +25,18 @@ limitations under the License.
 
 #include <algorithm>
 #include <cctype>
-#include "compat/compatibility.hpp"
+#include <cstdint>
 #include <fstream>
 #include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <cstdint>
+#include "compat/compatibility.hpp"
 
-namespace heimdall {
-namespace Utils {
+namespace heimdall
+{
+namespace Utils
+{
 
 /**
  * @brief Extract the filename from a file path

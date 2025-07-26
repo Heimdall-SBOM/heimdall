@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+#include "LLDPlugin.hpp"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -20,9 +21,8 @@ limitations under the License.
 #include "../common/MetadataExtractor.hpp"
 #include "../common/SBOMGenerator.hpp"
 #include "../common/Utils.hpp"
-#include "LLDAdapter.hpp"
-#include "LLDPlugin.hpp"
 #include "../compat/compatibility.hpp"
+#include "LLDAdapter.hpp"
 
 // Only include LLVM headers if we have C++17+ (LLVM 20 requires C++17+)
 #if __cplusplus >= 201703L
@@ -41,19 +41,21 @@ limitations under the License.
 #include "lld/Common/Driver.h"
 #endif
 
-namespace {
+namespace
+{
 std::unique_ptr<heimdall::LLDAdapter> globalAdapter;
-std::string outputPath = "heimdall-sbom.json";
-std::string format = "spdx";
-bool verbose = false;
-std::vector<std::string> processedFiles;
-std::vector<std::string> processedLibraries;
+std::string                           outputPath = "heimdall-sbom.json";
+std::string                           format     = "spdx";
+bool                                  verbose    = false;
+std::vector<std::string>              processedFiles;
+std::vector<std::string>              processedLibraries;
 }  // namespace
 
-extern "C" {
-
-// Plugin initialization
-int onload(void* /*tv*/) {
+extern "C"
+{
+  // Plugin initialization
+  int onload(void* /*tv*/)
+  {
     std::cout << "Heimdall LLD Plugin activated\n";
 
     // Reset all global state
@@ -70,295 +72,364 @@ int onload(void* /*tv*/) {
     globalAdapter->setFormat(format);
     globalAdapter->setVerbose(verbose);
 
-    if (verbose) {
-        std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << "\n";
+    if (verbose)
+    {
+      std::cout << "Heimdall LLD Plugin initialized with output: " << outputPath << "\n";
     }
 
     return 0;
-}
+  }
 
-// Plugin cleanup
-void onunload() {
-    if (globalAdapter) {
-        globalAdapter->finalize();
+  // Plugin cleanup
+  void onunload()
+  {
+    if (globalAdapter)
+    {
+      globalAdapter->finalize();
     }
 
     std::cout << "Heimdall LLD Plugin deactivated\n";
-}
+  }
 
-// Plugin metadata
-const char* heimdall_lld_version() {
+  // Plugin metadata
+  const char* heimdall_lld_version()
+  {
     return "1.0.0";
-}
+  }
 
-const char* heimdall_lld_description() {
+  const char* heimdall_lld_description()
+  {
     return "Heimdall SBOM Generator Plugin for LLVM LLD Linker";
-}
+  }
 
-// Configuration functions
-int heimdall_set_output_path(const char* path) {
-    if (path) {
-        outputPath = std::string(path);
-        if (globalAdapter) {
-            globalAdapter->setOutputPath(outputPath);
-        }
-        // Always update global outputPath
-        outputPath = std::string(path);
-        if (verbose) {
-            std::cout << "Heimdall: Output path set to " << outputPath << "\n";
-        }
-        return 0;
+  // Configuration functions
+  int heimdall_set_output_path(const char* path)
+  {
+    if (path)
+    {
+      outputPath = std::string(path);
+      if (globalAdapter)
+      {
+        globalAdapter->setOutputPath(outputPath);
+      }
+      // Always update global outputPath
+      outputPath = std::string(path);
+      if (verbose)
+      {
+        std::cout << "Heimdall: Output path set to " << outputPath << "\n";
+      }
+      return 0;
     }
     return -1;
-}
+  }
 
-int heimdall_set_format(const char* fmt) {
-    if (fmt) {
-        format = std::string(fmt);
-        if (globalAdapter) {
-            globalAdapter->setFormat(format);
-        }
-        // Always update global format
-        format = std::string(fmt);
-        if (verbose) {
-            std::cout << "Heimdall: Format set to " << format << "\n";
-        }
-        return 0;
+  int heimdall_set_format(const char* fmt)
+  {
+    if (fmt)
+    {
+      format = std::string(fmt);
+      if (globalAdapter)
+      {
+        globalAdapter->setFormat(format);
+      }
+      // Always update global format
+      format = std::string(fmt);
+      if (verbose)
+      {
+        std::cout << "Heimdall: Format set to " << format << "\n";
+      }
+      return 0;
     }
     return -1;
-}
+  }
 
-void heimdall_set_verbose(bool v) {
+  void heimdall_set_verbose(bool v)
+  {
     verbose = v;
-}
+  }
 
-// File processing functions
-int heimdall_process_input_file(const char* filePath) {
+  // File processing functions
+  int heimdall_process_input_file(const char* filePath)
+  {
     if (!globalAdapter || !filePath)
-        return -1;
+      return -1;
 
     std::string path(filePath);
 
     // Check if already processed
-    if (std::find(processedFiles.begin(), processedFiles.end(), path) != processedFiles.end()) {
-        return 0;  // Already processed, not an error
+    if (std::find(processedFiles.begin(), processedFiles.end(), path) != processedFiles.end())
+    {
+      return 0;  // Already processed, not an error
     }
 
     processedFiles.push_back(path);
 
-    if (verbose) {
-        std::cout << "Heimdall: Processing input file: " << path << "\n";
+    if (verbose)
+    {
+      std::cout << "Heimdall: Processing input file: " << path << "\n";
     }
 
     // Process the file through the adapter (adapter's state determines format/outputPath)
     globalAdapter->processInputFile(path);
 
     return 0;  // Success
-}
+  }
 
-void heimdall_process_library(const char* libraryPath) {
+  void heimdall_process_library(const char* libraryPath)
+  {
     if (!globalAdapter || !libraryPath)
-        return;
+      return;
 
     std::string path(libraryPath);
 
     // Check if already processed
     if (std::find(processedLibraries.begin(), processedLibraries.end(), path) !=
-        processedLibraries.end()) {
-        return;  // Already processed
+        processedLibraries.end())
+    {
+      return;  // Already processed
     }
 
     processedLibraries.push_back(path);
 
-    if (verbose) {
-        std::cout << "Heimdall: Processing library: " << path << "\n";
+    if (verbose)
+    {
+      std::cout << "Heimdall: Processing library: " << path << "\n";
     }
 
     // Process the library through the adapter
     globalAdapter->processLibrary(path);
-}
+  }
 
-// Symbol processing function
-int heimdall_process_symbol(const char* symbolName, uint64_t address, uint64_t size) {
+  // Symbol processing function
+  int heimdall_process_symbol(const char* symbolName, uint64_t address, uint64_t size)
+  {
     if (!globalAdapter || !symbolName)
-        return -1;
+      return -1;
 
-    if (verbose) {
-        std::cout << "Heimdall: Processing symbol: " << symbolName 
-                  << " (address: 0x" << std::hex << address 
-                  << ", size: " << std::dec << size << ")\n";
+    if (verbose)
+    {
+      std::cout << "Heimdall: Processing symbol: " << symbolName << " (address: 0x" << std::hex
+                << address << ", size: " << std::dec << size << ")\n";
     }
 
     // Process the symbol through the adapter
     globalAdapter->processSymbol(std::string(symbolName), address, size);
 
     return 0;
-}
+  }
 
-// Plugin cleanup and finalization
-void heimdall_finalize() {
-    if (globalAdapter) {
-        globalAdapter->finalize();
+  // Plugin cleanup and finalization
+  void heimdall_finalize()
+  {
+    if (globalAdapter)
+    {
+      globalAdapter->finalize();
     }
 
     std::cout << "Heimdall LLD Plugin finalized\n";
-}
+  }
 
-int heimdall_set_cyclonedx_version(const char* version) {
-    if (version) {
-        if (globalAdapter) {
-            globalAdapter->setCycloneDXVersion(version);
-        }
-        if (verbose) {
-            std::cout << "Heimdall: CycloneDX version set to " << version << "\n";
-        }
-        return 0;
+  int heimdall_set_cyclonedx_version(const char* version)
+  {
+    if (version)
+    {
+      if (globalAdapter)
+      {
+        globalAdapter->setCycloneDXVersion(version);
+      }
+      if (verbose)
+      {
+        std::cout << "Heimdall: CycloneDX version set to " << version << "\n";
+      }
+      return 0;
     }
     return -1;
-}
+  }
 
-int heimdall_set_spdx_version(const char* version) {
-    if (globalAdapter && version) {
-        globalAdapter->setSPDXVersion(std::string(version));
-        return 0;
+  int heimdall_set_spdx_version(const char* version)
+  {
+    if (globalAdapter && version)
+    {
+      globalAdapter->setSPDXVersion(std::string(version));
+      return 0;
     }
     return -1;
-}
+  }
 
-// LLD plugin option handler
-int heimdall_lld_set_plugin_option(const char* option) {
-    if (!option) {
-        return -1;
+  // LLD plugin option handler
+  int heimdall_lld_set_plugin_option(const char* option)
+  {
+    if (!option)
+    {
+      return -1;
     }
 
     std::string opt(option);
-    
-    if (verbose) {
-        std::cout << "Heimdall: LLD plugin option: " << opt << "\n";
+
+    if (verbose)
+    {
+      std::cout << "Heimdall: LLD plugin option: " << opt << "\n";
     }
 
     // Parse plugin options
-    if (opt.find("--plugin-opt=output=") == 0) {
-        std::string outputPath = opt.substr(19); // Length of "--plugin-opt=output="
-        if (globalAdapter) {
-            globalAdapter->setOutputPath(outputPath);
-        }
-        return 0;
-    } else if (opt.find("--plugin-opt=format=") == 0) {
-        std::string format = opt.substr(18); // Length of "--plugin-opt=format="
-        if (globalAdapter) {
-            globalAdapter->setFormat(format);
-        }
-        return 0;
-    } else if (opt.find("--plugin-opt=verbose") == 0) {
-        verbose = true;
-        if (globalAdapter) {
-            globalAdapter->setVerbose(true);
-        }
-        return 0;
-    } else if (opt.find("--plugin-opt=cyclonedx-version=") == 0) {
-        std::string version = opt.substr(28); // Length of "--plugin-opt=cyclonedx-version="
-        return heimdall_set_cyclonedx_version(version.c_str());
-    } else if (opt.find("--plugin-opt=spdx-version=") == 0) {
-        std::string version = opt.substr(23); // Length of "--plugin-opt=spdx-version="
-        if (globalAdapter) {
-            globalAdapter->setSPDXVersion(version);
-        }
-        return 0;
-    } else if (opt.find("--plugin-opt=include-system-libraries") == 0) {
-        if (globalAdapter) {
-            globalAdapter->setIncludeSystemLibraries(true);
-        }
-        return 0;
-    } else if (opt.find("--plugin-opt=extract-debug-info") == 0) {
-        if (globalAdapter) {
-            globalAdapter->setExtractDebugInfo(true);
-        }
-        return 0;
+    if (opt.find("--plugin-opt=output=") == 0)
+    {
+      std::string outputPath = opt.substr(19);  // Length of "--plugin-opt=output="
+      if (globalAdapter)
+      {
+        globalAdapter->setOutputPath(outputPath);
+      }
+      return 0;
+    }
+    else if (opt.find("--plugin-opt=format=") == 0)
+    {
+      std::string format = opt.substr(18);  // Length of "--plugin-opt=format="
+      if (globalAdapter)
+      {
+        globalAdapter->setFormat(format);
+      }
+      return 0;
+    }
+    else if (opt.find("--plugin-opt=verbose") == 0)
+    {
+      verbose = true;
+      if (globalAdapter)
+      {
+        globalAdapter->setVerbose(true);
+      }
+      return 0;
+    }
+    else if (opt.find("--plugin-opt=cyclonedx-version=") == 0)
+    {
+      std::string version = opt.substr(28);  // Length of "--plugin-opt=cyclonedx-version="
+      return heimdall_set_cyclonedx_version(version.c_str());
+    }
+    else if (opt.find("--plugin-opt=spdx-version=") == 0)
+    {
+      std::string version = opt.substr(23);  // Length of "--plugin-opt=spdx-version="
+      if (globalAdapter)
+      {
+        globalAdapter->setSPDXVersion(version);
+      }
+      return 0;
+    }
+    else if (opt.find("--plugin-opt=include-system-libraries") == 0)
+    {
+      if (globalAdapter)
+      {
+        globalAdapter->setIncludeSystemLibraries(true);
+      }
+      return 0;
+    }
+    else if (opt.find("--plugin-opt=extract-debug-info") == 0)
+    {
+      if (globalAdapter)
+      {
+        globalAdapter->setExtractDebugInfo(true);
+      }
+      return 0;
     }
 
     // Unknown option
-    if (verbose) {
-        std::cout << "Heimdall: Unknown LLD plugin option: " << opt << "\n";
+    if (verbose)
+    {
+      std::cout << "Heimdall: Unknown LLD plugin option: " << opt << "\n";
     }
     return -1;
-}
+  }
 
 }  // extern "C"
 
 // LLVM Pass Plugin Interface (Legacy Pass Manager) - Only compile if C++17+
 #if __cplusplus >= 201703L
 #ifdef LLVM_AVAILABLE
-namespace {
-class HeimdallPass : public llvm::ModulePass {
-public:
-    static char ID;
-    HeimdallPass() : ModulePass(ID) {}
+namespace
+{
+class HeimdallPass : public llvm::ModulePass
+{
+  public:
+  static char ID;
+  HeimdallPass() : ModulePass(ID) {}
 
-    bool runOnModule(llvm::Module& M) override {
-        if (verbose) {
-            llvm::errs() << "Heimdall: Processing module: " << M.getModuleIdentifier() << "\n";
-        }
-
-        // Process the module file
-        std::string moduleName = M.getModuleIdentifier();
-        if (!moduleName.empty()) {
-            heimdall_process_input_file(moduleName.c_str());
-        }
-
-        // Process functions as symbols
-        for (auto& F : M) {
-            if (!F.isDeclaration()) {
-                std::string funcName = F.getName().str();
-                if (verbose) {
-                    llvm::errs() << "Heimdall: Processing function: " << funcName << "\n";
-                }
-            }
-        }
-
-        // Process global variables as symbols
-        for (auto& GV : M.globals()) {
-            if (!GV.isDeclaration()) {
-                std::string varName = GV.getName().str();
-                if (verbose) {
-                    llvm::errs() << "Heimdall: Processing global: " << varName << "\n";
-                }
-            }
-        }
-
-        return false;  // Don't modify the module
+  bool runOnModule(llvm::Module& M) override
+  {
+    if (verbose)
+    {
+      llvm::errs() << "Heimdall: Processing module: " << M.getModuleIdentifier() << "\n";
     }
 
-    virtual llvm::StringRef getPassName() const override {
-        return "Heimdall SBOM Generator";
+    // Process the module file
+    std::string moduleName = M.getModuleIdentifier();
+    if (!moduleName.empty())
+    {
+      heimdall_process_input_file(moduleName.c_str());
     }
+
+    // Process functions as symbols
+    for (auto& F : M)
+    {
+      if (!F.isDeclaration())
+      {
+        std::string funcName = F.getName().str();
+        if (verbose)
+        {
+          llvm::errs() << "Heimdall: Processing function: " << funcName << "\n";
+        }
+      }
+    }
+
+    // Process global variables as symbols
+    for (auto& GV : M.globals())
+    {
+      if (!GV.isDeclaration())
+      {
+        std::string varName = GV.getName().str();
+        if (verbose)
+        {
+          llvm::errs() << "Heimdall: Processing global: " << varName << "\n";
+        }
+      }
+    }
+
+    return false;  // Don't modify the module
+  }
+
+  virtual llvm::StringRef getPassName() const override
+  {
+    return "Heimdall SBOM Generator";
+  }
 };
 }  // namespace
 
 char HeimdallPass::ID = 0;
 
 // Simple pass registration
-extern "C" {
-void heimdall_register_pass() {
+extern "C"
+{
+  void heimdall_register_pass()
+  {
     // This will be called when the plugin is loaded
     std::cout << "Heimdall: LLVM Pass registered\n";
-}
+  }
 }
 #endif
 #endif
 
 // LLD Plugin Interface - Working Implementation
-extern "C" {
-// LLD Plugin entry point - called when plugin is loaded
-void heimdall_lld_plugin_init() {
+extern "C"
+{
+  // LLD Plugin entry point - called when plugin is loaded
+  void heimdall_lld_plugin_init()
+  {
     std::cout << "Heimdall: LLD Plugin loaded and initialized\n";
 
     // Initialize our plugin
     onload(nullptr);
-}
+  }
 
-// LLD Plugin cleanup - called when plugin is unloaded
-void heimdall_lld_plugin_cleanup() {
+  // LLD Plugin cleanup - called when plugin is unloaded
+  void heimdall_lld_plugin_cleanup()
+  {
     std::cout << "Heimdall: LLD Plugin cleanup\n";
 
     // Finalize SBOM generation
@@ -366,19 +437,23 @@ void heimdall_lld_plugin_cleanup() {
 
     // Cleanup plugin
     onunload();
-}
+  }
 
-// LLD Plugin hook for file processing
-void heimdall_lld_process_file(const char* filePath) {
-    if (filePath) {
-        heimdall_process_input_file(filePath);
+  // LLD Plugin hook for file processing
+  void heimdall_lld_process_file(const char* filePath)
+  {
+    if (filePath)
+    {
+      heimdall_process_input_file(filePath);
     }
-}
+  }
 
-// LLD Plugin hook for library processing
-void heimdall_lld_process_library(const char* libraryPath) {
-    if (libraryPath) {
-        heimdall_process_library(libraryPath);
+  // LLD Plugin hook for library processing
+  void heimdall_lld_process_library(const char* libraryPath)
+  {
+    if (libraryPath)
+    {
+      heimdall_process_library(libraryPath);
     }
-}
+  }
 }

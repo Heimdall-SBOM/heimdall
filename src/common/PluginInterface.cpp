@@ -27,19 +27,22 @@ limitations under the License.
 #include <iostream>
 #include <regex>
 #include <sstream>
-#include "Utils.hpp"
 #include "../compat/compatibility.hpp"
+#include "Utils.hpp"
 
-namespace heimdall {
+namespace heimdall
+{
 
 /**
  * @brief Default constructor
  */
 PluginInterface::PluginInterface()
-    : sbomGenerator(heimdall::compat::make_unique<SBOMGenerator>()),
-      verbose(false),
-      extractDebugInfo(true),
-      includeSystemLibraries(false) {}
+  : sbomGenerator(heimdall::compat::make_unique<SBOMGenerator>()),
+    verbose(false),
+    extractDebugInfo(true),
+    includeSystemLibraries(false)
+{
+}
 
 /**
  * @brief Destructor
@@ -50,45 +53,53 @@ PluginInterface::~PluginInterface() = default;
  * @brief Default implementation for setting CycloneDX version
  * @param version The CycloneDX version
  */
-void PluginInterface::setCycloneDXVersion(const std::string& version) {
-    if (sbomGenerator) {
-        sbomGenerator->setCycloneDXVersion(version);
-    }
+void PluginInterface::setCycloneDXVersion(const std::string& version)
+{
+  if (sbomGenerator)
+  {
+    sbomGenerator->setCycloneDXVersion(version);
+  }
 }
 
 /**
  * @brief Default implementation for setting SPDX version
  * @param version The SPDX version
  */
-void PluginInterface::setSPDXVersion(const std::string& version) {
-    if (sbomGenerator) {
-        sbomGenerator->setSPDXVersion(version);
-    }
+void PluginInterface::setSPDXVersion(const std::string& version)
+{
+  if (sbomGenerator)
+  {
+    sbomGenerator->setSPDXVersion(version);
+  }
 }
 
 /**
  * @brief Add a component to the processed list
  * @param component The component to add
  */
-void PluginInterface::addComponent(const ComponentInfo& component) {
-    // Check if we should process this component
-    if (!shouldProcessFile(component.filePath)) {
-        if (verbose) {
-            PluginUtils::logDebug("Skipping component: " + component.name);
-        }
-        return;
+void PluginInterface::addComponent(const ComponentInfo& component)
+{
+  // Check if we should process this component
+  if (!shouldProcessFile(component.filePath))
+  {
+    if (verbose)
+    {
+      PluginUtils::logDebug("Skipping component: " + component.name);
     }
+    return;
+  }
 
-    // Add to processed components list
-    processedComponents.push_back(component);
+  // Add to processed components list
+  processedComponents.push_back(component);
 
-    // Add to SBOM generator
-    sbomGenerator->processComponent(component);
+  // Add to SBOM generator
+  sbomGenerator->processComponent(component);
 
-    if (verbose) {
-        PluginUtils::logInfo("Added component: " + component.name + " (" +
-                             component.getFileTypeString() + ")");
-    }
+  if (verbose)
+  {
+    PluginUtils::logInfo("Added component: " + component.name + " (" +
+                         component.getFileTypeString() + ")");
+  }
 }
 
 /**
@@ -98,32 +109,38 @@ void PluginInterface::addComponent(const ComponentInfo& component) {
  * @param symbols The symbols to add
  */
 void PluginInterface::updateComponent(const std::string& name, const std::string& filePath,
-                                      const std::vector<SymbolInfo>& symbols) {
-    // Find existing component
-    for (auto& component : processedComponents) {
-        if (component.name == name && component.filePath == filePath) {
-            // Add new symbols
-            for (const auto& symbol : symbols) {
-                component.addSymbol(symbol);
-            }
+                                      const std::vector<SymbolInfo>& symbols)
+{
+  // Find existing component
+  for (auto& component : processedComponents)
+  {
+    if (component.name == name && component.filePath == filePath)
+    {
+      // Add new symbols
+      for (const auto& symbol : symbols)
+      {
+        component.addSymbol(symbol);
+      }
 
-            // Update SBOM generator
-            sbomGenerator->processComponent(component);
+      // Update SBOM generator
+      sbomGenerator->processComponent(component);
 
-            if (verbose) {
-                PluginUtils::logDebug("Updated component: " + name + " with " +
-                                      std::to_string(symbols.size()) + " symbols");
-            }
-            return;
-        }
+      if (verbose)
+      {
+        PluginUtils::logDebug("Updated component: " + name + " with " +
+                              std::to_string(symbols.size()) + " symbols");
+      }
+      return;
     }
+  }
 
-    // Component not found, create new one
-    ComponentInfo newComponent(name, filePath);
-    for (const auto& symbol : symbols) {
-        newComponent.addSymbol(symbol);
-    }
-    addComponent(newComponent);
+  // Component not found, create new one
+  ComponentInfo newComponent(name, filePath);
+  for (const auto& symbol : symbols)
+  {
+    newComponent.addSymbol(symbol);
+  }
+  addComponent(newComponent);
 }
 
 /**
@@ -131,26 +148,29 @@ void PluginInterface::updateComponent(const std::string& name, const std::string
  * @param filePath The file path to check
  * @return true if the file should be processed
  */
-bool PluginInterface::shouldProcessFile(const std::string& filePath) const {
-    // Skip system libraries if not requested
-    if (!includeSystemLibraries && Utils::isSystemLibrary(filePath)) {
-        return false;
-    }
+bool PluginInterface::shouldProcessFile(const std::string& filePath) const
+{
+  // Skip system libraries if not requested
+  if (!includeSystemLibraries && Utils::isSystemLibrary(filePath))
+  {
+    return false;
+  }
 
-    // Check if file exists
-    if (!Utils::fileExists(filePath)) {
-        return false;
-    }
+  // Check if file exists
+  if (!Utils::fileExists(filePath))
+  {
+    return false;
+  }
 
-    // Check file type
-    std::string extension = Utils::getFileExtension(filePath);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+  // Check file type
+  std::string extension = Utils::getFileExtension(filePath);
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
-    // Only process known file types
-    std::vector<std::string> validExtensions = {".o",  ".obj",   ".a",   ".lib",
-                                                ".so", ".dylib", ".dll", ".exe"};
-    return std::find(validExtensions.begin(), validExtensions.end(), extension) !=
-           validExtensions.end();
+  // Only process known file types
+  std::vector<std::string> validExtensions = {".o",  ".obj",   ".a",   ".lib",
+                                              ".so", ".dylib", ".dll", ".exe"};
+  return std::find(validExtensions.begin(), validExtensions.end(), extension) !=
+         validExtensions.end();
 }
 
 /**
@@ -158,45 +178,52 @@ bool PluginInterface::shouldProcessFile(const std::string& filePath) const {
  * @param filePath The file path
  * @return The extracted component name
  */
-std::string PluginInterface::extractComponentName(const std::string& filePath) const {
-    std::string fileName = Utils::getFileName(filePath);
+std::string PluginInterface::extractComponentName(const std::string& filePath) const
+{
+  std::string fileName = Utils::getFileName(filePath);
 
-    // Remove common prefixes
-    std::vector<std::string> prefixes = {"lib"};
-    for (const auto& prefix : prefixes) {
-        if (Utils::startsWith(fileName, prefix)) {
-            fileName = fileName.substr(prefix.length());
-            break;
-        }
+  // Remove common prefixes
+  std::vector<std::string> prefixes = {"lib"};
+  for (const auto& prefix : prefixes)
+  {
+    if (Utils::startsWith(fileName, prefix))
+    {
+      fileName = fileName.substr(prefix.length());
+      break;
     }
+  }
 
-    // Remove extensions
-    std::vector<std::string> extensions = {".o",  ".obj",   ".a",   ".lib",
-                                           ".so", ".dylib", ".dll", ".exe"};
-    for (const auto& ext : extensions) {
-        if (Utils::endsWith(fileName, ext)) {
-            fileName = fileName.substr(0, fileName.length() - ext.length());
-            break;
-        }
+  // Remove extensions
+  std::vector<std::string> extensions = {".o",  ".obj",   ".a",   ".lib",
+                                         ".so", ".dylib", ".dll", ".exe"};
+  for (const auto& ext : extensions)
+  {
+    if (Utils::endsWith(fileName, ext))
+    {
+      fileName = fileName.substr(0, fileName.length() - ext.length());
+      break;
     }
+  }
 
-    return fileName;
+  return fileName;
 }
 
 /**
  * @brief Namespace containing common plugin utilities
  */
-namespace PluginUtils {
+namespace PluginUtils
+{
 
 /**
  * @brief Check if a file is an object file
  * @param filePath The file path to check
  * @return true if the file is an object file
  */
-bool isObjectFile(const std::string& filePath) {
-    std::string extension = Utils::getFileExtension(filePath);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    return extension == ".o" || extension == ".obj";
+bool isObjectFile(const std::string& filePath)
+{
+  std::string extension = Utils::getFileExtension(filePath);
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+  return extension == ".o" || extension == ".obj";
 }
 
 /**
@@ -204,10 +231,11 @@ bool isObjectFile(const std::string& filePath) {
  * @param filePath The file path to check
  * @return true if the file is a static library
  */
-bool isStaticLibrary(const std::string& filePath) {
-    std::string extension = Utils::getFileExtension(filePath);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    return extension == ".a" || extension == ".lib";
+bool isStaticLibrary(const std::string& filePath)
+{
+  std::string extension = Utils::getFileExtension(filePath);
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+  return extension == ".a" || extension == ".lib";
 }
 
 /**
@@ -215,10 +243,11 @@ bool isStaticLibrary(const std::string& filePath) {
  * @param filePath The file path to check
  * @return true if the file is a shared library
  */
-bool isSharedLibrary(const std::string& filePath) {
-    std::string extension = Utils::getFileExtension(filePath);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    return extension == ".so" || extension == ".dylib" || extension == ".dll";
+bool isSharedLibrary(const std::string& filePath)
+{
+  std::string extension = Utils::getFileExtension(filePath);
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+  return extension == ".so" || extension == ".dylib" || extension == ".dll";
 }
 
 /**
@@ -226,10 +255,11 @@ bool isSharedLibrary(const std::string& filePath) {
  * @param filePath The file path to check
  * @return true if the file is an executable
  */
-bool isExecutable(const std::string& filePath) {
-    std::string extension = Utils::getFileExtension(filePath);
-    std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
-    return extension == ".exe" || extension.empty();
+bool isExecutable(const std::string& filePath)
+{
+  std::string extension = Utils::getFileExtension(filePath);
+  std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+  return extension == ".exe" || extension.empty();
 }
 
 /**
@@ -237,8 +267,9 @@ bool isExecutable(const std::string& filePath) {
  * @param libraryPath The library path to normalize
  * @return The normalized path
  */
-std::string normalizeLibraryPath(const std::string& libraryPath) {
-    return Utils::normalizePath(libraryPath);
+std::string normalizeLibraryPath(const std::string& libraryPath)
+{
+  return Utils::normalizePath(libraryPath);
 }
 
 /**
@@ -246,16 +277,18 @@ std::string normalizeLibraryPath(const std::string& libraryPath) {
  * @param libraryName The library name to resolve
  * @return The resolved library path
  */
-std::string resolveLibraryPath(const std::string& libraryName) {
-    return Utils::findLibrary(libraryName);
+std::string resolveLibraryPath(const std::string& libraryName)
+{
+  return Utils::findLibrary(libraryName);
 }
 
 /**
  * @brief Get the list of library search paths
  * @return Vector of library search paths
  */
-std::vector<std::string> getLibrarySearchPaths() {
-    return Utils::getLibrarySearchPaths();
+std::vector<std::string> getLibrarySearchPaths()
+{
+  return Utils::getLibrarySearchPaths();
 }
 
 /**
@@ -263,22 +296,25 @@ std::vector<std::string> getLibrarySearchPaths() {
  * @param symbolName The symbol name to check
  * @return true if the symbol is a system symbol
  */
-bool isSystemSymbol(const std::string& symbolName) {
-    // Common system symbol prefixes
-    std::vector<std::string> systemPrefixes = {"_",        "__",
-                                               "___",      "GLOBAL_OFFSET_TABLE_",
-                                               "_DYNAMIC", "_GLOBAL_OFFSET_TABLE_",
-                                               "start",    "main",
-                                               "_start",   "_main",
-                                               "__libc_",  "__gmon_start__"};
+bool isSystemSymbol(const std::string& symbolName)
+{
+  // Common system symbol prefixes
+  std::vector<std::string> systemPrefixes = {"_",        "__",
+                                             "___",      "GLOBAL_OFFSET_TABLE_",
+                                             "_DYNAMIC", "_GLOBAL_OFFSET_TABLE_",
+                                             "start",    "main",
+                                             "_start",   "_main",
+                                             "__libc_",  "__gmon_start__"};
 
-    for (const auto& prefix : systemPrefixes) {
-        if (Utils::startsWith(symbolName, prefix)) {
-            return true;
-        }
+  for (const auto& prefix : systemPrefixes)
+  {
+    if (Utils::startsWith(symbolName, prefix))
+    {
+      return true;
     }
+  }
 
-    return false;
+  return false;
 }
 
 /**
@@ -286,115 +322,152 @@ bool isSystemSymbol(const std::string& symbolName) {
  * @param symbolName The symbol name to check
  * @return true if the symbol is a weak symbol
  */
-bool isWeakSymbol(const std::string& symbolName) {
-    // Weak symbols often have specific patterns
-    return symbolName.find("weak") != std::string::npos ||
-           symbolName.find("WEAK") != std::string::npos;
+bool isWeakSymbol(const std::string& symbolName)
+{
+  // Weak symbols often have specific patterns
+  return symbolName.find("weak") != std::string::npos ||
+         symbolName.find("WEAK") != std::string::npos;
 }
 
-std::string extractSymbolVersion(const std::string& symbolName) {
-    // Look for version information in symbol name
-    std::regex versionRegex(R"((\d+\.\d+\.\d+))");
-    std::smatch match;
+std::string extractSymbolVersion(const std::string& symbolName)
+{
+  // Look for version information in symbol name
+  std::regex  versionRegex(R"((\d+\.\d+\.\d+))");
+  std::smatch match;
 
-    if (std::regex_search(symbolName, match, versionRegex)) {
-        return match[1].str();
+  if (std::regex_search(symbolName, match, versionRegex))
+  {
+    return match[1].str();
+  }
+
+  return "";
+}
+
+bool loadConfigFromFile(const std::string& configPath, PluginConfig& config)
+{
+  std::ifstream file(configPath);
+  if (!file.is_open())
+  {
+    return false;
+  }
+
+  std::string line;
+  while (std::getline(file, line))
+  {
+    line = Utils::trim(line);
+    if (line.empty() || line[0] == '#')
+    {
+      continue;
     }
 
-    return "";
-}
+    size_t pos = line.find('=');
+    if (pos != std::string::npos)
+    {
+      std::string key   = Utils::trim(line.substr(0, pos));
+      std::string value = Utils::trim(line.substr(pos + 1));
 
-bool loadConfigFromFile(const std::string& configPath, PluginConfig& config) {
-    std::ifstream file(configPath);
-    if (!file.is_open()) {
-        return false;
+      if (key == "output_path")
+      {
+        config.outputPath = value;
+      }
+      else if (key == "format")
+      {
+        config.format = value;
+      }
+      else if (key == "verbose")
+      {
+        config.verbose = (value == "true" || value == "1");
+      }
+      else if (key == "extract_debug_info")
+      {
+        config.extractDebugInfo = (value == "true" || value == "1");
+      }
+      else if (key == "include_system_libraries")
+      {
+        config.includeSystemLibraries = (value == "true" || value == "1");
+      }
     }
+  }
 
-    std::string line;
-    while (std::getline(file, line)) {
-        line = Utils::trim(line);
-        if (line.empty() || line[0] == '#') {
-            continue;
-        }
+  return true;
+}
 
-        size_t pos = line.find('=');
-        if (pos != std::string::npos) {
-            std::string key = Utils::trim(line.substr(0, pos));
-            std::string value = Utils::trim(line.substr(pos + 1));
+bool saveConfigToFile(const std::string& configPath, const PluginConfig& config)
+{
+  std::ofstream file(configPath);
+  if (!file.is_open())
+  {
+    return false;
+  }
 
-            if (key == "output_path") {
-                config.outputPath = value;
-            } else if (key == "format") {
-                config.format = value;
-            } else if (key == "verbose") {
-                config.verbose = (value == "true" || value == "1");
-            } else if (key == "extract_debug_info") {
-                config.extractDebugInfo = (value == "true" || value == "1");
-            } else if (key == "include_system_libraries") {
-                config.includeSystemLibraries = (value == "true" || value == "1");
-            }
-        }
+  file << "# Heimdall Plugin Configuration\n";
+  file << "output_path=" << config.outputPath << "\n";
+  file << "format=" << config.format << "\n";
+  file << "verbose=" << (config.verbose ? "true" : "false") << "\n";
+  file << "extract_debug_info=" << (config.extractDebugInfo ? "true" : "false") << "\n";
+  file << "include_system_libraries=" << (config.includeSystemLibraries ? "true" : "false") << "\n";
+
+  return true;
+}
+
+bool parseCommandLineOptions(int argc, char* argv[], PluginConfig& config)
+{
+  for (int i = 1; i < argc; i++)
+  {
+    std::string arg = argv[i];
+
+    if (arg == "--sbom-output" && i + 1 < argc)
+    {
+      config.outputPath = argv[++i];
     }
-
-    return true;
-}
-
-bool saveConfigToFile(const std::string& configPath, const PluginConfig& config) {
-    std::ofstream file(configPath);
-    if (!file.is_open()) {
-        return false;
+    else if (arg == "--format" && i + 1 < argc)
+    {
+      config.format = argv[++i];
     }
-
-    file << "# Heimdall Plugin Configuration\n";
-    file << "output_path=" << config.outputPath << "\n";
-    file << "format=" << config.format << "\n";
-    file << "verbose=" << (config.verbose ? "true" : "false") << "\n";
-    file << "extract_debug_info=" << (config.extractDebugInfo ? "true" : "false") << "\n";
-    file << "include_system_libraries=" << (config.includeSystemLibraries ? "true" : "false")
-         << "\n";
-
-    return true;
-}
-
-bool parseCommandLineOptions(int argc, char* argv[], PluginConfig& config) {
-    for (int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
-
-        if (arg == "--sbom-output" && i + 1 < argc) {
-            config.outputPath = argv[++i];
-        } else if (arg == "--format" && i + 1 < argc) {
-            config.format = argv[++i];
-        } else if (arg == "--verbose") {
-            config.verbose = true;
-        } else if (arg == "--no-debug-info") {
-            config.extractDebugInfo = false;
-        } else if (arg == "--include-system-libs") {
-            config.includeSystemLibraries = true;
-        } else if (arg == "--exclude" && i + 1 < argc) {
-            config.excludePatterns.push_back(argv[++i]);
-        } else if (arg == "--include" && i + 1 < argc) {
-            config.includePatterns.push_back(argv[++i]);
-        }
+    else if (arg == "--verbose")
+    {
+      config.verbose = true;
     }
+    else if (arg == "--no-debug-info")
+    {
+      config.extractDebugInfo = false;
+    }
+    else if (arg == "--include-system-libs")
+    {
+      config.includeSystemLibraries = true;
+    }
+    else if (arg == "--exclude" && i + 1 < argc)
+    {
+      config.excludePatterns.push_back(argv[++i]);
+    }
+    else if (arg == "--include" && i + 1 < argc)
+    {
+      config.includePatterns.push_back(argv[++i]);
+    }
+  }
 
-    return true;
+  return true;
 }
 
-void logInfo(const std::string& message) {
-    std::cout << "[INFO] " << message << std::endl;
+void logInfo(const std::string& message)
+{
+  std::cout << "[INFO] " << message << std::endl;
 }
 
-void logWarning(const std::string& message) {
-    std::cerr << "[WARNING] " << message << std::endl;
+void logWarning(const std::string& message)
+{
+  std::cerr << "[WARNING] " << message << std::endl;
 }
 
-void logError(const std::string& message) {
-    std::cerr << "[ERROR] " << message << std::endl;
+void logError(const std::string& message)
+{
+  std::cerr << "[ERROR] " << message << std::endl;
 }
 
-void logDebug(const std::string& message) {
+void logDebug(const std::string& message)
+{
 #ifdef HEIMDALL_DEBUG_ENABLED
-    std::cerr << "[DEBUG] " << message << std::endl;
+  std::cerr << "[DEBUG] " << message << std::endl;
 #endif
 }
 

@@ -3,8 +3,8 @@ Language: Cpp
 BasedOnStyle: Google
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: AcrossEmptyLines
 AlignEscapedNewlines: Left
 AlignOperands: true
 AlignTrailingComments: true
@@ -37,8 +37,8 @@ BreakStringLiterals: true
 ColumnLimit: 100
 CommentPragmas: '^ IWYU pragma:'
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
-ConstructorInitializerIndentWidth: 2
-ContinuationIndentWidth: 2
+ConstructorInitializerIndentWidth: 3
+ContinuationIndentWidth: 3
 Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 DisableFormat: false
@@ -47,12 +47,12 @@ FixNamespaceComments: true
 IncludeBlocks: Preserve
 IndentCaseLabels: true
 IndentPPDirectives: None
-IndentWidth: 2
+IndentWidth: 3
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: None
-PenaltyBreakAssignment: 2
+PenaltyBreakAssignment: 3
 PenaltyBreakBeforeFirstCallParameter: 1
 PenaltyBreakComment: 300
 PenaltyBreakFirstLessLess: 120

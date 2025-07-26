@@ -19,7 +19,7 @@ limitations under the License.
  * @brief LLVM LLD linker plugin interface and implementation
  * @author Trevor Bakker
  * @date 2025
- * 
+ *
  * This file provides the interface for the LLVM LLD linker plugin, which
  * integrates with the LLD linker to extract component information during
  * the linking process. The plugin implements the PluginInterface and
@@ -28,11 +28,12 @@ limitations under the License.
  * - Extract symbol and section information
  * - Generate SBOM data during linking
  * - Support various target architectures
- * 
+ *
  * Note: All plugin interface functions are implemented in LLDPlugin.cpp
  * to maintain separation of interface and implementation.
  */
 
 #pragma once
 
-// This header is intentionally left blank. All plugin interface functions are defined in LLDPlugin.cpp. 
+// This header is intentionally left blank. All plugin interface functions are defined in
+// LLDPlugin.cpp.
