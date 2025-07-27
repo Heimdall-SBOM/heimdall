@@ -685,7 +685,7 @@ clean:
 
 ### Meson Integration
 
-```meson
+```ini
 # meson.build
 project('myapp', 'c')
 
