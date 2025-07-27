@@ -288,8 +288,8 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
 
             // Create a new ComponentInfo for the dependency
             ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
-            depComponent.fileType =
-               FileType::SharedLibrary;  // Most dependencies are shared libraries
+            // Let the constructor determine the file type instead of hardcoding it
+            // This allows executables to be properly detected even when processed as dependencies
 
             // Check if it's a system library
             if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0)
@@ -1265,7 +1265,27 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
 {
    std::stringstream ss;
    ss << "    {\n";
-   ss << "      \"type\": \"library\",\n";
+   // Determine the correct component type based on file type
+   std::string componentType = "library";
+   if (component.fileType == FileType::Executable)
+   {
+      componentType = "application";
+   }
+   else if (component.fileType == FileType::StaticLibrary)
+   {
+      componentType = "library";
+   }
+   else if (component.fileType == FileType::SharedLibrary)
+   {
+      componentType = "library";
+   }
+   else if (component.fileType == FileType::Object)
+   {
+      componentType = "library";
+   }
+   
+   std::cerr << "[DEBUG] generateCycloneDXComponent: " << component.name << " -> fileType: " << static_cast<int>(component.fileType) << " -> componentType: " << componentType << std::endl;
+   ss << "      \"type\": \"" << componentType << "\",\n";
    ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
    ss << "      \"version\": "
       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version) << ",\n";
@@ -1999,7 +2019,8 @@ void SBOMGenerator::Impl::processDependenciesRecursively(const ComponentInfo&   
 
       // Create a new ComponentInfo for the dependency
       ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
-      depComponent.fileType = FileType::SharedLibrary;  // Most dependencies are shared libraries
+      // Let the constructor determine the file type instead of hardcoding it
+      // This allows executables to be properly detected even when processed as dependencies
 
       // Check if it's a system library
       if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0)

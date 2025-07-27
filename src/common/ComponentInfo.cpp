@@ -68,6 +68,8 @@ FileType determineFileType(const std::string& filePath)
 {
    std::string lowerPath = filePath;
    std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
+   
+   std::cerr << "[DEBUG] determineFileType: " << filePath << " -> lowerPath: " << lowerPath << std::endl;
 
    // Helper function to check if string ends with suffix
    auto endsWith = [](const std::string& str, const std::string& suffix)
@@ -94,7 +96,26 @@ FileType determineFileType(const std::string& filePath)
    {
       return FileType::Executable;
    }
+   else if (endsWith(lowerPath, ".app/contents/macos/"))
+   {
+      return FileType::Executable;
+   }
+   else
+   {
+      // Check if file is executable by examining its permissions or magic number
+      // For now, use a heuristic: if it's in tools/ directory and not a library, it's likely an executable
+      if (lowerPath.find("tools/") != std::string::npos && 
+          !endsWith(lowerPath, ".so") && !endsWith(lowerPath, ".dylib") && 
+          !endsWith(lowerPath, ".dll") && !endsWith(lowerPath, ".a") && 
+          !endsWith(lowerPath, ".lib") && !endsWith(lowerPath, ".o") && 
+          !endsWith(lowerPath, ".obj"))
+      {
+         std::cerr << "[DEBUG] determineFileType: Detected as Executable (tools/ heuristic)" << std::endl;
+         return FileType::Executable;
+      }
+   }
 
+   std::cerr << "[DEBUG] determineFileType: Returning Unknown for " << filePath << std::endl;
    return FileType::Unknown;
 }
 
@@ -114,6 +135,7 @@ ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
      containsDebugInfo(false),
      isStripped(false)
 {
+   std::cerr << "[DEBUG] ComponentInfo constructor: " << name << " -> " << path << " -> fileType: " << static_cast<int>(fileType) << std::endl;
    checksum = calculateSHA256(path);
 }
 
