@@ -98,6 +98,20 @@ class SBOMSigner
    bool loadCertificate(const std::string& certPath);
 
    /**
+    * @brief Load public key from file
+    * @param keyPath Path to the public key file
+    * @return true if key was loaded successfully
+    */
+   bool loadPublicKey(const std::string& keyPath);
+
+   /**
+    * @brief Load public key from certificate
+    * @param certPath Path to the certificate file
+    * @return true if key was loaded successfully
+    */
+   bool loadPublicKeyFromCertificate(const std::string& certPath);
+
+   /**
     * @brief Set signature algorithm
     * @param algorithm The signature algorithm to use
     */

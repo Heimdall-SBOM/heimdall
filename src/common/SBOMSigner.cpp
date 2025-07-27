@@ -58,6 +58,7 @@ class SBOMSigner::Impl
    
    // OpenSSL objects
    EVP_PKEY*          privateKey = nullptr;
+   EVP_PKEY*          publicKey = nullptr;
    X509*              certificate = nullptr;
    
    /**
@@ -72,6 +73,9 @@ class SBOMSigner::Impl
    {
       if (privateKey) {
          EVP_PKEY_free(privateKey);
+      }
+      if (publicKey) {
+         EVP_PKEY_free(publicKey);
       }
       if (certificate) {
          X509_free(certificate);
@@ -189,6 +193,64 @@ class SBOMSigner::Impl
       return buffer;
    }
    
+   /**
+    * @brief Verify data signature using loaded public key
+    * @param data Data that was signed
+    * @param dataLength Length of data
+    * @param signature Signature to verify
+    * @param algorithm Signature algorithm
+    * @return true if signature is valid
+    */
+   bool verifyData(const unsigned char* data, size_t dataLength, const std::string& signature, SignatureAlgorithm algorithm)
+   {
+      if (!publicKey) {
+         lastError = "No public key loaded for verification";
+         return false;
+      }
+      
+      std::vector<unsigned char> sigData = base64Decode(signature);
+      if (sigData.empty()) {
+         lastError = "Failed to decode signature";
+         return false;
+      }
+      
+      EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+      if (!ctx) {
+         lastError = "Failed to create verification context";
+         return false;
+      }
+      
+      bool success = false;
+      
+      if (algorithm == SignatureAlgorithm::Ed25519) {
+         // Ed25519 verification
+         if (EVP_DigestVerifyInit(ctx, nullptr, nullptr, nullptr, publicKey) != 1) {
+            lastError = "Failed to initialize Ed25519 verification";
+         } else {
+            success = (EVP_DigestVerify(ctx, sigData.data(), sigData.size(), data, dataLength) == 1);
+            if (!success) {
+               lastError = "Ed25519 signature verification failed";
+            }
+         }
+      } else {
+         // RSA/ECDSA verification
+         const EVP_MD* md = getDigestAlgorithm(algorithm);
+         if (!md) {
+            lastError = "Unsupported signature algorithm for verification";
+         } else if (EVP_DigestVerifyInit(ctx, nullptr, md, nullptr, publicKey) != 1) {
+            lastError = "Failed to initialize verification context";
+         } else {
+            success = (EVP_DigestVerify(ctx, sigData.data(), sigData.size(), data, dataLength) == 1);
+            if (!success) {
+               lastError = "Signature verification failed";
+            }
+         }
+      }
+      
+      EVP_MD_CTX_free(ctx);
+      return success;
+   }
+
    /**
     * @brief Sign data using loaded private key
     * @param data Data to sign
@@ -338,6 +400,82 @@ bool SBOMSigner::loadCertificate(const std::string& certPath)
    return true;
 }
 
+bool SBOMSigner::loadPublicKey(const std::string& keyPath)
+{
+   std::ifstream keyFile(keyPath);
+   if (!keyFile.is_open()) {
+      pImpl->lastError = "Failed to open public key file: " + keyPath;
+      return false;
+   }
+   
+   std::string keyContent((std::istreambuf_iterator<char>(keyFile)),
+                         std::istreambuf_iterator<char>());
+   keyFile.close();
+   
+   BIO* bio = BIO_new_mem_buf(keyContent.c_str(), static_cast<int>(keyContent.length()));
+   if (!bio) {
+      pImpl->lastError = "Failed to create BIO for public key";
+      return false;
+   }
+   
+   EVP_PKEY* key = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
+   BIO_free(bio);
+   
+   if (!key) {
+      pImpl->lastError = "Failed to load public key";
+      return false;
+   }
+   
+   if (pImpl->publicKey) {
+      EVP_PKEY_free(pImpl->publicKey);
+   }
+   pImpl->publicKey = key;
+   
+   return true;
+}
+
+bool SBOMSigner::loadPublicKeyFromCertificate(const std::string& certPath)
+{
+   std::ifstream certFile(certPath);
+   if (!certFile.is_open()) {
+      pImpl->lastError = "Failed to open certificate file: " + certPath;
+      return false;
+   }
+   
+   std::string certContent((std::istreambuf_iterator<char>(certFile)),
+                          std::istreambuf_iterator<char>());
+   certFile.close();
+   
+   BIO* bio = BIO_new_mem_buf(certContent.c_str(), static_cast<int>(certContent.length()));
+   if (!bio) {
+      pImpl->lastError = "Failed to create BIO for certificate";
+      return false;
+   }
+   
+   X509* cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+   BIO_free(bio);
+   
+   if (!cert) {
+      pImpl->lastError = "Failed to load certificate";
+      return false;
+   }
+   
+   EVP_PKEY* key = X509_get_pubkey(cert);
+   X509_free(cert);
+   
+   if (!key) {
+      pImpl->lastError = "Failed to extract public key from certificate";
+      return false;
+   }
+   
+   if (pImpl->publicKey) {
+      EVP_PKEY_free(pImpl->publicKey);
+   }
+   pImpl->publicKey = key;
+   
+   return true;
+}
+
 void SBOMSigner::setSignatureAlgorithm(SignatureAlgorithm algorithm)
 {
    pImpl->algorithm = algorithm;
@@ -427,10 +565,38 @@ bool SBOMSigner::verifySignature(const std::string& sbomContent)
       return false;
    }
    
-   // TODO: Implement signature verification
-   // This would require loading the public key and verifying the signature
-   pImpl->lastError = "Signature verification not yet implemented";
-   return false;
+   // Check if we have a public key loaded
+   if (!pImpl->publicKey) {
+      pImpl->lastError = "No public key loaded for verification";
+      return false;
+   }
+   
+   // Parse the SBOM content
+   nlohmann::json sbomJson;
+   try {
+      sbomJson = nlohmann::json::parse(sbomContent);
+   } catch (const std::exception& e) {
+      pImpl->lastError = "Failed to parse SBOM JSON: " + std::string(e.what());
+      return false;
+   }
+   
+   // Create canonical JSON (same as during signing)
+   std::vector<std::string> excludes;
+   std::string canonicalJsonString = createCanonicalJSON(sbomJson, excludes);
+   
+   // Convert algorithm string to enum
+   SignatureAlgorithm algorithm = SignatureAlgorithm::RS256; // default
+   if (signatureInfo.algorithm == "RS256") algorithm = SignatureAlgorithm::RS256;
+   else if (signatureInfo.algorithm == "RS384") algorithm = SignatureAlgorithm::RS384;
+   else if (signatureInfo.algorithm == "RS512") algorithm = SignatureAlgorithm::RS512;
+   else if (signatureInfo.algorithm == "ES256") algorithm = SignatureAlgorithm::ES256;
+   else if (signatureInfo.algorithm == "ES384") algorithm = SignatureAlgorithm::ES384;
+   else if (signatureInfo.algorithm == "ES512") algorithm = SignatureAlgorithm::ES512;
+   else if (signatureInfo.algorithm == "Ed25519") algorithm = SignatureAlgorithm::Ed25519;
+   
+   // Verify the signature
+   return pImpl->verifyData(reinterpret_cast<const unsigned char*>(canonicalJsonString.c_str()),
+                           canonicalJsonString.length(), signatureInfo.signature, algorithm);
 }
 
 bool SBOMSigner::extractSignature(const std::string& sbomContent, SignatureInfo& signatureInfo)

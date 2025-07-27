@@ -17,6 +17,7 @@
 #include <vector>
 #include "../common/SBOMComparator.hpp"
 #include "../common/SBOMValidator.hpp"
+#include "../common/SBOMSigner.hpp"
 
 using namespace heimdall;
 
@@ -30,6 +31,7 @@ void printUsage(const char* programName)
    std::cout << "Usage: " << programName << " <command> [options]\n\n";
    std::cout << "Commands:\n";
    std::cout << "  validate <file> [--format <format>]     Validate an SBOM file\n";
+   std::cout << "  verify-signature <file> [--key <key>] [--cert <cert>] Verify SBOM signature\n";
    std::cout << "  compare <old> <new> [--format <format>] Compare two SBOM files\n";
    std::cout << "  merge <files...> --output <file>        Merge multiple SBOMs\n";
    std::cout << "  diff <old> <new> [--format <format>]    Generate diff report\n\n";
@@ -41,6 +43,8 @@ void printUsage(const char* programName)
    std::cout << "  --help               Show this help message\n\n";
    std::cout << "Examples:\n";
    std::cout << "  " << programName << " validate sbom.spdx\n";
+   std::cout << "  " << programName << " verify-signature sbom.cdx.json --key public.key\n";
+   std::cout << "  " << programName << " verify-signature sbom.cdx.json --cert certificate.pem\n";
    std::cout << "  " << programName << " compare old.spdx new.spdx\n";
    std::cout << "  " << programName << " merge sbom1.json sbom2.json --output merged.json\n";
    std::cout << "  " << programName << " diff old.spdx new.spdx --report-format json\n";
@@ -215,6 +219,143 @@ int validateCommand(const std::vector<std::string>& args)
    }
 
    return result.isValid ? 0 : 1;
+}
+
+/**
+ * @brief Verify signature in an SBOM file
+ * @param args Command-line arguments (expects args[1] to be the file path)
+ * @return 0 if signature is valid, 1 if invalid or error
+ */
+int verifySignatureCommand(const std::vector<std::string>& args)
+{
+   if (args.size() < 2)
+   {
+      std::cerr << "Error: verify-signature command requires a file path\n";
+      return 1;
+   }
+
+   std::string filePath = args[1];
+   std::string keyPath;
+   std::string certPath;
+
+   // Parse options
+   for (size_t i = 2; i < args.size(); ++i)
+   {
+      if (args[i] == "--key" && i + 1 < args.size())
+      {
+         keyPath = args[++i];
+      }
+      else if (args[i] == "--cert" && i + 1 < args.size())
+      {
+         certPath = args[++i];
+      }
+      else if (args[i] == "--help")
+      {
+         printUsage("heimdall-validate");
+         return 0;
+      }
+   }
+
+   // Check if we have a key or certificate
+   if (keyPath.empty() && certPath.empty())
+   {
+      std::cerr << "Error: Must specify either --key or --cert for signature verification\n";
+      return 1;
+   }
+
+   // Read the SBOM file
+   std::ifstream file(filePath);
+   if (!file.is_open())
+   {
+      std::cerr << "Error: Cannot open file: " << filePath << "\n";
+      return 1;
+   }
+
+   std::string sbomContent((std::istreambuf_iterator<char>(file)),
+                          std::istreambuf_iterator<char>());
+   file.close();
+
+   // Create signer and load public key
+   SBOMSigner signer;
+   bool keyLoaded = false;
+
+   if (!keyPath.empty())
+   {
+      if (signer.loadPublicKey(keyPath))
+      {
+         keyLoaded = true;
+         std::cout << "Loaded public key from: " << keyPath << "\n";
+      }
+      else
+      {
+         std::cerr << "Error loading public key: " << signer.getLastError() << "\n";
+      }
+   }
+
+   if (!certPath.empty() && !keyLoaded)
+   {
+      if (signer.loadPublicKeyFromCertificate(certPath))
+      {
+         keyLoaded = true;
+         std::cout << "Loaded public key from certificate: " << certPath << "\n";
+      }
+      else
+      {
+         std::cerr << "Error loading certificate: " << signer.getLastError() << "\n";
+      }
+   }
+
+   if (!keyLoaded)
+   {
+      std::cerr << "Error: Failed to load public key for verification\n";
+      return 1;
+   }
+
+   // Verify signature
+   std::cout << "Verifying signature in " << filePath << "...\n";
+
+   if (signer.verifySignature(sbomContent))
+   {
+      std::cout << "\nSignature Verification Results:\n";
+      std::cout << "==============================\n";
+      std::cout << "✅ Signature is VALID\n\n";
+
+      // Extract and display signature information
+      SignatureInfo signatureInfo;
+      if (signer.extractSignature(sbomContent, signatureInfo))
+      {
+         std::cout << "Signature Details:\n";
+         std::cout << "  Algorithm: " << signatureInfo.algorithm << "\n";
+         if (!signatureInfo.keyId.empty())
+         {
+            std::cout << "  Key ID: " << signatureInfo.keyId << "\n";
+         }
+         if (!signatureInfo.timestamp.empty())
+         {
+            std::cout << "  Timestamp: " << signatureInfo.timestamp << "\n";
+         }
+         if (!signatureInfo.excludes.empty())
+         {
+            std::cout << "  Excluded fields: ";
+            for (size_t i = 0; i < signatureInfo.excludes.size(); ++i)
+            {
+               if (i > 0) std::cout << ", ";
+               std::cout << signatureInfo.excludes[i];
+            }
+            std::cout << "\n";
+         }
+      }
+   }
+   else
+   {
+      std::cout << "\nSignature Verification Results:\n";
+      std::cout << "==============================\n";
+      std::cout << "❌ Signature is INVALID\n";
+      std::cout << "Error: " << signer.getLastError() << "\n";
+      return 1;
+   }
+
+   return 0;
 }
 
 /**
@@ -504,6 +645,10 @@ int main(int argc, char* argv[])
    else if (command == "validate")
    {
       return validateCommand(args);
+   }
+   else if (command == "verify-signature")
+   {
+      return verifySignatureCommand(args);
    }
    else if (command == "compare")
    {
