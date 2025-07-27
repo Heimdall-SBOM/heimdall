@@ -2,6 +2,7 @@
 
 set -e
 
+
 usage() {
   echo "Usage: $0 <build-dir> [--dry-run]"
   echo "  --dry-run     Check formatting and tidy issues, but do not apply fixes"
@@ -12,10 +13,12 @@ usage() {
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   usage
+
   exit 1
 fi
 
 BUILD_DIR="$1"
+
 DRY_RUN=false
 
 if [ "$2" == "--dry-run" ]; then
@@ -27,21 +30,25 @@ elif [ -n "$2" ]; then
 fi
 
 # Determine script and repo root
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
+
 
 # Lint targets
 LINT_DIRS=(examples src tests tools)
 
 # Ensure build dir exists and compile_commands.json is present
 mkdir -p "$BUILD_DIR"
+
 if [ ! -f "$BUILD_DIR/compile_commands.json" ]; then
   echo "Generating compile_commands.json in $BUILD_DIR..."
   cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B "$BUILD_DIR"
 else
   echo "Using existing $BUILD_DIR/compile_commands.json"
 fi
+
 
 echo "Linting target directories: ${LINT_DIRS[*]}"
 echo "Dry run mode: $DRY_RUN"
@@ -83,4 +90,5 @@ for dir in "${LINT_DIRS[@]}"; do
 done
 
 echo
+
 echo "✅ Linting complete."
