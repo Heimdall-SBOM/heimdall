@@ -227,6 +227,7 @@ void LLDAdapter::Impl::processFilesParallel(const std::vector<std::string>& file
 
       return component;
    };
+  
    auto results = ParallelProcessor::process(filePaths, processFile);
    for (auto& component : results)
    {

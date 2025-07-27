@@ -78,6 +78,7 @@ std::string getFileName(const std::string& filePath)
 
    return filename;
 }
+  
 std::string getFileExtension(const std::string& filePath)
 {
    if (filePath.empty())
@@ -89,6 +90,7 @@ std::string getFileExtension(const std::string& filePath)
    std::string fileName = getFileName(filePath);
    
    size_t last_dot = fileName.find_last_of('.');
+
    if (last_dot == std::string::npos || last_dot == 0)
    {
       return "";
@@ -102,6 +104,7 @@ std::string getFileExtension(const std::string& filePath)
 
    return fileName.substr(last_dot);
 }
+  
 std::string getDirectory(const std::string& filePath)
 {
    if (filePath.empty())
@@ -133,6 +136,7 @@ std::string getDirectory(const std::string& filePath)
 
    return directory;
 }
+  
 std::string normalizePath(const std::string& path)
 {
    if (path.empty())
@@ -180,6 +184,7 @@ std::string normalizePath(const std::string& path)
       result += '/';
    return result;
 }
+  
 std::vector<std::string> splitPath(const std::string& path)
 {
    std::vector<std::string> result;
@@ -233,6 +238,7 @@ std::vector<std::string> splitPath(const std::string& path)
 
    return result;
 }
+  
 bool fileExists(const std::string& filePath)
 {
    if (filePath.empty())
@@ -243,6 +249,7 @@ bool fileExists(const std::string& filePath)
    std::ifstream file(filePath);
    return file.good();
 }
+  
 uint64_t getFileSize(const std::string& filePath)
 {
    if (!fileExists(filePath))
@@ -820,7 +827,7 @@ std::string extractPackageName(const std::string& filePath)
 void debugPrint(const std::string& message)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-
+   std::cerr << "[DEBUG] " << message << std::endl;
 #endif
 }
 

@@ -192,8 +192,6 @@ FileType determineFileType(const std::string& filePath)
 {
    std::string lowerPath = filePath;
    std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
-   
-
 
    // Helper function to check if string ends with suffix
    auto endsWith = [](const std::string& str, const std::string& suffix)
