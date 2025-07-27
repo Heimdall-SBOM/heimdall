@@ -209,6 +209,3 @@ When adding new features:
 3. **Add Tests**: Include tests for new functionality
 4. **Update Documentation**: Document new features and APIs
 
-## License
-
-This compatibility layer is part of the Heimdall project and follows the same license terms. 
