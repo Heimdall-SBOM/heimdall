@@ -116,6 +116,7 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
    }
 
    processedFiles.push_back(filePath);
+   std::cerr << "[DEBUG] LLDAdapter::processInputFile: " << filePath << std::endl;
    if (verbose)
    {
       logProcessing("Processing input file: " + filePath);
@@ -142,7 +143,9 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
    }
 
    // Add to SBOM generator
+   std::cerr << "[DEBUG] LLDAdapter: About to call sbomGenerator->processComponent for: " << component.name << std::endl;
    sbomGenerator->processComponent(component);
+   std::cerr << "[DEBUG] LLDAdapter: Called sbomGenerator->processComponent for: " << component.name << std::endl;
 
    // Detect and process dependencies (linked libraries)
    std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(filePath);
