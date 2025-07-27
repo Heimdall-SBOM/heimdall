@@ -86,7 +86,7 @@ G r c none [main standard 6 11 none] [read_data_file data_reader 2 13 none]
 ### SPDX 2.3 Format
 
 #### **Package Information:**
-```spdx
+```text
 PackageName: heimdall-ada-demo
 PackageVersion: GNAT Lib v11
 PackageManager: GNAT
@@ -94,7 +94,7 @@ PackageDescription: Ada application with GNAT compiler
 ```
 
 #### **File Information:**
-```spdx
+```text
 FileName: main_static
 SPDXID: SPDXRef-main-static
 FileType: APPLICATION
@@ -104,7 +104,7 @@ FileComment: Source files: string_utils.adb, a-chahan.adb, a-charac.ads, a-tags.
 ```
 
 #### **Dependencies:**
-```spdx
+```text
 Relationship: SPDXRef-Package CONTAINS SPDXRef-libc-so-6
 Relationship: SPDXRef-Package CONTAINS SPDXRef-libgnat-11-so
 Relationship: SPDXRef-Package CONTAINS SPDXRef-main-static

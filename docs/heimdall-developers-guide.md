@@ -26,7 +26,7 @@ Heimdall is organized into several core components:
 
 ### 2.1 High-Level Architecture Diagram
 
-```dot
+```graphviz
 // Heimdall High-Level Architecture
 
 digraph HeimdallArch {
@@ -102,7 +102,7 @@ LLD does not natively support the same plugin API as GNU Gold. Instead, Heimdall
 - The user must use the wrapper script instead of invoking LLD directly.
 
 #### 3.2.3 LLD Plugin Integration Diagram
-```dot
+```graphviz
 // LLD Plugin Wrapper Integration
 
 digraph LLDWrapper {
@@ -127,7 +127,7 @@ The Gold plugin (`heimdall-gold`) integrates directly with GNU Gold's plugin API
 - Generate SBOMs automatically at the end of linking
 
 #### 3.3.2 Gold Plugin Integration Diagram
-```dot
+```graphviz
 // Gold Plugin Integration
 
 digraph GoldPlugin {
