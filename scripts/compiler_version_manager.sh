@@ -332,8 +332,8 @@ setup_compiler_environment() {
         export CC="/usr/local/opt/gcc/bin/gcc-15"
         export CXX="/usr/local/opt/gcc/bin/g++-15"
     elif [ "$compiler_type" = "gcc" ]; then
-        export CC="$compiler_name"
-        export CXX="${compiler_name/gcc/g++}"
+        export CC="gcc"
+        export CXX="g++"
     elif [[ "$compiler_type" =~ ^gcc-[0-9]+$ ]]; then
         # Handle versioned GCC (e.g., gcc-13)
         export CC="$compiler_type"
