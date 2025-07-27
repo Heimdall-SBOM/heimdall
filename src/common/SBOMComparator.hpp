@@ -61,13 +61,14 @@ namespace heimdall
 struct SBOMComponent
 {
    std::string                        id;
+   std::string                        bomRef;  // BOM reference for CycloneDX compatibility
    std::string                        name;
    std::string                        version;
    std::string                        type;
    std::string                        purl;
    std::string                        license;
    std::map<std::string, std::string> properties;
-   std::vector<std::string>           dependencies;
+   std::vector<std::string>           dependencies;  // BOM references to dependent components
 
    // Default constructor
    SBOMComponent() = default;
@@ -87,19 +88,21 @@ struct SBOMComponent
    /**
     * @brief Construct a new SBOMComponent with all fields
     * @param id The component ID
+    * @param bomRef The BOM reference
     * @param name The component name
     * @param version The component version
     * @param type The component type
     * @param purl The package URL
     * @param license The license
     * @param properties Additional properties
-    * @param dependencies List of dependencies
+    * @param dependencies List of BOM references to dependencies
     */
-   SBOMComponent(std::string id, std::string name, std::string version, std::string type,
+   SBOMComponent(std::string id, std::string bomRef, std::string name, std::string version, std::string type,
                  std::string purl, std::string license,
                  const std::map<std::string, std::string>& properties   = {},
                  const std::vector<std::string>&           dependencies = {})
       : id(std::move(std::move(id))),
+        bomRef(std::move(std::move(bomRef))),
         name(std::move(std::move(name))),
         version(std::move(std::move(version))),
         type(std::move(std::move(type))),

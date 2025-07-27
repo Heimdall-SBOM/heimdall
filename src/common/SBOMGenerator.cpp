@@ -1161,8 +1161,81 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
       first = false;
    }
 
-   ss << "\n  ]\n";
-   ss << "}\n";
+   ss << "\n  ]";
+
+   // Add dependencies section if any component has dependencies
+   bool hasDependencies = false;
+   for (const auto& pair : components)
+   {
+      const auto& component = pair.second;
+      if (!component.dependencies.empty())
+      {
+         hasDependencies = true;
+         break;
+      }
+   }
+
+   if (hasDependencies)
+   {
+      ss << ",\n  \"dependencies\": [\n";
+      bool firstDep = true;
+      for (const auto& pair : components)
+      {
+         const auto& component = pair.second;
+         if (!component.dependencies.empty())
+         {
+            if (!firstDep)
+            {
+               ss << ",\n";
+            }
+            
+            // Generate BOM reference for this component
+            std::string bomRef = component.name;
+            if (!component.version.empty() && component.version != "UNKNOWN")
+            {
+               bomRef += "-" + component.version;
+            }
+            
+            ss << "    {\n";
+            ss << "      \"ref\": \"" << bomRef << "\",\n";
+            ss << "      \"dependsOn\": [\n";
+            
+            for (size_t j = 0; j < component.dependencies.size(); ++j)
+            {
+               const auto& dep = component.dependencies[j];
+               
+               // Try to find the dependency component to get its BOM reference
+               std::string depBomRef = dep;  // Default to dependency path
+               for (const auto& depPair : components)
+               {
+                  const auto& depComponent = depPair.second;
+                  if (depComponent.filePath == dep || Utils::getFileName(depComponent.filePath) == Utils::getFileName(dep))
+                  {
+                     depBomRef = depComponent.name;
+                     if (!depComponent.version.empty() && depComponent.version != "UNKNOWN")
+                     {
+                        depBomRef += "-" + depComponent.version;
+                     }
+                     break;
+                  }
+               }
+               
+               ss << "        \"" << depBomRef << "\"";
+               if (j < component.dependencies.size() - 1)
+               {
+                  ss << ",";
+               }
+               ss << "\n";
+            }
+            ss << "      ]\n";
+            ss << "    }";
+            firstDep = false;
+         }
+      }
+      ss << "\n  ]";
+   }
+
+   ss << "\n}\n";
 
    return ss.str();
 }
@@ -1246,6 +1319,16 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
 {
    std::stringstream ss;
    ss << "    {\n";
+   
+   // Generate BOM reference based on component name and version
+   std::string bomRef = component.name;
+   if (!component.version.empty() && component.version != "UNKNOWN")
+   {
+      bomRef += "-" + component.version;
+   }
+   
+   ss << "      \"bom-ref\": \"" << bomRef << "\",\n";
+   
    // Determine the correct component type based on file type
    std::string componentType = "library";
    if (component.fileType == FileType::Executable)

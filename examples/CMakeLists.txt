@@ -4,6 +4,15 @@
 # Add the OpenSSL/pthread demo
 add_subdirectory(openssl_pthread_demo)
 
+# Add BOM reference demo
+add_executable(bom_ref_demo bom_ref_demo.cpp)
+target_link_libraries(bom_ref_demo PRIVATE heimdall-core)
+target_include_directories(bom_ref_demo PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+install(TARGETS bom_ref_demo
+    RUNTIME DESTINATION bin
+)
+
 # Add profiling example (only if profiling is enabled)
 if(ENABLE_PROFILING)
     add_executable(profiling_example profiling_example.cpp)
