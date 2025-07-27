@@ -6,6 +6,7 @@
 * [Heimdall SBOM Manual](docs/heimdall-sbom-manual.md)
 * [Heimdall Validate Manual](docs/heimdall-validate-manual.md)
 * [Ada SBOM](docs/ada_SBOM.md)
+* [C/C++ SBOM](docs/cpp_SBOM.md)
 * [CI Workflow](docs/ci-workflow.md)
 * [Heimdall Developers Guide](docs/heimdall-developers-guide.md)
 * [Heimdall Users Guide](docs/heimdall-users-guide.md)
