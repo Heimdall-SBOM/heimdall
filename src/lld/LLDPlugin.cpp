@@ -151,23 +151,20 @@ extern "C"
    // File processing functions
    int heimdall_process_input_file(const char* filePath)
    {
-      std::cerr << "[DEBUG] heimdall_process_input_file called with: " << (filePath ? filePath : "null") << std::endl;
+   
       
       if (!globalAdapter || !filePath)
          return -1;
 
       std::string path(filePath);
-      std::cerr << "[DEBUG] heimdall_process_input_file: path = " << path << std::endl;
 
       // Check if already processed
       if (std::find(processedFiles.begin(), processedFiles.end(), path) != processedFiles.end())
       {
-         std::cerr << "[DEBUG] heimdall_process_input_file: already processed, skipping" << std::endl;
          return 0;  // Already processed, not an error
       }
 
       processedFiles.push_back(path);
-      std::cerr << "[DEBUG] heimdall_process_input_file: calling globalAdapter->processInputFile" << std::endl;
 
       if (verbose)
       {
@@ -177,7 +174,6 @@ extern "C"
       // Process the file through the adapter (adapter's state determines format/outputPath)
       globalAdapter->processInputFile(path);
 
-      std::cerr << "[DEBUG] heimdall_process_input_file: returned from globalAdapter->processInputFile" << std::endl;
       return 0;  // Success
    }
 

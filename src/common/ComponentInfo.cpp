@@ -193,7 +193,7 @@ FileType determineFileType(const std::string& filePath)
    std::string lowerPath = filePath;
    std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
    
-   std::cerr << "[DEBUG] determineFileType: " << filePath << " -> lowerPath: " << lowerPath << std::endl;
+
 
    // Helper function to check if string ends with suffix
    auto endsWith = [](const std::string& str, const std::string& suffix)
@@ -230,20 +230,17 @@ FileType determineFileType(const std::string& filePath)
       FileType elfType = detectElfFileType(filePath);
       if (elfType != FileType::Unknown)
       {
-         std::cerr << "[DEBUG] determineFileType: Detected ELF file type: " << static_cast<int>(elfType) << " for " << filePath << std::endl;
-         return elfType;
+               return elfType;
       }
 
       // Try to detect Mach-O file type by examining the file header
       FileType machoType = detectMachOFileType(filePath);
       if (machoType != FileType::Unknown)
       {
-         std::cerr << "[DEBUG] determineFileType: Detected Mach-O file type: " << static_cast<int>(machoType) << " for " << filePath << std::endl;
-         return machoType;
+               return machoType;
       }
    }
 
-   std::cerr << "[DEBUG] determineFileType: Returning Unknown for " << filePath << std::endl;
    return FileType::Unknown;
 }
 
@@ -263,7 +260,6 @@ ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
      containsDebugInfo(false),
      isStripped(false)
 {
-   std::cerr << "[DEBUG] ComponentInfo constructor: " << name << " -> " << path << " -> fileType: " << static_cast<int>(fileType) << std::endl;
    checksum = calculateSHA256(path);
 }
 

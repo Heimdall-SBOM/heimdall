@@ -237,7 +237,7 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
    std::string canonicalPath = Utils::resolveLibraryPath(component.filePath);
    std::string key           = canonicalPath;  // Use canonical file path as unique key
 
-   std::cerr << "[DEBUG] processComponent: " << component.name << " -> key: " << key << std::endl;
+
 
    if (pImpl->components.find(key) == pImpl->components.end())
    {
@@ -250,7 +250,6 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
       }
 
       pImpl->components[key] = processedComponent;
-      std::cerr << "[DEBUG] Added component to map: " << component.name << " -> key: " << key << std::endl;
       Utils::debugPrint("Processed component: " + component.name);
 
       // Process dependencies based on transitiveDependencies setting
@@ -1034,22 +1033,16 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    std::string appName    = buildInfo.targetName;
    std::string appVersion = buildInfo.buildId;
    
-   std::cerr << "[DEBUG] buildInfo.targetName: '" << buildInfo.targetName << "'" << std::endl;
-   std::cerr << "[DEBUG] buildInfo.buildId: '" << buildInfo.buildId << "'" << std::endl;
-   std::cerr << "[DEBUG] appName: '" << appName << "'" << std::endl;
-   std::cerr << "[DEBUG] components.empty(): " << (components.empty() ? "true" : "false") << std::endl;
+
 
    if (appName.empty() && !components.empty())
    {
-      std::cerr << "[DEBUG] Looking for executable components. Total components: " << components.size() << std::endl;
       // Find the main executable - prioritize executables, then any component with a good name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
-         std::cerr << "[DEBUG] Component: " << component.name << " -> fileType: " << static_cast<int>(component.fileType) << " -> path: " << component.filePath << std::endl;
          if (component.fileType == FileType::Executable)
          {
-            std::cerr << "[DEBUG] Found executable: " << component.name << std::endl;
             appName = component.name;
             if (!component.version.empty())
             {
@@ -1161,7 +1154,6 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    for (const auto& pair : components)
    {
       const auto& component = pair.second;
-      std::cerr << "[DEBUG] Processing component in CycloneDX loop: " << component.name << " -> fileType: " << static_cast<int>(component.fileType) << std::endl;
 
       if (!first)
          ss << ",\n";
@@ -1273,7 +1265,6 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       componentType = "library";
    }
    
-   std::cerr << "[DEBUG] generateCycloneDXComponent: " << component.name << " -> fileType: " << static_cast<int>(component.fileType) << " -> componentType: " << componentType << std::endl;
    ss << "      \"type\": \"" << componentType << "\",\n";
    ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
    ss << "      \"version\": "

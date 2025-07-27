@@ -586,16 +586,7 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    bool buildConfigSuccess = extractMachOBuildConfig(component);
    if (buildConfigSuccess)
    {
-      std::cerr << "[DEBUG] Build config - targetPlatform: " << component.buildConfig.targetPlatform
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - minOSVersion: " << component.buildConfig.minOSVersion
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - sdkVersion: " << component.buildConfig.sdkVersion
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - buildVersion: " << component.buildConfig.buildVersion
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - sourceVersion: " << component.buildConfig.sourceVersion
-                << std::endl;
+      
    }
    anySuccess |= buildConfigSuccess;
 
@@ -610,20 +601,14 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    anySuccess |= entitlementsSuccess;
 
    bool architecturesSuccess = extractMachOArchitectures(component);
-   std::cerr << "[DEBUG] Architectures extraction: "
-             << (architecturesSuccess ? "success" : "failed") << std::endl;
    anySuccess |= architecturesSuccess;
 
    bool frameworksSuccess = extractMachOFrameworks(component);
-   std::cerr << "[DEBUG] Frameworks extraction: " << (frameworksSuccess ? "success" : "failed")
-             << std::endl;
    anySuccess |= frameworksSuccess;
 
    // Update component name and version from enhanced Mach-O metadata
    if (anySuccess)
    {
-      std::cerr << "[DEBUG] Current component name: " << component.name << std::endl;
-      std::cerr << "[DEBUG] Current component version: " << component.version << std::endl;
 
       // Try to get a better name from the file path (for macOS apps)
       std::string fileName = heimdall::Utils::getFileName(component.filePath);
@@ -652,61 +637,36 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
 
       // First priority: Try to extract version from Info.plist for macOS apps
       std::string originalVersion = component.version;
-      std::cerr << "[DEBUG] Version extraction - originalVersion: '" << originalVersion << "'"
-                << std::endl;
       bool appBundleSuccess        = extractMacOSAppBundleMetadata(component);
       bool versionSetFromInfoPlist = false;
-      std::cerr << "[DEBUG] Version extraction - after Info.plist: '" << component.version << "'"
-                << std::endl;
 
       // If Info.plist parsing was successful and returned a non-empty version, consider it set from
       // Info.plist
       if (appBundleSuccess && !component.version.empty())
       {
-         if (component.version != originalVersion)
-         {
-            std::cerr << "[DEBUG] Updated component version from Info.plist to: "
-                      << component.version << std::endl;
-         }
-         else
-         {
-            std::cerr << "[DEBUG] Component version confirmed from Info.plist: "
-                      << component.version << std::endl;
-         }
+
          versionSetFromInfoPlist = true;
       }
 
       // Only use fallback versions if Info.plist didn't provide one
-      std::cerr << "[DEBUG] Version logic check - versionSetFromInfoPlist: "
-                << versionSetFromInfoPlist << ", version.empty(): " << component.version.empty()
-                << ", version == original: " << (component.version == originalVersion) << std::endl;
       if (!versionSetFromInfoPlist)
       {
          // Fallback: Try to set version from build config if Info.plist didn't provide one
          if (!component.buildConfig.sourceVersion.empty())
          {
             component.version = component.buildConfig.sourceVersion;
-            std::cerr << "[DEBUG] Updated component version to: "
-                      << component.buildConfig.sourceVersion << std::endl;
          }
          else if (!component.buildConfig.buildVersion.empty())
          {
             component.version = component.buildConfig.buildVersion;
-            std::cerr << "[DEBUG] Updated component version to: "
-                      << component.buildConfig.buildVersion << std::endl;
          }
          else if (!component.buildConfig.minOSVersion.empty())
          {
             // Use minOSVersion as a fallback version only if no Info.plist version was found
             component.version = component.buildConfig.minOSVersion;
-            std::cerr << "[DEBUG] Updated component version to minOSVersion: "
-                      << component.buildConfig.minOSVersion << std::endl;
          }
       }
-      else if (versionSetFromInfoPlist)
-      {
-         std::cerr << "[DEBUG] Info.plist version preserved: " << component.version << std::endl;
-      }
+
    }
 
    heimdall::Utils::debugPrint("Enhanced Mach-O extraction: Completed with success: " +
@@ -4298,3 +4258,4 @@ bool extractMacOSAppBundleInfo(const std::string& appBundlePath, std::string& ve
 }  // namespace MetadataHelpers
 
 }  // namespace heimdall
+

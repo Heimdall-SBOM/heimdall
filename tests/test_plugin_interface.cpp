@@ -269,7 +269,7 @@ class PluginInterfaceTest : public ::testing::Test
             return;
          }
 
-         // Create test executable
+         // Create test executable with .exe extension
          std::ofstream exeFile("test_executable.exe");
          if (!exeFile.is_open())
          {
@@ -283,6 +283,23 @@ class PluginInterfaceTest : public ::testing::Test
          if (!heimdall::compat::fs::exists("test_executable.exe"))
          {
             std::cerr << "ERROR: test_executable.exe was not created" << std::endl;
+            return;
+         }
+
+         // Create test executable without extension (macOS/Linux style)
+         std::ofstream exeFileNoExt("test_executable");
+         if (!exeFileNoExt.is_open())
+         {
+            std::cerr << "ERROR: Failed to create test_executable" << std::endl;
+            return;
+         }
+         exeFileNoExt << "test executable content";
+         exeFileNoExt.close();
+
+         // Verify file was created
+         if (!heimdall::compat::fs::exists("test_executable"))
+         {
+            std::cerr << "ERROR: test_executable was not created" << std::endl;
             return;
          }
 
@@ -324,6 +341,7 @@ class PluginInterfaceTest : public ::testing::Test
       heimdall::compat::fs::remove("test_object.o");
       heimdall::compat::fs::remove("libtest.so");
       heimdall::compat::fs::remove("test_executable.exe");
+      heimdall::compat::fs::remove("test_executable");
       heimdall::compat::fs::remove("libtest.a");
       heimdall::compat::fs::remove("test_config.json");
       heimdall::compat::fs::remove("test_output.json");
@@ -683,6 +701,10 @@ TEST_F(PluginInterfaceTest, ShouldProcessFile)
 
    bool result4 = plugin->shouldProcessFile("libtest.a");
    EXPECT_TRUE(result4);
+
+   // Test executables with no extension (macOS/Linux)
+   bool result5 = plugin->shouldProcessFile("test_executable");
+   EXPECT_TRUE(result5);
 
    // Invalid files
    EXPECT_FALSE(plugin->shouldProcessFile("nonexistent.o"));
