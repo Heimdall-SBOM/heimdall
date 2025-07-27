@@ -211,7 +211,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 # Linker flags - store for target-specific use instead of setting globally
 if(DEFINED LLVM_LIBRARY_DIRS)
-    set(LLVM_LINKER_FLAGS "-L${LLVM_LIBRARY_DIRS} -L/lib64" CACHE INTERNAL "LLVM linker flags")
+    set(LLVM_LINKER_FLAGS "-L${LLVM_LIBRARY_DIRS}" CACHE INTERNAL "LLVM linker flags")
 endif()
 
 # Coverage
