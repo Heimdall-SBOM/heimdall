@@ -219,4 +219,3 @@ For validation issues specific to Heimdall:
 For general SBOM validation questions:
 1. Consult the respective standard specifications
 2. Use the official validation tools
-3. Engage with the SBOM community 

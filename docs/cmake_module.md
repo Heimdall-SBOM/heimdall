@@ -715,4 +715,3 @@ For more information, see:
 - [Heimdall SBOM Manual](heimdall-sbom-manual.md)
 - [Heimdall Validate Manual](heimdall-validate-manual.md)
 - [CycloneDX Specification](https://cyclonedx.org/specification/)
-- [SPDX Specification](https://spdx.github.io/spdx-spec/) 

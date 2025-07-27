@@ -1,0 +1,66 @@
+FROM opensuse/tumbleweed:latest
+
+ARG GCC_VERSION=11
+ARG LLVM_VERSION=18
+ARG LLVM_TAG=llvmorg-18.1.8
+
+# Install prerequisites
+RUN zypper update -y && \
+    zypper install -y \
+      wget \
+      curl \
+      gcc \
+      gcc-c++ \
+      gcc-gnat \
+      cmake \
+      ninja \
+      python3 \
+      python3-pip \
+      git \
+      binutils \
+      openssl-devel \
+      libelf-devel \
+      pkg-config \
+      boost-devel
+
+# OpenSUSE Tumbleweed uses the latest GCC version by default
+# No need to set alternatives as gcc and g++ are already the default
+
+# Install LLVM - use unversioned packages which should provide llvm-config
+RUN zypper install -y \
+      llvm \
+      llvm-devel \
+      lld
+
+# Create LLD symlinks if needed
+RUN if [ -f /usr/bin/ld.lld ]; then \
+        echo "LLD found at /usr/bin/ld.lld"; \
+    else \
+        echo "LLD not found, checking for versioned binary"; \
+        if [ -f /usr/bin/ld.lld-${LLVM_VERSION} ]; then \
+            ln -sf /usr/bin/ld.lld-${LLVM_VERSION} /usr/bin/ld.lld; \
+        fi; \
+    fi
+
+RUN if [ -f /usr/bin/lld ]; then \
+        echo "LLD found at /usr/bin/lld"; \
+    else \
+        echo "LLD not found, checking for versioned binary"; \
+        if [ -f /usr/bin/lld-${LLVM_VERSION} ]; then \
+            ln -sf /usr/bin/lld-${LLVM_VERSION} /usr/bin/lld; \
+        fi; \
+    fi
+
+# Install LLD headers for the selected LLVM version
+RUN mkdir -p /usr/local/include/lld/Common && \
+    cd /usr/local/include/lld/Common && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Driver.h -o Driver.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Args.h -o Args.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/ErrorHandler.h -o ErrorHandler.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Filesystem.h -o Filesystem.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/LLVM.h -o LLVM.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Memory.h -o Memory.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Reproduce.h -o Reproduce.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Strings.h -o Strings.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Timer.h -o Timer.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Version.h -o Version.h 

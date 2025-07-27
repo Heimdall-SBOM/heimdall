@@ -1,0 +1,681 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <title>Ada SBOM · HonKit</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="HonKit 4.0.8">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/@honkit/honkit-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="ci-workflow.md" />
+    
+    
+    <link rel="prev" href="heimdall-validate-manual.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book honkit-cloak">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="architecture.html">
+            
+                <a href="architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="cmake_module.html">
+            
+                <a href="cmake_module.html">
+            
+                    
+                    CMake Module
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" data-path="heimdall-sbom-manual.html">
+            
+                <a href="heimdall-sbom-manual.html">
+            
+                    
+                    Heimdall SBOM Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="heimdall-validate-manual.html">
+            
+                <a href="heimdall-validate-manual.html">
+            
+                    
+                    Heimdall Validate Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.6" data-path="ada_SBOM.html">
+            
+                <a href="ada_SBOM.html">
+            
+                    
+                    Ada SBOM
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="ci-workflow.md">
+            
+                <span>
+            
+                    
+                    CI Workflow
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" data-path="heimdall-developers-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Developers Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.9" data-path="heimdall-users-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Users Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.10" data-path="llvm-compatibility.html">
+            
+                <a href="llvm-compatibility.html">
+            
+                    
+                    LLVM Compatibility
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.11" data-path="multi-standard-support.html">
+            
+                <a href="multi-standard-support.html">
+            
+                    
+                    Multi-Standard Support
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.12" data-path="sbom_validation_guide.html">
+            
+                <a href="sbom_validation_guide.html">
+            
+                    
+                    SBOM Validation Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.13" data-path="setup_usage.html">
+            
+                <a href="setup_usage.html">
+            
+                    
+                    Setup Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.14" data-path="testing-heimdall.html">
+            
+                <a href="testing-heimdall.html">
+            
+                    
+                    Testing Heimdall
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.15" data-path="usage.html">
+            
+                <a href="usage.html">
+            
+                    
+                    Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://github.com/honkit/honkit" target="blank" class="gitbook-link">
+            Published with HonKit
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Ada SBOM</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <p><img src="https://github.com/Heimdall-SBOM/heimdall/blob/main/docs/images/heimdall-ada.png?raw=true" alt="Ada and Heimdall" width="50%"></img></p>
+<h1 id="ada-sbom-generation-with-heimdall">Ada SBOM Generation with Heimdall</h1>
+<p>Heimdall extracts Ada-specific metadata from object files, executables, and ALI (Ada Library Information) files and stores this comprehensive information in SPDX and CycloneDX SBOM formats.  </p>
+<h2 id="overview">Overview</h2>
+<p>Heimdall's Ada extractor provides comprehensive SBOM generation for Ada applications by combining:</p>
+<ul>
+<li><strong>Binary analysis</strong> of object files and executables</li>
+<li><strong>ALI file parsing</strong> for Ada-specific metadata</li>
+<li><strong>Cross-referencing</strong> between binary and source information</li>
+</ul>
+<h2 id="data-sources">Data Sources</h2>
+<h3 id="1-object-files-and-executables">1. Object Files and Executables</h3>
+<h4 id="extracted-information"><strong>Extracted Information:</strong></h4>
+<ul>
+<li><strong>File format</strong>: ELF, PE, Mach-O detection</li>
+<li><strong>Architecture</strong>: Target platform information</li>
+<li><strong>Symbols</strong>: Function and variable names</li>
+<li><strong>Sections</strong>: Code, data, debug sections</li>
+<li><strong>Dependencies</strong>: Dynamic and static library dependencies</li>
+<li><strong>Debug information</strong>: DWARF debug info (if available)</li>
+<li><strong>Checksums</strong>: SHA1, SHA256 file integrity</li>
+<li><strong>File type</strong>: Executable, shared library, object file</li>
+</ul>
+<h4 id="example-extraction"><strong>Example Extraction:</strong></h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Binary analysis of Ada executable</span>
+./heimdall-sbom lib/heimdall-lld.so main_static --format spdx-2.3
+</code></pre>
+<p><strong>Output includes:</strong></p>
+<ul>
+<li>File checksums and integrity information</li>
+<li>Dynamic library dependencies (libgnat-11.so, libc.so.6)</li>
+<li>Symbol table information</li>
+<li>Debug section analysis</li>
+</ul>
+<h3 id="2-ali-ada-library-information-files">2. ALI (Ada Library Information) Files</h3>
+<h4 id="extracted-information"><strong>Extracted Information:</strong></h4>
+<h5 id="package-information"><strong>Package Information:</strong></h5>
+<ul>
+<li><strong>Package names</strong>: <code>main</code>, <code>data_reader</code>, <code>string_utils</code>, <code>math_lib</code></li>
+<li><strong>Package types</strong>: Specification (<code>%s</code>) vs Body (<code>%b</code>)</li>
+<li><strong>Source files</strong>: <code>.ads</code> and <code>.adb</code> file mappings</li>
+</ul>
+<h5 id="dependencies"><strong>Dependencies:</strong></h5>
+<ul>
+<li><strong>With-clause dependencies</strong> (<code>W</code> lines): Explicit imports</li>
+<li><strong>Runtime dependencies</strong> (<code>Z</code> lines): System and runtime packages</li>
+<li><strong>Dependency hierarchy</strong>: Build-time vs runtime relationships</li>
+</ul>
+<h5 id="build-configuration"><strong>Build Configuration:</strong></h5>
+<ul>
+<li><strong>Compiler version</strong>: <code>GNAT Lib v11</code></li>
+<li><strong>Build flags</strong>: <code>NO_IO</code>, <code>NO_SECONDARY_STACK</code>, etc.</li>
+<li><strong>Optimization settings</strong>: Compiler optimization flags</li>
+<li><strong>Runtime flags</strong>: Exception handling, memory safety settings</li>
+</ul>
+<h5 id="source-file-information"><strong>Source File Information:</strong></h5>
+<ul>
+<li><strong>Source file names</strong>: Extracted from ALI dependency lines</li>
+<li><strong>File timestamps</strong>: When files were compiled</li>
+<li><strong>File checksums</strong>: Integrity verification</li>
+<li><strong>Package associations</strong>: Which source files belong to which packages</li>
+</ul>
+<h5 id="function-and-type-information"><strong>Function and Type Information:</strong></h5>
+<ul>
+<li><strong>Function signatures</strong>: Parameter types and return types</li>
+<li><strong>Variable types</strong>: Type information for all variables</li>
+<li><strong>Cross-references</strong>: Function call relationships</li>
+<li><strong>Type system details</strong>: Ada's rich type system information</li>
+</ul>
+<h4 id="example-ali-file-content"><strong>Example ALI File Content:</strong></h4>
+<pre><code>V "GNAT Lib v11"
+RV NO_IO
+RV NO_SECONDARY_STACK
+W ada.text_io%s         a-textio.adb            a-textio.ali
+W data_reader%s         data_reader.adb         data_reader.ali
+D data_reader.ads       20250719161512 b2efb2f5 data_reader%s
+X 11 main.adb
+6U11*Main 6b11 15l5 15t9
+7a4 Data{string} 14r39
+G r c none [main standard 6 11 none] [read_data_file data_reader 2 13 none]
+</code></pre><h2 id="sbom-format-storage">SBOM Format Storage</h2>
+<h3 id="spdx-23-format">SPDX 2.3 Format</h3>
+<h4 id="package-information"><strong>Package Information:</strong></h4>
+<h4 id="file-information"><strong>File Information:</strong></h4>
+<h4 id="dependencies"><strong>Dependencies:</strong></h4>
+<h3 id="cyclonedx-format">CycloneDX Format</h3>
+<h4 id="component-information"><strong>Component Information:</strong></h4>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"bomFormat"</span>: <span class="hljs-string">"CycloneDX"</span>,
+  <span class="hljs-string">"specVersion"</span>: <span class="hljs-string">"1.6"</span>,
+  <span class="hljs-string">"version"</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-string">"metadata"</span>: {
+    <span class="hljs-string">"timestamp"</span>: <span class="hljs-string">"2025-07-19T22:27:55Z"</span>,
+    <span class="hljs-string">"tools"</span>: [
+      {
+        <span class="hljs-string">"vendor"</span>: <span class="hljs-string">"Heimdall"</span>,
+        <span class="hljs-string">"name"</span>: <span class="hljs-string">"SBOM Generator"</span>,
+        <span class="hljs-string">"version"</span>: <span class="hljs-string">"2.0.0"</span>
+      }
+    ]
+  },
+  <span class="hljs-string">"components"</span>: [
+    {
+      <span class="hljs-string">"type"</span>: <span class="hljs-string">"application"</span>,
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"heimdall-ada-demo"</span>,
+      <span class="hljs-string">"version"</span>: <span class="hljs-string">"GNAT Lib v11"</span>,
+      <span class="hljs-string">"purl"</span>: <span class="hljs-string">"pkg:gnat/heimdall-ada-demo@GNAT%20Lib%20v11"</span>,
+      <span class="hljs-string">"properties"</span>: [
+        {
+          <span class="hljs-string">"name"</span>: <span class="hljs-string">"packageManager"</span>,
+          <span class="hljs-string">"value"</span>: <span class="hljs-string">"GNAT"</span>
+        },
+        {
+          <span class="hljs-string">"name"</span>: <span class="hljs-string">"sourceFiles"</span>,
+          <span class="hljs-string">"value"</span>: <span class="hljs-string">"string_utils.adb, a-chahan.adb, a-charac.ads, a-tags.adb, a-textio.adb, ada.ads, data_reader.adb, math_lib.adb, s-conca2.adb, s-imgint.ads, s-secsta.adb"</span>
+        },
+        {
+          <span class="hljs-string">"name"</span>: <span class="hljs-string">"buildFlags"</span>,
+          <span class="hljs-string">"value"</span>: <span class="hljs-string">"NO_IO, NO_SECONDARY_STACK, NO_STANDARD_STORAGE_POOLS, NO_DYNAMIC_SIZED_OBJECTS"</span>
+        }
+      ],
+      <span class="hljs-string">"dependencies"</span>: [
+        <span class="hljs-string">"data_reader"</span>,
+        <span class="hljs-string">"string_utils"</span>, 
+        <span class="hljs-string">"math_lib"</span>,
+        <span class="hljs-string">"main"</span>
+      ]
+    }
+  ]
+}
+</code></pre>
+<h2 id="enhanced-metadata-extraction">Enhanced Metadata Extraction</h2>
+<h3 id="currently-extracted">Currently Extracted</h3>
+<h4 id="from-binary-files"><strong>From Binary Files:</strong></h4>
+<ul>
+<li>File format and architecture</li>
+<li>Symbol table information</li>
+<li>Dynamic library dependencies</li>
+<li>Debug information (if available)</li>
+<li>File integrity checksums</li>
+<li>Section information</li>
+</ul>
+<h4 id="from-ali-files"><strong>From ALI Files:</strong></h4>
+<ul>
+<li>Package manager identification (GNAT)</li>
+<li>Compiler version information</li>
+<li>Ada package dependencies</li>
+<li>Source file mappings</li>
+<li>Build configuration flags</li>
+<li>Package type information (spec/body)</li>
+</ul>
+<h4 id="security-information"><strong>Security Information:</strong></h4>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"properties"</span>: [
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"security.buildFlags"</span>,
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"NO_EXCEPTION_HANDLERS, NO_EXCEPTIONS, NO_DEFAULT_INITIALIZATION"</span>
+    },
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"security.compilerVersion"</span>, 
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"GNAT Lib v11"</span>
+    },
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"security.runtimeFlags"</span>,
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"NO_IO, NO_SECONDARY_STACK"</span>
+    }
+  ]
+}
+</code></pre>
+<h4 id="function-call-graph"><strong>Function Call Graph:</strong></h4>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"properties"</span>: [
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"functions.calls"</span>,
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"[main] -&gt; [read_data_file data_reader], [main] -&gt; [factorial math_lib], [main] -&gt; [to_upper string_utils]"</span>
+    }
+  ]
+}
+</code></pre>
+<h4 id="type-system-information"><strong>Type System Information:</strong></h4>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"properties"</span>: [
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"types.variables"</span>,
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"Data{string}, Result{integer}, Upper{string}"</span>
+    },
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"types.functions"</span>, 
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"Read_Data_File{string}, Factorial{integer}, To_Upper{string}"</span>
+    }
+  ]
+}
+</code></pre>
+<h4 id="build-reproducibility"><strong>Build Reproducibility:</strong></h4>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"properties"</span>: [
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"build.timestamps"</span>,
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"data_reader.ads: 20250719161512, main.adb: 20250719161443"</span>
+    },
+    {
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"build.checksums"</span>,
+      <span class="hljs-string">"value"</span>: <span class="hljs-string">"data_reader.ads: b2efb2f5, main.adb: f03e478f"</span>
+    }
+  ]
+}
+</code></pre>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-sbom-generation">Basic SBOM Generation</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Generate SPDX 2.3 SBOM</span>
+./heimdall-sbom lib/heimdall-lld.so main_static --format spdx-2.3 --output ada_sbom.spdx.json
+
+<span class="hljs-comment"># Generate CycloneDX SBOM  </span>
+./heimdall-sbom lib/heimdall-lld.so main_static --format cyclonedx-1.6 --output ada_sbom.cdx.json
+</code></pre>
+<h3 id="integration-with-build-systems">Integration with Build Systems</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># In Makefile or build script</span>
+gnatmake -g main.adb
+./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
+</code></pre>
+<h3 id="cicd-integration">CI/CD Integration</h3>
+<pre><code class="lang-yaml"><span class="hljs-comment"># GitHub Actions example</span>
+<span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Generate</span> <span class="hljs-string">Ada</span> <span class="hljs-string">SBOM</span>
+  <span class="hljs-attr">run:</span> <span class="hljs-string">|
+    gnatmake -g main.adb
+    ./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
+    ./heimdall-sbom lib/heimdall-lld.so main --format cyclonedx-1.6 --output sbom.cdx.json
+</span></code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>Heimdall's Ada extractor provides comprehensive SBOM generation by combining binary analysis with ALI file parsing. This approach captures both the compiled binary information and the rich Ada-specific metadata available in ALI files, resulting in detailed, accurate SBOMs that support security analysis, compliance auditing, and dependency management.</p>
+<p>The integration of ALI file parsing significantly enhances the SBOM quality by providing Ada-specific information that would not be available from binary analysis alone, including package dependencies, source file mappings, build configuration, and type system details. </p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="heimdall-validate-manual.html" class="navigation navigation-prev " aria-label="Previous page: Heimdall Validate Manual">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="ci-workflow.md" class="navigation navigation-next " aria-label="Next page: CI Workflow">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Ada SBOM","level":"1.6","depth":1,"next":{"title":"CI Workflow","level":"1.7","depth":1,"path":"docs/ci-workflow.md","ref":"docs/ci-workflow.md","articles":[]},"previous":{"title":"Heimdall Validate Manual","level":"1.5","depth":1,"path":"docs/heimdall-validate-manual.md","ref":"docs/heimdall-validate-manual.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56},"embedFonts":false},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/ada_SBOM.md","mtime":"2025-07-27T21:35:46.046Z","type":"markdown"},"gitbook":{"version":"4.0.8","time":"2025-07-27T21:36:16.340Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <noscript>
+        <style>
+            .honkit-cloak {
+                display: block !important;
+            }
+        </style>
+    </noscript>
+    <script>
+        // Restore sidebar state as critical path for prevent layout shift
+        function __init__getSidebarState(defaultValue){
+            var baseKey = "";
+            var key = baseKey + ":sidebar";
+            try {
+                var value = localStorage[key];
+                if (value === undefined) {
+                    return defaultValue;
+                }
+                var parsed = JSON.parse(value);
+                return parsed == null ? defaultValue : parsed;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+        function __init__restoreLastSidebarState() {
+            var isMobile = window.matchMedia("(max-width: 600px)").matches;
+            if (isMobile) {
+                // Init last state if not mobile
+                return;
+            }
+            var sidebarState = __init__getSidebarState(true);
+            var book = document.querySelector(".book");
+            // Show sidebar if it enabled
+            if (sidebarState && book) {
+                book.classList.add("without-animation", "with-summary");
+            }
+        }
+
+        try {
+            __init__restoreLastSidebarState();
+        } finally {
+            var book = document.querySelector(".book");
+            book.classList.remove("honkit-cloak");
+        }
+    </script>
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

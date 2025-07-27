@@ -48,72 +48,7 @@ Heimdall is a comprehensive SBOM generation tool that integrates directly with t
 
 The Heimdall system follows a modular architecture with clear separation of concerns:
 
-```mermaid
-graph TB
-    subgraph "Input Sources"
-        A[Object Files]
-        B[Static Libraries]
-        C[Shared Libraries]
-        D[Executables]
-    end
-    
-    subgraph "Linker Integration"
-        E[LLD Plugin]
-        F[Gold Plugin]
-        G[Wrapper Tool]
-    end
-    
-    subgraph "Core Processing"
-        H[Plugin Interface]
-        I[Metadata Extractor]
-        J[DWARF Extractor]
-        K[Component Info]
-    end
-    
-    subgraph "SBOM Generation"
-        L[SBOM Generator]
-        M[SPDX Formatter]
-        N[CycloneDX Formatter]
-    end
-    
-    subgraph "Output Formats"
-        O[SPDX 2.3 Tag-Value]
-        P[SPDX 3.0/3.0.1 JSON]
-        Q[CycloneDX 1.4/1.5/1.6 JSON]
-    end
-    
-    A --> E
-    B --> E
-    C --> E
-    D --> E
-    
-    A --> F
-    B --> F
-    C --> F
-    D --> F
-    
-    A --> G
-    B --> G
-    C --> G
-    D --> G
-    
-    E --> H
-    F --> H
-    G --> H
-    
-    H --> I
-    H --> J
-    I --> K
-    J --> K
-    
-    K --> L
-    L --> M
-    L --> N
-    
-    M --> O
-    M --> P
-    N --> Q
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_1.png)
 
 ### Component Overview
 
@@ -131,48 +66,7 @@ The system consists of several key architectural layers:
 
 The input parsing system handles multiple binary formats and file types:
 
-```mermaid
-classDiagram
-    class MetadataExtractor {
-        +extractMetadata(ComponentInfo&) bool
-        +extractVersionInfo(ComponentInfo&) bool
-        +extractLicenseInfo(ComponentInfo&) bool
-        +extractSymbolInfo(ComponentInfo&) bool
-        +extractArchInfo(ComponentInfo&) bool
-        +extractCodeSignInfo(ComponentInfo&) bool
-        -parseELF(string) bool
-        -parseMachO(string) bool
-        -parsePE(string) bool
-        -parseArchive(string) bool
-    }
-    
-    class DWARFExtractor {
-        +extractDebugInfo(ComponentInfo&) bool
-        +extractSourceFiles(ComponentInfo&) bool
-        +extractFunctions(ComponentInfo&) bool
-        +extractCompileUnits(ComponentInfo&) bool
-        -parseDWARFSections(binary) bool
-        -extractLineNumbers(binary) bool
-    }
-    
-    class AdaExtractor {
-        +extractAdaMetadata(ComponentInfo&) bool
-        +parseALIFiles(string) bool
-        +extractAdaUnits(ComponentInfo&) bool
-        +extractAdaDependencies(ComponentInfo&) bool
-    }
-    
-    class Utils {
-        +getFileType(string) FileType
-        +calculateChecksum(string) string
-        +resolveLibraryPath(string) string
-        +extractDependencies(string) vector~string~
-    }
-    
-    MetadataExtractor --> Utils
-    DWARFExtractor --> Utils
-    AdaExtractor --> Utils
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_2.png)
 
 **Key Features:**
 - **Multi-format Support**: Handles ELF (Linux), Mach-O (macOS), PE (Windows), and archive formats
@@ -185,62 +79,7 @@ classDiagram
 
 The plugin system provides a unified interface for different linkers:
 
-```mermaid
-classDiagram
-    class PluginInterface {
-        <<abstract>>
-        +initialize() bool
-        +cleanup() void
-        +processInputFile(string) void
-        +processLibrary(string) void
-        +processSymbol(string, uint64, uint64) void
-        +setOutputPath(string) void
-        +setFormat(string) void
-        +generateSBOM() void
-        +getComponentCount() size_t
-        #sbomGenerator SBOMGenerator*
-        #processedComponents vector~ComponentInfo~
-    }
-    
-    class LLDPlugin {
-        +initialize() bool
-        +cleanup() void
-        +processInputFile(string) void
-        +processLibrary(string) void
-        +processSymbol(string, uint64, uint64) void
-        +setOutputPath(string) void
-        +setFormat(string) void
-        +generateSBOM() void
-        -adapter LLDAdapter*
-    }
-    
-    class GoldPlugin {
-        +initialize() bool
-        +cleanup() void
-        +processInputFile(string) void
-        +processLibrary(string) void
-        +processSymbol(string, uint64, uint64) void
-        +setOutputPath(string) void
-        +setFormat(string) void
-        +generateSBOM() void
-        -impl Impl*
-    }
-    
-    class PluginConfig {
-        +outputPath string
-        +format string
-        +cyclonedxVersion string
-        +spdxVersion string
-        +verbose bool
-        +extractDebugInfo bool
-        +includeSystemLibraries bool
-        +transitiveDependencies bool
-    }
-    
-    PluginInterface <|-- LLDPlugin
-    PluginInterface <|-- GoldPlugin
-    PluginInterface --> PluginConfig
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_3.png)
 
 **Design Patterns:**
 - **Abstract Factory**: PluginInterface defines common interface
@@ -252,57 +91,7 @@ classDiagram
 
 The core SBOM generation engine handles multiple output formats:
 
-```mermaid
-classDiagram
-    class SBOMGenerator {
-        +processComponent(ComponentInfo&) void
-        +generateSBOM() void
-        +setOutputPath(string) void
-        +setFormat(string) void
-        +setSPDXVersion(string) void
-        +setCycloneDXVersion(string) void
-        +getComponentCount() size_t
-        +hasComponent(string) bool
-        -impl Impl*
-    }
-    
-    class SBOMGenerator_Impl {
-        +generateSPDX(string) bool
-        +generateSPDX3JSON(string) bool
-        +generateCycloneDX(string) bool
-        +generateSPDXDocument() string
-        +generateSPDX2_3_Document() string
-        +generateSPDX3_0_0_Document() string
-        +generateSPDX3_0_1_Document() string
-        +generateCycloneDXDocument() string
-        -components map~string, ComponentInfo~
-        -metadataExtractor MetadataExtractor*
-        -outputPath string
-        -format string
-        -spdxVersion string
-        -cyclonedxVersion string
-    }
-    
-    class ComponentInfo {
-        +name string
-        +filePath string
-        +version string
-        +supplier string
-        +license string
-        +checksum string
-        +fileType FileType
-        +symbols vector~SymbolInfo~
-        +dependencies vector~string~
-        +sourceFiles vector~string~
-        +properties map~string, string~
-        +codeSignInfo CodeSignInfo
-        +buildConfig BuildConfigInfo
-        +platformInfo PlatformInfo
-    }
-    
-    SBOMGenerator --> SBOMGenerator_Impl
-    SBOMGenerator_Impl --> ComponentInfo
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_4.png)
 
 **Key Capabilities:**
 - **Multi-Version Support**: Generates SPDX 2.3, 3.0, 3.0.1 and CycloneDX 1.4, 1.5, 1.6
@@ -315,81 +104,13 @@ classDiagram
 
 Specialized formatters handle different SBOM specifications:
 
-```mermaid
-classDiagram
-    class SPDXFormatter {
-        +generateSPDX2_3_TagValue() string
-        +generateSPDX3_0_JSON() string
-        +generateSPDX3_0_1_JSON() string
-        +generateDocumentHeader() string
-        +generatePackageSection() string
-        +generateFileSection() string
-        +generateRelationships() string
-        -validateSPDXLicense(string) string
-        -generateSPDXId(string) string
-        -generateVerificationCode() string
-    }
-    
-    class CycloneDXFormatter {
-        +generateCycloneDX1_4() string
-        +generateCycloneDX1_5() string
-        +generateCycloneDX1_6() string
-        +generateMetadata() string
-        +generateComponents() string
-        +generateDependencies() string
-        +generateVulnerabilities() string
-        -generatePURL(ComponentInfo) string
-        -generateEvidence(ComponentInfo) string
-        -generateProperties(ComponentInfo) string
-    }
-    
-    class OutputValidator {
-        +validateSPDX(string) bool
-        +validateCycloneDX(string) bool
-        +validateAgainstSchema(string, string) bool
-        -loadSchema(string) Schema
-        -validateJSON(string, Schema) bool
-    }
-    
-    SPDXFormatter --> OutputValidator
-    CycloneDXFormatter --> OutputValidator
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_5.png)
 
 ### CLI Interface
 
 Command-line interface for standalone SBOM generation:
 
-```mermaid
-classDiagram
-    class HeimdallSBOM {
-        +main(int, char**) int
-        +parseArguments(int, char**) bool
-        +validateArguments() bool
-        +processBinary(string) bool
-        +generateOutput() bool
-        -config PluginConfig
-        -generator SBOMGenerator
-    }
-    
-    class HeimdallValidate {
-        +main(int, char**) int
-        +validateSBOM(string) bool
-        +validateSchema(string, string) bool
-        +generateReport() bool
-        -validator SBOMValidator
-    }
-    
-    class SBOMValidator {
-        +validateSPDXDocument(string) bool
-        +validateCycloneDXDocument(string) bool
-        +checkRequiredFields() bool
-        +validateRelationships() bool
-        +validateChecksums() bool
-    }
-    
-    HeimdallSBOM --> SBOMGenerator
-    HeimdallValidate --> SBOMValidator
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_6.png)
 
 ## 4. Data Flow
 
@@ -397,101 +118,13 @@ classDiagram
 
 The following diagram shows how Heimdall processes input files to generate SPDX-compliant SBOMs:
 
-```mermaid
-sequenceDiagram
-    participant L as Linker (LLD/Gold)
-    participant P as Plugin Interface
-    participant M as Metadata Extractor
-    participant D as DWARF Extractor
-    participant G as SBOM Generator
-    participant S as SPDX Formatter
-    participant F as Output File
-    
-    L->>P: Process input file
-    P->>M: Extract metadata
-    M->>M: Parse binary format (ELF/Mach-O/PE)
-    M->>M: Calculate checksum
-    M->>M: Extract version info
-    M-->>P: Return ComponentInfo
-    
-    P->>D: Extract debug information
-    D->>D: Parse DWARF sections
-    D->>D: Extract source files
-    D->>D: Extract function names
-    D-->>P: Update ComponentInfo
-    
-    P->>G: Process component
-    G->>G: Deduplicate components
-    G->>G: Resolve dependencies
-    G->>G: Process transitive deps
-    
-    L->>P: Linking complete
-    P->>G: Generate SBOM
-    G->>S: Format as SPDX
-    
-    alt SPDX 2.3
-        S->>S: Generate tag-value format
-        S->>S: Create document header
-        S->>S: Generate package section
-        S->>S: Generate file sections
-        S->>S: Generate relationships
-    else SPDX 3.0/3.0.1
-        S->>S: Generate JSON format
-        S->>S: Create @graph structure
-        S->>S: Generate elements
-        S->>S: Generate relationships
-    end
-    
-    S->>F: Write SBOM document
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_7.png)
 
 ### CycloneDX Generation Flow
 
 The following diagram shows the CycloneDX-specific generation process:
 
-```mermaid
-sequenceDiagram
-    participant P as Plugin Interface
-    participant G as SBOM Generator
-    participant C as CycloneDX Formatter
-    participant F as Output File
-    
-    P->>G: Generate SBOM (CycloneDX)
-    G->>C: Format as CycloneDX
-    
-    C->>C: Generate metadata section
-    C->>C: Identify main component
-    C->>C: Generate tool information
-    
-    C->>C: Generate components array
-    loop For each component
-        C->>C: Determine component type
-        C->>C: Generate BOM reference
-        C->>C: Generate PURL
-        C->>C: Generate hashes
-        C->>C: Generate properties
-        
-        alt CycloneDX 1.6
-            C->>C: Generate evidence section
-            C->>C: Generate licenses evidence
-        end
-        
-        C->>C: Generate external references
-    end
-    
-    C->>C: Generate dependencies section
-    loop For each component with deps
-        C->>C: Map dependency references
-        C->>C: Create dependsOn relationships
-    end
-    
-    alt CycloneDX 1.5/1.6
-        C->>C: Generate vulnerability section
-        C->>C: Generate compliance section
-    end
-    
-    C->>F: Write CycloneDX JSON document
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_8.png)
 
 ## 5. Extensibility and Plugins
 
@@ -499,40 +132,7 @@ sequenceDiagram
 
 Heimdall provides a comprehensive framework for developing new plugins:
 
-```mermaid
-graph TB
-    subgraph "Plugin Framework"
-        A[PluginInterface]
-        B[PluginConfig]
-        C[PluginStatistics]
-        D[PluginUtils]
-    end
-    
-    subgraph "Core Services"
-        E[MetadataExtractor]
-        F[SBOMGenerator]
-        G[Utils]
-        H[ComponentInfo]
-    end
-    
-    subgraph "Extension Points"
-        I[Custom Extractors]
-        J[Format Processors]
-        K[Output Formatters]
-        L[Validation Rules]
-    end
-    
-    A --> E
-    A --> F
-    B --> A
-    C --> A
-    D --> A
-    
-    I --> E
-    J --> F
-    K --> F
-    L --> F
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_9.png)
 
 **Adding New Linker Support:**
 
@@ -565,41 +165,7 @@ private:
 
 ### Format Extension Architecture
 
-```mermaid
-classDiagram
-    class FormatProcessor {
-        <<abstract>>
-        +generateDocument(vector~ComponentInfo~) string
-        +validateOutput(string) bool
-        +getFormatVersion() string
-        +getSupportedVersions() vector~string~
-    }
-    
-    class SPDXProcessor {
-        +generateDocument(vector~ComponentInfo~) string
-        +generateSPDX2_3() string
-        +generateSPDX3_0() string
-        +validateSPDX(string) bool
-    }
-    
-    class CycloneDXProcessor {
-        +generateDocument(vector~ComponentInfo~) string
-        +generateCycloneDX1_4() string
-        +generateCycloneDX1_5() string
-        +generateCycloneDX1_6() string
-        +validateCycloneDX(string) bool
-    }
-    
-    class CustomFormatProcessor {
-        +generateDocument(vector~ComponentInfo~) string
-        +validateCustomFormat(string) bool
-        +getCustomSchema() string
-    }
-    
-    FormatProcessor <|-- SPDXProcessor
-    FormatProcessor <|-- CycloneDXProcessor
-    FormatProcessor <|-- CustomFormatProcessor
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_10.png)
 
 ### Configuration and Customization
 
@@ -647,43 +213,7 @@ linker:
 
 Heimdall implements a comprehensive error handling and logging system:
 
-```mermaid
-graph TB
-    subgraph "Error Categories"
-        A[Fatal Errors]
-        B[Processing Errors]
-        C[Warnings]
-        D[Debug Messages]
-    end
-    
-    subgraph "Error Handlers"
-        E[Plugin Error Handler]
-        F[File Processing Handler]
-        G[Format Validation Handler]
-        H[Dependency Resolution Handler]
-    end
-    
-    subgraph "Logging System"
-        I[Log Manager]
-        J[File Logger]
-        K[Console Logger]
-        L[Structured Logger]
-    end
-    
-    A --> E
-    B --> F
-    C --> G
-    D --> H
-    
-    E --> I
-    F --> I
-    G --> I
-    H --> I
-    
-    I --> J
-    I --> K
-    I --> L
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_11.png)
 
 **Error Classification:**
 
@@ -803,58 +333,7 @@ endif()
 
 #### Build Process Sequence
 
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant CMake as CMake
-    participant Compiler as Compiler
-    participant Linker as Linker (LLD/Gold)
-    participant Plugin as Heimdall Plugin
-    participant Gen as SBOM Generator
-    participant File as SBOM File
-    
-    Dev->>CMake: mkdir build && cd build
-    Dev->>CMake: cmake ..
-    CMake->>CMake: Configure build system
-    CMake->>CMake: Find Heimdall plugins
-    
-    Dev->>CMake: make
-    CMake->>Compiler: Compile source files
-    Compiler-->>CMake: Object files (main.o, utils.o, math.o)
-    
-    CMake->>Linker: Link executable
-    
-    alt Using LLD (Clang)
-        Linker->>Linker: Link with LLD
-        Linker-->>CMake: Executable created
-        CMake->>Plugin: heimdall-sbom (wrapper mode)
-        Plugin->>Gen: Process executable
-        Gen->>Gen: Extract metadata from executable
-        Gen->>Gen: Resolve library dependencies
-        Gen->>Gen: Generate SPDX 3.0.1 JSON
-        Gen->>File: Write myapp.spdx.json
-    else Using Gold (GCC)
-        Linker->>Plugin: Load Heimdall Gold plugin
-        Plugin->>Plugin: Initialize SBOM collection
-        
-        loop For each input file
-            Linker->>Plugin: Process input file (main.o, utils.o, math.o)
-            Plugin->>Gen: Add component info
-        end
-        
-        loop For each library
-            Linker->>Plugin: Process library (libssl.so, libcrypto.so, etc.)
-            Plugin->>Gen: Add library component
-        end
-        
-        Linker->>Plugin: Linking complete
-        Plugin->>Gen: Generate SBOM
-        Gen->>Gen: Generate CycloneDX 1.6 JSON
-        Gen->>File: Write myapp.cyclonedx.json
-    end
-    
-    CMake-->>Dev: Build complete with SBOM
-```
+![Mermaid Diagram](images/mermaid/architecture_diagram_12.png)
 
 #### Generated SBOM Output
 
@@ -1050,4 +529,3 @@ This comprehensive example demonstrates how Heimdall integrates seamlessly into 
 
 <function_calls>
 <invoke name="TodoWrite">
-<parameter name="todos">[{"id": "1", "content": "Explore codebase structure and understand current implementation", "status": "completed", "priority": "high"}, {"id": "2", "content": "Analyze SBOM generation logic and data flow", "status": "completed", "priority": "high"}, {"id": "3", "content": "Review plugin architecture and extensibility mechanisms", "status": "completed", "priority": "medium"}, {"id": "4", "content": "Create comprehensive architecture document with Mermaid diagrams", "status": "completed", "priority": "high"}]

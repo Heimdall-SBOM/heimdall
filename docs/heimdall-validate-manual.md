@@ -646,4 +646,3 @@ For more information, see:
 - [Heimdall User Guide](heimdall-users-guide.md)
 - [SBOM Validation Guide](sbom_validation_guide.md)
 - [CycloneDX Specification](https://cyclonedx.org/specification/)
-- [SPDX Specification](https://spdx.github.io/spdx-spec/) 

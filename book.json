@@ -3,17 +3,14 @@
   "ignore": [
     "external"
   ],
-  "plugins": ["mermaid-gb3", "highlight"],
+  "plugins": ["highlight"],
   "pluginsConfig": {
-    "mermaid-gb3": {
-      "theme": "default"
-    },
     "highlight": {
       "init": {
         "tabReplace": "  ",
         "useBR": false,
         "classPrefix": "hljs-",
-        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript"]
+        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript", "mermaid"]
       }
     }
   }

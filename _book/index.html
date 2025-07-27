@@ -1,0 +1,1371 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <title>Introduction · HonKit</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="HonKit 4.0.8">
+        
+        
+        
+    
+    <link rel="stylesheet" href="gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="gitbook/@honkit/honkit-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="docs/architecture.html" />
+    
+    
+
+    </head>
+    <body>
+        
+<div class="book honkit-cloak">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter active" data-level="1.1" data-path="./">
+            
+                <a href="./">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="docs/architecture.html">
+            
+                <a href="docs/architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="docs/cmake_module.html">
+            
+                <a href="docs/cmake_module.html">
+            
+                    
+                    CMake Module
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" data-path="docs/heimdall-sbom-manual.html">
+            
+                <a href="docs/heimdall-sbom-manual.html">
+            
+                    
+                    Heimdall SBOM Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="docs/heimdall-validate-manual.html">
+            
+                <a href="docs/heimdall-validate-manual.html">
+            
+                    
+                    Heimdall Validate Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="docs/ada_SBOM.html">
+            
+                <a href="docs/ada_SBOM.html">
+            
+                    
+                    Ada SBOM
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="docs/ci-workflow.md">
+            
+                <span>
+            
+                    
+                    CI Workflow
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" data-path="docs/heimdall-developers-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Developers Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.9" data-path="docs/heimdall-users-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Users Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.10" data-path="docs/llvm-compatibility.html">
+            
+                <a href="docs/llvm-compatibility.html">
+            
+                    
+                    LLVM Compatibility
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.11" data-path="docs/multi-standard-support.html">
+            
+                <a href="docs/multi-standard-support.html">
+            
+                    
+                    Multi-Standard Support
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.12" data-path="docs/sbom_validation_guide.html">
+            
+                <a href="docs/sbom_validation_guide.html">
+            
+                    
+                    SBOM Validation Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.13" data-path="docs/setup_usage.html">
+            
+                <a href="docs/setup_usage.html">
+            
+                    
+                    Setup Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.14" data-path="docs/testing-heimdall.html">
+            
+                <a href="docs/testing-heimdall.html">
+            
+                    
+                    Testing Heimdall
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.15" data-path="docs/usage.html">
+            
+                <a href="docs/usage.html">
+            
+                    
+                    Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://github.com/honkit/honkit" target="blank" class="gitbook-link">
+            Published with HonKit
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href="." >Introduction</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="heimdall-sbom">Heimdall-SBOM</h1>
+<p><img src="https://github.com/bakkertj/heimdall/blob/18e0ce7fc630923f15e6e29e94059e40b7d1af99/docs/images/logo_w_text.png" width="400"></img></p>
+<p>A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries.</p>
+<p><a href="https://opensource.org/licenses/Apache-2.0" target="_blank"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></img></a>
+<a href="#supported-platforms"><img src="https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg" alt="Platform Support"></img></a>
+<a href="#testing"><img src="https://img.shields.io/badge/tests-336%20passed-brightgreen.svg" alt="Tests"></img></a>
+<a href="#c-standard-support"><img src="https://img.shields.io/badge/C%2B%2B-11%2F14%2F17%2F20%2F23-blue.svg" alt="C++ Standards"></img></a>
+<a href="https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall" target="_blank"><img src="https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&amp;metric=bugs" alt="Bugs"></img></a>
+<a href="https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall" target="_blank"><img src="https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&amp;metric=sqale_rating" alt="Maintainability Rating"></img></a>
+<a href="https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall" target="_blank"><img src="https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&amp;metric=reliability_rating" alt="Reliability Rating"></img></a>
+<a href="https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall" target="_blank"><img src="https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&amp;metric=security_rating" alt="Security Rating"></img></a>
+<a href="build/coverage/html/index.html"><img src="https://img.shields.io/badge/coverage-52.1%25-yellow.svg" alt="Coverage"></img></a></p>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Dual Linker Support</strong>: Works seamlessly with both LLVM LLD and GNU Gold linkers</li>
+<li><strong>Multiple SBOM Formats</strong>: Generates SPDX 2.3, 3.0, and 3.0.1 and CycloneDX 1.4, 1.5, and 1.6 compliant reports</li>
+<li><strong>Comprehensive Component Analysis</strong>: Extracts versions, licenses, checksums, and dependencies</li>
+<li><strong>Package Manager Integration</strong>: Recognizes Conan, vcpkg, and system packages</li>
+<li><strong>Cross-Platform</strong>: Native support for macOS and Linux</li>
+<li><strong>Performance Optimized</strong>: Minimal overhead during linking</li>
+<li><strong>CI/CD Ready</strong>: Seamless integration with modern build systems</li>
+<li><strong>Security Focused</strong>: Enables vulnerability scanning and compliance tracking</li>
+<li><strong>Comprehensive Testing</strong>: 257 passing tests across 19 test suites with 45.4% code coverage</li>
+<li><strong>Multi-Standard C++ Support</strong>: Robust compatibility layer supporting C++11, C++14, C++17, C++20, and C++23</li>
+<li><strong>Enhanced Compatibility</strong>: Automatic feature detection and standard library compatibility</li>
+<li><strong>Multi-Compiler Support</strong>: Automatic detection and selection of GCC and Clang versions</li>
+<li><strong>SCL Integration</strong>: Support for Software Collections (SCL) on RHEL/Rocky/CentOS</li>
+<li><strong>Enhanced Test Coverage</strong>: Recent improvements added 151 new test cases for SBOM validation, comparison, and plugin functionality</li>
+</ul>
+<h2 id="code-coverage">Code Coverage</h2>
+<ul>
+<li><strong>Current coverage:</strong> <img src="https://img.shields.io/badge/coverage-47.3%25-yellow.svg" alt="Coverage"></img></li>
+<li>Coverage is generated using <code>tests/coverage.sh</code> and includes all source files, including <code>src/tools/*.cpp</code>.</li>
+<li>To update the badge and report, run:<pre><code class="lang-bash">./tests/coverage.sh
+</code></pre>
+</li>
+<li>The full HTML report is available at <code>build/coverage/html/index.html</code> after running the script.</li>
+</ul>
+<h2 id="build-system-and-compatibility">Build System and Compatibility</h2>
+<p>Heimdall features a robust build system that automatically selects the correct compiler and LLVM version for each C++ standard. The build scripts in <code>scripts/</code> ensure seamless compatibility and provide clear diagnostics if your system is missing required tools.</p>
+<h3 id="key-features">Key Features</h3>
+<ul>
+<li><strong>Automatic Compiler/LLVM Selection</strong>: Detects all available GCC and Clang versions, as well as all installed LLVM versions</li>
+<li><strong>Multi-Compiler Support</strong>: Choose between GCC and Clang with the <code>--compiler</code> option</li>
+<li><strong>SCL Integration</strong>: Automatic detection and guidance for SCL toolsets on RHEL/Rocky/CentOS</li>
+<li><strong>Compatibility Checker</strong>: Run <code>./scripts/show_build_compatibility.sh</code> to see which C++ standards you can build</li>
+<li><strong>Clear Error Messages</strong>: Specific instructions when SCL activation is needed</li>
+</ul>
+<h3 id="build-commands">Build Commands</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Build all compatible standards</span>
+./scripts/build_all_standards.sh
+
+<span class="hljs-comment"># Build a specific standard with GCC (default)</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Build a specific standard with Clang</span>
+./scripts/build.sh --standard 17 --compiler clang --tests
+
+<span class="hljs-comment"># Build with tests and SBOM generation</span>
+./scripts/build.sh --standard 20 --all
+
+<span class="hljs-comment"># Clean all build artifacts</span>
+./scripts/clean.sh
+
+<span class="hljs-comment"># Check compatibility</span>
+./scripts/show_build_compatibility.sh
+</code></pre>
+<h2 id="c-standard-support">C++ Standard Support</h2>
+<p>Heimdall supports multiple C++ standards with automatic compiler and LLVM version selection:</p>
+<table>
+<thead>
+<tr>
+<th>C++ Standard</th>
+<th>LLVM Version</th>
+<th>GCC Version</th>
+<th>Clang Version</th>
+<th>Features</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C++11</td>
+<td>7+</td>
+<td>4.8+</td>
+<td>3.3+</td>
+<td>Basic + Compatibility</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>C++14</td>
+<td>7+</td>
+<td>6+</td>
+<td>3.4+</td>
+<td>Enhanced + Compatibility</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>C++17</td>
+<td>11+</td>
+<td>7+</td>
+<td>5+</td>
+<td>Full Standard Library</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>C++20</td>
+<td>19+</td>
+<td>13+</td>
+<td>14+</td>
+<td>Full + std::format</td>
+<td>✅ Working</td>
+</tr>
+<tr>
+<td>C++23</td>
+<td>19+</td>
+<td>13+</td>
+<td>14+</td>
+<td>Full + std::format</td>
+<td>✅ Working</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> C++20/23 require GCC 13+ or Clang 14+ for <code>&lt;format&gt;</code> support. The build system will provide clear guidance if your compiler is too old.</p>
+</blockquote>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li><strong>Linux</strong>: GCC 4.8+ or Clang 3.3+, CMake 3.16+, LLVM development libraries</li>
+<li><strong>macOS</strong>: Xcode Command Line Tools, CMake 3.16+, LLVM (via Homebrew)</li>
+<li><strong>SCL Support</strong>: On RHEL/Rocky/CentOS, SCL toolsets are automatically detected</li>
+</ul>
+<h3 id="automatic-setup-recommended">Automatic Setup (Recommended)</h3>
+<p>We provide automated setup scripts that detect your operating system and install all necessary dependencies:</p>
+<h4 id="quick-dependency-installation">Quick Dependency Installation</h4>
+<pre><code class="lang-bash">git <span class="hljs-built_in">clone</span> --recurse-submodules https://github.com/your-org/heimdall.git
+
+<span class="hljs-built_in">cd</span> heimdall
+
+<span class="hljs-comment"># Install dependencies automatically</span>
+./scripts/install_dependencies.sh
+
+<span class="hljs-comment"># Build with default settings (GCC, C++17)</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Or build all compatible standards</span>
+./scripts/build_all_standards.sh
+</code></pre>
+<h4 id="linux-setup-script-advanced">Linux Setup Script (Advanced)</h4>
+<p>For Linux users, we also provide a more comprehensive setup script:</p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Run the automated setup script</span>
+sudo ./setup.sh
+
+<span class="hljs-comment"># Build with default settings (GCC, C++17)</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Or build all compatible standards</span>
+./scripts/build_all_standards.sh
+</code></pre>
+<h4 id="setup-script-options">Setup Script Options</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Show what would be installed without actually installing</span>
+sudo ./setup.sh --dry-run
+
+<span class="hljs-comment"># Install with verbose output</span>
+sudo ./setup.sh --verbose
+
+<span class="hljs-comment"># Skip LLVM installation (use system LLVM if available)</span>
+sudo ./setup.sh --skip-llvm
+
+<span class="hljs-comment"># Skip GCC installation (use system GCC)</span>
+sudo ./setup.sh --skip-gcc
+
+<span class="hljs-comment"># Show help</span>
+./setup.sh --<span class="hljs-built_in">help</span>
+</code></pre>
+<h4 id="supported-distributions">Supported Distributions</h4>
+<p>The setup script automatically supports:</p>
+<ul>
+<li><strong>Ubuntu 22.04+</strong>: GCC 11, 13 + LLVM 18</li>
+<li><strong>Debian Bookworm</strong>: GCC 11, 12 + LLVM 18</li>
+<li><strong>Debian Testing</strong>: GCC 12, 13, 14 + LLVM 18</li>
+<li><strong>CentOS Stream 9</strong>: GCC 11, 13, 14 + LLVM 20</li>
+<li><strong>Fedora Latest</strong>: GCC 15 + LLVM 18</li>
+<li><strong>Arch Linux</strong>: GCC 14, 15 + LLVM 18</li>
+<li><strong>OpenSUSE Tumbleweed</strong>: GCC 11, 13 + LLVM 18</li>
+<li><strong>Rocky Linux 9</strong>: GCC 11, 13 + LLVM 16</li>
+</ul>
+<h3 id="manual-installation">Manual Installation</h3>
+<p>If you prefer to install dependencies manually or the setup script doesn't support your distribution:</p>
+<h3 id="usage-examples">Usage Examples</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Build C++11 with system GCC</span>
+./scripts/build.sh --standard 11 --compiler gcc --tests
+
+<span class="hljs-comment"># Build C++17 with Clang</span>
+./scripts/build.sh --standard 17 --compiler clang --tests
+
+<span class="hljs-comment"># Build C++23 with GCC (requires SCL activation on RHEL/Rocky/CentOS)</span>
+scl <span class="hljs-built_in">enable</span> gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
+
+<span class="hljs-comment"># Build with tests and SBOM generation</span>
+./scripts/build.sh --standard 20 --all
+
+<span class="hljs-comment"># Check what you can build on your system</span>
+./scripts/show_build_compatibility.sh
+</code></pre>
+<h3 id="using-heimdall-as-a-linker-plugin">Using Heimdall as a Linker Plugin</h3>
+<p>Once built, you can use Heimdall to generate SBOMs during compilation. See the complete usage guide in <a href="docs/usage.html"><code>docs/usage.md</code></a> and try the examples:</p>
+<p><strong>Format-Specific Examples:</strong></p>
+<pre><code class="lang-bash"><span class="hljs-comment"># SPDX-only example</span>
+<span class="hljs-built_in">cd</span> examples/heimdall-usage-spdx-example
+./run_example.sh
+
+<span class="hljs-comment"># CycloneDX-only example  </span>
+<span class="hljs-built_in">cd</span> examples/heimdall-usage-cyclonedx-example
+./run_example.sh
+
+<span class="hljs-comment"># General example with multiple formats</span>
+<span class="hljs-built_in">cd</span> examples/heimdall-usage-example
+./run_example.sh
+./advanced_example.sh
+</code></pre>
+<p><strong>Quick Example:</strong></p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Navigate to the example directory</span>
+<span class="hljs-built_in">cd</span> examples/heimdall-usage-example
+
+<span class="hljs-comment"># Run the automated example</span>
+./run_example.sh
+
+<span class="hljs-comment"># Or try the advanced example with different SBOM formats</span>
+./advanced_example.sh
+</code></pre>
+<h2 id="building-from-source">Building from Source</h2>
+<h3 id="linux-setup">Linux Setup</h3>
+<p><strong>Recommended</strong>: Use the automated setup script for easy installation:</p>
+<pre><code class="lang-bash">sudo ./setup.sh
+</code></pre>
+<h4 id="ubuntudebian">Ubuntu/Debian</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Install dependencies</span>
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    llvm-dev \
+    liblld-dev \
+    binutils-gold \
+    libssl-dev \
+    pkg-config
+
+<span class="hljs-comment"># Build Heimdall</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+</code></pre>
+<h4 id="fedorarhelcentos">Fedora/RHEL/CentOS</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Install dependencies</span>
+sudo yum install -y \
+    gcc-c++ \
+    cmake \
+    ninja-build \
+    llvm-devel \
+    lld-devel \
+    binutils-gold \
+    openssl-devel \
+    pkgconfig
+
+<span class="hljs-comment"># For C++20/23, you may need SCL toolsets</span>
+sudo yum install -y gcc-toolset-14
+
+<span class="hljs-comment"># Build with system GCC</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Or activate SCL for C++20/23</span>
+scl <span class="hljs-built_in">enable</span> gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
+</code></pre>
+<h4 id="arch-linux">Arch Linux</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Install dependencies</span>
+sudo pacman -S \
+    base-devel \
+    cmake \
+    ninja \
+    llvm \
+    lld \
+    binutils \
+    openssl \
+    pkgconf
+
+<span class="hljs-comment"># Build Heimdall</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+</code></pre>
+<h3 id="macos-setup">macOS Setup</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Install LLVM and other dependencies</span>
+brew install llvm cmake ninja openssl llvm@18
+<span class="hljs-built_in">export</span> PATH=<span class="hljs-string">"/opt/homebrew/opt/llvm/bin:<span class="hljs-variable">$PATH</span>"</span>
+
+<span class="hljs-comment"># Build Heimdall (LLD plugin only)</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Or use Clang</span>
+./scripts/build.sh --standard 17 --compiler clang --tests
+</code></pre>
+<h3 id="build-options">Build Options</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Build with specific C++ standard</span>
+./scripts/build.sh --standard 20 --compiler gcc --tests
+
+<span class="hljs-comment"># Build with Clang</span>
+./scripts/build.sh --standard 17 --compiler clang --tests
+
+<span class="hljs-comment"># Build with tests and SBOM generation</span>
+./scripts/build.sh --standard 23 --all
+
+<span class="hljs-comment"># Clean build directory before building</span>
+./scripts/build.sh --standard 17 --compiler gcc --clean --tests
+
+<span class="hljs-comment"># Custom build directory</span>
+./scripts/build.sh --standard 17 --compiler gcc --build-dir mybuild --tests
+</code></pre>
+<h3 id="scl-integration-rhelrockycentos">SCL Integration (RHEL/Rocky/CentOS)</h3>
+<p>For C++20/23 on RHEL/Rocky/CentOS systems:</p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Check available SCL toolsets</span>
+scl --list
+
+<span class="hljs-comment"># Activate GCC 14 toolset</span>
+scl <span class="hljs-built_in">enable</span> gcc-toolset-14 bash
+
+<span class="hljs-comment"># Build C++23</span>
+./scripts/build.sh --standard 23 --compiler gcc --tests
+</code></pre>
+<p>The build system will automatically detect if you need SCL and provide clear instructions.</p>
+<h2 id="testing">Testing</h2>
+<p>The project includes a comprehensive test suite with <strong>257 passing tests</strong> across <strong>19 test suites</strong> and <strong>45.4% code coverage</strong>. The test suite validates compatibility across all supported C++ standards and provides extensive error handling and edge case testing.</p>
+<h3 id="continuous-integration">Continuous Integration</h3>
+<p>Heimdall uses GitHub Actions for comprehensive CI/CD testing:</p>
+<ul>
+<li><strong>Multi-standard testing</strong>: C++11 and C++23 builds</li>
+<li><strong>Multi-compiler testing</strong>: GCC and Clang support  </li>
+<li><strong>Unit test execution</strong>: All 257 tests across 19 test suites</li>
+<li><strong>Code coverage analysis</strong>: Automated coverage reporting</li>
+<li><strong>Example validation</strong>: All example projects built and tested</li>
+</ul>
+<p>The CI workflow runs automatically on:</p>
+<ul>
+<li><strong>Push to main/develop</strong>: Full test suite + coverage + examples</li>
+<li><strong>Pull requests</strong>: Core build and test validation</li>
+<li><strong>Manual triggers</strong>: Selective testing by C++ standard and compiler</li>
+</ul>
+<p>See <a href="docs/ci-workflow.md">docs/ci-workflow.md</a> for detailed CI documentation.</p>
+<h3 id="test-statistics">Test Statistics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Count</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Total Tests</strong></td>
+<td>266</td>
+<td>✅ All passing</td>
+</tr>
+<tr>
+<td><strong>Passed Tests</strong></td>
+<td>257</td>
+<td>✅ Stable</td>
+</tr>
+<tr>
+<td><strong>Skipped Tests</strong></td>
+<td>9</td>
+<td>⏭️ Expected (missing dependencies)</td>
+</tr>
+<tr>
+<td><strong>Failed Tests</strong></td>
+<td>0</td>
+<td>✅ No failures</td>
+</tr>
+<tr>
+<td><strong>Test Suites</strong></td>
+<td>19</td>
+<td>✅ Comprehensive coverage</td>
+</tr>
+<tr>
+<td><strong>Execution Time</strong></td>
+<td>~32 seconds</td>
+<td>✅ Fast execution</td>
+</tr>
+</tbody>
+</table>
+<h3 id="code-coverage">Code Coverage</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Line Coverage</th>
+<th>Function Coverage</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Overall</strong></td>
+<td>45.4%</td>
+<td>44.1%</td>
+<td>⚠️ Moderate</td>
+</tr>
+<tr>
+<td><strong>ComponentInfo.cpp</strong></td>
+<td>88.9%</td>
+<td>90.9%</td>
+<td>✅ Excellent</td>
+</tr>
+<tr>
+<td><strong>DWARFExtractor.cpp</strong></td>
+<td>87.5%</td>
+<td>100%</td>
+<td>✅ Excellent</td>
+</tr>
+<tr>
+<td><strong>Utils.cpp</strong></td>
+<td>85.5%</td>
+<td>100%</td>
+<td>✅ Excellent</td>
+</tr>
+<tr>
+<td><strong>SBOMGenerator.cpp</strong></td>
+<td>83.5%</td>
+<td>87.9%</td>
+<td>✅ Good</td>
+</tr>
+<tr>
+<td><strong>MetadataExtractor.cpp</strong></td>
+<td>70.9%</td>
+<td>82.5%</td>
+<td>✅ Good</td>
+</tr>
+<tr>
+<td><strong>SBOMValidator.cpp</strong></td>
+<td>60.5%</td>
+<td>65.2%</td>
+<td>⚠️ Moderate</td>
+</tr>
+<tr>
+<td><strong>GoldPlugin.cpp</strong></td>
+<td>62.8%</td>
+<td>58.3%</td>
+<td>⚠️ Moderate</td>
+</tr>
+<tr>
+<td><strong>LLDPlugin.cpp</strong></td>
+<td>52.2%</td>
+<td>33.3%</td>
+<td>❌ Needs improvement</td>
+</tr>
+<tr>
+<td><strong>SBOMComparator.cpp</strong></td>
+<td>44.1%</td>
+<td>53.1%</td>
+<td>❌ Needs improvement</td>
+</tr>
+</tbody>
+</table>
+<h3 id="test-categories">Test Categories</h3>
+<h4 id="core-components-well-tested"><strong>Core Components (Well Tested)</strong></h4>
+<ul>
+<li><strong>ComponentInfo</strong>: 7 tests - Data structure and serialization</li>
+<li><strong>DWARFExtractor</strong>: 10 tests - Debug information extraction</li>
+<li><strong>Utils</strong>: 24 tests - Utility functions and file operations</li>
+<li><strong>SBOMGenerator</strong>: 5 tests - SBOM generation in multiple formats</li>
+</ul>
+<h4 id="sbom-components-recently-enhanced"><strong>SBOM Components (Recently Enhanced)</strong></h4>
+<ul>
+<li><strong>SBOMValidator</strong>: 62 tests - Validation logic and error handling</li>
+<li><strong>SBOMComparator</strong>: 62 tests - Component comparison and diff generation</li>
+<li><strong>MetadataExtractor</strong>: 48 tests - File metadata extraction with edge cases</li>
+</ul>
+<h4 id="plugin-components-comprehensive-testing"><strong>Plugin Components (Comprehensive Testing)</strong></h4>
+<ul>
+<li><strong>LLDPlugin</strong>: 43 tests - LLVM LLD plugin functionality</li>
+<li><strong>GoldPlugin</strong>: 43 tests - GNU Gold plugin functionality</li>
+<li><strong>PluginInterface</strong>: 38 tests - Common plugin interface</li>
+</ul>
+<h4 id="advanced-testing"><strong>Advanced Testing</strong></h4>
+<ul>
+<li><strong>DWARFAdvanced</strong>: 18 tests - Complex debug information scenarios</li>
+<li><strong>DWARFCrossPlatform</strong>: 12 tests - Platform-specific behavior</li>
+<li><strong>DWARFIntegration</strong>: 9 tests - End-to-end integration testing</li>
+</ul>
+<h3 id="error-handling--edge-cases">Error Handling &amp; Edge Cases</h3>
+<p>The test suite includes comprehensive error handling and edge case testing:</p>
+<ul>
+<li><strong>File System Edge Cases</strong>: Non-existent files, empty files, corrupted files, symlinks, hard links</li>
+<li><strong>Path Handling</strong>: Unicode characters, special characters, spaces, long paths, relative paths</li>
+<li><strong>Memory Management</strong>: Large files, memory pressure, concurrent access, resource cleanup</li>
+<li><strong>Plugin Integration</strong>: Null pointers, invalid configurations, error recovery</li>
+<li><strong>Platform Specific</strong>: Linux-specific ELF testing, cross-platform compatibility</li>
+<li><strong>Input Validation</strong>: Invalid SBOM formats, malformed data, missing dependencies</li>
+</ul>
+<h3 id="running-tests">Running Tests</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Test with default settings</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Test specific C++ standard with Clang</span>
+./scripts/build.sh --standard 20 --compiler clang --tests
+
+<span class="hljs-comment"># Test all compatible standards</span>
+./scripts/build_all_standards.sh
+
+<span class="hljs-comment"># Run tests with coverage analysis</span>
+./tests/coverage.sh
+
+<span class="hljs-comment"># Run specific test suites</span>
+<span class="hljs-built_in">cd</span> build
+ctest -R <span class="hljs-string">"SBOMValidation"</span> --verbose
+ctest -R <span class="hljs-string">"LLDPlugin"</span> --verbose
+ctest -R <span class="hljs-string">"MetadataExtractor"</span> --verbose
+</code></pre>
+<p>The test suite validates:</p>
+<ul>
+<li>C++11/14/17/20/23 feature compatibility</li>
+<li>Multi-compiler support (GCC and Clang)</li>
+<li>LLVM detection and compatibility</li>
+<li>Filesystem operations across standards</li>
+<li>SCL integration on supported platforms</li>
+<li>Comprehensive error handling and edge cases</li>
+<li>Plugin lifecycle and integration testing</li>
+<li>Memory management and resource cleanup</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<h3 id="using-lld-macoslinux---wrapper-approach">Using LLD (macOS/Linux) - Wrapper Approach</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Step 1: Link normally with LLD</span>
+g++ -fuse-ld=lld main.o utils.o math.o -o myapp
+
+<span class="hljs-comment"># Step 2: Generate SBOM using wrapper tool</span>
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so myapp --format spdx --output myapp.spdx
+</code></pre>
+<h3 id="using-gold-linux-only---plugin-interface">Using Gold (Linux only) - Plugin Interface</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Direct plugin integration (requires dependencies)</span>
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=myapp.spdx \
+    main.o utils.o math.o -o myapp
+
+<span class="hljs-comment"># Or use wrapper approach if plugin fails</span>
+g++ -fuse-ld=gold main.o utils.o math.o -o myapp
+heimdall-sbom ../../build-cpp23/lib/heimdall-gold.so myapp --format spdx --output myapp.spdx
+</code></pre>
+<h3 id="plugin-compatibility">Plugin Compatibility</h3>
+<p><strong>Important:</strong> Heimdall uses different approaches for different linkers:</p>
+<ul>
+<li><strong>LLVM LLD:</strong> Uses wrapper approach with <code>heimdall-sbom</code> tool (works with all LLVM versions)</li>
+<li><strong>LLVM 19+:</strong> Plugin interface completely changed - wrapper approach is the only reliable method</li>
+<li><strong>GNU Gold:</strong> Uses native plugin interface with <code>--plugin</code> and <code>--plugin-opt</code> (requires dependencies)</li>
+</ul>
+<p><strong>Current Status:</strong> Heimdall provides universal compatibility through the wrapper approach for LLD and plugin interface for Gold with automatic fallback.</p>
+<p>For detailed technical rationale and compatibility information, see <a href="docs/rationale.md">docs/rationale.md</a>.</p>
+<p><strong>Quick compatibility check:</strong></p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Check your system</span>
+ld.lld --version
+ld.gold --version
+
+<span class="hljs-comment"># Test with the example</span>
+<span class="hljs-built_in">cd</span> examples/heimdall-usage-example
+./run_example.sh
+</code></pre>
+<h3 id="build-system-integration">Build System Integration</h3>
+<h4 id="cmake">CMake</h4>
+<pre><code class="lang-cmake"><span class="hljs-keyword">find_library</span>(HEIMDALL_LLD heimdall-lld)
+<span class="hljs-keyword">target_link_options</span>(myapp PRIVATE
+    <span class="hljs-string">"LINKER:--plugin-opt=load:${HEIMDALL_LLD}"</span>
+    <span class="hljs-string">"LINKER:--plugin-opt=sbom-output:${CMAKE_BINARY_DIR}/myapp.json"</span>
+)
+</code></pre>
+<h4 id="makefile">Makefile</h4>
+<pre><code class="lang-makefile">LDFLAGS += -Wl,--plugin-opt=load:/usr/lib/heimdall-plugins/heimdall-lld.dylib
+LDFLAGS += -Wl,--plugin-opt=sbom-output:<span class="hljs-variable">$(TARGET)</span>.json
+</code></pre>
+<h2 id="architecture">Architecture</h2>
+<p>Heimdall consists of several key components:</p>
+<h3 id="core-components">Core Components</h3>
+<ul>
+<li><strong>ComponentInfo</strong>: Represents individual software components with metadata</li>
+<li><strong>SBOMGenerator</strong>: Generates SBOMs in multiple formats (SPDX, CycloneDX)</li>
+<li><strong>MetadataExtractor</strong>: Extracts metadata from binary files (ELF, Mach-O, PE, archives)</li>
+<li><strong>Utils</strong>: Utility functions for file operations, path handling, and JSON formatting</li>
+<li><strong>PluginInterface</strong>: Common interface for both LLD and Gold plugins</li>
+<li><strong>Compatibility Layer</strong>: Multi-standard C++ support with <code>heimdall::compat</code> namespace</li>
+</ul>
+<h3 id="plugin-adapters">Plugin Adapters</h3>
+<ul>
+<li><strong>LLDAdapter</strong>: Interfaces with LLVM LLD linker plugin system</li>
+<li><strong>GoldAdapter</strong>: Interfaces with GNU Gold linker plugin system</li>
+</ul>
+<h3 id="file-format-support">File Format Support</h3>
+<ul>
+<li><strong>ELF</strong>: Linux executables and libraries</li>
+<li><strong>Mach-O</strong>: macOS executables and libraries  </li>
+<li><strong>PE</strong>: Windows executables and libraries</li>
+<li><strong>Archive</strong>: Static libraries (.a, .lib)</li>
+</ul>
+<h2 id="supported-platforms">Supported Platforms</h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>LLD</th>
+<th>Gold</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>macOS (ARM64)</td>
+<td>✅</td>
+<td>❌</td>
+<td>LLD Only - Gold not available on macOS</td>
+</tr>
+<tr>
+<td>macOS (x86_64)</td>
+<td>✅</td>
+<td>❌</td>
+<td>LLD Only - Gold not available on macOS</td>
+</tr>
+<tr>
+<td>Linux (x86_64)</td>
+<td>✅</td>
+<td>✅</td>
+<td>Fully Supported</td>
+</tr>
+<tr>
+<td>Linux (ARM64)</td>
+<td>✅</td>
+<td>✅</td>
+<td>Fully Supported</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note</strong>: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.</p>
+<h2 id="configuration">Configuration</h2>
+<h3 id="plugin-options">Plugin Options</h3>
+<h4 id="lld-plugin-options">LLD Plugin Options</h4>
+<pre><code class="lang-bash">--plugin-opt=load:./heimdall-lld.dylib
+--plugin-opt=sbom-output:output.json
+--plugin-opt=format:spdx
+--plugin-opt=verbose
+--plugin-opt=no-debug-info
+--plugin-opt=include-system-libs
+</code></pre>
+<h4 id="gold-plugin-options-linux-only">Gold Plugin Options (Linux only)</h4>
+<pre><code class="lang-bash">--plugin ./heimdall-gold.so
+--plugin-opt sbom-output=output.json
+--plugin-opt format=cyclonedx
+--plugin-opt verbose
+--plugin-opt no-debug-info
+--plugin-opt include-system-libs
+</code></pre>
+<h3 id="configuration-file">Configuration File</h3>
+<p>Create a <code>heimdall.conf</code> file:</p>
+<pre><code class="lang-ini"><span class="hljs-attr">output_path</span>=myapp-sbom.json
+<span class="hljs-attr">format</span>=spdx
+<span class="hljs-attr">verbose</span>=<span class="hljs-literal">true</span>
+<span class="hljs-attr">extract_debug_info</span>=<span class="hljs-literal">true</span>
+<span class="hljs-attr">include_system_libraries</span>=<span class="hljs-literal">false</span>
+</code></pre>
+<h2 id="sbom-formats">SBOM Formats</h2>
+<h3 id="spdx-23">SPDX 2.3</h3>
+<p>Heimdall generates SPDX 2.3 compliant documents with:</p>
+<ul>
+<li>Package information</li>
+<li>File-level details</li>
+<li>License information</li>
+<li>Checksums (SHA256)</li>
+<li>Relationships between components</li>
+</ul>
+<h3 id="cyclonedx-14">CycloneDX 1.4</h3>
+<p>Heimdall generates CycloneDX 1.4 compliant documents with:</p>
+<ul>
+<li>Component metadata</li>
+<li>Dependencies</li>
+<li>External references</li>
+<li>PURL identifiers</li>
+<li>Hash information</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<h3 id="simple-c-program">Simple C Program</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Compile with SBOM generation</span>
+gcc -c main.c -o main.o
+
+<span class="hljs-comment"># Using LLD (macOS/Linux) - Wrapper approach</span>
+g++ -fuse-ld=lld main.o -o main
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so main --format spdx --output main.spdx
+
+<span class="hljs-comment"># Using Gold (Linux only) - Plugin interface</span>
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=main.spdx \
+    main.o -o main
+
+<span class="hljs-comment"># View generated SBOM</span>
+cat main.spdx
+</code></pre>
+<h3 id="cmake-project">CMake Project</h3>
+<pre><code class="lang-cmake"><span class="hljs-comment"># Find Heimdall</span>
+<span class="hljs-keyword">find_library</span>(HEIMDALL_LLD heimdall-lld REQUIRED)
+
+<span class="hljs-comment"># Add SBOM generation to target (LLD wrapper approach)</span>
+<span class="hljs-keyword">add_custom_command</span>(<span class="hljs-keyword">TARGET</span> myapp POST_BUILD
+    <span class="hljs-keyword">COMMAND</span> heimdall-sbom <span class="hljs-variable">${HEIMDALL_LLD}</span> $&lt;TARGET_FILE:myapp&gt; 
+            --format spdx --output <span class="hljs-variable">${CMAKE_BINARY_DIR}</span>/myapp.spdx
+    COMMENT <span class="hljs-string">"Generating SBOM for myapp"</span>
+)
+</code></pre>
+<h3 id="complex-project-with-dependencies">Complex Project with Dependencies</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Build with multiple libraries using LLD (wrapper approach)</span>
+g++ -fuse-ld=lld main.o libmath.a libutils.so -o complex-app
+heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so complex-app --format spdx --output complex-app.spdx
+
+<span class="hljs-comment"># Build with multiple libraries using Gold (plugin interface)</span>
+g++ -fuse-ld=gold -Wl,--plugin=../../build-cpp23/lib/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=complex-app.spdx \
+    -Wl,--plugin-opt=verbose \
+    main.o libmath.a libutils.so -o complex-app
+</code></pre>
+<h2 id="api-reference">API Reference</h2>
+<h3 id="componentinfo">ComponentInfo</h3>
+<pre><code class="lang-cpp"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">ComponentInfo</span> {</span>
+    std::string name;
+    std::string filePath;
+    std::string version;
+    std::string supplier;
+    std::string license;
+    std::string checksum;
+    FileType fileType;
+    std::vector&lt;SymbolInfo&gt; symbols;
+    std::vector&lt;std::string&gt; dependencies;
+};
+</code></pre>
+<h3 id="sbomgenerator">SBOMGenerator</h3>
+<pre><code class="lang-cpp"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SBOMGenerator</span> {</span>
+<span class="hljs-keyword">public</span>:
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">processComponent</span><span class="hljs-params">(<span class="hljs-keyword">const</span> ComponentInfo&amp; component)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">generateSBOM</span><span class="hljs-params">()</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">setOutputPath</span><span class="hljs-params">(<span class="hljs-keyword">const</span> std::string&amp; path)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">setFormat</span><span class="hljs-params">(<span class="hljs-keyword">const</span> std::string&amp; format)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">size_t</span> <span class="hljs-title">getComponentCount</span><span class="hljs-params">()</span> <span class="hljs-keyword">const</span></span>;
+};
+</code></pre>
+<h3 id="metadataextractor">MetadataExtractor</h3>
+<pre><code class="lang-cpp"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">MetadataExtractor</span> {</span>
+<span class="hljs-keyword">public</span>:
+    <span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">extractMetadata</span><span class="hljs-params">(ComponentInfo&amp; component)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">extractVersionInfo</span><span class="hljs-params">(ComponentInfo&amp; component)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">extractLicenseInfo</span><span class="hljs-params">(ComponentInfo&amp; component)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">extractSymbolInfo</span><span class="hljs-params">(ComponentInfo&amp; component)</span></span>;
+};
+</code></pre>
+<h3 id="compatibility-layer">Compatibility Layer</h3>
+<pre><code class="lang-cpp">#include "compat/compatibility.hpp"
+
+using namespace heimdall::compat;
+
+// Works across all C++ standards
+optional&lt;int&gt; opt(42);
+string_view sv("hello");
+fs::path p("file.txt");
+variant&lt;int, std::string&gt; v(100);
+
+// Utility functions
+string_view result = utils::to_string_view(42);
+int val = utils::get_optional_value(opt, 0);
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<ol>
+<li><p><strong>Plugin not found</strong></p>
+<pre><code>Error: Could not load plugin
+</code></pre><p>Solution: Ensure the plugin path is correct and the plugin is built for your platform.</p>
+</li>
+<li><p><strong>Missing dependencies</strong></p>
+<pre><code>Error: LLVM libraries not found
+</code></pre><p>Solution: Install LLVM development packages.</p>
+</li>
+<li><p><strong>Gold linker not found (Linux)</strong></p>
+<pre><code>Warning: Gold linker not found
+</code></pre><p>Solution: Install binutils-gold package for your distribution. See <a href="docs/gold-installation.md">docs/gold-installation.md</a> for detailed instructions.</p>
+</li>
+<li><p><strong>Gold not available on macOS</strong></p>
+<pre><code>Warning: Gold linker not found
+</code></pre><p>Solution: This is expected on macOS. Use LLD linker instead.</p>
+</li>
+<li><p><strong>Permission denied</strong></p>
+<pre><code>Error: Cannot write to output file
+</code></pre><p>Solution: Check write permissions for the output directory.</p>
+</li>
+<li><p><strong>OpenSSL deprecation warnings</strong></p>
+<pre><code>Warning: 'SHA256_Init' is deprecated
+</code></pre><p>Solution: These warnings are harmless and the build will succeed. The code uses the legacy OpenSSL API for compatibility. Future versions will use the modern EVP interface.</p>
+</li>
+<li><p><strong>LLD/Gold plugins not built</strong></p>
+<pre><code>Warning: LLD libraries not found
+Warning: Gold linker not found
+</code></pre><p>Solution: The core library will still build successfully. Install LLVM/LLD or Gold linker development packages if you need the respective plugins.</p>
+</li>
+<li><p><strong>C++ Standard compatibility issues</strong></p>
+<pre><code>Error: 'std::filesystem' is not a member of 'std'
+</code></pre><p>Solution: Use the compatibility layer with <code>heimdall::compat::fs</code> or build with <code>--cpp11-14 --no-boost</code> for older standards.</p>
+</li>
+<li><p><strong>SCL activation required</strong></p>
+<pre><code>Error: Your system GCC version (11.5.0) is not compatible with C++23
+</code></pre><p>Solution: Activate the appropriate SCL toolset:</p>
+<pre><code class="lang-bash">scl <span class="hljs-built_in">enable</span> gcc-toolset-14 bash
+./scripts/build.sh --standard 23 --compiler gcc --tests
+</code></pre>
+</li>
+</ol>
+<h3 id="platform-specific-issues">Platform-Specific Issues</h3>
+<h4 id="macos">macOS</h4>
+<ul>
+<li><strong>Gold plugin not built</strong>: This is expected behavior. Gold is not available on macOS.</li>
+<li><strong>LLD path issues</strong>: Ensure LLVM is properly installed via Homebrew and PATH is set correctly.</li>
+</ul>
+<h4 id="linux">Linux</h4>
+<ul>
+<li><strong>Gold not found</strong>: Install <code>binutils-gold</code> package for your distribution.</li>
+<li><strong>Plugin loading errors</strong>: Ensure Gold was built with plugin support enabled.</li>
+<li><strong>SCL toolsets</strong>: For C++20/23, you may need to activate SCL toolsets on RHEL/Rocky/CentOS.</li>
+</ul>
+<h3 id="debug-mode">Debug Mode</h3>
+<p>Enable verbose output to see detailed processing information:</p>
+<pre><code class="lang-bash"><span class="hljs-comment"># LLD</span>
+ld.lld --plugin-opt=load:./heimdall-lld.dylib \
+       --plugin-opt=sbom-output:debug-sbom.json \
+       --plugin-opt=verbose \
+       main.o -o debug-app
+
+<span class="hljs-comment"># Gold (Linux only)</span>
+ld.gold --plugin ./heimdall-gold.so \
+        --plugin-opt sbom-output=debug-sbom.json \
+        --plugin-opt verbose \
+        main.o -o debug-app
+</code></pre>
+<h3 id="logging">Logging</h3>
+<p>Heimdall provides different log levels:</p>
+<ul>
+<li><strong>INFO</strong>: General processing information</li>
+<li><strong>WARNING</strong>: Non-critical issues</li>
+<li><strong>ERROR</strong>: Critical errors</li>
+<li><strong>DEBUG</strong>: Detailed debugging information (requires debug build)</li>
+</ul>
+<h2 id="contributing">Contributing</h2>
+<p>We welcome contributions! See <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> for development setup and contribution guidelines.</p>
+<h3 id="documentation">Documentation</h3>
+<p>For detailed information about linker integration rationale and technical approaches, see <a href="docs/rationale.md">docs/rationale.md</a>.</p>
+<p>For comprehensive multi-standard C++ support documentation, see <a href="docs/multi-standard-support.html">docs/multi-standard-support.md</a>.</p>
+<h3 id="development-setup">Development Setup</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Clone with submodules</span>
+git <span class="hljs-built_in">clone</span> --recursive https://github.com/your-org/heimdall.git
+<span class="hljs-built_in">cd</span> heimdall
+
+<span class="hljs-comment"># Build in debug mode</span>
+./scripts/build.sh --standard 17 --compiler gcc --tests
+
+<span class="hljs-comment"># Test all C++ standards</span>
+<span class="hljs-keyword">for</span> std <span class="hljs-keyword">in</span> 11 14 17 20 23; <span class="hljs-keyword">do</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">"Testing C++<span class="hljs-variable">$std</span>..."</span>
+    ./scripts/build.sh --standard <span class="hljs-variable">$std</span> --compiler gcc --tests
+<span class="hljs-keyword">done</span>
+
+<span class="hljs-comment"># Test with Clang</span>
+./scripts/build.sh --standard 17 --compiler clang --tests
+</code></pre>
+<h2 id="cmake-module-integration">CMake Module Integration</h2>
+<p>Heimdall provides a CMake module for seamless SBOM generation in C++ projects. This module supports:</p>
+<ul>
+<li>Executables and libraries (static/shared/interface)</li>
+<li>Multi-target and installable projects</li>
+<li>Automatic linker detection (LLD/Gold)</li>
+</ul>
+<h3 id="quick-integration">Quick Integration</h3>
+<ol>
+<li>Add the <code>cmake/</code> directory to your <code>CMAKE_MODULE_PATH</code>:<pre><code class="lang-cmake"><span class="hljs-keyword">list</span>(APPEND CMAKE_MODULE_PATH <span class="hljs-string">"${CMAKE_SOURCE_DIR}/cmake"</span>)
+</code></pre>
+</li>
+<li>Include the Heimdall modules:<pre><code class="lang-cmake"><span class="hljs-keyword">include</span>(HeimdallConfig)
+<span class="hljs-keyword">include</span>(HeimdallSBOM)
+</code></pre>
+</li>
+<li>Add your targets and enable SBOM generation:<pre><code class="lang-cmake"><span class="hljs-keyword">add_executable</span>(myapp main.cpp)
+heimdall_enable_sbom(myapp FORMAT spdx-<span class="hljs-number">2.3</span> VERBOSE <span class="hljs-keyword">ON</span>)
+</code></pre>
+</li>
+</ol>
+<p>See <a href="cmake/templates/cmake-sbom-template.cmake"><code>cmake/templates/cmake-sbom-template.cmake</code></a> for a ready-to-use template.</p>
+<h3 id="advanced-example-projects">Advanced Example Projects</h3>
+<table>
+<thead>
+<tr>
+<th>Example Directory</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>heimdall-cmake-module-example</code></td>
+<td>Multi-target (executable + static lib)</td>
+</tr>
+<tr>
+<td><code>heimdall-cmake-sharedlib-example</code></td>
+<td>Shared library + executable</td>
+</tr>
+<tr>
+<td><code>heimdall-cmake-interface-example</code></td>
+<td>Interface (header-only) + implementation + executable</td>
+</tr>
+<tr>
+<td><code>heimdall-cmake-install-example</code></td>
+<td>Installable static lib + executable + headers</td>
+</tr>
+</tbody>
+</table>
+<p>To build and test an example:</p>
+<pre><code class="lang-bash"><span class="hljs-built_in">cd</span> examples/&lt;example-dir&gt;
+mkdir build &amp;&amp; <span class="hljs-built_in">cd</span> build
+<span class="hljs-built_in">export</span> HEIMDALL_ROOT=<span class="hljs-string">"<span class="hljs-subst">$(pwd)</span>/../../../build"</span>  <span class="hljs-comment"># Adjust if needed</span>
+cmake ..
+make
+</code></pre>
+<p>For troubleshooting and advanced options, see <a href="docs/usage.html"><code>docs/usage.md</code></a> and the comments in the template file.</p>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                
+                <a href="docs/architecture.html" class="navigation navigation-next navigation-unique" aria-label="Next page: Architecture">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Introduction","level":"1.1","depth":1,"next":{"title":"Architecture","level":"1.2","depth":1,"path":"docs/architecture.md","ref":"docs/architecture.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56},"embedFonts":false},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"README.md","mtime":"2025-07-25T15:14:52.198Z","type":"markdown"},"gitbook":{"version":"4.0.8","time":"2025-07-27T21:36:16.340Z"},"basePath":".","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <noscript>
+        <style>
+            .honkit-cloak {
+                display: block !important;
+            }
+        </style>
+    </noscript>
+    <script>
+        // Restore sidebar state as critical path for prevent layout shift
+        function __init__getSidebarState(defaultValue){
+            var baseKey = "";
+            var key = baseKey + ":sidebar";
+            try {
+                var value = localStorage[key];
+                if (value === undefined) {
+                    return defaultValue;
+                }
+                var parsed = JSON.parse(value);
+                return parsed == null ? defaultValue : parsed;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+        function __init__restoreLastSidebarState() {
+            var isMobile = window.matchMedia("(max-width: 600px)").matches;
+            if (isMobile) {
+                // Init last state if not mobile
+                return;
+            }
+            var sidebarState = __init__getSidebarState(true);
+            var book = document.querySelector(".book");
+            // Show sidebar if it enabled
+            if (sidebarState && book) {
+                book.classList.add("without-animation", "with-summary");
+            }
+        }
+
+        try {
+            __init__restoreLastSidebarState();
+        } finally {
+            var book = document.querySelector(".book");
+            book.classList.remove("honkit-cloak");
+        }
+    </script>
+    <script src="gitbook/gitbook.js"></script>
+    <script src="gitbook/theme.js"></script>
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

@@ -1,0 +1,75 @@
+FROM rockylinux:9
+
+ARG GCC_VERSION=11
+ARG LLVM_VERSION=19
+ARG LLVM_TAG=llvmorg-19.1.0
+
+# Install prerequisites
+RUN dnf install -y epel-release && \
+    dnf update -y && \
+    dnf install -y \
+      wget \
+      unzip \
+      gcc \
+      gcc-c++ \
+      gcc-gnat \
+      cmake \
+      python3 \
+      python3-pip \
+      git \
+      binutils \
+      openssl-devel \
+      elfutils-libelf-devel \
+      pkgconfig \
+      boost-devel \
+      boost-filesystem \
+      boost-system
+
+# Install Ninja manually (static binary)
+RUN curl -L -o /tmp/ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip && \
+    unzip /tmp/ninja.zip -d /usr/local/bin && \
+    chmod +x /usr/local/bin/ninja && \
+    rm /tmp/ninja.zip
+
+# Enable CRB repository for newer GCC versions if needed
+RUN if [ "$GCC_VERSION" = "13" ]; then \
+      dnf config-manager --set-enabled crb && \
+      dnf install -y gcc-toolset-13; \
+    fi
+
+# Set GCC alternatives based on version
+RUN if [ "$GCC_VERSION" = "13" ]; then \
+      ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/gcc /usr/bin/gcc && \
+      ln -sf /opt/rh/gcc-toolset-13/root/usr/bin/g++ /usr/bin/g++; \
+    fi
+
+# Install Clang 19 from AppStream repository (latest available in Rocky Linux 9)
+RUN dnf install -y \
+      clang \
+      clang-devel \
+      clang-tools-extra \
+      lldb \
+      lld
+
+# Install LLVM development packages from Rocky/EPEL/CRB repos
+# Rocky Linux 9 only provides llvm-devel (no versioned packages)
+RUN dnf install -y \
+      llvm-devel \
+      lld-devel
+
+# Create default symlinks for LLVM
+# Rocky Linux 9 uses unversioned llvm-config, no symlink needed
+
+# Install LLD headers for the selected LLVM version
+RUN mkdir -p /usr/local/include/lld/Common && \
+    cd /usr/local/include/lld/Common && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Driver.h -o Driver.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Args.h -o Args.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/ErrorHandler.h -o ErrorHandler.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Filesystem.h -o Filesystem.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/LLVM.h -o LLVM.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Memory.h -o Memory.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Reproduce.h -o Reproduce.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Strings.h -o Strings.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Timer.h -o Timer.h && \
+    curl -s https://raw.githubusercontent.com/llvm/llvm-project/${LLVM_TAG}/lld/include/lld/Common/Version.h -o Version.h 

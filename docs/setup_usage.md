@@ -676,4 +676,3 @@ After successful installation:
 
 - **Script Documentation**: See `scripts/README-setup-scripts.md` for detailed information about each script
 - **Dockerfiles**: Reference `dockerfiles/` directory for the source of each setup script
-- **Build Scripts**: See `scripts/build.sh` for building Heimdall after setup 

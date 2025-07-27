@@ -1,0 +1,661 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <title>SBOM Validation Guide · HonKit</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="HonKit 4.0.8">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/@honkit/honkit-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="setup_usage.html" />
+    
+    
+    <link rel="prev" href="multi-standard-support.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book honkit-cloak">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="architecture.html">
+            
+                <a href="architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="cmake_module.html">
+            
+                <a href="cmake_module.html">
+            
+                    
+                    CMake Module
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" data-path="heimdall-sbom-manual.html">
+            
+                <a href="heimdall-sbom-manual.html">
+            
+                    
+                    Heimdall SBOM Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="heimdall-validate-manual.html">
+            
+                <a href="heimdall-validate-manual.html">
+            
+                    
+                    Heimdall Validate Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="ada_SBOM.html">
+            
+                <a href="ada_SBOM.html">
+            
+                    
+                    Ada SBOM
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="ci-workflow.md">
+            
+                <span>
+            
+                    
+                    CI Workflow
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" data-path="heimdall-developers-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Developers Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.9" data-path="heimdall-users-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Users Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.10" data-path="llvm-compatibility.html">
+            
+                <a href="llvm-compatibility.html">
+            
+                    
+                    LLVM Compatibility
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.11" data-path="multi-standard-support.html">
+            
+                <a href="multi-standard-support.html">
+            
+                    
+                    Multi-Standard Support
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.12" data-path="sbom_validation_guide.html">
+            
+                <a href="sbom_validation_guide.html">
+            
+                    
+                    SBOM Validation Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.13" data-path="setup_usage.html">
+            
+                <a href="setup_usage.html">
+            
+                    
+                    Setup Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.14" data-path="testing-heimdall.html">
+            
+                <a href="testing-heimdall.html">
+            
+                    
+                    Testing Heimdall
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.15" data-path="usage.html">
+            
+                <a href="usage.html">
+            
+                    
+                    Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://github.com/honkit/honkit" target="blank" class="gitbook-link">
+            Published with HonKit
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >SBOM Validation Guide</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="heimdall-sbom-validation-guide">Heimdall SBOM Validation Guide</h1>
+<p>This guide explains how to validate Heimdall-generated SBOMs for standards compliance.</p>
+<h2 id="overview">Overview</h2>
+<p>Heimdall generates SBOMs in two formats:</p>
+<ul>
+<li><strong>CycloneDX</strong> (JSON format) - ISO/IEC 5962:2021 standard</li>
+<li><strong>SPDX</strong> (tag-value format) - ISO/IEC 5962:2021 standard</li>
+</ul>
+<p>Both formats are validated for compliance with their respective specifications.</p>
+<h2 id="validation-methods">Validation Methods</h2>
+<h3 id="1-automated-validation-scripts">1. Automated Validation Scripts</h3>
+<p>Heimdall provides two validation scripts:</p>
+<h4 id="bash-validation-script">Bash Validation Script</h4>
+<pre><code class="lang-bash">./scripts/validate_sboms.sh build
+</code></pre>
+<p><strong>What it validates:</strong></p>
+<ul>
+<li>JSON syntax for CycloneDX files</li>
+<li>Required CycloneDX fields (bomFormat, specVersion, version, metadata, components)</li>
+<li>SPDX structure and required fields</li>
+<li>File format compliance</li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li>Detailed validation logs in <code>build/validation_results/</code></li>
+<li>Summary report with pass/fail status</li>
+<li>Individual validation logs for each SBOM</li>
+</ul>
+<h4 id="python-validation-script">Python Validation Script</h4>
+<pre><code class="lang-bash">python3 scripts/validate_sboms_online.py build
+</code></pre>
+<p><strong>What it validates:</strong></p>
+<ul>
+<li>Advanced CycloneDX schema validation</li>
+<li>SPDX structure validation (both package and file formats)</li>
+<li>Detailed error reporting</li>
+<li>Links to online validation tools</li>
+</ul>
+<h3 id="2-online-validation-tools">2. Online Validation Tools</h3>
+<h4 id="cyclonedx-validation">CycloneDX Validation</h4>
+<ul>
+<li><strong>CycloneDX Tool Center</strong>: <a href="https://cyclonedx.org/tool-center/" target="_blank">https://cyclonedx.org/tool-center/</a></li>
+<li><strong>Schema Documentation</strong>: <a href="https://cyclonedx.org/schema/" target="_blank">https://cyclonedx.org/schema/</a></li>
+<li><strong>Specification</strong>: <a href="https://cyclonedx.org/specification/" target="_blank">https://cyclonedx.org/specification/</a></li>
+</ul>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Upload your <code>.json</code> SBOM file to the tool center</li>
+<li>The tool will validate against the official CycloneDX schema</li>
+<li>Review any validation errors or warnings</li>
+</ol>
+<h4 id="spdx-validation">SPDX Validation</h4>
+<ul>
+<li><strong>SPDX Validator</strong>: <a href="https://tools.spdx.org/app/validate/" target="_blank">https://tools.spdx.org/app/validate/</a></li>
+<li><strong>Specification</strong>: <a href="https://spdx.github.io/spdx-spec/" target="_blank">https://spdx.github.io/spdx-spec/</a></li>
+<li><strong>Tools Repository</strong>: <a href="https://github.com/spdx/tools" target="_blank">https://github.com/spdx/tools</a></li>
+</ul>
+<p><strong>Steps:</strong></p>
+<ol>
+<li>Upload your <code>.spdx</code> file to the validator</li>
+<li>The tool will validate against the SPDX specification</li>
+<li>Review validation results</li>
+</ol>
+<h3 id="3-manual-validation">3. Manual Validation</h3>
+<h4 id="cyclonedx-manual-checks">CycloneDX Manual Checks</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Check JSON syntax</span>
+jq empty your-sbom.cyclonedx.json
+
+<span class="hljs-comment"># Validate required fields</span>
+jq <span class="hljs-string">'.bomFormat, .specVersion, .version, .metadata, .components'</span> your-sbom.cyclonedx.json
+
+<span class="hljs-comment"># Check component structure</span>
+jq <span class="hljs-string">'.components[] | {type, name, version}'</span> your-sbom.cyclonedx.json
+</code></pre>
+<h4 id="spdx-manual-checks">SPDX Manual Checks</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Check required header fields</span>
+grep -E <span class="hljs-string">"^(SPDXVersion|DataLicense|DocumentName|DocumentNamespace):"</span> your-sbom.spdx
+
+<span class="hljs-comment"># Check for package or file information</span>
+grep -E <span class="hljs-string">"^(PackageName|FileName):"</span> your-sbom.spdx
+
+<span class="hljs-comment"># Validate SPDX version</span>
+grep <span class="hljs-string">"^SPDXVersion:"</span> your-sbom.spdx
+</code></pre>
+<h2 id="validation-results">Validation Results</h2>
+<h3 id="expected-validation-outcomes">Expected Validation Outcomes</h3>
+<h4 id="cyclonedx-files">CycloneDX Files</h4>
+<ul>
+<li>✅ <strong>bomFormat</strong>: Must be "CycloneDX"</li>
+<li>✅ <strong>specVersion</strong>: Must be one of "1.0", "1.1", "1.2", "1.3", "1.4", "1.5"</li>
+<li>✅ <strong>version</strong>: Must be a positive integer</li>
+<li>✅ <strong>metadata</strong>: Must contain timestamp and tools information</li>
+<li>✅ <strong>components</strong>: Must be a non-empty array with valid component objects</li>
+</ul>
+<h4 id="spdx-files">SPDX Files</h4>
+<ul>
+<li>✅ <strong>SPDXVersion</strong>: Must start with "SPDX-"</li>
+<li>✅ <strong>DataLicense</strong>: Must be a valid license identifier</li>
+<li>✅ <strong>DocumentName</strong>: Must be present</li>
+<li>✅ <strong>DocumentNamespace</strong>: Must be a valid URI</li>
+<li>✅ <strong>Package/File Information</strong>: Must contain either PackageName or FileName entries</li>
+</ul>
+<h3 id="common-validation-issues">Common Validation Issues</h3>
+<h4 id="cyclonedx-issues">CycloneDX Issues</h4>
+<ol>
+<li><strong>Missing required fields</strong>: Ensure all top-level fields are present</li>
+<li><strong>Invalid specVersion</strong>: Use a supported CycloneDX version</li>
+<li><strong>Empty components array</strong>: SBOM should contain at least one component</li>
+<li><strong>Invalid component structure</strong>: Each component must have type and name</li>
+</ol>
+<h4 id="spdx-issues">SPDX Issues</h4>
+<ol>
+<li><strong>Missing header fields</strong>: All required SPDX header fields must be present</li>
+<li><strong>Invalid version format</strong>: SPDX version must follow the correct format</li>
+<li><strong>No package/file information</strong>: SBOM must contain component information</li>
+<li><strong>Invalid license identifiers</strong>: Use valid SPDX license identifiers</li>
+</ol>
+<h2 id="extended-dwarf-information-validation">Extended DWARF Information Validation</h2>
+<p>Heimdall SBOMs include extended DWARF information in CycloneDX format:</p>
+<h3 id="custom-properties">Custom Properties</h3>
+<ul>
+<li><code>heimdall:source-files</code>: Array of source file paths</li>
+<li><code>heimdall:functions</code>: Array of function names and locations</li>
+<li><code>heimdall:compile-units</code>: Array of compile unit information</li>
+<li><code>heimdall:contains-debug-info</code>: Boolean indicating debug info presence</li>
+</ul>
+<h3 id="validation-commands">Validation Commands</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Check for extended DWARF information</span>
+jq <span class="hljs-string">'.components[] | select(.properties) | .properties[] | select(.name | startswith("heimdall:"))'</span> your-sbom.cyclonedx.json
+
+<span class="hljs-comment"># Validate source files property</span>
+jq <span class="hljs-string">'.components[] | select(.properties) | .properties[] | select(.name == "heimdall:source-files")'</span> your-sbom.cyclonedx.json
+
+<span class="hljs-comment"># Validate functions property</span>
+jq <span class="hljs-string">'.components[] | select(.properties) | .properties[] | select(.name == "heimdall:functions")'</span> your-sbom.cyclonedx.json
+</code></pre>
+<h2 id="integration-with-cicd">Integration with CI/CD</h2>
+<h3 id="github-actions-example">GitHub Actions Example</h3>
+<pre><code class="lang-yaml"><span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Generate</span> <span class="hljs-string">SBOMs</span>
+  <span class="hljs-attr">run:</span> <span class="hljs-string">./scripts/generate_build_sboms.sh</span> <span class="hljs-string">build</span>
+
+<span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Validate</span> <span class="hljs-string">SBOMs</span>
+  <span class="hljs-attr">run:</span> <span class="hljs-string">./scripts/validate_sboms.sh</span> <span class="hljs-string">build</span>
+
+<span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Upload</span> <span class="hljs-string">validation</span> <span class="hljs-string">results</span>
+  <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/upload-artifact@v3</span>
+  <span class="hljs-attr">with:</span>
+    <span class="hljs-attr">name:</span> <span class="hljs-string">sbom-validation-results</span>
+    <span class="hljs-attr">path:</span> <span class="hljs-string">build/validation_results/</span>
+</code></pre>
+<h3 id="jenkins-pipeline-example">Jenkins Pipeline Example</h3>
+<pre><code class="lang-groovy">stage(<span class="hljs-string">'SBOM Validation'</span>) {
+    steps {
+        sh <span class="hljs-string">'./scripts/generate_build_sboms.sh build'</span>
+        sh <span class="hljs-string">'./scripts/validate_sboms.sh build'</span>
+        archiveArtifacts <span class="hljs-attr">artifacts:</span> <span class="hljs-string">'build/validation_results/**/*'</span>
+    }
+}
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="validation-script-issues">Validation Script Issues</h3>
+<ol>
+<li><strong>Permission denied</strong>: Ensure scripts are executable (<code>chmod +x scripts/*.sh</code>)</li>
+<li><strong>Missing dependencies</strong>: Install required tools (<code>jq</code>, <code>python3</code>)</li>
+<li><strong>No SBOM files</strong>: Run the generation script first</li>
+</ol>
+<h3 id="online-validation-issues">Online Validation Issues</h3>
+<ol>
+<li><strong>File too large</strong>: Some online tools have file size limits</li>
+<li><strong>Network issues</strong>: Use local validation as fallback</li>
+<li><strong>Format issues</strong>: Ensure files are properly formatted</li>
+</ol>
+<h3 id="common-fixes">Common Fixes</h3>
+<ol>
+<li><strong>JSON syntax errors</strong>: Use <code>jq</code> to format and validate JSON</li>
+<li><strong>SPDX format issues</strong>: Check field formatting and required fields</li>
+<li><strong>Missing components</strong>: Ensure the build process generated components</li>
+</ol>
+<h2 id="additional-resources">Additional Resources</h2>
+<h3 id="standards-documentation">Standards Documentation</h3>
+<ul>
+<li><a href="https://cyclonedx.org/specification/" target="_blank">CycloneDX Specification</a></li>
+<li><a href="https://spdx.github.io/spdx-spec/" target="_blank">SPDX Specification</a></li>
+<li><a href="https://www.iso.org/standard/81870.html" target="_blank">ISO/IEC 5962:2021</a></li>
+</ul>
+<h3 id="validation-tools">Validation Tools</h3>
+<ul>
+<li><a href="https://owasp.org/www-project-dependency-check/" target="_blank">OWASP Dependency Check</a></li>
+<li><a href="https://snyk.io/" target="_blank">Snyk</a></li>
+<li><a href="https://fossa.com/" target="_blank">FOSSA</a></li>
+<li><a href="https://www.blackducksoftware.com/" target="_blank">Black Duck</a></li>
+</ul>
+<h3 id="community-resources">Community Resources</h3>
+<ul>
+<li><a href="https://cyclonedx.org/community/" target="_blank">CycloneDX Community</a></li>
+<li><a href="https://spdx.dev/community/" target="_blank">SPDX Community</a></li>
+<li><a href="https://openssf.org/" target="_blank">OpenSSF</a></li>
+</ul>
+<h2 id="support">Support</h2>
+<p>For validation issues specific to Heimdall:</p>
+<ol>
+<li>Check the validation logs in <code>build/validation_results/</code></li>
+<li>Review the SBOM generation logs</li>
+<li>Consult the Heimdall documentation</li>
+<li>Open an issue on the Heimdall repository</li>
+</ol>
+<p>For general SBOM validation questions:</p>
+<ol>
+<li>Consult the respective standard specifications</li>
+<li>Use the official validation tools</li>
+</ol>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="multi-standard-support.html" class="navigation navigation-prev " aria-label="Previous page: Multi-Standard Support">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="setup_usage.html" class="navigation navigation-next " aria-label="Next page: Setup Usage">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"SBOM Validation Guide","level":"1.12","depth":1,"next":{"title":"Setup Usage","level":"1.13","depth":1,"path":"docs/setup_usage.md","ref":"docs/setup_usage.md","articles":[]},"previous":{"title":"Multi-Standard Support","level":"1.11","depth":1,"path":"docs/multi-standard-support.md","ref":"docs/multi-standard-support.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56},"embedFonts":false},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/sbom_validation_guide.md","mtime":"2025-07-27T21:36:11.173Z","type":"markdown"},"gitbook":{"version":"4.0.8","time":"2025-07-27T21:36:16.340Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <noscript>
+        <style>
+            .honkit-cloak {
+                display: block !important;
+            }
+        </style>
+    </noscript>
+    <script>
+        // Restore sidebar state as critical path for prevent layout shift
+        function __init__getSidebarState(defaultValue){
+            var baseKey = "";
+            var key = baseKey + ":sidebar";
+            try {
+                var value = localStorage[key];
+                if (value === undefined) {
+                    return defaultValue;
+                }
+                var parsed = JSON.parse(value);
+                return parsed == null ? defaultValue : parsed;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+        function __init__restoreLastSidebarState() {
+            var isMobile = window.matchMedia("(max-width: 600px)").matches;
+            if (isMobile) {
+                // Init last state if not mobile
+                return;
+            }
+            var sidebarState = __init__getSidebarState(true);
+            var book = document.querySelector(".book");
+            // Show sidebar if it enabled
+            if (sidebarState && book) {
+                book.classList.add("without-animation", "with-summary");
+            }
+        }
+
+        try {
+            __init__restoreLastSidebarState();
+        } finally {
+            var book = document.querySelector(".book");
+            book.classList.remove("honkit-cloak");
+        }
+    </script>
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

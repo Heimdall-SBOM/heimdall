@@ -358,4 +358,3 @@ ctest --output-on-failure
 ### Environment Variables
 - `HEIMDALL_TEST_DATA_DIR` - Set test data directory
 - `CTEST_OUTPUT_ON_FAILURE=1` - Show output on test failure
-- `CTEST_PARALLEL_LEVEL=4` - Set number of parallel test jobs 

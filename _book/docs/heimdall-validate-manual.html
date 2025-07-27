@@ -1,0 +1,1034 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <title>Heimdall Validate Manual · HonKit</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="HonKit 4.0.8">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/@honkit/honkit-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="ada_SBOM.html" />
+    
+    
+    <link rel="prev" href="heimdall-sbom-manual.html" />
+    
+
+    </head>
+    <body>
+        
+<div class="book honkit-cloak">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.2" data-path="architecture.html">
+            
+                <a href="architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="cmake_module.html">
+            
+                <a href="cmake_module.html">
+            
+                    
+                    CMake Module
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" data-path="heimdall-sbom-manual.html">
+            
+                <a href="heimdall-sbom-manual.html">
+            
+                    
+                    Heimdall SBOM Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.5" data-path="heimdall-validate-manual.html">
+            
+                <a href="heimdall-validate-manual.html">
+            
+                    
+                    Heimdall Validate Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="ada_SBOM.html">
+            
+                <a href="ada_SBOM.html">
+            
+                    
+                    Ada SBOM
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="ci-workflow.md">
+            
+                <span>
+            
+                    
+                    CI Workflow
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" data-path="heimdall-developers-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Developers Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.9" data-path="heimdall-users-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Users Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.10" data-path="llvm-compatibility.html">
+            
+                <a href="llvm-compatibility.html">
+            
+                    
+                    LLVM Compatibility
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.11" data-path="multi-standard-support.html">
+            
+                <a href="multi-standard-support.html">
+            
+                    
+                    Multi-Standard Support
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.12" data-path="sbom_validation_guide.html">
+            
+                <a href="sbom_validation_guide.html">
+            
+                    
+                    SBOM Validation Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.13" data-path="setup_usage.html">
+            
+                <a href="setup_usage.html">
+            
+                    
+                    Setup Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.14" data-path="testing-heimdall.html">
+            
+                <a href="testing-heimdall.html">
+            
+                    
+                    Testing Heimdall
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.15" data-path="usage.html">
+            
+                <a href="usage.html">
+            
+                    
+                    Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://github.com/honkit/honkit" target="blank" class="gitbook-link">
+            Published with HonKit
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Heimdall Validate Manual</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="heimdall-validate---sbom-validation-and-comparison-tool">Heimdall Validate - SBOM Validation and Comparison Tool</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#commands-reference">Commands Reference</a></li>
+<li><a href="#supported-formats">Supported Formats</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#advanced-usage">Advanced Usage</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#integration">Integration</a></li>
+</ol>
+<h2 id="overview">Overview</h2>
+<p><code>heimdall-validate</code> is a comprehensive command-line tool for validating, comparing, merging, and diffing Software Bill of Materials (SBOM) files. It supports both SPDX and CycloneDX formats and provides detailed validation reports, comparison analysis, and merge capabilities.</p>
+<h3 id="key-features">Key Features</h3>
+<ul>
+<li><strong>Multi-format Support</strong>: SPDX (2.3, 3.0) and CycloneDX (1.4, 1.5, 1.6)</li>
+<li><strong>Auto-detection</strong>: Automatically detects SBOM format from file content</li>
+<li><strong>Validation</strong>: Comprehensive schema and structure validation</li>
+<li><strong>Comparison</strong>: Detailed component-by-component comparison</li>
+<li><strong>Merging</strong>: Combine multiple SBOMs into a single file</li>
+<li><strong>Diff Reports</strong>: Generate structured diff reports in multiple formats</li>
+<li><strong>Version-specific Validation</strong>: Support for different SBOM format versions</li>
+</ul>
+<h2 id="installation">Installation</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li>C++17 or later compiler</li>
+<li>CMake 3.15 or later</li>
+<li>Git</li>
+</ul>
+<h3 id="building-from-source">Building from Source</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Clone the repository</span>
+git <span class="hljs-built_in">clone</span> https://github.com/your-org/heimdall.git
+<span class="hljs-built_in">cd</span> heimdall
+
+<span class="hljs-comment"># Build the project</span>
+mkdir build &amp;&amp; <span class="hljs-built_in">cd</span> build
+cmake ..
+make -j$(nproc)
+
+<span class="hljs-comment"># The heimdall-validate tool will be available at:</span>
+<span class="hljs-comment"># build/heimdall-validate</span>
+</code></pre>
+<h3 id="verifying-installation">Verifying Installation</h3>
+<pre><code class="lang-bash">./build/heimdall-validate --<span class="hljs-built_in">help</span>
+</code></pre>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="basic-validation">Basic Validation</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Validate a CycloneDX SBOM</span>
+heimdall-validate validate myapp.cyclonedx.json
+
+<span class="hljs-comment"># Validate an SPDX SBOM</span>
+heimdall-validate validate myapp.spdx
+
+<span class="hljs-comment"># Auto-detect format</span>
+heimdall-validate validate myapp.sbom
+</code></pre>
+<h3 id="compare-two-sboms">Compare Two SBOMs</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Compare two SBOM files</span>
+heimdall-validate compare old.sbom new.sbom
+
+<span class="hljs-comment"># Generate a diff report</span>
+heimdall-validate diff old.sbom new.sbom --report-format json
+</code></pre>
+<h3 id="merge-multiple-sboms">Merge Multiple SBOMs</h3>
+<pre><code class="lang-bash"><span class="hljs-comment"># Merge multiple SBOMs into one</span>
+heimdall-validate merge lib1.json lib2.json lib3.json --output merged.json
+</code></pre>
+<h2 id="commands-reference">Commands Reference</h2>
+<h3 id="validate---sbom-validation"><code>validate</code> - SBOM Validation</h3>
+<p>Validates SBOM files for format compliance and structural integrity.</p>
+<h4 id="syntax">Syntax</h4>
+<pre><code class="lang-bash">heimdall-validate validate &lt;file&gt; [options]
+</code></pre>
+<h4 id="options">Options</h4>
+<ul>
+<li><code>--format &lt;format&gt;</code> - Specify SBOM format (spdx, cyclonedx)</li>
+<li><code>--version &lt;version&gt;</code> - Specify version for validation</li>
+<li><code>--help</code> - Show help message</li>
+</ul>
+<h4 id="examples">Examples</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Basic validation with auto-detection</span>
+heimdall-validate validate myapp.json
+
+<span class="hljs-comment"># Specify format explicitly</span>
+heimdall-validate validate myapp.json --format cyclonedx
+
+<span class="hljs-comment"># Validate specific version</span>
+heimdall-validate validate myapp.json --format cyclonedx --version 1.6
+
+<span class="hljs-comment"># Validate SPDX with specific version</span>
+heimdall-validate validate myapp.spdx --format spdx --version 3.0
+</code></pre>
+<h4 id="output">Output</h4>
+<pre><code>Validating myapp.json (cyclonedx format)...
+Validation Results:
+==================
+Valid: Yes
+Format: CycloneDX
+Version: 1.6
+
+Warnings:
+  ⚠️  No components found in SBOM
+</code></pre><h3 id="compare---sbom-comparison"><code>compare</code> - SBOM Comparison</h3>
+<p>Compares two SBOM files and shows differences.</p>
+<h4 id="syntax">Syntax</h4>
+<pre><code class="lang-bash">heimdall-validate compare &lt;old-file&gt; &lt;new-file&gt; [options]
+</code></pre>
+<h4 id="options">Options</h4>
+<ul>
+<li><code>--format &lt;format&gt;</code> - Specify SBOM format (spdx, cyclonedx)</li>
+<li><code>--help</code> - Show help message</li>
+</ul>
+<h4 id="examples">Examples</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Compare two SBOMs</span>
+heimdall-validate compare old.json new.json
+
+<span class="hljs-comment"># Compare with specific format</span>
+heimdall-validate compare old.spdx new.spdx --format spdx
+</code></pre>
+<h4 id="output">Output</h4>
+<pre><code>Comparing old.json and new.json (cyclonedx format)...
+Comparison Results:
+==================
+Total differences: 3
+Added: 1
+Removed: 0
+Modified: 2
+Unchanged: 15
+
+➕ Added: libnew.so (libnew-1.2.0)
+🔄 Modified: libssl.so (libssl-1.1.1) -&gt; libssl.so (libssl-1.1.1f)
+🔄 Modified: libcrypto.so (libcrypto-1.1.1) -&gt; libcrypto.so (libcrypto-1.1.1f)
+</code></pre><h3 id="diff---generate-diff-reports"><code>diff</code> - Generate Diff Reports</h3>
+<p>Generates structured diff reports between two SBOM files.</p>
+<h4 id="syntax">Syntax</h4>
+<pre><code class="lang-bash">heimdall-validate diff &lt;old-file&gt; &lt;new-file&gt; [options]
+</code></pre>
+<h4 id="options">Options</h4>
+<ul>
+<li><code>--format &lt;format&gt;</code> - Specify SBOM format (spdx, cyclonedx)</li>
+<li><code>--report-format &lt;format&gt;</code> - Output format (text, json, csv) [default: text]</li>
+<li><code>--help</code> - Show help message</li>
+</ul>
+<h4 id="examples">Examples</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Generate text diff report</span>
+heimdall-validate diff old.json new.json
+
+<span class="hljs-comment"># Generate JSON diff report</span>
+heimdall-validate diff old.json new.json --report-format json
+
+<span class="hljs-comment"># Generate CSV diff report</span>
+heimdall-validate diff old.json new.json --report-format csv
+</code></pre>
+<h4 id="output-formats">Output Formats</h4>
+<p><strong>Text Format:</strong></p>
+<pre><code>SBOM Diff Report
+================
+Generated: 2025-07-09T10:30:00Z
+Old File: old.json
+New File: new.json
+Format: CycloneDX
+
+Summary:
+- Added: 1 component
+- Removed: 0 components
+- Modified: 2 components
+- Unchanged: 15 components
+
+Details:
+[ADDED] libnew.so (libnew-1.2.0)
+[MODIFIED] libssl.so: 1.1.1 -&gt; 1.1.1f
+[MODIFIED] libcrypto.so: 1.1.1 -&gt; 1.1.1f
+</code></pre><p><strong>JSON Format:</strong></p>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"metadata"</span>: {
+    <span class="hljs-string">"generated"</span>: <span class="hljs-string">"2025-07-09T10:30:00Z"</span>,
+    <span class="hljs-string">"oldFile"</span>: <span class="hljs-string">"old.json"</span>,
+    <span class="hljs-string">"newFile"</span>: <span class="hljs-string">"new.json"</span>,
+    <span class="hljs-string">"format"</span>: <span class="hljs-string">"cyclonedx"</span>
+  },
+  <span class="hljs-string">"summary"</span>: {
+    <span class="hljs-string">"added"</span>: <span class="hljs-number">1</span>,
+    <span class="hljs-string">"removed"</span>: <span class="hljs-number">0</span>,
+    <span class="hljs-string">"modified"</span>: <span class="hljs-number">2</span>,
+    <span class="hljs-string">"unchanged"</span>: <span class="hljs-number">15</span>
+  },
+  <span class="hljs-string">"differences"</span>: [
+    {
+      <span class="hljs-string">"type"</span>: <span class="hljs-string">"added"</span>,
+      <span class="hljs-string">"component"</span>: {
+        <span class="hljs-string">"name"</span>: <span class="hljs-string">"libnew.so"</span>,
+        <span class="hljs-string">"version"</span>: <span class="hljs-string">"1.2.0"</span>,
+        <span class="hljs-string">"id"</span>: <span class="hljs-string">"libnew-1.2.0"</span>
+      }
+    }
+  ]
+}
+</code></pre>
+<h3 id="merge---sbom-merging"><code>merge</code> - SBOM Merging</h3>
+<p>Merges multiple SBOM files into a single SBOM.</p>
+<h4 id="syntax">Syntax</h4>
+<pre><code class="lang-bash">heimdall-validate merge &lt;files...&gt; --output &lt;output-file&gt; [options]
+</code></pre>
+<h4 id="options">Options</h4>
+<ul>
+<li><code>--output &lt;file&gt;</code> - Output file path (required)</li>
+<li><code>--format &lt;format&gt;</code> - Output format (spdx, cyclonedx) [default: cyclonedx]</li>
+<li><code>--version &lt;version&gt;</code> - Output version [default: 1.6 for CycloneDX, 3.0 for SPDX]</li>
+<li><code>--help</code> - Show help message</li>
+</ul>
+<h4 id="examples">Examples</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Merge multiple CycloneDX files</span>
+heimdall-validate merge lib1.json lib2.json lib3.json --output merged.json
+
+<span class="hljs-comment"># Merge with specific format and version</span>
+heimdall-validate merge lib1.json lib2.json --output merged.spdx --format spdx --version 2.3
+
+<span class="hljs-comment"># Merge SPDX files</span>
+heimdall-validate merge app1.spdx app2.spdx --output merged.spdx --format spdx
+</code></pre>
+<h4 id="output">Output</h4>
+<pre><code>Merging 3 SBOM files...
+Merged SBOM written to: merged.json
+</code></pre><h2 id="supported-formats">Supported Formats</h2>
+<h3 id="cyclonedx-support">CycloneDX Support</h3>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Status</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.4</td>
+<td>✅ Full Support</td>
+<td>Basic validation, component structure</td>
+</tr>
+<tr>
+<td>1.5</td>
+<td>✅ Full Support</td>
+<td>Enhanced validation, additional fields</td>
+</tr>
+<tr>
+<td>1.6</td>
+<td>✅ Full Support</td>
+<td>Latest features, complete validation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Validation Features:</strong></p>
+<ul>
+<li>Required field validation (<code>bomFormat</code>, <code>specVersion</code>, <code>version</code>, <code>metadata</code>)</li>
+<li>Component structure validation</li>
+<li>Hash format validation</li>
+<li>UUID format validation</li>
+<li>Metadata timestamp validation</li>
+</ul>
+<h3 id="spdx-support">SPDX Support</h3>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Status</th>
+<th>Format</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2.3</td>
+<td>✅ Full Support</td>
+<td>Tag-value</td>
+<td>Complete validation</td>
+</tr>
+<tr>
+<td>3.0</td>
+<td>✅ Full Support</td>
+<td>JSON</td>
+<td>Complete validation</td>
+</tr>
+<tr>
+<td>3.0.0</td>
+<td>✅ Full Support</td>
+<td>JSON</td>
+<td>Complete validation</td>
+</tr>
+<tr>
+<td>3.0.1</td>
+<td>✅ Full Support</td>
+<td>JSON</td>
+<td>Complete validation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Validation Features:</strong></p>
+<ul>
+<li>Required field validation (<code>SPDXVersion</code>, <code>DataLicense</code>, <code>DocumentName</code>, etc.)</li>
+<li>License expression validation</li>
+<li>SPDX identifier validation</li>
+<li>Package and file information validation</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<h3 id="validation-examples">Validation Examples</h3>
+<h4 id="validate-a-cyclonedx-16-sbom">Validate a CycloneDX 1.6 SBOM</h4>
+<pre><code class="lang-bash">heimdall-validate validate myapp-v1.6.json --format cyclonedx --version 1.6
+</code></pre>
+<p><strong>Expected Output:</strong></p>
+<pre><code>Validating myapp-v1.6.json (cyclonedx, version 1.6 format)...
+Validation Results:
+==================
+Valid: Yes
+Format: CycloneDX
+Version: 1.6
+</code></pre><h4 id="validate-an-spdx-23-sbom">Validate an SPDX 2.3 SBOM</h4>
+<pre><code class="lang-bash">heimdall-validate validate myapp.spdx --format spdx --version 2.3
+</code></pre>
+<p><strong>Expected Output:</strong></p>
+<pre><code>Validating myapp.spdx (spdx, version 2.3 format)...
+Validation Results:
+==================
+Valid: Yes
+Format: SPDX 2.3
+Version: 2.3
+</code></pre><h3 id="comparison-examples">Comparison Examples</h3>
+<h4 id="compare-application-versions">Compare Application Versions</h4>
+<pre><code class="lang-bash">heimdall-validate compare app-v1.0.json app-v1.1.json
+</code></pre>
+<p><strong>Expected Output:</strong></p>
+<pre><code>Comparing app-v1.0.json and app-v1.1.json (cyclonedx format)...
+Comparison Results:
+==================
+Total differences: 2
+Added: 1
+Removed: 0
+Modified: 1
+Unchanged: 12
+
+➕ Added: libnewfeature.so (libnewfeature-1.0.0)
+🔄 Modified: myapp (1.0.0) -&gt; myapp (1.1.0)
+</code></pre><h4 id="compare-different-builds">Compare Different Builds</h4>
+<pre><code class="lang-bash">heimdall-validate compare debug-build.json release-build.json
+</code></pre>
+<h3 id="diff-report-examples">Diff Report Examples</h3>
+<h4 id="generate-json-diff-report">Generate JSON Diff Report</h4>
+<pre><code class="lang-bash">heimdall-validate diff old.json new.json --report-format json &gt; diff-report.json
+</code></pre>
+<h4 id="generate-csv-diff-report">Generate CSV Diff Report</h4>
+<pre><code class="lang-bash">heimdall-validate diff old.json new.json --report-format csv &gt; diff-report.csv
+</code></pre>
+<h3 id="merge-examples">Merge Examples</h3>
+<h4 id="merge-library-sboms">Merge Library SBOMs</h4>
+<pre><code class="lang-bash">heimdall-validate merge libssl.json libcrypto.json libzlib.json --output all-libs.json
+</code></pre>
+<h4 id="merge-with-specific-format">Merge with Specific Format</h4>
+<pre><code class="lang-bash">heimdall-validate merge app.json libs.json --output complete.spdx --format spdx --version 2.3
+</code></pre>
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="batch-processing">Batch Processing</h3>
+<h4 id="validate-multiple-files">Validate Multiple Files</h4>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-keyword">for</span> file <span class="hljs-keyword">in</span> *.json; <span class="hljs-keyword">do</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">"Validating <span class="hljs-variable">$file</span>..."</span>
+    heimdall-validate validate <span class="hljs-string">"<span class="hljs-variable">$file</span>"</span>
+    <span class="hljs-keyword">if</span> [ $? -eq 0 ]; <span class="hljs-keyword">then</span>
+        <span class="hljs-built_in">echo</span> <span class="hljs-string">"✅ <span class="hljs-variable">$file</span> is valid"</span>
+    <span class="hljs-keyword">else</span>
+        <span class="hljs-built_in">echo</span> <span class="hljs-string">"❌ <span class="hljs-variable">$file</span> has validation errors"</span>
+    <span class="hljs-keyword">fi</span>
+<span class="hljs-keyword">done</span>
+</code></pre>
+<h4 id="compare-all-versions">Compare All Versions</h4>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-keyword">for</span> version <span class="hljs-keyword">in</span> v1.0 v1.1 v1.2; <span class="hljs-keyword">do</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">"Comparing <span class="hljs-variable">$version</span> with previous..."</span>
+    <span class="hljs-keyword">if</span> [ <span class="hljs-string">"<span class="hljs-variable">$version</span>"</span> != <span class="hljs-string">"v1.0"</span> ]; <span class="hljs-keyword">then</span>
+        prev_version=$(<span class="hljs-built_in">echo</span> <span class="hljs-variable">$version</span> | sed <span class="hljs-string">'s/v1.\([0-9]\)/v1.$((\1-1))/'</span>)
+        heimdall-validate compare <span class="hljs-string">"app-<span class="hljs-variable">$prev_version</span>.json"</span> <span class="hljs-string">"app-<span class="hljs-variable">$version</span>.json"</span>
+    <span class="hljs-keyword">fi</span>
+<span class="hljs-keyword">done</span>
+</code></pre>
+<h3 id="integration-with-cicd">Integration with CI/CD</h3>
+<h4 id="github-actions-example">GitHub Actions Example</h4>
+<pre><code class="lang-yaml"><span class="hljs-attr">name:</span> <span class="hljs-string">SBOM</span> <span class="hljs-string">Validation</span>
+<span class="hljs-attr">on:</span> [<span class="hljs-string">push</span>, <span class="hljs-string">pull_request</span>]
+
+<span class="hljs-attr">jobs:</span>
+  <span class="hljs-attr">validate-sbom:</span>
+    <span class="hljs-attr">runs-on:</span> <span class="hljs-string">ubuntu-latest</span>
+    <span class="hljs-attr">steps:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">uses:</span> <span class="hljs-string">actions/checkout@v3</span>
+
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Build</span> <span class="hljs-string">Heimdall</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">|
+          mkdir build &amp;&amp; cd build
+          cmake ..
+          make -j$(nproc)
+</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Validate</span> <span class="hljs-string">SBOMs</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">|
+          ./build/heimdall-validate validate myapp.cyclonedx.json
+          ./build/heimdall-validate validate myapp.spdx
+</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">Compare</span> <span class="hljs-string">with</span> <span class="hljs-string">Previous</span>
+        <span class="hljs-attr">if:</span> <span class="hljs-string">github.event_name</span> <span class="hljs-string">==</span> <span class="hljs-string">'push'</span>
+        <span class="hljs-attr">run:</span> <span class="hljs-string">|
+          ./build/heimdall-validate compare previous.json current.json
+</span></code></pre>
+<h4 id="jenkins-pipeline-example">Jenkins Pipeline Example</h4>
+<pre><code class="lang-groovy">pipeline {
+    agent any
+
+    stages {
+        stage(<span class="hljs-string">'Generate SBOM'</span>) {
+            steps {
+                sh <span class="hljs-string">'make sbom'</span>
+            }
+        }
+
+        stage(<span class="hljs-string">'Validate SBOM'</span>) {
+            steps {
+                sh <span class="hljs-string">'./build/heimdall-validate validate myapp.cyclonedx.json'</span>
+                sh <span class="hljs-string">'./build/heimdall-validate validate myapp.spdx'</span>
+            }
+        }
+
+        stage(<span class="hljs-string">'Compare SBOM'</span>) {
+            when {
+                changeSet()
+            }
+            steps {
+                sh <span class="hljs-string">'./build/heimdall-validate compare old.json new.json'</span>
+            }
+        }
+    }
+}
+</code></pre>
+<h3 id="custom-validation-scripts">Custom Validation Scripts</h3>
+<h4 id="comprehensive-validation-script">Comprehensive Validation Script</h4>
+<pre><code class="lang-bash"><span class="hljs-meta">#!/bin/bash</span>
+<span class="hljs-comment"># validate-sbom.sh</span>
+
+SBOM_FILE=<span class="hljs-string">"<span class="hljs-variable">$1</span>"</span>
+FORMAT=<span class="hljs-string">"<span class="hljs-variable">$2</span>"</span>
+VERSION=<span class="hljs-string">"<span class="hljs-variable">$3</span>"</span>
+
+<span class="hljs-keyword">if</span> [ -z <span class="hljs-string">"<span class="hljs-variable">$SBOM_FILE</span>"</span> ]; <span class="hljs-keyword">then</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">"Usage: <span class="hljs-variable">$0</span> &lt;sbom-file&gt; [format] [version]"</span>
+    <span class="hljs-built_in">exit</span> 1
+<span class="hljs-keyword">fi</span>
+
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"=== SBOM Validation Report ==="</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"File: <span class="hljs-variable">$SBOM_FILE</span>"</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"Format: <span class="hljs-variable">${FORMAT:-auto-detected}</span>"</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"Version: <span class="hljs-variable">${VERSION:-auto-detected}</span>"</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">""</span>
+
+<span class="hljs-comment"># Run validation</span>
+<span class="hljs-keyword">if</span> heimdall-validate validate <span class="hljs-string">"<span class="hljs-variable">$SBOM_FILE</span>"</span> <span class="hljs-variable">${FORMAT:+--format $FORMAT}</span> <span class="hljs-variable">${VERSION:+--version $VERSION}</span>; <span class="hljs-keyword">then</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">"✅ Validation PASSED"</span>
+    <span class="hljs-built_in">exit</span> 0
+<span class="hljs-keyword">else</span>
+    <span class="hljs-built_in">echo</span> <span class="hljs-string">"❌ Validation FAILED"</span>
+    <span class="hljs-built_in">exit</span> 1
+<span class="hljs-keyword">fi</span>
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="1-cannot-auto-detect-sbom-format">1. "Cannot auto-detect SBOM format"</h4>
+<p><strong>Cause:</strong> File doesn't contain recognizable SPDX or CycloneDX headers
+<strong>Solution:</strong> Specify format explicitly</p>
+<pre><code class="lang-bash">heimdall-validate validate myfile --format cyclonedx
+</code></pre>
+<h4 id="2-unsupported-cyclonedx-version">2. "Unsupported CycloneDX version"</h4>
+<p><strong>Cause:</strong> File uses CycloneDX version not supported (1.0-1.3, 2.0+)
+<strong>Solution:</strong> Use supported versions (1.4, 1.5, 1.6)</p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Convert to supported version or use different tool</span>
+</code></pre>
+<h4 id="3-file-does-not-exist">3. "File does not exist"</h4>
+<p><strong>Cause:</strong> Invalid file path or permissions issue
+<strong>Solution:</strong> Check file path and permissions</p>
+<pre><code class="lang-bash">ls -la myfile.json
+heimdall-validate validate ./myfile.json
+</code></pre>
+<h4 id="4-cannot-open-file">4. "Cannot open file"</h4>
+<p><strong>Cause:</strong> File permissions or file system issues
+<strong>Solution:</strong> Check file permissions and disk space</p>
+<pre><code class="lang-bash">chmod 644 myfile.json
+df -h .
+</code></pre>
+<h3 id="debug-mode">Debug Mode</h3>
+<p>Enable verbose output for debugging:</p>
+<pre><code class="lang-bash">heimdall-validate validate myfile.json --verbose
+</code></pre>
+<h3 id="error-codes">Error Codes</h3>
+<table>
+<thead>
+<tr>
+<th>Exit Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Success</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Validation failed or error</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Invalid command line arguments</td>
+</tr>
+</tbody>
+</table>
+<h3 id="performance-tips">Performance Tips</h3>
+<ol>
+<li><strong>Use specific format detection</strong> when possible to avoid auto-detection overhead</li>
+<li><strong>Process large files</strong> in smaller batches for memory efficiency</li>
+<li><strong>Use JSON output</strong> for programmatic processing</li>
+<li><strong>Cache validation results</strong> for repeated operations</li>
+</ol>
+<h2 id="integration">Integration</h2>
+<h3 id="with-other-tools">With Other Tools</h3>
+<h4 id="integration-with-cyclonedx-tools">Integration with CycloneDX Tools</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Validate with multiple tools</span>
+heimdall-validate validate myapp.json
+cyclonedx-cli validate myapp.json
+</code></pre>
+<h4 id="integration-with-spdx-tools">Integration with SPDX Tools</h4>
+<pre><code class="lang-bash"><span class="hljs-comment"># Validate with multiple tools</span>
+heimdall-validate validate myapp.spdx
+spdx-tools-validate myapp.spdx
+</code></pre>
+<h3 id="api-integration">API Integration</h3>
+<p>The tool can be integrated into custom scripts and applications:</p>
+<pre><code class="lang-python"><span class="hljs-keyword">import</span> subprocess
+<span class="hljs-keyword">import</span> json
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">validate_sbom</span>(<span class="hljs-params">file_path, <span class="hljs-built_in">format</span>=<span class="hljs-literal">None</span>, version=<span class="hljs-literal">None</span></span>):</span>
+    cmd = [<span class="hljs-string">'heimdall-validate'</span>, <span class="hljs-string">'validate'</span>, file_path]
+    <span class="hljs-keyword">if</span> <span class="hljs-built_in">format</span>:
+        cmd.extend([<span class="hljs-string">'--format'</span>, <span class="hljs-built_in">format</span>])
+    <span class="hljs-keyword">if</span> version:
+        cmd.extend([<span class="hljs-string">'--version'</span>, version])
+
+    result = subprocess.run(cmd, capture_output=<span class="hljs-literal">True</span>, text=<span class="hljs-literal">True</span>)
+    <span class="hljs-keyword">return</span> result.returncode == <span class="hljs-number">0</span>, result.stdout, result.stderr
+
+<span class="hljs-comment"># Usage</span>
+is_valid, output, errors = validate_sbom(<span class="hljs-string">'myapp.json'</span>, <span class="hljs-string">'cyclonedx'</span>, <span class="hljs-string">'1.6'</span>)
+</code></pre>
+<h3 id="configuration-files">Configuration Files</h3>
+<p>Create configuration files for repeated operations:</p>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"validation"</span>: {
+    <span class="hljs-string">"default_format"</span>: <span class="hljs-string">"cyclonedx"</span>,
+    <span class="hljs-string">"default_version"</span>: <span class="hljs-string">"1.6"</span>,
+    <span class="hljs-string">"strict_mode"</span>: <span class="hljs-literal">true</span>
+  },
+  <span class="hljs-string">"comparison"</span>: {
+    <span class="hljs-string">"ignore_versions"</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-string">"ignore_hashes"</span>: <span class="hljs-literal">false</span>
+  },
+  <span class="hljs-string">"merge"</span>: {
+    <span class="hljs-string">"default_output_format"</span>: <span class="hljs-string">"cyclonedx"</span>,
+    <span class="hljs-string">"deduplicate"</span>: <span class="hljs-literal">true</span>
+  }
+}
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p><code>heimdall-validate</code> provides comprehensive SBOM validation, comparison, and manipulation capabilities. It supports the latest SBOM standards and integrates well with existing toolchains and CI/CD pipelines.</p>
+<p>For more information, see:</p>
+<ul>
+<li><a href="heimdall-users-guide.md">Heimdall User Guide</a></li>
+<li><a href="sbom_validation_guide.html">SBOM Validation Guide</a></li>
+<li><a href="https://cyclonedx.org/specification/" target="_blank">CycloneDX Specification</a></li>
+</ul>
+
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="heimdall-sbom-manual.html" class="navigation navigation-prev " aria-label="Previous page: Heimdall SBOM Manual">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="ada_SBOM.html" class="navigation navigation-next " aria-label="Next page: Ada SBOM">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Heimdall Validate Manual","level":"1.5","depth":1,"next":{"title":"Ada SBOM","level":"1.6","depth":1,"path":"docs/ada_SBOM.md","ref":"docs/ada_SBOM.md","articles":[]},"previous":{"title":"Heimdall SBOM Manual","level":"1.4","depth":1,"path":"docs/heimdall-sbom-manual.md","ref":"docs/heimdall-sbom-manual.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56},"embedFonts":false},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/heimdall-validate-manual.md","mtime":"2025-07-27T21:36:11.086Z","type":"markdown"},"gitbook":{"version":"4.0.8","time":"2025-07-27T21:36:16.340Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <noscript>
+        <style>
+            .honkit-cloak {
+                display: block !important;
+            }
+        </style>
+    </noscript>
+    <script>
+        // Restore sidebar state as critical path for prevent layout shift
+        function __init__getSidebarState(defaultValue){
+            var baseKey = "";
+            var key = baseKey + ":sidebar";
+            try {
+                var value = localStorage[key];
+                if (value === undefined) {
+                    return defaultValue;
+                }
+                var parsed = JSON.parse(value);
+                return parsed == null ? defaultValue : parsed;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+        function __init__restoreLastSidebarState() {
+            var isMobile = window.matchMedia("(max-width: 600px)").matches;
+            if (isMobile) {
+                // Init last state if not mobile
+                return;
+            }
+            var sidebarState = __init__getSidebarState(true);
+            var book = document.querySelector(".book");
+            // Show sidebar if it enabled
+            if (sidebarState && book) {
+                book.classList.add("without-animation", "with-summary");
+            }
+        }
+
+        try {
+            __init__restoreLastSidebarState();
+        } finally {
+            var book = document.querySelector(".book");
+            book.classList.remove("honkit-cloak");
+        }
+    </script>
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+

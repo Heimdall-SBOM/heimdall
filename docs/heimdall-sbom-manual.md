@@ -188,34 +188,7 @@ heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
 
 `heimdall-sbom` uses dynamic loading to interface with Heimdall plugins:
 
-```mermaid
-graph TB
-    subgraph "heimdall-sbom"
-        A[Main Program]
-        B[Dynamic Loader]
-        C[Plugin Interface]
-    end
-    
-    subgraph "Plugin"
-        D[LLD Plugin]
-        E[Gold Plugin]
-    end
-    
-    subgraph "Binary Analysis"
-        F[Metadata Extraction]
-        G[Dependency Resolution]
-        H[SBOM Generation]
-    end
-    
-    A --> B
-    B --> C
-    C --> D
-    C --> E
-    D --> F
-    E --> F
-    F --> G
-    G --> H
-```
+![Mermaid Diagram](images/mermaid/heimdall-sbom-manual_diagram_1.png)
 
 ### Required Plugin Functions
 
@@ -710,4 +683,3 @@ For more information, see:
 - [Heimdall Validate Manual](heimdall-validate-manual.md)
 - [Plugin Development Guide](heimdall-developers-guide.md)
 - [CycloneDX Specification](https://cyclonedx.org/specification/)
-- [SPDX Specification](https://spdx.github.io/spdx-spec/) 

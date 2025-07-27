@@ -1,0 +1,909 @@
+
+<!DOCTYPE HTML>
+<html lang="" >
+    <head>
+        <meta charset="UTF-8">
+        <title>Architecture · HonKit</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="">
+        <meta name="generator" content="HonKit 4.0.8">
+        
+        
+        
+    
+    <link rel="stylesheet" href="../gitbook/style.css">
+
+    
+            
+                
+                <link rel="stylesheet" href="../gitbook/@honkit/honkit-plugin-highlight/website.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-search/search.css">
+                
+            
+                
+                <link rel="stylesheet" href="../gitbook/gitbook-plugin-fontsettings/website.css">
+                
+            
+        
+
+    
+
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+
+        
+    
+    
+    <meta name="HandheldFriendly" content="true"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon-precomposed" sizes="152x152" href="../gitbook/images/apple-touch-icon-precomposed-152.png">
+    <link rel="shortcut icon" href="../gitbook/images/favicon.ico" type="image/x-icon">
+
+    
+    <link rel="next" href="cmake_module.html" />
+    
+    
+    <link rel="prev" href="../" />
+    
+
+    </head>
+    <body>
+        
+<div class="book honkit-cloak">
+    <div class="book-summary">
+        
+            
+<div id="book-search-input" role="search">
+    <input type="text" placeholder="Type to search" />
+</div>
+
+            
+                <nav role="navigation">
+                
+
+
+<ul class="summary">
+    
+    
+
+    
+
+    
+        
+        
+    
+        <li class="chapter " data-level="1.1" data-path="../">
+            
+                <a href="../">
+            
+                    
+                    Introduction
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter active" data-level="1.2" data-path="architecture.html">
+            
+                <a href="architecture.html">
+            
+                    
+                    Architecture
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.3" data-path="cmake_module.html">
+            
+                <a href="cmake_module.html">
+            
+                    
+                    CMake Module
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.4" data-path="heimdall-sbom-manual.html">
+            
+                <a href="heimdall-sbom-manual.html">
+            
+                    
+                    Heimdall SBOM Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.5" data-path="heimdall-validate-manual.html">
+            
+                <a href="heimdall-validate-manual.html">
+            
+                    
+                    Heimdall Validate Manual
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.6" data-path="ada_SBOM.html">
+            
+                <a href="ada_SBOM.html">
+            
+                    
+                    Ada SBOM
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.7" data-path="ci-workflow.md">
+            
+                <span>
+            
+                    
+                    CI Workflow
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.8" data-path="heimdall-developers-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Developers Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.9" data-path="heimdall-users-guide.md">
+            
+                <span>
+            
+                    
+                    Heimdall Users Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.10" data-path="llvm-compatibility.html">
+            
+                <a href="llvm-compatibility.html">
+            
+                    
+                    LLVM Compatibility
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.11" data-path="multi-standard-support.html">
+            
+                <a href="multi-standard-support.html">
+            
+                    
+                    Multi-Standard Support
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.12" data-path="sbom_validation_guide.html">
+            
+                <a href="sbom_validation_guide.html">
+            
+                    
+                    SBOM Validation Guide
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.13" data-path="setup_usage.html">
+            
+                <a href="setup_usage.html">
+            
+                    
+                    Setup Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.14" data-path="testing-heimdall.html">
+            
+                <a href="testing-heimdall.html">
+            
+                    
+                    Testing Heimdall
+            
+                </a>
+            
+
+            
+        </li>
+    
+        <li class="chapter " data-level="1.15" data-path="usage.html">
+            
+                <a href="usage.html">
+            
+                    
+                    Usage
+            
+                </a>
+            
+
+            
+        </li>
+    
+
+    
+
+    <li class="divider"></li>
+
+    <li>
+        <a href="https://github.com/honkit/honkit" target="blank" class="gitbook-link">
+            Published with HonKit
+        </a>
+    </li>
+</ul>
+
+
+                </nav>
+            
+        
+    </div>
+
+    <div class="book-body">
+        
+            <div class="body-inner">
+                
+                    
+
+<div class="book-header" role="navigation">
+    
+
+    <!-- Title -->
+    <h1>
+        <i class="fa fa-circle-o-notch fa-spin"></i>
+        <a href=".." >Architecture</a>
+    </h1>
+</div>
+
+
+
+
+                    <div class="page-wrapper" tabindex="-1" role="main">
+                        <div class="page-inner">
+                            
+<div id="book-search-results">
+    <div class="search-noresults">
+    
+                                <section class="normal markdown-section">
+                                
+                                <h1 id="heimdall-sbom-generator-architecture">Heimdall SBOM Generator Architecture</h1>
+<p>This document provides a comprehensive overview of the Heimdall SBOM (Software Bill of Materials) generator architecture, design patterns, and implementation details.</p>
+<h2 id="1-overview">1. Overview</h2>
+<h3 id="introduction-to-sbom-formats">Introduction to SBOM Formats</h3>
+<p>Software Bill of Materials (SBOM) documents are critical for supply chain security and software transparency. Heimdall supports the two leading SBOM standards:</p>
+<p><strong>SPDX (Software Package Data Exchange)</strong></p>
+<ul>
+<li><strong>SPDX 2.3</strong>: Tag-value format, well-established industry standard</li>
+<li><strong>SPDX 3.0/3.0.1</strong>: JSON format with enhanced relationship modeling</li>
+<li>Provides comprehensive license compliance and security vulnerability tracking</li>
+<li>Strong ecosystem support with tools like FOSSology, REUSE, and commercial scanners</li>
+</ul>
+<p><strong>CycloneDX</strong></p>
+<ul>
+<li><strong>CycloneDX 1.4</strong>: Established JSON format for security-focused SBOMs</li>
+<li><strong>CycloneDX 1.5</strong>: Added enhanced vulnerability and licensing support</li>
+<li><strong>CycloneDX 1.6</strong>: Latest version with improved evidence and compliance features</li>
+<li>Designed specifically for application security and vulnerability management</li>
+<li>Strong integration with security tools like OWASP Dependency-Track</li>
+</ul>
+<h3 id="project-description">Project Description</h3>
+<p>Heimdall is a comprehensive SBOM generation tool that integrates directly with the linking process via linker plugins for both LLVM LLD and GNU Gold linkers. It automatically captures all components that actually make it into final binaries, providing accurate and complete software bills of materials.</p>
+<h3 id="main-features-and-goals">Main Features and Goals</h3>
+<ul>
+<li><strong>Dual Linker Support</strong>: Native plugins for both LLVM LLD and GNU Gold linkers</li>
+<li><strong>Multi-Format Output</strong>: Generates SPDX 2.3, 3.0, 3.0.1 and CycloneDX 1.4, 1.5, 1.6 compliant SBOMs</li>
+<li><strong>Comprehensive Analysis</strong>: Extracts versions, licenses, checksums, dependencies, and debug information</li>
+<li><strong>Cross-Platform Support</strong>: Native support for Linux and macOS with ELF, Mach-O, and PE formats</li>
+<li><strong>Package Manager Integration</strong>: Recognizes components from Conan, vcpkg, and system packages</li>
+<li><strong>Security Focus</strong>: Enables vulnerability scanning and compliance tracking</li>
+</ul>
+<h3 id="intended-audience">Intended Audience</h3>
+<ul>
+<li><strong>Software Developers</strong>: Integrate SBOM generation into build systems</li>
+<li><strong>DevOps Engineers</strong>: Automate SBOM creation in CI/CD pipelines</li>
+<li><strong>Security Teams</strong>: Track software components for vulnerability management</li>
+<li><strong>Compliance Officers</strong>: Generate compliance reports for regulatory requirements</li>
+<li><strong>Open Source Maintainers</strong>: Provide transparency into project dependencies</li>
+</ul>
+<h2 id="2-system-architecture">2. System Architecture</h2>
+<h3 id="high-level-system-design">High-Level System Design</h3>
+<p>The Heimdall system follows a modular architecture with clear separation of concerns:</p>
+<p><img src="images/mermaid/architecture_diagram_1.png" alt="Mermaid Diagram"></img></p>
+<h3 id="component-overview">Component Overview</h3>
+<p>The system consists of several key architectural layers:</p>
+<ol>
+<li><strong>Input Layer</strong>: Handles various binary formats (ELF, Mach-O, PE, archives)</li>
+<li><strong>Integration Layer</strong>: Provides linker plugin interfaces for LLD and Gold</li>
+<li><strong>Processing Layer</strong>: Extracts metadata, debug information, and dependencies</li>
+<li><strong>Generation Layer</strong>: Creates standardized SBOM documents</li>
+<li><strong>Output Layer</strong>: Formats data according to SPDX and CycloneDX specifications</li>
+</ol>
+<h2 id="3-module-design">3. Module Design</h2>
+<h3 id="input-parsers">Input Parsers</h3>
+<p>The input parsing system handles multiple binary formats and file types:</p>
+<p><img src="images/mermaid/architecture_diagram_2.png" alt="Mermaid Diagram"></img></p>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li><strong>Multi-format Support</strong>: Handles ELF (Linux), Mach-O (macOS), PE (Windows), and archive formats</li>
+<li><strong>Debug Information</strong>: Extracts DWARF debug data for source file mapping</li>
+<li><strong>Dependency Resolution</strong>: Resolves library dependencies and @rpath references</li>
+<li><strong>Checksum Calculation</strong>: Generates SHA-256 checksums for integrity verification</li>
+<li><strong>Ada Support</strong>: Specialized extraction for Ada Language Interface (ALI) files</li>
+</ul>
+<h3 id="plugin-architecture">Plugin Architecture</h3>
+<p>The plugin system provides a unified interface for different linkers:</p>
+<p><img src="images/mermaid/architecture_diagram_3.png" alt="Mermaid Diagram"></img></p>
+<p><strong>Design Patterns:</strong></p>
+<ul>
+<li><strong>Abstract Factory</strong>: PluginInterface defines common interface</li>
+<li><strong>Strategy Pattern</strong>: Different implementation strategies for LLD vs Gold</li>
+<li><strong>Configuration Pattern</strong>: Centralized configuration management</li>
+<li><strong>PIMPL Idiom</strong>: Private implementation to hide linker-specific details</li>
+</ul>
+<h3 id="sbom-generator">SBOM Generator</h3>
+<p>The core SBOM generation engine handles multiple output formats:</p>
+<p><img src="images/mermaid/architecture_diagram_4.png" alt="Mermaid Diagram"></img></p>
+<p><strong>Key Capabilities:</strong></p>
+<ul>
+<li><strong>Multi-Version Support</strong>: Generates SPDX 2.3, 3.0, 3.0.1 and CycloneDX 1.4, 1.5, 1.6</li>
+<li><strong>Dependency Tracking</strong>: Handles both direct and transitive dependencies</li>
+<li><strong>Component Deduplication</strong>: Prevents duplicate entries in SBOM output</li>
+<li><strong>Rich Metadata</strong>: Includes debug info, code signing, and platform details</li>
+<li><strong>Schema Compliance</strong>: Ensures output validates against official schemas</li>
+</ul>
+<h3 id="output-formatters">Output Formatters</h3>
+<p>Specialized formatters handle different SBOM specifications:</p>
+<p><img src="images/mermaid/architecture_diagram_5.png" alt="Mermaid Diagram"></img></p>
+<h3 id="cli-interface">CLI Interface</h3>
+<p>Command-line interface for standalone SBOM generation:</p>
+<p><img src="images/mermaid/architecture_diagram_6.png" alt="Mermaid Diagram"></img></p>
+<h2 id="4-data-flow">4. Data Flow</h2>
+<h3 id="sbom-generation-flow-for-spdx">SBOM Generation Flow for SPDX</h3>
+<p>The following diagram shows how Heimdall processes input files to generate SPDX-compliant SBOMs:</p>
+<p><img src="images/mermaid/architecture_diagram_7.png" alt="Mermaid Diagram"></img></p>
+<h3 id="cyclonedx-generation-flow">CycloneDX Generation Flow</h3>
+<p>The following diagram shows the CycloneDX-specific generation process:</p>
+<p><img src="images/mermaid/architecture_diagram_8.png" alt="Mermaid Diagram"></img></p>
+<h2 id="5-extensibility-and-plugins">5. Extensibility and Plugins</h2>
+<h3 id="plugin-development-framework">Plugin Development Framework</h3>
+<p>Heimdall provides a comprehensive framework for developing new plugins:</p>
+<p><img src="images/mermaid/architecture_diagram_9.png" alt="Mermaid Diagram"></img></p>
+<p><strong>Adding New Linker Support:</strong></p>
+<ol>
+<li><strong>Implement PluginInterface</strong>: Create new plugin class inheriting from PluginInterface</li>
+<li><strong>Linker Integration</strong>: Implement linker-specific callbacks and hooks</li>
+<li><strong>Component Processing</strong>: Use existing MetadataExtractor and SBOMGenerator</li>
+<li><strong>Configuration</strong>: Extend PluginConfig for linker-specific options</li>
+</ol>
+<p><strong>Example Plugin Structure:</strong></p>
+<pre><code class="lang-cpp"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">CustomLinkerPlugin</span> :</span> <span class="hljs-keyword">public</span> PluginInterface
+{
+<span class="hljs-keyword">public</span>:
+    <span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">initialize</span><span class="hljs-params">()</span> <span class="hljs-keyword">override</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">processInputFile</span><span class="hljs-params">(<span class="hljs-keyword">const</span> std::string&amp; filePath)</span> <span class="hljs-keyword">override</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">processLibrary</span><span class="hljs-params">(<span class="hljs-keyword">const</span> std::string&amp; libraryPath)</span> <span class="hljs-keyword">override</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">generateSBOM</span><span class="hljs-params">()</span> <span class="hljs-keyword">override</span></span>;
+
+<span class="hljs-keyword">private</span>:
+    std::unique_ptr&lt;CustomAdapter&gt; adapter;
+};
+</code></pre>
+<p><strong>Adding New Output Formats:</strong></p>
+<ol>
+<li><strong>Extend SBOMGenerator</strong>: Add new format generation methods</li>
+<li><strong>Create Formatter</strong>: Implement format-specific generation logic</li>
+<li><strong>Schema Validation</strong>: Add validation for new format</li>
+<li><strong>Documentation</strong>: Update format support matrix</li>
+</ol>
+<h3 id="format-extension-architecture">Format Extension Architecture</h3>
+<p><img src="images/mermaid/architecture_diagram_10.png" alt="Mermaid Diagram"></img></p>
+<h3 id="configuration-and-customization">Configuration and Customization</h3>
+<p>The plugin system supports extensive configuration options:</p>
+<pre><code class="lang-yaml"><span class="hljs-comment"># heimdall-config.yaml</span>
+<span class="hljs-attr">output:</span>
+  <span class="hljs-attr">format:</span> <span class="hljs-string">"spdx"</span>  <span class="hljs-comment"># spdx, cyclonedx, custom</span>
+  <span class="hljs-attr">version:</span> <span class="hljs-string">"3.0.1"</span>  <span class="hljs-comment"># format-specific version</span>
+  <span class="hljs-attr">path:</span> <span class="hljs-string">"./sbom.json"</span>
+
+<span class="hljs-attr">processing:</span>
+  <span class="hljs-attr">extract_debug_info:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">include_system_libraries:</span> <span class="hljs-literal">false</span>
+  <span class="hljs-attr">transitive_dependencies:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">parallel_processing:</span> <span class="hljs-literal">true</span>
+
+<span class="hljs-attr">filters:</span>
+  <span class="hljs-attr">exclude_patterns:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">"*/test/*"</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">"*/build/*"</span>
+  <span class="hljs-attr">include_patterns:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">"*/src/*"</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-string">"*/lib/*"</span>
+
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">calculate_checksums:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">extract_licenses:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">extract_versions:</span> <span class="hljs-literal">true</span>
+  <span class="hljs-attr">follow_symlinks:</span> <span class="hljs-literal">false</span>
+
+<span class="hljs-attr">linker:</span>
+  <span class="hljs-attr">lld:</span>
+    <span class="hljs-attr">enabled:</span> <span class="hljs-literal">true</span>
+    <span class="hljs-attr">plugin_path:</span> <span class="hljs-string">"./lib/heimdall-lld.so"</span>
+  <span class="hljs-attr">gold:</span>
+    <span class="hljs-attr">enabled:</span> <span class="hljs-literal">true</span>
+    <span class="hljs-attr">plugin_path:</span> <span class="hljs-string">"./lib/heimdall-gold.so"</span>
+</code></pre>
+<h2 id="6-error-handling-and-logging">6. Error Handling and Logging</h2>
+<h3 id="error-management-strategy">Error Management Strategy</h3>
+<p>Heimdall implements a comprehensive error handling and logging system:</p>
+<p><img src="images/mermaid/architecture_diagram_11.png" alt="Mermaid Diagram"></img></p>
+<p><strong>Error Classification:</strong></p>
+<ol>
+<li><strong>Fatal Errors</strong>: Plugin initialization failures, invalid configurations</li>
+<li><strong>Processing Errors</strong>: File parsing failures, dependency resolution issues</li>
+<li><strong>Warnings</strong>: Missing metadata, unsupported file formats</li>
+<li><strong>Debug Messages</strong>: Detailed processing information</li>
+</ol>
+<p><strong>Logging Architecture:</strong></p>
+<pre><code class="lang-cpp"><span class="hljs-keyword">namespace</span> heimdall {
+<span class="hljs-keyword">namespace</span> logging {
+
+<span class="hljs-class"><span class="hljs-keyword">enum</span> <span class="hljs-keyword">class</span> <span class="hljs-title">LogLevel</span> {</span>
+    FATAL,
+    ERROR,
+    WARNING,
+    INFO,
+    DEBUG
+};
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Logger</span> {</span>
+<span class="hljs-keyword">public</span>:
+    <span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">log</span><span class="hljs-params">(LogLevel level, <span class="hljs-keyword">const</span> std::string&amp; message)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setLogLevel</span><span class="hljs-params">(LogLevel level)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">setLogFile</span><span class="hljs-params">(<span class="hljs-keyword">const</span> std::string&amp; path)</span></span>;
+    <span class="hljs-function"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title">enableStructuredLogging</span><span class="hljs-params">(<span class="hljs-keyword">bool</span> enable)</span></span>;
+};
+
+<span class="hljs-comment">// Convenience macros</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> LOG_FATAL(msg) Logger::log(LogLevel::FATAL, msg)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> LOG_ERROR(msg) Logger::log(LogLevel::ERROR, msg)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> LOG_WARNING(msg) Logger::log(LogLevel::WARNING, msg)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> LOG_INFO(msg) Logger::log(LogLevel::INFO, msg)</span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> LOG_DEBUG(msg) Logger::log(LogLevel::DEBUG, msg)</span>
+
+}}
+</code></pre>
+<p><strong>Error Recovery Strategies:</strong></p>
+<ul>
+<li><strong>Graceful Degradation</strong>: Continue processing when non-critical errors occur</li>
+<li><strong>Fallback Mechanisms</strong>: Use alternative methods when primary approaches fail</li>
+<li><strong>Partial Results</strong>: Generate SBOMs with available data when some components fail</li>
+<li><strong>Error Reporting</strong>: Detailed error messages with suggestions for resolution</li>
+</ul>
+<h3 id="example-error-scenarios">Example Error Scenarios</h3>
+<ol>
+<li><strong>Missing Dependencies</strong>: Continue processing but mark dependency as unresolved</li>
+<li><strong>Corrupted Binary</strong>: Skip file but log detailed error information</li>
+<li><strong>Permission Issues</strong>: Attempt alternative access methods or skip with warning</li>
+<li><strong>Format Validation</strong>: Generate best-effort output with validation warnings</li>
+</ol>
+<h2 id="7-example-use-case">7. Example Use Case</h2>
+<h3 id="step-by-step-walkthrough-cmake-build-with-heimdall">Step-by-Step Walkthrough: CMake Build with Heimdall</h3>
+<p>This section demonstrates a complete workflow using Heimdall with CMake, including both Gold and LLD plugin usage.</p>
+<h4 id="project-setup">Project Setup</h4>
+<p><strong>CMakeLists.txt:</strong></p>
+<pre><code class="lang-cmake"><span class="hljs-keyword">cmake_minimum_required</span>(VERSION <span class="hljs-number">3.16</span>)
+<span class="hljs-keyword">project</span>(ExampleApp VERSION <span class="hljs-number">1.0</span>.<span class="hljs-number">0</span>)
+
+<span class="hljs-keyword">set</span>(CMAKE_CXX_STANDARD <span class="hljs-number">17</span>)
+
+<span class="hljs-comment"># Find Heimdall</span>
+<span class="hljs-keyword">find_package</span>(PkgConfig REQUIRED)
+pkg_check_modules(HEIMDALL REQUIRED heimdall)
+
+<span class="hljs-comment"># Create executable</span>
+<span class="hljs-keyword">add_executable</span>(myapp 
+    src/main.cpp 
+    src/utils.cpp 
+    src/<span class="hljs-keyword">math</span>.cpp
+)
+
+<span class="hljs-comment"># Link with libraries</span>
+<span class="hljs-keyword">target_link_libraries</span>(myapp 
+    <span class="hljs-variable">${CMAKE_DL_LIBS}</span>
+    pthread
+    ssl
+    crypto
+)
+
+<span class="hljs-comment"># Configure Heimdall SBOM generation</span>
+<span class="hljs-keyword">if</span>(CMAKE_CXX_COMPILER_ID <span class="hljs-keyword">STREQUAL</span> <span class="hljs-string">"Clang"</span>)
+    <span class="hljs-comment"># Use LLD linker</span>
+    <span class="hljs-keyword">target_link_options</span>(myapp PRIVATE
+        <span class="hljs-string">"SHELL:-fuse-ld=lld"</span>
+    )
+
+    <span class="hljs-comment"># Add post-build SBOM generation using wrapper</span>
+    <span class="hljs-keyword">add_custom_command</span>(<span class="hljs-keyword">TARGET</span> myapp POST_BUILD
+        <span class="hljs-keyword">COMMAND</span> heimdall-sbom 
+            <span class="hljs-variable">${HEIMDALL_LLD_PLUGIN}</span> 
+            $&lt;TARGET_FILE:myapp&gt;
+            --format spdx-<span class="hljs-number">3.0</span>.<span class="hljs-number">1</span>
+            --output <span class="hljs-variable">${CMAKE_BINARY_DIR}</span>/myapp.spdx.json
+            --verbose
+        COMMENT <span class="hljs-string">"Generating SPDX SBOM for myapp"</span>
+    )
+<span class="hljs-keyword">else</span>()
+    <span class="hljs-comment"># Use Gold linker with plugin interface</span>
+    <span class="hljs-keyword">target_link_options</span>(myapp PRIVATE
+        <span class="hljs-string">"SHELL:-fuse-ld=gold"</span>
+        <span class="hljs-string">"SHELL:-Wl,--plugin=${HEIMDALL_GOLD_PLUGIN}"</span>
+        <span class="hljs-string">"SHELL:-Wl,--plugin-opt=sbom-output=${CMAKE_BINARY_DIR}/myapp.cyclonedx.json"</span>
+        <span class="hljs-string">"SHELL:-Wl,--plugin-opt=format=cyclonedx-1.6"</span>
+        <span class="hljs-string">"SHELL:-Wl,--plugin-opt=verbose"</span>
+    )
+<span class="hljs-keyword">endif</span>()
+</code></pre>
+<h4 id="build-process-sequence">Build Process Sequence</h4>
+<p><img src="images/mermaid/architecture_diagram_12.png" alt="Mermaid Diagram"></img></p>
+<h4 id="generated-sbom-output">Generated SBOM Output</h4>
+<p><strong>SPDX 3.0.1 JSON (LLD example):</strong></p>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"@context"</span>: <span class="hljs-string">"https://spdx.org/rdf/3.0.1/spdx-context.jsonld"</span>,
+  <span class="hljs-string">"@graph"</span>: [
+    {
+      <span class="hljs-string">"spdxId"</span>: <span class="hljs-string">"spdx:SPDXRef-DOCUMENT"</span>,
+      <span class="hljs-string">"type"</span>: <span class="hljs-string">"SpdxDocument"</span>,
+      <span class="hljs-string">"spdxVersion"</span>: <span class="hljs-string">"SPDX-3.0.1"</span>,
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"myapp"</span>,
+      <span class="hljs-string">"documentNamespace"</span>: <span class="hljs-string">"https://spdx.org/spdxdocs/heimdall-2025-01-27T12:34:56Z"</span>,
+      <span class="hljs-string">"creationInfo"</span>: {
+        <span class="hljs-string">"spdxId"</span>: <span class="hljs-string">"spdx:CreationInfo-1"</span>,
+        <span class="hljs-string">"type"</span>: <span class="hljs-string">"CreationInfo"</span>,
+        <span class="hljs-string">"created"</span>: <span class="hljs-string">"2025-01-27T12:34:56Z"</span>,
+        <span class="hljs-string">"createdBy"</span>: [
+          {
+            <span class="hljs-string">"type"</span>: <span class="hljs-string">"Tool"</span>,
+            <span class="hljs-string">"name"</span>: <span class="hljs-string">"Heimdall SBOM Generator-2.0.0"</span>
+          }
+        ]
+      },
+      <span class="hljs-string">"dataLicense"</span>: <span class="hljs-string">"CC0-1.0"</span>,
+      <span class="hljs-string">"files"</span>: [
+        {
+          <span class="hljs-string">"@id"</span>: <span class="hljs-string">"spdx:SPDXRef-myapp"</span>,
+          <span class="hljs-string">"type"</span>: <span class="hljs-string">"File"</span>,
+          <span class="hljs-string">"fileName"</span>: <span class="hljs-string">"/path/to/build/myapp"</span>,
+          <span class="hljs-string">"checksums"</span>: [
+            {
+              <span class="hljs-string">"type"</span>: <span class="hljs-string">"Checksum"</span>,
+              <span class="hljs-string">"algorithm"</span>: <span class="hljs-string">"SHA256"</span>,
+              <span class="hljs-string">"checksumValue"</span>: <span class="hljs-string">"a1b2c3d4e5f6..."</span>
+            }
+          ]
+        }
+      ],
+      <span class="hljs-string">"packages"</span>: [
+        {
+          <span class="hljs-string">"@id"</span>: <span class="hljs-string">"spdx:SPDXRef-Package-myapp"</span>,
+          <span class="hljs-string">"type"</span>: <span class="hljs-string">"Package"</span>,
+          <span class="hljs-string">"name"</span>: <span class="hljs-string">"myapp"</span>,
+          <span class="hljs-string">"versionInfo"</span>: <span class="hljs-string">"1.0.0"</span>
+        }
+      ],
+      <span class="hljs-string">"relationships"</span>: [
+        {
+          <span class="hljs-string">"type"</span>: <span class="hljs-string">"Relationship"</span>,
+          <span class="hljs-string">"relationshipType"</span>: <span class="hljs-string">"CONTAINS"</span>,
+          <span class="hljs-string">"relatedSpdxElement"</span>: <span class="hljs-string">"spdx:SPDXRef-myapp"</span>
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<p><strong>CycloneDX 1.6 JSON (Gold example):</strong></p>
+<pre><code class="lang-json">{
+  <span class="hljs-string">"bomFormat"</span>: <span class="hljs-string">"CycloneDX"</span>,
+  <span class="hljs-string">"specVersion"</span>: <span class="hljs-string">"1.6"</span>,
+  <span class="hljs-string">"version"</span>: <span class="hljs-number">1</span>,
+  <span class="hljs-string">"metadata"</span>: {
+    <span class="hljs-string">"timestamp"</span>: <span class="hljs-string">"2025-01-27T12:34:56Z"</span>,
+    <span class="hljs-string">"tools"</span>: [
+      {
+        <span class="hljs-string">"vendor"</span>: <span class="hljs-string">"Heimdall"</span>,
+        <span class="hljs-string">"name"</span>: <span class="hljs-string">"SBOM Generator"</span>,
+        <span class="hljs-string">"version"</span>: <span class="hljs-string">"2.0.0"</span>
+      }
+    ],
+    <span class="hljs-string">"component"</span>: {
+      <span class="hljs-string">"type"</span>: <span class="hljs-string">"application"</span>,
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"myapp"</span>,
+      <span class="hljs-string">"version"</span>: <span class="hljs-string">"1.0.0"</span>
+    }
+  },
+  <span class="hljs-string">"components"</span>: [
+    {
+      <span class="hljs-string">"bom-ref"</span>: <span class="hljs-string">"myapp-1.0.0"</span>,
+      <span class="hljs-string">"type"</span>: <span class="hljs-string">"application"</span>,
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"myapp"</span>,
+      <span class="hljs-string">"version"</span>: <span class="hljs-string">"1.0.0"</span>,
+      <span class="hljs-string">"description"</span>: <span class="hljs-string">"Executable component"</span>,
+      <span class="hljs-string">"hashes"</span>: [
+        {
+          <span class="hljs-string">"alg"</span>: <span class="hljs-string">"SHA-256"</span>,
+          <span class="hljs-string">"content"</span>: <span class="hljs-string">"a1b2c3d4e5f6..."</span>
+        }
+      ],
+      <span class="hljs-string">"purl"</span>: <span class="hljs-string">"pkg:generic/myapp@1.0.0"</span>
+    },
+    {
+      <span class="hljs-string">"bom-ref"</span>: <span class="hljs-string">"libssl-1.1.1"</span>,
+      <span class="hljs-string">"type"</span>: <span class="hljs-string">"library"</span>,
+      <span class="hljs-string">"name"</span>: <span class="hljs-string">"libssl"</span>,
+      <span class="hljs-string">"version"</span>: <span class="hljs-string">"1.1.1"</span>,
+      <span class="hljs-string">"description"</span>: <span class="hljs-string">"Shared library component"</span>,
+      <span class="hljs-string">"supplier"</span>: {
+        <span class="hljs-string">"name"</span>: <span class="hljs-string">"OpenSSL Project"</span>
+      },
+      <span class="hljs-string">"purl"</span>: <span class="hljs-string">"pkg:system/libssl@1.1.1"</span>
+    }
+  ],
+  <span class="hljs-string">"dependencies"</span>: [
+    {
+      <span class="hljs-string">"ref"</span>: <span class="hljs-string">"myapp-1.0.0"</span>,
+      <span class="hljs-string">"dependsOn"</span>: [
+        <span class="hljs-string">"libssl-1.1.1"</span>,
+        <span class="hljs-string">"libcrypto-1.1.1"</span>
+      ]
+    }
+  ]
+}
+</code></pre>
+<h4 id="makefile-integration">Makefile Integration</h4>
+<p>For traditional Makefile builds:</p>
+<pre><code class="lang-makefile"><span class="hljs-comment"># Makefile with Heimdall integration</span>
+CC = gcc
+CXX = g++
+CXXFLAGS = -std=c++17 -O2
+LDFLAGS = -fuse-ld=gold
+
+<span class="hljs-comment"># Heimdall configuration</span>
+HEIMDALL_GOLD_PLUGIN = /usr/lib/heimdall/heimdall-gold.so
+SBOM_OUTPUT = myapp.cyclonedx.json
+SBOM_FORMAT = cyclonedx-1.6
+
+<span class="hljs-comment"># Source files</span>
+SOURCES = src/main.cpp src/utils.cpp src/math.cpp
+OBJECTS = $(SOURCES:.cpp=.o)
+TARGET = myapp
+
+<span class="hljs-comment"># Libraries</span>
+LIBS = -lssl -lcrypto -lpthread
+
+<span class="hljs-comment"># Build rules</span>
+<span class="hljs-variable">$(TARGET)</span>: <span class="hljs-variable">$(OBJECTS)</span>
+    <span class="hljs-variable">$(CXX)</span> <span class="hljs-variable">$(LDFLAGS)</span> \
+        -Wl,--plugin=<span class="hljs-variable">$(HEIMDALL_GOLD_PLUGIN)</span> \
+        -Wl,--plugin-opt=sbom-output=<span class="hljs-variable">$(SBOM_OUTPUT)</span> \
+        -Wl,--plugin-opt=format=<span class="hljs-variable">$(SBOM_FORMAT)</span> \
+        -Wl,--plugin-opt=verbose \
+        -o <span class="hljs-variable">$@</span> <span class="hljs-variable">$^</span> <span class="hljs-variable">$(LIBS)</span>
+
+<span class="hljs-section">%.o: %.cpp</span>
+    <span class="hljs-variable">$(CXX)</span> <span class="hljs-variable">$(CXXFLAGS)</span> -c <span class="hljs-variable">$&lt;</span> -o <span class="hljs-variable">$@</span>
+
+<span class="hljs-section">clean:</span>
+    rm -f <span class="hljs-variable">$(OBJECTS)</span> <span class="hljs-variable">$(TARGET)</span> <span class="hljs-variable">$(SBOM_OUTPUT)</span>
+
+<span class="hljs-meta"><span class="hljs-meta-keyword">.PHONY</span>: clean</span>
+</code></pre>
+<h4 id="command-line-usage">Command-Line Usage</h4>
+<p><strong>Using the wrapper tool (recommended for LLD):</strong></p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Build normally</span>
+g++ -fuse-ld=lld main.o utils.o math.o -o myapp -lssl -lcrypto
+
+<span class="hljs-comment"># Generate SBOM using wrapper</span>
+heimdall-sbom \
+    /usr/lib/heimdall/heimdall-lld.so \
+    myapp \
+    --format spdx-3.0.1 \
+    --output myapp.spdx.json \
+    --verbose \
+    --include-system-libs
+</code></pre>
+<p><strong>Using Gold plugin directly:</strong></p>
+<pre><code class="lang-bash"><span class="hljs-comment"># Build with integrated SBOM generation</span>
+g++ -fuse-ld=gold \
+    -Wl,--plugin=/usr/lib/heimdall/heimdall-gold.so \
+    -Wl,--plugin-opt=sbom-output=myapp.cyclonedx.json \
+    -Wl,--plugin-opt=format=cyclonedx-1.6 \
+    -Wl,--plugin-opt=verbose \
+    -Wl,--plugin-opt=include-system-libs \
+    main.o utils.o math.o -o myapp -lssl -lcrypto
+</code></pre>
+<p>This comprehensive example demonstrates how Heimdall integrates seamlessly into existing build workflows while providing accurate, standards-compliant SBOM generation.</p>
+<p><function_calls></function_calls></p>
+<invoke name="TodoWrite">
+</invoke>
+                                
+                                </section>
+                            
+    </div>
+    <div class="search-results">
+        <div class="has-results">
+            
+            <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+            <ul class="search-results-list"></ul>
+            
+        </div>
+        <div class="no-results">
+            
+            <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+            
+        </div>
+    </div>
+</div>
+
+                        </div>
+                    </div>
+                
+            </div>
+
+            
+                
+                <a href="../" class="navigation navigation-prev " aria-label="Previous page: Introduction">
+                    <i class="fa fa-angle-left"></i>
+                </a>
+                
+                
+                <a href="cmake_module.html" class="navigation navigation-next " aria-label="Next page: CMake Module">
+                    <i class="fa fa-angle-right"></i>
+                </a>
+                
+            
+        
+    </div>
+
+    <script>
+        var gitbook = gitbook || [];
+        gitbook.push(function() {
+            gitbook.page.hasChanged({"page":{"title":"Architecture","level":"1.2","depth":1,"next":{"title":"CMake Module","level":"1.3","depth":1,"path":"docs/cmake_module.md","ref":"docs/cmake_module.md","articles":[]},"previous":{"title":"Introduction","level":"1.1","depth":1,"path":"README.md","ref":"README.md","articles":[]},"dir":"ltr"},"config":{"gitbook":"*","theme":"default","variables":{},"plugins":[],"pluginsConfig":{"highlight":{},"search":{},"lunr":{"maxIndexSize":1000000,"ignoreSpecialCharacters":false},"fontsettings":{"theme":"white","family":"sans","size":2},"theme-default":{"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"},"showLevel":false}},"structure":{"langs":"LANGS.md","readme":"README.md","glossary":"GLOSSARY.md","summary":"SUMMARY.md"},"pdf":{"pageNumbers":true,"fontSize":12,"fontFamily":"Arial","paperSize":"a4","chapterMark":"pagebreak","pageBreaksBefore":"/","margin":{"right":62,"left":62,"top":56,"bottom":56},"embedFonts":false},"styles":{"website":"styles/website.css","pdf":"styles/pdf.css","epub":"styles/epub.css","mobi":"styles/mobi.css","ebook":"styles/ebook.css","print":"styles/print.css"}},"file":{"path":"docs/architecture.md","mtime":"2025-07-27T21:36:09.261Z","type":"markdown"},"gitbook":{"version":"4.0.8","time":"2025-07-27T21:36:16.340Z"},"basePath":"..","book":{"language":""}});
+        });
+    </script>
+</div>
+
+        
+    <noscript>
+        <style>
+            .honkit-cloak {
+                display: block !important;
+            }
+        </style>
+    </noscript>
+    <script>
+        // Restore sidebar state as critical path for prevent layout shift
+        function __init__getSidebarState(defaultValue){
+            var baseKey = "";
+            var key = baseKey + ":sidebar";
+            try {
+                var value = localStorage[key];
+                if (value === undefined) {
+                    return defaultValue;
+                }
+                var parsed = JSON.parse(value);
+                return parsed == null ? defaultValue : parsed;
+            } catch (e) {
+                return defaultValue;
+            }
+        }
+        function __init__restoreLastSidebarState() {
+            var isMobile = window.matchMedia("(max-width: 600px)").matches;
+            if (isMobile) {
+                // Init last state if not mobile
+                return;
+            }
+            var sidebarState = __init__getSidebarState(true);
+            var book = document.querySelector(".book");
+            // Show sidebar if it enabled
+            if (sidebarState && book) {
+                book.classList.add("without-animation", "with-summary");
+            }
+        }
+
+        try {
+            __init__restoreLastSidebarState();
+        } finally {
+            var book = document.querySelector(".book");
+            book.classList.remove("honkit-cloak");
+        }
+    </script>
+    <script src="../gitbook/gitbook.js"></script>
+    <script src="../gitbook/theme.js"></script>
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search-engine.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-search/search.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/lunr.min.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-lunr/search-lunr.js"></script>
+        
+    
+        
+        <script src="../gitbook/gitbook-plugin-fontsettings/fontsettings.js"></script>
+        
+    
+
+    </body>
+</html>
+
