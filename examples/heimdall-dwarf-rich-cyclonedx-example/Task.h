@@ -16,18 +16,18 @@ enum class TaskStatus
 class Task
 {
   public:
-  Task(int id, const std::string& title, const std::string& desc);
-  virtual ~Task();
+      Task(int id, std::string title, std::string desc);
+      virtual ~Task();
 
-  int                getId() const;
-  const std::string& getTitle() const;
-  const std::string& getDescription() const;
-  TaskStatus         getStatus() const;
-  void               setStatus(TaskStatus status);
-  void               setDueDate(const std::chrono::system_clock::time_point& due);
-  std::chrono::system_clock::time_point getDueDate() const;
+      int                getId() const;
+      const std::string& getTitle() const;
+      const std::string& getDescription() const;
+      TaskStatus         getStatus() const;
+      void               setStatus(TaskStatus status);
+      void               setDueDate(const std::chrono::system_clock::time_point& due);
+      std::chrono::system_clock::time_point getDueDate() const;
 
-  virtual void                          print() const;
+      virtual void                          print() const;
 
   protected:
   int                                   id;

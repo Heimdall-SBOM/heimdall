@@ -3,6 +3,6 @@
 
 int main()
 {
-  std::cout << shared_greet("SharedLib User") << std::endl;
-  return 0;
+   std::cout << shared_greet("SharedLib User") << std::endl;
+   return 0;
 }

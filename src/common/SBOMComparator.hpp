@@ -58,95 +58,104 @@ namespace heimdall
 /**
  * @brief Represents a component in an SBOM
  */
-struct SBOMComponent {
-    std::string id;
-    std::string name;
-    std::string version;
-    std::string type;
-    std::string purl;
-    std::string license;
-    std::map<std::string, std::string> properties;
-    std::vector<std::string> dependencies;
-    
-    // Default constructor
-    SBOMComponent() = default;
-    
-    // Move constructor
-    SBOMComponent(SBOMComponent&& other) noexcept = default;
-    
-    // Move assignment operator
-    SBOMComponent& operator=(SBOMComponent&& other) noexcept = default;
-    
-    // Copy constructor
-    SBOMComponent(const SBOMComponent& other) = default;
-    
-    // Copy assignment operator
-    SBOMComponent& operator=(const SBOMComponent& other) = default;
-    
-    /**
-     * @brief Construct a new SBOMComponent with all fields
-     * @param id The component ID
-     * @param name The component name
-     * @param version The component version
-     * @param type The component type
-     * @param purl The package URL
-     * @param license The license
-     * @param properties Additional properties
-     * @param dependencies List of dependencies
-     */
-    SBOMComponent(std::string  id,
-                  std::string  name,
-                  std::string  version,
-                  std::string  type,
-                  std::string  purl,
-                  std::string  license,
-                  const std::map<std::string, std::string>& properties = {},
-                  const std::vector<std::string>& dependencies = {})
-        : id(std::move(std::move(id))), name(std::move(std::move(name))), version(std::move(std::move(version))), type(std::move(std::move(type))), purl(std::move(std::move(purl))), license(std::move(std::move(license))),
-          properties(properties), dependencies(dependencies) {}
-    
-    // Hash for comparison
-    std::string getHash() const;
-    
-    // Compare with another component
-    bool operator==(const SBOMComponent& other) const;
-    bool operator!=(const SBOMComponent& other) const;
+struct SBOMComponent
+{
+   std::string                        id;
+   std::string                        name;
+   std::string                        version;
+   std::string                        type;
+   std::string                        purl;
+   std::string                        license;
+   std::map<std::string, std::string> properties;
+   std::vector<std::string>           dependencies;
+
+   // Default constructor
+   SBOMComponent() = default;
+
+   // Move constructor
+   SBOMComponent(SBOMComponent&& other) noexcept = default;
+
+   // Move assignment operator
+   SBOMComponent& operator=(SBOMComponent&& other) noexcept = default;
+
+   // Copy constructor
+   SBOMComponent(const SBOMComponent& other) = default;
+
+   // Copy assignment operator
+   SBOMComponent& operator=(const SBOMComponent& other) = default;
+
+   /**
+    * @brief Construct a new SBOMComponent with all fields
+    * @param id The component ID
+    * @param name The component name
+    * @param version The component version
+    * @param type The component type
+    * @param purl The package URL
+    * @param license The license
+    * @param properties Additional properties
+    * @param dependencies List of dependencies
+    */
+   SBOMComponent(std::string id, std::string name, std::string version, std::string type,
+                 std::string purl, std::string license,
+                 const std::map<std::string, std::string>& properties   = {},
+                 const std::vector<std::string>&           dependencies = {})
+      : id(std::move(std::move(id))),
+        name(std::move(std::move(name))),
+        version(std::move(std::move(version))),
+        type(std::move(std::move(type))),
+        purl(std::move(std::move(purl))),
+        license(std::move(std::move(license))),
+        properties(properties),
+        dependencies(dependencies)
+   {
+   }
+
+   // Hash for comparison
+   std::string getHash() const;
+
+   // Compare with another component
+   bool operator==(const SBOMComponent& other) const;
+   bool operator!=(const SBOMComponent& other) const;
 };
 
 /**
  * @brief Represents a difference between two SBOMs
  */
-struct SBOMDifference {
-    enum class Type {
-        ADDED,      // Component added in new SBOM
-        REMOVED,    // Component removed from old SBOM
-        MODIFIED,   // Component modified between SBOMs
-        UNCHANGED   // Component unchanged
-    };
-    
-    Type type;
-    SBOMComponent component;
-    heimdall::compat::optional<SBOMComponent> oldComponent;
-    
-    // Default constructor
-    SBOMDifference() = default;
-    
-    // Move constructor
-    SBOMDifference(SBOMDifference&& other) noexcept = default;
-    
-    // Move assignment operator
-    SBOMDifference& operator=(SBOMDifference&& other) noexcept = default;
-    
-    // Copy constructor
-    SBOMDifference(const SBOMDifference& other) = default;
-    
-    // Copy assignment operator
-    SBOMDifference& operator=(const SBOMDifference& other) = default;
-    
-    // Parameterized constructors
-    SBOMDifference(Type t, SBOMComponent  comp) : type(t), component(std::move(std::move(comp))) {}
-    SBOMDifference(Type t, SBOMComponent  comp, const SBOMComponent& oldComp) 
-        : type(t), component(std::move(std::move(comp))), oldComponent(oldComp) {}
+struct SBOMDifference
+{
+   enum class Type
+   {
+      ADDED,     // Component added in new SBOM
+      REMOVED,   // Component removed from old SBOM
+      MODIFIED,  // Component modified between SBOMs
+      UNCHANGED  // Component unchanged
+   };
+
+   Type                                      type;
+   SBOMComponent                             component;
+   heimdall::compat::optional<SBOMComponent> oldComponent;
+
+   // Default constructor
+   SBOMDifference() = default;
+
+   // Move constructor
+   SBOMDifference(SBOMDifference&& other) noexcept = default;
+
+   // Move assignment operator
+   SBOMDifference& operator=(SBOMDifference&& other) noexcept = default;
+
+   // Copy constructor
+   SBOMDifference(const SBOMDifference& other) = default;
+
+   // Copy assignment operator
+   SBOMDifference& operator=(const SBOMDifference& other) = default;
+
+   // Parameterized constructors
+   SBOMDifference(Type t, SBOMComponent comp) : type(t), component(std::move(std::move(comp))) {}
+   SBOMDifference(Type t, SBOMComponent comp, const SBOMComponent& oldComp)
+      : type(t), component(std::move(std::move(comp))), oldComponent(oldComp)
+   {
+   }
 };
 
 /**
@@ -154,28 +163,28 @@ struct SBOMDifference {
  */
 class SBOMParser
 {
-  public:
-  virtual ~SBOMParser() = default;
+   public:
+   virtual ~SBOMParser() = default;
 
-  /**
-   * @brief Parse SBOM file and extract components
-   * @param filePath Path to SBOM file
-   * @return Vector of components
-   */
-  virtual std::vector<SBOMComponent> parse(const std::string& filePath) = 0;
+   /**
+    * @brief Parse SBOM file and extract components
+    * @param filePath Path to SBOM file
+    * @return Vector of components
+    */
+   virtual std::vector<SBOMComponent> parse(const std::string& filePath) = 0;
 
-  /**
-   * @brief Parse SBOM content from string
-   * @param content SBOM content
-   * @return Vector of components
-   */
-  virtual std::vector<SBOMComponent> parseContent(const std::string& content) = 0;
+   /**
+    * @brief Parse SBOM content from string
+    * @param content SBOM content
+    * @return Vector of components
+    */
+   virtual std::vector<SBOMComponent> parseContent(const std::string& content) = 0;
 
-  /**
-   * @brief Get parser name
-   * @return Parser name
-   */
-  virtual std::string getName() const = 0;
+   /**
+    * @brief Get parser name
+    * @return Parser name
+    */
+   virtual std::string getName() const = 0;
 };
 
 /**
@@ -183,18 +192,18 @@ class SBOMParser
  */
 class SPDXParser : public SBOMParser
 {
-  public:
-  std::vector<SBOMComponent> parse(const std::string& filePath) override;
-  std::vector<SBOMComponent> parseContent(const std::string& content) override;
-  std::string                getName() const override
-  {
-    return "SPDX Parser";
-  }
+   public:
+   std::vector<SBOMComponent> parse(const std::string& filePath) override;
+   std::vector<SBOMComponent> parseContent(const std::string& content) override;
+   std::string                getName() const override
+   {
+      return "SPDX Parser";
+   }
 
-  private:
-  bool                       processSPDXLine(const std::string& line, SBOMComponent& component);
-  std::vector<SBOMComponent> parseSPDX2_3(const std::string& content);
-  std::vector<SBOMComponent> parseSPDX3_0(const std::string& content);
+   private:
+   bool                       processSPDXLine(const std::string& line, SBOMComponent& component);
+   std::vector<SBOMComponent> parseSPDX2_3(const std::string& content);
+   std::vector<SBOMComponent> parseSPDX3_0(const std::string& content);
 };
 
 /**
@@ -202,19 +211,19 @@ class SPDXParser : public SBOMParser
  */
 class CycloneDXParser : public SBOMParser
 {
-  public:
-  std::vector<SBOMComponent> parse(const std::string& filePath) override;
-  std::vector<SBOMComponent> parseContent(const std::string& content) override;
-  std::string                getName() const override
-  {
-    return "CycloneDX Parser";
-  }
+   public:
+   std::vector<SBOMComponent> parse(const std::string& filePath) override;
+   std::vector<SBOMComponent> parseContent(const std::string& content) override;
+   std::string                getName() const override
+   {
+      return "CycloneDX Parser";
+   }
 
-  private:
-  std::string                extractVersion(const std::string& content) const;
-  std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content) const;
-  std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content) const;
-  std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content) const;
+   private:
+   std::string                extractVersion(const std::string& content) const;
+   std::vector<SBOMComponent> parseCycloneDX1_4(const std::string& content) const;
+   std::vector<SBOMComponent> parseCycloneDX1_5(const std::string& content) const;
+   std::vector<SBOMComponent> parseCycloneDX1_6(const std::string& content) const;
 };
 
 /**
@@ -222,68 +231,68 @@ class CycloneDXParser : public SBOMParser
  */
 class SBOMComparator
 {
-  public:
-  /**
-   * @brief Compare two SBOM files
-   * @param oldSBOM Path to old SBOM file
-   * @param newSBOM Path to new SBOM file
-   * @return Vector of differences
-   */
-  std::vector<SBOMDifference> compare(const std::string& oldSBOM, const std::string& newSBOM);
+   public:
+   /**
+    * @brief Compare two SBOM files
+    * @param oldSBOM Path to old SBOM file
+    * @param newSBOM Path to new SBOM file
+    * @return Vector of differences
+    */
+   std::vector<SBOMDifference> compare(const std::string& oldSBOM, const std::string& newSBOM);
 
-  /**
-   * @brief Compare two SBOM contents
-   * @param oldContent Old SBOM content
-   * @param newContent New SBOM content
-   * @param format SBOM format ("spdx" or "cyclonedx")
-   * @return Vector of differences
-   */
-  std::vector<SBOMDifference> compareContent(const std::string& oldContent,
-                                             const std::string& newContent,
-                                             const std::string& format);
+   /**
+    * @brief Compare two SBOM contents
+    * @param oldContent Old SBOM content
+    * @param newContent New SBOM content
+    * @param format SBOM format ("spdx" or "cyclonedx")
+    * @return Vector of differences
+    */
+   std::vector<SBOMDifference> compareContent(const std::string& oldContent,
+                                              const std::string& newContent,
+                                              const std::string& format);
 
-  /**
-   * @brief Merge multiple SBOMs into one
-   * @param sbomFiles Vector of SBOM file paths
-   * @param outputFormat Output format ("spdx" or "cyclonedx")
-   * @param outputVersion Output version
-   * @return Merged SBOM content
-   */
-  std::string merge(const std::vector<std::string>& sbomFiles, const std::string& outputFormat,
-                    const std::string& outputVersion);
+   /**
+    * @brief Merge multiple SBOMs into one
+    * @param sbomFiles Vector of SBOM file paths
+    * @param outputFormat Output format ("spdx" or "cyclonedx")
+    * @param outputVersion Output version
+    * @return Merged SBOM content
+    */
+   std::string merge(const std::vector<std::string>& sbomFiles, const std::string& outputFormat,
+                     const std::string& outputVersion);
 
-  /**
-   * @brief Generate diff report
-   * @param differences Vector of differences
-   * @param format Output format ("text", "json", "csv")
-   * @return Diff report
-   */
-  std::string generateDiffReport(const std::vector<SBOMDifference>& differences,
-                                 const std::string&                 format = "text");
+   /**
+    * @brief Generate diff report
+    * @param differences Vector of differences
+    * @param format Output format ("text", "json", "csv")
+    * @return Diff report
+    */
+   std::string generateDiffReport(const std::vector<SBOMDifference>& differences,
+                                  const std::string&                 format = "text");
 
-  /**
-   * @brief Get statistics about differences
-   * @param differences Vector of differences
-   * @return Map of statistics
-   */
-  std::map<std::string, int> getDiffStatistics(const std::vector<SBOMDifference>& differences);
+   /**
+    * @brief Get statistics about differences
+    * @param differences Vector of differences
+    * @return Map of statistics
+    */
+   std::map<std::string, int> getDiffStatistics(const std::vector<SBOMDifference>& differences);
 
-  private:
-  std::string                 detectFormatFromFile(const std::string& filePath);
-  std::unique_ptr<SBOMParser> createParser(const std::string& format);
-  std::vector<SBOMDifference> compareComponents(const std::vector<SBOMComponent>& oldComponents,
-                                                const std::vector<SBOMComponent>& newComponents);
-  std::string mergeComponents(const std::vector<std::vector<SBOMComponent>>& componentLists,
-                              const std::string& outputFormat, const std::string& outputVersion);
-  std::string generateSPDXOutput(const std::vector<SBOMComponent>& components,
-                                 const std::string&                version);
-  std::string generateCycloneDXOutput(const std::vector<SBOMComponent>& components,
-                                      const std::string&                version);
-  std::string generateJSONReport(const std::vector<SBOMDifference>& differences);
-  std::string generateCSVReport(const std::vector<SBOMDifference>& differences);
-  std::string generateTextReport(const std::vector<SBOMDifference>& differences);
-  std::string getDifferenceTypeString(SBOMDifference::Type type);
-  std::string getCurrentTimestamp();
+   private:
+   std::string                 detectFormatFromFile(const std::string& filePath);
+   std::unique_ptr<SBOMParser> createParser(const std::string& format);
+   std::vector<SBOMDifference> compareComponents(const std::vector<SBOMComponent>& oldComponents,
+                                                 const std::vector<SBOMComponent>& newComponents);
+   std::string mergeComponents(const std::vector<std::vector<SBOMComponent>>& componentLists,
+                               const std::string& outputFormat, const std::string& outputVersion);
+   std::string generateSPDXOutput(const std::vector<SBOMComponent>& components,
+                                  const std::string&                version);
+   std::string generateCycloneDXOutput(const std::vector<SBOMComponent>& components,
+                                       const std::string&                version);
+   std::string generateJSONReport(const std::vector<SBOMDifference>& differences);
+   std::string generateCSVReport(const std::vector<SBOMDifference>& differences);
+   std::string generateTextReport(const std::vector<SBOMDifference>& differences);
+   std::string getDifferenceTypeString(SBOMDifference::Type type);
+   std::string getCurrentTimestamp();
 };
 
 /**
@@ -291,19 +300,19 @@ class SBOMComparator
  */
 class SBOMParserFactory
 {
-  public:
-  /**
-   * @brief Create a parser for the given format
-   * @param format SBOM format ("spdx" or "cyclonedx")
-   * @return Unique pointer to the created parser, or nullptr if format is not supported
-   */
-  static std::unique_ptr<SBOMParser> createParser(const std::string& format);
+   public:
+   /**
+    * @brief Create a parser for the given format
+    * @param format SBOM format ("spdx" or "cyclonedx")
+    * @return Unique pointer to the created parser, or nullptr if format is not supported
+    */
+   static std::unique_ptr<SBOMParser> createParser(const std::string& format);
 
-  /**
-   * @brief Get list of supported SBOM formats
-   * @return Vector of supported format names
-   */
-  static std::vector<std::string> getSupportedFormats();
+   /**
+    * @brief Get list of supported SBOM formats
+    * @return Vector of supported format names
+    */
+   static std::vector<std::string> getSupportedFormats();
 };
 
 }  // namespace heimdall

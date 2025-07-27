@@ -27,9 +27,9 @@ limitations under the License.
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include "Utils.hpp"
-#include <iostream>
 
 namespace heimdall
 {
@@ -41,7 +41,7 @@ namespace heimdall
  */
 std::string calculateSHA256(const std::string& filePath)
 {
-  return Utils::getFileChecksum(filePath);
+   return Utils::getFileChecksum(filePath);
 }
 
 /**
@@ -51,12 +51,12 @@ std::string calculateSHA256(const std::string& filePath)
  */
 uint64_t getFileSize(const std::string& filePath)
 {
-  std::ifstream file(filePath, std::ios::binary | std::ios::ate);
-  if (!file.is_open())
-  {
-    return 0;
-  }
-  return file.tellg();
+   std::ifstream file(filePath, std::ios::binary | std::ios::ate);
+   if (!file.is_open())
+   {
+      return 0;
+   }
+   return file.tellg();
 }
 
 /**
@@ -66,36 +66,36 @@ uint64_t getFileSize(const std::string& filePath)
  */
 FileType determineFileType(const std::string& filePath)
 {
-  std::string lowerPath = filePath;
-  std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
+   std::string lowerPath = filePath;
+   std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
 
-  // Helper function to check if string ends with suffix
-  auto endsWith = [](const std::string& str, const std::string& suffix)
-  {
-    if (str.length() < suffix.length())
-      return false;
-    return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
-  };
+   // Helper function to check if string ends with suffix
+   auto endsWith = [](const std::string& str, const std::string& suffix)
+   {
+      if (str.length() < suffix.length())
+         return false;
+      return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+   };
 
-  if (endsWith(lowerPath, ".o") || endsWith(lowerPath, ".obj"))
-  {
-    return FileType::Object;
-  }
-  else if (endsWith(lowerPath, ".a") || endsWith(lowerPath, ".lib"))
-  {
-    return FileType::StaticLibrary;
-  }
-  else if (endsWith(lowerPath, ".so") || endsWith(lowerPath, ".dylib") ||
-           endsWith(lowerPath, ".dll"))
-  {
-    return FileType::SharedLibrary;
-  }
-  else if (endsWith(lowerPath, ".exe") || lowerPath.find("bin/") != std::string::npos)
-  {
-    return FileType::Executable;
-  }
+   if (endsWith(lowerPath, ".o") || endsWith(lowerPath, ".obj"))
+   {
+      return FileType::Object;
+   }
+   else if (endsWith(lowerPath, ".a") || endsWith(lowerPath, ".lib"))
+   {
+      return FileType::StaticLibrary;
+   }
+   else if (endsWith(lowerPath, ".so") || endsWith(lowerPath, ".dylib") ||
+            endsWith(lowerPath, ".dll"))
+   {
+      return FileType::SharedLibrary;
+   }
+   else if (endsWith(lowerPath, ".exe") || lowerPath.find("bin/") != std::string::npos)
+   {
+      return FileType::Executable;
+   }
 
-  return FileType::Unknown;
+   return FileType::Unknown;
 }
 
 /**
@@ -104,17 +104,17 @@ FileType determineFileType(const std::string& filePath)
  * @param path The file path
  */
 ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
-  : name(std::move(componentName)),
-    filePath(path),
-    fileType(determineFileType(path)),
-    fileSize(getFileSize(path)),
-    wasProcessed(false),
-    detectedBy(LinkerType::Unknown),
-    isSystemLibrary(false),
-    containsDebugInfo(false),
-    isStripped(false)
+   : name(std::move(componentName)),
+     filePath(path),
+     fileType(determineFileType(path)),
+     fileSize(getFileSize(path)),
+     wasProcessed(false),
+     detectedBy(LinkerType::Unknown),
+     isSystemLibrary(false),
+     containsDebugInfo(false),
+     isStripped(false)
 {
-  checksum = calculateSHA256(path);
+   checksum = calculateSHA256(path);
 }
 
 /**
@@ -123,10 +123,10 @@ ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
  */
 void ComponentInfo::addDependency(const std::string& dependency)
 {
-  if (std::find(dependencies.begin(), dependencies.end(), dependency) == dependencies.end())
-  {
-    dependencies.push_back(dependency);
-  }
+   if (std::find(dependencies.begin(), dependencies.end(), dependency) == dependencies.end())
+   {
+      dependencies.push_back(dependency);
+   }
 }
 
 /**
@@ -135,10 +135,10 @@ void ComponentInfo::addDependency(const std::string& dependency)
  */
 void ComponentInfo::addSourceFile(const std::string& sourceFile)
 {
-  if (std::find(sourceFiles.begin(), sourceFiles.end(), sourceFile) == sourceFiles.end())
-  {
-    sourceFiles.push_back(sourceFile);
-  }
+   if (std::find(sourceFiles.begin(), sourceFiles.end(), sourceFile) == sourceFiles.end())
+   {
+      sourceFiles.push_back(sourceFile);
+   }
 }
 
 /**
@@ -147,7 +147,7 @@ void ComponentInfo::addSourceFile(const std::string& sourceFile)
  */
 void ComponentInfo::setVersion(const std::string& ver)
 {
-  version = ver;
+   version = ver;
 }
 
 /**
@@ -156,7 +156,7 @@ void ComponentInfo::setVersion(const std::string& ver)
  */
 void ComponentInfo::setSupplier(const std::string& sup)
 {
-  supplier = sup;
+   supplier = sup;
 }
 
 /**
@@ -165,7 +165,7 @@ void ComponentInfo::setSupplier(const std::string& sup)
  */
 void ComponentInfo::setDownloadLocation(const std::string& location)
 {
-  downloadLocation = location;
+   downloadLocation = location;
 }
 
 /**
@@ -174,7 +174,7 @@ void ComponentInfo::setDownloadLocation(const std::string& location)
  */
 void ComponentInfo::setHomepage(const std::string& page)
 {
-  homepage = page;
+   homepage = page;
 }
 
 /**
@@ -183,7 +183,7 @@ void ComponentInfo::setHomepage(const std::string& page)
  */
 void ComponentInfo::setLicense(const std::string& lic)
 {
-  license = lic;
+   license = lic;
 }
 
 /**
@@ -192,7 +192,7 @@ void ComponentInfo::setLicense(const std::string& lic)
  */
 void ComponentInfo::setPackageManager(const std::string& pkgMgr)
 {
-  packageManager = pkgMgr;
+   packageManager = pkgMgr;
 }
 
 /**
@@ -200,7 +200,7 @@ void ComponentInfo::setPackageManager(const std::string& pkgMgr)
  */
 void ComponentInfo::markAsProcessed()
 {
-  wasProcessed = true;
+   wasProcessed = true;
 }
 
 /**
@@ -209,8 +209,8 @@ void ComponentInfo::markAsProcessed()
  */
 void ComponentInfo::setProcessingError(const std::string& error)
 {
-  processingError = error;
-  wasProcessed    = false;
+   processingError = error;
+   wasProcessed    = false;
 }
 
 /**
@@ -219,7 +219,7 @@ void ComponentInfo::setProcessingError(const std::string& error)
  */
 void ComponentInfo::setDetectedBy(LinkerType linker)
 {
-  detectedBy = linker;
+   detectedBy = linker;
 }
 
 /**
@@ -229,7 +229,7 @@ void ComponentInfo::setDetectedBy(LinkerType linker)
  */
 void ComponentInfo::addProperty(const std::string& key, const std::string& value)
 {
-  properties[key] = value;
+   properties[key] = value;
 }
 
 /**
@@ -239,8 +239,8 @@ void ComponentInfo::addProperty(const std::string& key, const std::string& value
  */
 std::string ComponentInfo::getProperty(const std::string& key) const
 {
-  auto it = properties.find(key);
-  return (it != properties.end()) ? it->second : "";
+   auto it = properties.find(key);
+   return (it != properties.end()) ? it->second : "";
 }
 
 /**
@@ -248,7 +248,7 @@ std::string ComponentInfo::getProperty(const std::string& key) const
  */
 void ComponentInfo::markAsSystemLibrary()
 {
-  isSystemLibrary = true;
+   isSystemLibrary = true;
 }
 
 /**
@@ -257,7 +257,7 @@ void ComponentInfo::markAsSystemLibrary()
  */
 void ComponentInfo::setContainsDebugInfo(bool hasDebug)
 {
-  containsDebugInfo = hasDebug;
+   containsDebugInfo = hasDebug;
 }
 
 /**
@@ -266,7 +266,7 @@ void ComponentInfo::setContainsDebugInfo(bool hasDebug)
  */
 void ComponentInfo::setStripped(bool stripped)
 {
-  isStripped = stripped;
+   isStripped = stripped;
 }
 
 /**
@@ -276,8 +276,8 @@ void ComponentInfo::setStripped(bool stripped)
  */
 bool ComponentInfo::hasSymbol(const std::string& symbolName) const
 {
-  return std::any_of(symbols.begin(), symbols.end(),
-                     [&symbolName](const SymbolInfo& symbol) { return symbol.name == symbolName; });
+   return std::any_of(symbols.begin(), symbols.end(), [&symbolName](const SymbolInfo& symbol)
+                      { return symbol.name == symbolName; });
 }
 
 /**
@@ -287,8 +287,8 @@ bool ComponentInfo::hasSymbol(const std::string& symbolName) const
  */
 bool ComponentInfo::hasSection(const std::string& sectionName) const
 {
-  return std::any_of(sections.begin(), sections.end(), [&sectionName](const SectionInfo& section)
-                     { return section.name == sectionName; });
+   return std::any_of(sections.begin(), sections.end(), [&sectionName](const SectionInfo& section)
+                      { return section.name == sectionName; });
 }
 
 /**
@@ -297,44 +297,45 @@ bool ComponentInfo::hasSection(const std::string& sectionName) const
  */
 std::string ComponentInfo::getFileTypeString(const std::string& spdxVersion) const
 {
-  // For SPDX 2.3, SharedLibrary must be mapped to BINARY
-  if (spdxVersion == "2.3")
-  {
-    switch (fileType)
-    {
-      case FileType::Object:
-        return "SOURCE";  // or "OBJECT" if you want to be more specific, but SPDX 2.3 uses SOURCE
-      case FileType::StaticLibrary:
-        return "ARCHIVE";
-      case FileType::SharedLibrary:
-        return "BINARY";
-      case FileType::Executable:
-        return "APPLICATION";
-      case FileType::Source:
-        return "SOURCE";
-      default:
-        return "OTHER";
-    }
-  }
-  else
-  {
-    // Old behavior for other versions
-    switch (fileType)
-    {
-      case FileType::Object:
-        return "Object";
-      case FileType::StaticLibrary:
-        return "StaticLibrary";
-      case FileType::SharedLibrary:
-        return "SharedLibrary";
-      case FileType::Executable:
-        return "Executable";
-      case FileType::Source:
-        return "Source";
-      default:
-        return "Unknown";
-    }
-  }
+   // For SPDX 2.3, SharedLibrary must be mapped to BINARY
+   if (spdxVersion == "2.3")
+   {
+      switch (fileType)
+      {
+         case FileType::Object:
+            return "SOURCE";  // or "OBJECT" if you want to be more specific, but SPDX 2.3 uses
+                              // SOURCE
+         case FileType::StaticLibrary:
+            return "ARCHIVE";
+         case FileType::SharedLibrary:
+            return "BINARY";
+         case FileType::Executable:
+            return "APPLICATION";
+         case FileType::Source:
+            return "SOURCE";
+         default:
+            return "OTHER";
+      }
+   }
+   else
+   {
+      // Old behavior for other versions
+      switch (fileType)
+      {
+         case FileType::Object:
+            return "Object";
+         case FileType::StaticLibrary:
+            return "StaticLibrary";
+         case FileType::SharedLibrary:
+            return "SharedLibrary";
+         case FileType::Executable:
+            return "Executable";
+         case FileType::Source:
+            return "Source";
+         default:
+            return "Unknown";
+      }
+   }
 }
 
 /**
@@ -343,17 +344,17 @@ std::string ComponentInfo::getFileTypeString(const std::string& spdxVersion) con
  */
 std::string ComponentInfo::getLinkerTypeString() const
 {
-  switch (detectedBy)
-  {
-    case LinkerType::LLD:
-      return "LLD";
-    case LinkerType::Gold:
-      return "Gold";
-    case LinkerType::BFD:
-      return "BFD";
-    default:
-      return "Unknown";
-  }
+   switch (detectedBy)
+   {
+      case LinkerType::LLD:
+         return "LLD";
+      case LinkerType::Gold:
+         return "Gold";
+      case LinkerType::BFD:
+         return "BFD";
+      default:
+         return "Unknown";
+   }
 }
 
 }  // namespace heimdall

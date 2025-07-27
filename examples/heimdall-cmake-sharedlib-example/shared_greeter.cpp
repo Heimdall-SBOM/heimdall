@@ -2,5 +2,5 @@
 
 std::string shared_greet(const std::string& name)
 {
-  return "[Shared] Hello, " + name + "!";
+   return "[Shared] Hello, " + name + "!";
 }

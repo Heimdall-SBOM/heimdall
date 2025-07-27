@@ -36,9 +36,9 @@ namespace StringUtils
 inline bool contains(const std::string& str, const std::string& substr)
 {
 #if __cplusplus >= 202302L
-  return str.contains(substr);
+   return str.contains(substr);
 #else
-  return str.find(substr) != std::string::npos;
+   return str.find(substr) != std::string::npos;
 #endif
 }
 
@@ -51,9 +51,9 @@ inline bool contains(const std::string& str, const std::string& substr)
 inline bool contains(const std::string& str, const char* substr)
 {
 #if __cplusplus >= 202302L
-  return str.contains(substr);
+   return str.contains(substr);
 #else
-  return str.find(substr) != std::string::npos;
+   return str.find(substr) != std::string::npos;
 #endif
 }
 
@@ -66,11 +66,11 @@ inline bool contains(const std::string& str, const char* substr)
 inline bool starts_with(const std::string& str, const std::string& prefix)
 {
 #if __cplusplus >= 202002L
-  return str.starts_with(prefix);
+   return str.starts_with(prefix);
 #else
-  if (str.length() < prefix.length())
-    return false;
-  return str.compare(0, prefix.length(), prefix) == 0;
+   if (str.length() < prefix.length())
+      return false;
+   return str.compare(0, prefix.length(), prefix) == 0;
 #endif
 }
 
@@ -83,16 +83,15 @@ inline bool starts_with(const std::string& str, const std::string& prefix)
 inline bool ends_with(const std::string& str, const std::string& suffix)
 {
 #if __cplusplus >= 202002L
-  return str.ends_with(suffix);
+   return str.ends_with(suffix);
 #else
-  if (str.length() < suffix.length())
-    return false;
-  return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
+   if (str.length() < suffix.length())
+      return false;
+   return str.compare(str.length() - suffix.length(), suffix.length(), suffix) == 0;
 #endif
 }
 
 // Filesystem compatibility (C++17+)
-namespace fs = std::filesystem;
 
 // make_unique for C++14+, but C++17+ always has it
 using std::make_unique;

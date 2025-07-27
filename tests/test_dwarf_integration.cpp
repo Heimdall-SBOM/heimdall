@@ -52,36 +52,36 @@ namespace heimdall
 
 class DWARFIntegrationTest : public ::testing::Test
 {
-  protected:
-  void SetUp() override
-  {
-    test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_integration_test");
-    heimdall::compat::fs::create_directories(test_dir);
+   protected:
+   void SetUp() override
+   {
+      test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_integration_test");
+      heimdall::compat::fs::create_directories(test_dir);
 
-    // Create test files
-    createTestFiles();
-  }
+      // Create test files
+      createTestFiles();
+   }
 
-  void TearDown() override
-  {
-    test_utils::safeRemoveDirectory(test_dir);
-  }
+   void TearDown() override
+   {
+      test_utils::safeRemoveDirectory(test_dir);
+   }
 
-  void createTestFiles()
-  {
-    // Enable test mode to avoid hanging on directory operations
-    heimdall::MetadataHelpers::setTestMode(true);
+   void createTestFiles()
+   {
+      // Enable test mode to avoid hanging on directory operations
+      heimdall::MetadataHelpers::setTestMode(true);
 
-    // Create complex multi-file project
-    createTestProject();
-    compileTestProject();
-  }
+      // Create complex multi-file project
+      createTestProject();
+      compileTestProject();
+   }
 
-  void createTestProject()
-  {
-    // Main source file
-    main_source = test_dir / "main.c";
-    std::ofstream(main_source) << R"(
+   void createTestProject()
+   {
+      // Main source file
+      main_source = test_dir / "main.c";
+      std::ofstream(main_source) << R"(
 #include <stdio.h>
 #include <stdlib.h>
 #include "math_utils.h"
@@ -106,9 +106,9 @@ int main(int argc, char* argv[]) {
 }
 )";
 
-    // Math utilities header
-    math_header = test_dir / "math_utils.h";
-    std::ofstream(math_header) << R"(
+      // Math utilities header
+      math_header = test_dir / "math_utils.h";
+      std::ofstream(math_header) << R"(
 #ifndef MATH_UTILS_H
 #define MATH_UTILS_H
 
@@ -119,9 +119,9 @@ int fibonacci(int n);
 #endif
 )";
 
-    // Math utilities implementation
-    math_source = test_dir / "math_utils.c";
-    std::ofstream(math_source) << R"(
+      // Math utilities implementation
+      math_source = test_dir / "math_utils.c";
+      std::ofstream(math_source) << R"(
 #include "math_utils.h"
 #include <math.h>
 
@@ -143,9 +143,9 @@ int fibonacci(int n) {
 }
 )";
 
-    // String utilities header
-    string_header = test_dir / "string_utils.h";
-    std::ofstream(string_header) << R"(
+      // String utilities header
+      string_header = test_dir / "string_utils.h";
+      std::ofstream(string_header) << R"(
 #ifndef STRING_UTILS_H
 #define STRING_UTILS_H
 
@@ -156,9 +156,9 @@ char* concatenate_strings(const char* str1, const char* str2);
 #endif
 )";
 
-    // String utilities implementation
-    string_source = test_dir / "string_utils.c";
-    std::ofstream(string_source) << R"(
+      // String utilities implementation
+      string_source = test_dir / "string_utils.c";
+      std::ofstream(string_source) << R"(
 #include "string_utils.h"
 #include <string.h>
 #include <stdlib.h>
@@ -186,224 +186,227 @@ char* concatenate_strings(const char* str1, const char* str2) {
     return result;
 }
 )";
-  }
+   }
 
-  void compileTestProject()
-  {
-    // Compile object files
-    math_object              = test_dir / "math_utils.o";
-    std::string math_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-                               math_object.string() + " " + math_source.string() + " 2>/dev/null";
-    int math_obj_result = system(math_obj_cmd.c_str());
-    (void)math_obj_result;  // Suppress unused variable warning
+   void compileTestProject()
+   {
+      // Compile object files
+      math_object              = test_dir / "math_utils.o";
+      std::string math_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+                                 math_object.string() + " " + math_source.string() + " 2>/dev/null";
+      int math_obj_result = system(math_obj_cmd.c_str());
+      (void)math_obj_result;  // Suppress unused variable warning
 
-    string_object              = test_dir / "string_utils.o";
-    std::string string_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-                                 string_object.string() + " " + string_source.string() +
-                                 " 2>/dev/null";
-    int string_obj_result = system(string_obj_cmd.c_str());
-    (void)string_obj_result;  // Suppress unused variable warning
+      string_object              = test_dir / "string_utils.o";
+      std::string string_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+                                   string_object.string() + " " + string_source.string() +
+                                   " 2>/dev/null";
+      int string_obj_result = system(string_obj_cmd.c_str());
+      (void)string_obj_result;  // Suppress unused variable warning
 
-    // Compile main executable
-    main_executable      = test_dir / "integration_test";
-    std::string main_cmd = "gcc -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-                           main_executable.string() + " " + main_source.string() + " " +
-                           math_object.string() + " " + string_object.string() + " 2>/dev/null";
-    int main_result = system(main_cmd.c_str());
-    (void)main_result;  // Suppress unused variable warning
+      // Compile main executable
+      main_executable      = test_dir / "integration_test";
+      std::string main_cmd = "gcc -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+                             main_executable.string() + " " + main_source.string() + " " +
+                             math_object.string() + " " + string_object.string() + " 2>/dev/null";
+      int main_result = system(main_cmd.c_str());
+      (void)main_result;  // Suppress unused variable warning
 
-    // Create shared library
-    math_library = test_dir / "libmath_utils.so";
-    std::string math_lib_cmd =
-      "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-      math_library.string() + " " + math_source.string() + " 2>/dev/null";
-    int math_lib_result = system(math_lib_cmd.c_str());
-    (void)math_lib_result;  // Suppress unused variable warning
+      // Create shared library
+      math_library = test_dir / "libmath_utils.so";
+      std::string math_lib_cmd =
+         "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+         math_library.string() + " " + math_source.string() + " 2>/dev/null";
+      int math_lib_result = system(math_lib_cmd.c_str());
+      (void)math_lib_result;  // Suppress unused variable warning
 
-    string_library = test_dir / "libstring_utils.so";
-    std::string string_lib_cmd =
-      "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-      string_library.string() + " " + string_source.string() + " 2>/dev/null";
-    int string_lib_result = system(string_lib_cmd.c_str());
-    (void)string_lib_result;  // Suppress unused variable warning
+      string_library = test_dir / "libstring_utils.so";
+      std::string string_lib_cmd =
+         "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+         string_library.string() + " " + string_source.string() + " 2>/dev/null";
+      int string_lib_result = system(string_lib_cmd.c_str());
+      (void)string_lib_result;  // Suppress unused variable warning
 
-    // Create static library
-    static_library             = test_dir / "libutils.a";
-    std::string static_lib_cmd = "ar rcs " + static_library.string() + " " + math_object.string() +
-                                 " " + string_object.string() + " 2>/dev/null";
-    int static_lib_result = system(static_lib_cmd.c_str());
-    (void)static_lib_result;  // Suppress unused variable warning
+      // Create static library
+      static_library             = test_dir / "libutils.a";
+      std::string static_lib_cmd = "ar rcs " + static_library.string() + " " +
+                                   math_object.string() + " " + string_object.string() +
+                                   " 2>/dev/null";
+      int static_lib_result = system(static_lib_cmd.c_str());
+      (void)static_lib_result;  // Suppress unused variable warning
 
-    // Fallback to dummy files if compilation fails
-    if (!heimdall::compat::fs::exists(main_executable))
-    {
-      std::ofstream(main_executable) << "dummy executable";
-    }
-    if (!heimdall::compat::fs::exists(math_library))
-    {
-      std::ofstream(math_library) << "dummy math library";
-    }
-    if (!heimdall::compat::fs::exists(string_library))
-    {
-      std::ofstream(string_library) << "dummy string library";
-    }
-    if (!heimdall::compat::fs::exists(static_library))
-    {
-      std::ofstream(static_library) << "!<arch>\ndummy static library";
-    }
-  }
+      // Fallback to dummy files if compilation fails
+      if (!heimdall::compat::fs::exists(main_executable))
+      {
+         std::ofstream(main_executable) << "dummy executable";
+      }
+      if (!heimdall::compat::fs::exists(math_library))
+      {
+         std::ofstream(math_library) << "dummy math library";
+      }
+      if (!heimdall::compat::fs::exists(string_library))
+      {
+         std::ofstream(string_library) << "dummy string library";
+      }
+      if (!heimdall::compat::fs::exists(static_library))
+      {
+         std::ofstream(static_library) << "!<arch>\ndummy static library";
+      }
+   }
 
-  heimdall::compat::fs::path test_dir;
-  heimdall::compat::fs::path main_source, math_source, string_source;
-  heimdall::compat::fs::path math_header, string_header;
-  heimdall::compat::fs::path main_executable, math_object, string_object;
-  heimdall::compat::fs::path math_library, string_library, static_library;
+   heimdall::compat::fs::path test_dir;
+   heimdall::compat::fs::path main_source, math_source, string_source;
+   heimdall::compat::fs::path math_header, string_header;
+   heimdall::compat::fs::path main_executable, math_object, string_object;
+   heimdall::compat::fs::path math_library, string_library, static_library;
 };
 
 // End-to-End Integration Tests
 TEST_F(DWARFIntegrationTest, EndToEndSBOMGeneration)
 {
-  if (heimdall::compat::fs::file_size(main_executable) > 100)
-  {
-    MetadataExtractor extractor;
-    ComponentInfo     component("integration_test", main_executable.string());
+   if (heimdall::compat::fs::file_size(main_executable) > 100)
+   {
+      MetadataExtractor extractor;
+      ComponentInfo     component("integration_test", main_executable.string());
 
-    // Extract all metadata including debug info
-    bool result = extractor.extractMetadata(component);
+      // Extract all metadata including debug info
+      bool result = extractor.extractMetadata(component);
 
-    if (result)
-    {
-      EXPECT_TRUE(component.wasProcessed);
-      EXPECT_EQ(component.fileType, FileType::Executable);
-      EXPECT_GT(component.fileSize, 0u);
-      EXPECT_FALSE(component.checksum.empty());
-
-      // Should have symbols
-      EXPECT_FALSE(component.symbols.empty());
-
-      // Should have sections
-      EXPECT_FALSE(component.sections.empty());
-
-      // Check for expected symbols
-      std::vector<std::string> expected_symbols = {
-        "main",           "add_numbers",   "calculate_pi",       "fibonacci",
-        "reverse_string", "string_length", "concatenate_strings"};
-
-      for (const auto& expected : expected_symbols)
+      if (result)
       {
-        bool found = false;
-        for (const auto& symbol : component.symbols)
-        {
-          if (symbol.name.find(expected) != std::string::npos)
-          {
-            found = true;
-            break;
-          }
-        }
-        EXPECT_TRUE(found) << "Expected symbol '" << expected << "' not found in SBOM";
-      }
+         EXPECT_TRUE(component.wasProcessed);
+         EXPECT_EQ(component.fileType, FileType::Executable);
+         EXPECT_GT(component.fileSize, 0u);
+         EXPECT_FALSE(component.checksum.empty());
 
-      // Check for debug info
-      if (component.containsDebugInfo)
-      {
-        // Source files might not be found due to heuristic limitations
-        // The important thing is that debug info extraction works
-        EXPECT_TRUE(true);  // Accept any result for source files
+         // Should have symbols
+         EXPECT_FALSE(component.symbols.empty());
+
+         // Should have sections
+         EXPECT_FALSE(component.sections.empty());
+
+         // Check for expected symbols
+         std::vector<std::string> expected_symbols = {
+            "main",           "add_numbers",   "calculate_pi",       "fibonacci",
+            "reverse_string", "string_length", "concatenate_strings"};
+
+         for (const auto& expected : expected_symbols)
+         {
+            bool found = false;
+            for (const auto& symbol : component.symbols)
+            {
+               if (symbol.name.find(expected) != std::string::npos)
+               {
+                  found = true;
+                  break;
+               }
+            }
+            EXPECT_TRUE(found) << "Expected symbol '" << expected << "' not found in SBOM";
+         }
+
+         // Check for debug info
+         if (component.containsDebugInfo)
+         {
+            // Source files might not be found due to heuristic limitations
+            // The important thing is that debug info extraction works
+            EXPECT_TRUE(true);  // Accept any result for source files
+         }
       }
-    }
-  }
+   }
 }
 
 TEST_F(DWARFIntegrationTest, MultiComponentSBOMGeneration)
 {
-  std::vector<std::string>   component_paths = {main_executable.string(), math_library.string(),
-                                                string_library.string(), static_library.string()};
+   std::vector<std::string>   component_paths = {main_executable.string(), math_library.string(),
+                                                 string_library.string(), static_library.string()};
 
-  std::vector<ComponentInfo> components;
+   std::vector<ComponentInfo> components;
 
-  for (size_t i = 0; i < component_paths.size(); ++i)
-  {
-    if (heimdall::compat::fs::file_size(component_paths[i]) > 100)
-    {
-      std::string       name = "component_" + std::to_string(i);
-      ComponentInfo     component(name, component_paths[i]);
+   for (size_t i = 0; i < component_paths.size(); ++i)
+   {
+      if (heimdall::compat::fs::file_size(component_paths[i]) > 100)
+      {
+         std::string       name = "component_" + std::to_string(i);
+         ComponentInfo     component(name, component_paths[i]);
 
-      MetadataExtractor extractor;
-      extractor.extractMetadata(component);
+         MetadataExtractor extractor;
+         extractor.extractMetadata(component);
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-      std::cout << "Processing " << component_paths[i] << " (component " << i << "):" << std::endl;
-      std::cout << "  - wasProcessed: " << (component.wasProcessed ? "true" : "false") << std::endl;
-      std::cout << "  - fileSize: " << component.fileSize << std::endl;
-      std::cout << "  - checksum empty: " << (component.checksum.empty() ? "true" : "false")
-                << std::endl;
-      std::cout << "  - symbols count: " << component.symbols.size() << std::endl;
-      std::cout << "  - sections count: " << component.sections.size() << std::endl;
+         std::cout << "Processing " << component_paths[i] << " (component " << i
+                   << "):" << std::endl;
+         std::cout << "  - wasProcessed: " << (component.wasProcessed ? "true" : "false")
+                   << std::endl;
+         std::cout << "  - fileSize: " << component.fileSize << std::endl;
+         std::cout << "  - checksum empty: " << (component.checksum.empty() ? "true" : "false")
+                   << std::endl;
+         std::cout << "  - symbols count: " << component.symbols.size() << std::endl;
+         std::cout << "  - sections count: " << component.sections.size() << std::endl;
 #endif
 
-      if (component.wasProcessed)
-      {
-        components.push_back(component);
-        EXPECT_TRUE(component.wasProcessed);
-        EXPECT_GT(component.fileSize, 0u);
-        EXPECT_FALSE(component.checksum.empty());
-        // For static libraries, symbols/sections may be empty, so only check for non-static
-        if (component.filePath.find(".a") == std::string::npos)
-        {
-          EXPECT_FALSE(component.symbols.empty());
-          EXPECT_FALSE(component.sections.empty());
-        }
+         if (component.wasProcessed)
+         {
+            components.push_back(component);
+            EXPECT_TRUE(component.wasProcessed);
+            EXPECT_GT(component.fileSize, 0u);
+            EXPECT_FALSE(component.checksum.empty());
+            // For static libraries, symbols/sections may be empty, so only check for non-static
+            if (component.filePath.find(".a") == std::string::npos)
+            {
+               EXPECT_FALSE(component.symbols.empty());
+               EXPECT_FALSE(component.sections.empty());
+            }
+         }
       }
-    }
-  }
+   }
 
-  EXPECT_GT(components.size(), 0u) << "No components were successfully processed";
+   EXPECT_GT(components.size(), 0u) << "No components were successfully processed";
 }
 
 // Performance Integration Tests
 TEST_F(DWARFIntegrationTest, LargeBinaryPerformance)
 {
-  if (heimdall::compat::fs::file_size(main_executable) > 100)
-  {
-    DWARFExtractor           extractor;
-    std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
+   if (heimdall::compat::fs::file_size(main_executable) > 100)
+   {
+      DWARFExtractor           extractor;
+      std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
 
-    auto                     start = std::chrono::high_resolution_clock::now();
+      auto                     start = std::chrono::high_resolution_clock::now();
 
-    // Perform all DWARF extraction operations
-    bool source_result = extractor.extractSourceFiles(main_executable.string(), sourceFiles);
-    bool func_result   = extractor.extractFunctions(main_executable.string(), functions);
-    bool unit_result   = extractor.extractCompileUnits(main_executable.string(), compileUnits);
-    bool line_result   = extractor.extractLineInfo(main_executable.string(), lineInfo);
-    bool dwarf_result  = extractor.hasDWARFInfo(main_executable.string());
+      // Perform all DWARF extraction operations
+      bool source_result = extractor.extractSourceFiles(main_executable.string(), sourceFiles);
+      bool func_result   = extractor.extractFunctions(main_executable.string(), functions);
+      bool unit_result   = extractor.extractCompileUnits(main_executable.string(), compileUnits);
+      bool line_result   = extractor.extractLineInfo(main_executable.string(), lineInfo);
+      bool dwarf_result  = extractor.hasDWARFInfo(main_executable.string());
 
-    auto end      = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+      auto end      = std::chrono::high_resolution_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    // Should complete within reasonable time (10 seconds for complex binaries)
-    EXPECT_LT(duration.count(), 10000)
-      << "DWARF extraction took too long: " << duration.count() << "ms";
+      // Should complete within reasonable time (10 seconds for complex binaries)
+      EXPECT_LT(duration.count(), 10000)
+         << "DWARF extraction took too long: " << duration.count() << "ms";
 
-    // Count successful operations (but don't require any to succeed)
-    int success_count = 0;
-    if (source_result)
-      success_count++;
-    if (func_result)
-      success_count++;
-    if (unit_result)
-      success_count++;
-    if (line_result)
-      success_count++;
-    if (dwarf_result)
-      success_count++;
+      // Count successful operations (but don't require any to succeed)
+      int success_count = 0;
+      if (source_result)
+         success_count++;
+      if (func_result)
+         success_count++;
+      if (unit_result)
+         success_count++;
+      if (line_result)
+         success_count++;
+      if (dwarf_result)
+         success_count++;
 
-    // On some platforms (like macOS), DWARF operations might not work the same way
-    // The important thing is that the operations don't crash and complete in reasonable time
-    std::cout << "DWARF operations completed: " << success_count << "/5 succeeded" << std::endl;
+      // On some platforms (like macOS), DWARF operations might not work the same way
+      // The important thing is that the operations don't crash and complete in reasonable time
+      std::cout << "DWARF operations completed: " << success_count << "/5 succeeded" << std::endl;
 
-    // The test passes if it doesn't crash and completes in reasonable time
-    // Success count is informational but not required
-  }
+      // The test passes if it doesn't crash and completes in reasonable time
+      // Success count is informational but not required
+   }
 }
 
 // NOTE: Concurrent DWARF extraction tests have been removed due to LLVM thread-safety limitations.
@@ -414,234 +417,235 @@ TEST_F(DWARFIntegrationTest, LargeBinaryPerformance)
 // Memory Leak Stress Tests
 TEST_F(DWARFIntegrationTest, MemoryLeakStressTest)
 {
-  const int                num_iterations           = 10;  // Reduced from 100
-  const int                components_per_iteration = 2;   // Reduced from 5
+   const int                num_iterations           = 10;  // Reduced from 100
+   const int                components_per_iteration = 2;   // Reduced from 5
 
-  std::vector<std::string> component_paths = {main_executable.string(), math_library.string()};
+   std::vector<std::string> component_paths = {main_executable.string(), math_library.string()};
 
-  for (int i = 0; i < num_iterations; ++i)
-  {
-    {
-      std::vector<std::unique_ptr<DWARFExtractor>>    extractors;
-      std::vector<std::unique_ptr<MetadataExtractor>> metadata_extractors;
-
-      for (int j = 0; j < components_per_iteration; ++j)
+   for (int i = 0; i < num_iterations; ++i)
+   {
       {
-        auto                     dwarf_extractor    = std::make_unique<DWARFExtractor>();
-        auto                     metadata_extractor = std::make_unique<MetadataExtractor>();
+         std::vector<std::unique_ptr<DWARFExtractor>>    extractors;
+         std::vector<std::unique_ptr<MetadataExtractor>> metadata_extractors;
 
-        std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
+         for (int j = 0; j < components_per_iteration; ++j)
+         {
+            auto                     dwarf_extractor    = std::make_unique<DWARFExtractor>();
+            auto                     metadata_extractor = std::make_unique<MetadataExtractor>();
 
-        // Test DWARF extraction - only on valid ELF files
-        for (const auto& path : component_paths)
-        {
-          if (heimdall::compat::fs::file_size(path) > 100 && Utils::getFileExtension(path) != ".a")
-          {  // Skip static libraries for DWARF
-            dwarf_extractor->extractSourceFiles(path, sourceFiles);
-            dwarf_extractor->extractFunctions(path, functions);
-            dwarf_extractor->extractCompileUnits(path, compileUnits);
-            dwarf_extractor->extractLineInfo(path, lineInfo);
-            dwarf_extractor->hasDWARFInfo(path);
-          }
-        }
+            std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
 
-        // Test metadata extraction
-        for (const auto& path : component_paths)
-        {
-          if (heimdall::compat::fs::file_size(path) > 100)
-          {
-            ComponentInfo component("test_component", path);
-            metadata_extractor->extractMetadata(component);
-          }
-        }
+            // Test DWARF extraction - only on valid ELF files
+            for (const auto& path : component_paths)
+            {
+               if (heimdall::compat::fs::file_size(path) > 100 &&
+                   Utils::getFileExtension(path) != ".a")
+               {  // Skip static libraries for DWARF
+                  dwarf_extractor->extractSourceFiles(path, sourceFiles);
+                  dwarf_extractor->extractFunctions(path, functions);
+                  dwarf_extractor->extractCompileUnits(path, compileUnits);
+                  dwarf_extractor->extractLineInfo(path, lineInfo);
+                  dwarf_extractor->hasDWARFInfo(path);
+               }
+            }
 
-        extractors.push_back(std::move(dwarf_extractor));
-        metadata_extractors.push_back(std::move(metadata_extractor));
+            // Test metadata extraction
+            for (const auto& path : component_paths)
+            {
+               if (heimdall::compat::fs::file_size(path) > 100)
+               {
+                  ComponentInfo component("test_component", path);
+                  metadata_extractor->extractMetadata(component);
+               }
+            }
+
+            extractors.push_back(std::move(dwarf_extractor));
+            metadata_extractors.push_back(std::move(metadata_extractor));
+         }
       }
-    }
-    // All extractors should be destroyed here, no memory leaks
-  }
+      // All extractors should be destroyed here, no memory leaks
+   }
 
-  // Final test should still work
-  DWARFExtractor           final_extractor;
-  std::vector<std::string> result;
-  bool success = final_extractor.extractSourceFiles(main_executable.string(), result);
-  EXPECT_TRUE(success || !success);  // Should not crash
+   // Final test should still work
+   DWARFExtractor           final_extractor;
+   std::vector<std::string> result;
+   bool success = final_extractor.extractSourceFiles(main_executable.string(), result);
+   EXPECT_TRUE(success || !success);  // Should not crash
 }
 
 TEST_F(DWARFIntegrationTest, LargeVectorStressTest)
 {
-  const int num_iterations = 5;  // Reduced from 50
+   const int num_iterations = 5;  // Reduced from 50
 
-  if (heimdall::compat::fs::file_size(main_executable) > 100)
-  {
-    for (int i = 0; i < num_iterations; ++i)
-    {
+   if (heimdall::compat::fs::file_size(main_executable) > 100)
+   {
+      for (int i = 0; i < num_iterations; ++i)
       {
-        DWARFExtractor extractor;
+         {
+            DWARFExtractor extractor;
 
-        // Test with large vectors
-        std::vector<std::string> large_source_files;
-        std::vector<std::string> large_functions;
-        std::vector<std::string> large_compile_units;
-        std::vector<std::string> large_line_info;
+            // Test with large vectors
+            std::vector<std::string> large_source_files;
+            std::vector<std::string> large_functions;
+            std::vector<std::string> large_compile_units;
+            std::vector<std::string> large_line_info;
 
-        large_source_files.reserve(1000);   // Reduced from 10000
-        large_functions.reserve(1000);      // Reduced from 10000
-        large_compile_units.reserve(1000);  // Reduced from 10000
-        large_line_info.reserve(1000);      // Reduced from 10000
+            large_source_files.reserve(1000);   // Reduced from 10000
+            large_functions.reserve(1000);      // Reduced from 10000
+            large_compile_units.reserve(1000);  // Reduced from 10000
+            large_line_info.reserve(1000);      // Reduced from 10000
 
-        // Pre-populate with dummy data
-        for (int j = 0; j < 100; ++j)
-        {  // Reduced from 1000
-          large_source_files.push_back("dummy_source_" + std::to_string(j));
-          large_functions.push_back("dummy_function_" + std::to_string(j));
-          large_compile_units.push_back("dummy_unit_" + std::to_string(j));
-          large_line_info.push_back(std::to_string(j));
-        }
+            // Pre-populate with dummy data
+            for (int j = 0; j < 100; ++j)
+            {  // Reduced from 1000
+               large_source_files.push_back("dummy_source_" + std::to_string(j));
+               large_functions.push_back("dummy_function_" + std::to_string(j));
+               large_compile_units.push_back("dummy_unit_" + std::to_string(j));
+               large_line_info.push_back(std::to_string(j));
+            }
 
-        // Perform extractions
-        extractor.extractSourceFiles(main_executable.string(), large_source_files);
-        extractor.extractFunctions(main_executable.string(), large_functions);
-        extractor.extractCompileUnits(main_executable.string(), large_compile_units);
-        extractor.extractLineInfo(main_executable.string(), large_line_info);
+            // Perform extractions
+            extractor.extractSourceFiles(main_executable.string(), large_source_files);
+            extractor.extractFunctions(main_executable.string(), large_functions);
+            extractor.extractCompileUnits(main_executable.string(), large_compile_units);
+            extractor.extractLineInfo(main_executable.string(), large_line_info);
+         }
+         // Should be no memory leaks
       }
-      // Should be no memory leaks
-    }
-  }
+   }
 }
 
 // Plugin Integration Tests
 TEST_F(DWARFIntegrationTest, PluginInterfaceIntegration)
 {
-  // Debug: Check if test executable exists and has proper size
-  bool   executable_exists = heimdall::compat::fs::exists(main_executable);
-  size_t executable_size   = 0;
-  if (executable_exists)
-  {
-    executable_size = heimdall::compat::fs::file_size(main_executable);
-  }
+   // Debug: Check if test executable exists and has proper size
+   bool   executable_exists = heimdall::compat::fs::exists(main_executable);
+   size_t executable_size   = 0;
+   if (executable_exists)
+   {
+      executable_size = heimdall::compat::fs::file_size(main_executable);
+   }
 
-  // Debug: Check if it's a real executable (not dummy)
-  if (executable_exists && executable_size > 100)
-  {
-    // Test that we can create a metadata extractor and process files
-    // without using the abstract PluginInterface directly
-    MetadataExtractor extractor;
-    ComponentInfo     component("integration_test", main_executable.string());
+   // Debug: Check if it's a real executable (not dummy)
+   if (executable_exists && executable_size > 100)
+   {
+      // Test that we can create a metadata extractor and process files
+      // without using the abstract PluginInterface directly
+      MetadataExtractor extractor;
+      ComponentInfo     component("integration_test", main_executable.string());
 
-    // Configure for debug info extraction
-    extractor.setExtractDebugInfo(true);
-    extractor.setVerbose(true);
+      // Configure for debug info extraction
+      extractor.setExtractDebugInfo(true);
+      extractor.setVerbose(true);
 
-    // Process the main executable
-    bool result = extractor.extractMetadata(component);
+      // Process the main executable
+      bool result = extractor.extractMetadata(component);
 
-    // Verify component was processed
-    EXPECT_TRUE(component.wasProcessed);
-    EXPECT_EQ(component.name, "integration_test");
+      // Verify component was processed
+      EXPECT_TRUE(component.wasProcessed);
+      EXPECT_EQ(component.name, "integration_test");
 
-    // Should have symbols
-    EXPECT_FALSE(component.symbols.empty());
+      // Should have symbols
+      EXPECT_FALSE(component.symbols.empty());
 
-    // Should have sections
-    EXPECT_FALSE(component.sections.empty());
+      // Should have sections
+      EXPECT_FALSE(component.sections.empty());
 
-    // May have debug info
-    if (component.containsDebugInfo)
-    {
-      // Source files might not be found due to heuristic limitations
-      // The important thing is that debug info extraction works
-      EXPECT_TRUE(true);  // Accept any result for source files
-    }
-  }
-  else
-  {
-    // Test executable doesn't exist or is too small (dummy file)
-    // This is expected if compilation failed
-    GTEST_SKIP() << "Test executable not available (compilation may have failed)";
-  }
+      // May have debug info
+      if (component.containsDebugInfo)
+      {
+         // Source files might not be found due to heuristic limitations
+         // The important thing is that debug info extraction works
+         EXPECT_TRUE(true);  // Accept any result for source files
+      }
+   }
+   else
+   {
+      // Test executable doesn't exist or is too small (dummy file)
+      // This is expected if compilation failed
+      GTEST_SKIP() << "Test executable not available (compilation may have failed)";
+   }
 }
 
 // Error Recovery Integration Tests
 TEST_F(DWARFIntegrationTest, ErrorRecoveryIntegration)
 {
-  DWARFExtractor    extractor;
-  MetadataExtractor metadata_extractor;
+   DWARFExtractor    extractor;
+   MetadataExtractor metadata_extractor;
 
-  // Test with valid file first
-  if (heimdall::compat::fs::file_size(main_executable) > 100)
-  {
-    std::vector<std::string> result;
-    bool valid_result = extractor.extractSourceFiles(main_executable.string(), result);
-    EXPECT_TRUE(valid_result || !valid_result);  // Should not crash
+   // Test with valid file first
+   if (heimdall::compat::fs::file_size(main_executable) > 100)
+   {
+      std::vector<std::string> result;
+      bool valid_result = extractor.extractSourceFiles(main_executable.string(), result);
+      EXPECT_TRUE(valid_result || !valid_result);  // Should not crash
 
-    ComponentInfo valid_component("valid", main_executable.string());
-    bool          valid_metadata = metadata_extractor.extractMetadata(valid_component);
-    EXPECT_TRUE(valid_metadata || !valid_metadata);  // Should not crash
-  }
+      ComponentInfo valid_component("valid", main_executable.string());
+      bool          valid_metadata = metadata_extractor.extractMetadata(valid_component);
+      EXPECT_TRUE(valid_metadata || !valid_metadata);  // Should not crash
+   }
 
-  // Test with invalid file
-  std::vector<std::string> result;
-  bool invalid_result = extractor.extractSourceFiles("nonexistent_file", result);
-  EXPECT_FALSE(invalid_result);
-  EXPECT_TRUE(result.empty());
+   // Test with invalid file
+   std::vector<std::string> result;
+   bool invalid_result = extractor.extractSourceFiles("nonexistent_file", result);
+   EXPECT_FALSE(invalid_result);
+   EXPECT_TRUE(result.empty());
 
-  ComponentInfo invalid_component("invalid", "nonexistent_file");
-  bool          invalid_metadata = metadata_extractor.extractMetadata(invalid_component);
-  EXPECT_FALSE(invalid_metadata);
+   ComponentInfo invalid_component("invalid", "nonexistent_file");
+   bool          invalid_metadata = metadata_extractor.extractMetadata(invalid_component);
+   EXPECT_FALSE(invalid_metadata);
 
-  // Test with valid file again (should still work)
-  if (heimdall::compat::fs::file_size(main_executable) > 100)
-  {
-    result.clear();
-    bool recovery_result = extractor.extractSourceFiles(main_executable.string(), result);
-    EXPECT_TRUE(recovery_result || !recovery_result);  // Should not crash
+   // Test with valid file again (should still work)
+   if (heimdall::compat::fs::file_size(main_executable) > 100)
+   {
+      result.clear();
+      bool recovery_result = extractor.extractSourceFiles(main_executable.string(), result);
+      EXPECT_TRUE(recovery_result || !recovery_result);  // Should not crash
 
-    ComponentInfo recovery_component("recovery", main_executable.string());
-    bool          recovery_metadata = metadata_extractor.extractMetadata(recovery_component);
-    EXPECT_TRUE(recovery_metadata || !recovery_metadata);  // Should not crash
-  }
+      ComponentInfo recovery_component("recovery", main_executable.string());
+      bool          recovery_metadata = metadata_extractor.extractMetadata(recovery_component);
+      EXPECT_TRUE(recovery_metadata || !recovery_metadata);  // Should not crash
+   }
 }
 
 // Cross-Component Integration Tests
 TEST_F(DWARFIntegrationTest, CrossComponentIntegration)
 {
-  std::vector<std::string>   component_paths = {main_executable.string(), math_library.string(),
-                                                string_library.string()};
+   std::vector<std::string>   component_paths = {main_executable.string(), math_library.string(),
+                                                 string_library.string()};
 
-  std::vector<ComponentInfo> components;
+   std::vector<ComponentInfo> components;
 
-  for (const auto& path : component_paths)
-  {
-    if (heimdall::compat::fs::file_size(path) > 100)
-    {
-      ComponentInfo     component("test_component", path);
-
-      MetadataExtractor extractor;
-      bool              result = extractor.extractMetadata(component);
-
-      if (result)
+   for (const auto& path : component_paths)
+   {
+      if (heimdall::compat::fs::file_size(path) > 100)
       {
-        components.push_back(component);
+         ComponentInfo     component("test_component", path);
+
+         MetadataExtractor extractor;
+         bool              result = extractor.extractMetadata(component);
+
+         if (result)
+         {
+            components.push_back(component);
+         }
       }
-    }
-  }
+   }
 
-  // Verify all components have consistent metadata
-  for (const auto& component : components)
-  {
-    EXPECT_TRUE(component.wasProcessed);
-    EXPECT_GT(component.fileSize, 0u);
-    EXPECT_FALSE(component.checksum.empty());
-    EXPECT_FALSE(component.symbols.empty());
-    EXPECT_FALSE(component.sections.empty());
+   // Verify all components have consistent metadata
+   for (const auto& component : components)
+   {
+      EXPECT_TRUE(component.wasProcessed);
+      EXPECT_GT(component.fileSize, 0u);
+      EXPECT_FALSE(component.checksum.empty());
+      EXPECT_FALSE(component.symbols.empty());
+      EXPECT_FALSE(component.sections.empty());
 
-    // All components should have the same file type detection
-    EXPECT_TRUE(component.fileType == FileType::Executable ||
-                component.fileType == FileType::SharedLibrary ||
-                component.fileType == FileType::StaticLibrary);
-  }
+      // All components should have the same file type detection
+      EXPECT_TRUE(component.fileType == FileType::Executable ||
+                  component.fileType == FileType::SharedLibrary ||
+                  component.fileType == FileType::StaticLibrary);
+   }
 }
 
 // Performance Benchmark Tests

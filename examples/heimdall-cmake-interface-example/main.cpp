@@ -3,6 +3,6 @@
 
 int main()
 {
-  std::cout << interface_greet("InterfaceLib User") << std::endl;
-  return 0;
+   std::cout << interface_greet("InterfaceLib User") << std::endl;
+   return 0;
 }

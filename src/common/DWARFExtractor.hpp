@@ -44,13 +44,14 @@ limitations under the License.
 #include "LightweightDWARFParser.hpp"
 #endif
 
-namespace heimdall {
+namespace heimdall
+{
 
 #ifdef LLVM_DWARF_AVAILABLE
 // Global LLVM objects to prevent premature destruction
-extern std::unique_ptr<llvm::MemoryBuffer> g_buffer;
+extern std::unique_ptr<llvm::MemoryBuffer>       g_buffer;
 extern std::unique_ptr<llvm::object::ObjectFile> g_objectFile;
-extern std::unique_ptr<llvm::DWARFContext> g_context;
+extern std::unique_ptr<llvm::DWARFContext>       g_context;
 #endif
 
 /**
@@ -64,163 +65,161 @@ extern std::unique_ptr<llvm::DWARFContext> g_context;
  *          simultaneously or from different threads. See heimdall-limitations.md
  *          for detailed thread-safety information.
  */
-class DWARFExtractor {
-public:
-    /**
-     * @brief Default constructor
-     */
-    DWARFExtractor();
+class DWARFExtractor
+{
+   public:
+   /**
+    * @brief Default constructor
+    */
+   DWARFExtractor();
 
-    /**
-     * @brief Copy constructor - deleted due to non-copyable LLVM resources
-     */
-    DWARFExtractor(const DWARFExtractor&) = delete;
+   /**
+    * @brief Copy constructor - deleted due to non-copyable LLVM resources
+    */
+   DWARFExtractor(const DWARFExtractor&) = delete;
 
-    /**
-     * @brief Copy assignment operator - deleted due to non-copyable LLVM resources
-     */
-    DWARFExtractor& operator=(const DWARFExtractor&) = delete;
+   /**
+    * @brief Copy assignment operator - deleted due to non-copyable LLVM resources
+    */
+   DWARFExtractor& operator=(const DWARFExtractor&) = delete;
 
-    /**
-     * @brief Move constructor
-     */
-    DWARFExtractor(DWARFExtractor&&) noexcept = default;
+   /**
+    * @brief Move constructor
+    */
+   DWARFExtractor(DWARFExtractor&&) noexcept = default;
 
-    /**
-     * @brief Move assignment operator
-     */
-    DWARFExtractor& operator=(DWARFExtractor&&) noexcept = default;
+   /**
+    * @brief Move assignment operator
+    */
+   DWARFExtractor& operator=(DWARFExtractor&&) noexcept = default;
 
-    /**
-     * @brief Destructor
-     */
-    ~DWARFExtractor();
+   /**
+    * @brief Destructor
+    */
+   ~DWARFExtractor();
 
-    /**
-     * @brief Extract source files from DWARF debug information
-     *
-     * @param filePath Path to the ELF file containing DWARF info
-     * @param sourceFiles Output vector to store extracted source file paths
-     * @return true if extraction was successful, false otherwise
-     */
-    bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles);
+   /**
+    * @brief Extract source files from DWARF debug information
+    *
+    * @param filePath Path to the ELF file containing DWARF info
+    * @param sourceFiles Output vector to store extracted source file paths
+    * @return true if extraction was successful, false otherwise
+    */
+   bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles);
 
-    /**
-     * @brief Extract compile units from DWARF debug information
-     *
-     * @param filePath Path to the ELF file containing DWARF info
-     * @param compileUnits Output vector to store extracted compile unit names
-     * @return true if extraction was successful, false otherwise
-     */
-    bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
+   /**
+    * @brief Extract compile units from DWARF debug information
+    *
+    * @param filePath Path to the ELF file containing DWARF info
+    * @param compileUnits Output vector to store extracted compile unit names
+    * @return true if extraction was successful, false otherwise
+    */
+   bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
 
-    /**
-     * @brief Extract function names from DWARF debug information
-     *
-     * @param filePath Path to the ELF file containing DWARF info
-     * @param functions Output vector to store extracted function names
-     * @return true if extraction was successful, false otherwise
-     */
-    bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
+   /**
+    * @brief Extract function names from DWARF debug information
+    *
+    * @param filePath Path to the ELF file containing DWARF info
+    * @param functions Output vector to store extracted function names
+    * @return true if extraction was successful, false otherwise
+    */
+   bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
 
-    /**
-     * @brief Extract line number information from DWARF debug information
-     *
-     * @param filePath Path to the ELF file containing DWARF info
-     * @param lineInfo Output vector to store line number information
-     * @return true if extraction was successful, false otherwise
-     */
-    bool extractLineInfo(const std::string& filePath, std::vector<std::string>& lineInfo);
+   /**
+    * @brief Extract line number information from DWARF debug information
+    *
+    * @param filePath Path to the ELF file containing DWARF info
+    * @param lineInfo Output vector to store line number information
+    * @return true if extraction was successful, false otherwise
+    */
+   bool extractLineInfo(const std::string& filePath, std::vector<std::string>& lineInfo);
 
-    /**
-     * @brief Check if DWARF information is available in the file
-     *
-     * @param filePath Path to the ELF file to check
-     * @return true if DWARF info is present, false otherwise
-     */
-    bool hasDWARFInfo(const std::string& filePath);
+   /**
+    * @brief Check if DWARF information is available in the file
+    *
+    * @param filePath Path to the ELF file to check
+    * @return true if DWARF info is present, false otherwise
+    */
+   bool hasDWARFInfo(const std::string& filePath);
 
-    /**
-     * @brief Extract all debug information using a single DWARF context
-     *
-     * This method creates one DWARF context and extracts all debug information
-     * (source files, compile units, functions) in a single pass, avoiding
-     * the overhead of creating multiple contexts.
-     *
-     * @param filePath Path to the ELF file containing DWARF info
-     * @param sourceFiles Output vector to store extracted source file paths
-     * @param compileUnits Output vector to store extracted compile unit names
-     * @param functions Output vector to store extracted function names
-     * @return true if extraction was successful, false otherwise
-     */
-    bool extractAllDebugInfo(const std::string& filePath,
-                            std::vector<std::string>& sourceFiles,
+   /**
+    * @brief Extract all debug information using a single DWARF context
+    *
+    * This method creates one DWARF context and extracts all debug information
+    * (source files, compile units, functions) in a single pass, avoiding
+    * the overhead of creating multiple contexts.
+    *
+    * @param filePath Path to the ELF file containing DWARF info
+    * @param sourceFiles Output vector to store extracted source file paths
+    * @param compileUnits Output vector to store extracted compile unit names
+    * @param functions Output vector to store extracted function names
+    * @return true if extraction was successful, false otherwise
+    */
+   bool extractAllDebugInfo(const std::string& filePath, std::vector<std::string>& sourceFiles,
                             std::vector<std::string>& compileUnits,
                             std::vector<std::string>& functions);
 
 #ifdef LLVM_DWARF_AVAILABLE
-    /**
-     * @brief Ensure LLVM is initialized once per process
-     */
-    static void ensureLLVMInitialized();
+   /**
+    * @brief Ensure LLVM is initialized once per process
+    */
+   static void ensureLLVMInitialized();
 #endif
 
-private:
-    /**
-     * @brief Fallback heuristic DWARF parsing when LLVM DWARF fails
-     *
-     * @param filePath Path to the ELF file
-     * @param sourceFiles Output vector for source files
-     * @return true if any source files were found, false otherwise
-     */
-    bool extractSourceFilesHeuristic(const std::string& filePath,
-                                     std::vector<std::string>& sourceFiles);
+   private:
+   /**
+    * @brief Fallback heuristic DWARF parsing when LLVM DWARF fails
+    *
+    * @param filePath Path to the ELF file
+    * @param sourceFiles Output vector for source files
+    * @return true if any source files were found, false otherwise
+    */
+   bool extractSourceFilesHeuristic(const std::string&        filePath,
+                                    std::vector<std::string>& sourceFiles);
 
-    /**
-     * @brief Fallback function extraction using symbol table
-     *
-     * @param filePath Path to the ELF file
-     * @param functions Output vector for function names
-     * @return true if any functions were found, false otherwise
-     */
-    bool extractFunctionsFromSymbolTable(const std::string& filePath,
-                                         std::vector<std::string>& functions);
-
+   /**
+    * @brief Fallback function extraction using symbol table
+    *
+    * @param filePath Path to the ELF file
+    * @param functions Output vector for function names
+    * @return true if any functions were found, false otherwise
+    */
+   bool extractFunctionsFromSymbolTable(const std::string&        filePath,
+                                        std::vector<std::string>& functions);
 
 #ifdef LLVM_DWARF_AVAILABLE
-    /**
-     * @brief Initialize LLVM DWARF context for a file
-     *
-     * @param filePath Path to the ELF file
-     * @return raw pointer to DWARF context if creation succeeded, nullptr otherwise
-     */
-    llvm::DWARFContext* createDWARFContext(const std::string& filePath);
+   /**
+    * @brief Initialize LLVM DWARF context for a file
+    *
+    * @param filePath Path to the ELF file
+    * @return raw pointer to DWARF context if creation succeeded, nullptr otherwise
+    */
+   llvm::DWARFContext* createDWARFContext(const std::string& filePath);
 
-    /**
-     * @brief Extract source files from a DWARF compile unit
-     *
-     * @param die DWARF DIE (Debugging Information Entry)
-     * @param sourceFiles Output vector for source files
-     */
-    void extractSourceFilesFromDie(const llvm::DWARFDie& die,
-                                   std::vector<std::string>& sourceFiles);
+   /**
+    * @brief Extract source files from a DWARF compile unit
+    *
+    * @param die DWARF DIE (Debugging Information Entry)
+    * @param sourceFiles Output vector for source files
+    */
+   void extractSourceFilesFromDie(const llvm::DWARFDie& die, std::vector<std::string>& sourceFiles);
 
-    /**
-     * @brief Extract compile unit information from a DWARF DIE
-     *
-     * @param die DWARF DIE (Debugging Information Entry)
-     * @param compileUnits Output vector for compile units
-     */
-    void extractCompileUnitFromDie(const llvm::DWARFDie& die,
-                                   std::vector<std::string>& compileUnits);
+   /**
+    * @brief Extract compile unit information from a DWARF DIE
+    *
+    * @param die DWARF DIE (Debugging Information Entry)
+    * @param compileUnits Output vector for compile units
+    */
+   void extractCompileUnitFromDie(const llvm::DWARFDie&     die,
+                                  std::vector<std::string>& compileUnits);
 
-    /**
-     * @brief Extract function information from a DWARF DIE
-     *
-     * @param die DWARF DIE (Debugging Information Entry)
-     * @param functions Output vector for functions
-     */
-    void extractFunctionsFromDie(const llvm::DWARFDie& die, std::vector<std::string>& functions);
+   /**
+    * @brief Extract function information from a DWARF DIE
+    *
+    * @param die DWARF DIE (Debugging Information Entry)
+    * @param functions Output vector for functions
+    */
+   void extractFunctionsFromDie(const llvm::DWARFDie& die, std::vector<std::string>& functions);
 #endif
 };
 

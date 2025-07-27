@@ -23,7 +23,7 @@ class TaskManager : public TaskManagerBase
   void assignTaskToProject(int projectId, const Task& task);
   void printSummary() const override;
   template <typename Predicate>
-  std::vector<Task> findTasks(Predicate pred) const
+  std::vector<Task> findTasks(const Predicate& pred) const
   {
     std::vector<Task> result;
     for (const auto& project : projects)

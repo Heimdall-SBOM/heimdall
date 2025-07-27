@@ -41,148 +41,148 @@ namespace heimdall
  */
 class PluginInterface
 {
-  public:
-  /**
-   * @brief Default constructor
-   */
-  PluginInterface();
+   public:
+   /**
+    * @brief Default constructor
+    */
+   PluginInterface();
 
-  /**
-   * @brief Virtual destructor
-   */
-  virtual ~PluginInterface();
+   /**
+    * @brief Virtual destructor
+    */
+   virtual ~PluginInterface();
 
-  /**
-   * @brief Initialize the plugin
-   * @return true if initialization was successful
-   */
-  virtual bool initialize() = 0;
+   /**
+    * @brief Initialize the plugin
+    * @return true if initialization was successful
+    */
+   virtual bool initialize() = 0;
 
-  /**
-   * @brief Clean up plugin resources
-   */
-  virtual void cleanup() = 0;
+   /**
+    * @brief Clean up plugin resources
+    */
+   virtual void cleanup() = 0;
 
-  /**
-   * @brief Process an input file
-   * @param filePath The path to the input file
-   */
-  virtual void processInputFile(const std::string& filePath) = 0;
+   /**
+    * @brief Process an input file
+    * @param filePath The path to the input file
+    */
+   virtual void processInputFile(const std::string& filePath) = 0;
 
-  /**
-   * @brief Process a library file
-   * @param libraryPath The path to the library file
-   */
-  virtual void processLibrary(const std::string& libraryPath) = 0;
+   /**
+    * @brief Process a library file
+    * @param libraryPath The path to the library file
+    */
+   virtual void processLibrary(const std::string& libraryPath) = 0;
 
-  /**
-   * @brief Process a symbol
-   * @param symbolName The name of the symbol
-   * @param address The symbol address
-   * @param size The symbol size
-   */
-  virtual void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) = 0;
+   /**
+    * @brief Process a symbol
+    * @param symbolName The name of the symbol
+    * @param address The symbol address
+    * @param size The symbol size
+    */
+   virtual void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size) = 0;
 
-  /**
-   * @brief Set the output path for the SBOM
-   * @param path The output file path
-   */
-  virtual void setOutputPath(const std::string& path) = 0;
+   /**
+    * @brief Set the output path for the SBOM
+    * @param path The output file path
+    */
+   virtual void setOutputPath(const std::string& path) = 0;
 
-  /**
-   * @brief Set the output format for the SBOM
-   * @param format The format (e.g., "spdx", "cyclonedx")
-   */
-  virtual void setFormat(const std::string& format) = 0;
+   /**
+    * @brief Set the output format for the SBOM
+    * @param format The format (e.g., "spdx", "cyclonedx")
+    */
+   virtual void setFormat(const std::string& format) = 0;
 
-  /**
-   * @brief Set the CycloneDX specification version
-   * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
-   * @note Only applies when format is "cyclonedx"
-   */
-  virtual void setCycloneDXVersion(const std::string& version);
+   /**
+    * @brief Set the CycloneDX specification version
+    * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
+    * @note Only applies when format is "cyclonedx"
+    */
+   virtual void setCycloneDXVersion(const std::string& version);
 
-  /**
-   * @brief Set the SPDX specification version
-   * @param version The SPDX version (e.g., "2.3", "3.0")
-   */
-  virtual void setSPDXVersion(const std::string& version);
+   /**
+    * @brief Set the SPDX specification version
+    * @param version The SPDX version (e.g., "2.3", "3.0")
+    */
+   virtual void setSPDXVersion(const std::string& version);
 
-  /**
-   * @brief Generate the SBOM
-   */
-  virtual void generateSBOM() = 0;
+   /**
+    * @brief Generate the SBOM
+    */
+   virtual void generateSBOM() = 0;
 
-  /**
-   * @brief Set verbose output mode
-   * @param verbose true to enable verbose output
-   */
-  virtual void setVerbose(bool verbose) = 0;
+   /**
+    * @brief Set verbose output mode
+    * @param verbose true to enable verbose output
+    */
+   virtual void setVerbose(bool verbose) = 0;
 
-  /**
-   * @brief Set whether to extract debug information
-   * @param extract true to extract debug information
-   */
-  virtual void setExtractDebugInfo(bool extract) = 0;
+   /**
+    * @brief Set whether to extract debug information
+    * @param extract true to extract debug information
+    */
+   virtual void setExtractDebugInfo(bool extract) = 0;
 
-  /**
-   * @brief Set whether to include system libraries
-   * @param include true to include system libraries
-   */
-  virtual void setIncludeSystemLibraries(bool include) = 0;
+   /**
+    * @brief Set whether to include system libraries
+    * @param include true to include system libraries
+    */
+   virtual void setIncludeSystemLibraries(bool include) = 0;
 
-  /**
-   * @brief Set whether to recursively include transitive dependencies
-   * @param transitive true to include transitive dependencies, false for direct only
-   */
-  virtual void setTransitiveDependencies(bool transitive) = 0;
+   /**
+    * @brief Set whether to recursively include transitive dependencies
+    * @param transitive true to include transitive dependencies, false for direct only
+    */
+   virtual void setTransitiveDependencies(bool transitive) = 0;
 
-  /**
-   * @brief Get the number of components processed
-   * @return Number of components
-   */
-  [[nodiscard]] virtual size_t getComponentCount() const = 0;
+   /**
+    * @brief Get the number of components processed
+    * @return Number of components
+    */
+   [[nodiscard]] virtual size_t getComponentCount() const = 0;
 
-  /**
-   * @brief Print statistics about the plugin
-   */
-  virtual void printStatistics() const = 0;
+   /**
+    * @brief Print statistics about the plugin
+    */
+   virtual void printStatistics() const = 0;
 
-  protected:
-  std::unique_ptr<SBOMGenerator> sbomGenerator;                   ///< SBOM generator instance
-  std::vector<ComponentInfo>     processedComponents;             ///< List of processed components
-  bool                           verbose                = false;  ///< Verbose output flag
-  bool                           extractDebugInfo       = true;   ///< Debug info extraction flag
-  bool                           includeSystemLibraries = false;  ///< System library inclusion flag
+   protected:
+   std::unique_ptr<SBOMGenerator> sbomGenerator;             ///< SBOM generator instance
+   std::vector<ComponentInfo>     processedComponents;       ///< List of processed components
+   bool                           verbose          = false;  ///< Verbose output flag
+   bool                           extractDebugInfo = true;   ///< Debug info extraction flag
+   bool includeSystemLibraries                     = false;  ///< System library inclusion flag
 
-  /**
-   * @brief Add a component to the processed list
-   * @param component The component to add
-   */
-  void addComponent(const ComponentInfo& component);
+   /**
+    * @brief Add a component to the processed list
+    * @param component The component to add
+    */
+   void addComponent(const ComponentInfo& component);
 
-  /**
-   * @brief Update an existing component with new information
-   * @param name The component name
-   * @param filePath The file path
-   * @param symbols The symbols to add
-   */
-  void updateComponent(const std::string& name, const std::string& filePath,
-                       const std::vector<SymbolInfo>& symbols);
+   /**
+    * @brief Update an existing component with new information
+    * @param name The component name
+    * @param filePath The file path
+    * @param symbols The symbols to add
+    */
+   void updateComponent(const std::string& name, const std::string& filePath,
+                        const std::vector<SymbolInfo>& symbols);
 
-  /**
-   * @brief Check if a file should be processed
-   * @param filePath The file path to check
-   * @return true if the file should be processed
-   */
-  [[nodiscard]] bool shouldProcessFile(const std::string& filePath) const;
+   /**
+    * @brief Check if a file should be processed
+    * @param filePath The file path to check
+    * @return true if the file should be processed
+    */
+   [[nodiscard]] bool shouldProcessFile(const std::string& filePath) const;
 
-  /**
-   * @brief Extract component name from file path
-   * @param filePath The file path
-   * @return The extracted component name
-   */
-  [[nodiscard]] std::string extractComponentName(const std::string& filePath) const;
+   /**
+    * @brief Extract component name from file path
+    * @param filePath The file path
+    * @return The extracted component name
+    */
+   [[nodiscard]] std::string extractComponentName(const std::string& filePath) const;
 };
 
 /**
@@ -190,18 +190,18 @@ class PluginInterface
  */
 struct PluginConfig
 {
-  std::string              outputPath             = "heimdall-sbom.json";  ///< Output file path
-  std::string              format                 = "spdx";                ///< Output format
-  std::string              cyclonedxVersion       = "1.6";  ///< CycloneDX specification version
-  std::string              spdxVersion            = "3.0";  ///< SPDX specification version
-  bool                     verbose                = false;  ///< Verbose output flag
-  bool                     extractDebugInfo       = true;   ///< Debug info extraction flag
-  bool                     includeSystemLibraries = false;  ///< System library inclusion flag
-  bool                     generateChecksums      = true;   ///< Checksum generation flag
-  bool                     extractMetadata        = true;   ///< Metadata extraction flag
-  bool                     transitiveDependencies = true;
-  std::vector<std::string> excludePatterns;                 ///< File exclusion patterns
-  std::vector<std::string> includePatterns;                 ///< File inclusion patterns
+   std::string              outputPath             = "heimdall-sbom.json";  ///< Output file path
+   std::string              format                 = "spdx";                ///< Output format
+   std::string              cyclonedxVersion       = "1.6";  ///< CycloneDX specification version
+   std::string              spdxVersion            = "3.0";  ///< SPDX specification version
+   bool                     verbose                = false;  ///< Verbose output flag
+   bool                     extractDebugInfo       = true;   ///< Debug info extraction flag
+   bool                     includeSystemLibraries = false;  ///< System library inclusion flag
+   bool                     generateChecksums      = true;   ///< Checksum generation flag
+   bool                     extractMetadata        = true;   ///< Metadata extraction flag
+   bool                     transitiveDependencies = true;
+   std::vector<std::string> excludePatterns;  ///< File exclusion patterns
+   std::vector<std::string> includePatterns;  ///< File inclusion patterns
 };
 
 /**
@@ -209,16 +209,16 @@ struct PluginConfig
  */
 struct PluginStatistics
 {
-  size_t                    totalFiles          = 0;  ///< Total files processed
-  size_t                    objectFiles         = 0;  ///< Object files processed
-  size_t                    staticLibraries     = 0;  ///< Static libraries processed
-  size_t                    sharedLibraries     = 0;  ///< Shared libraries processed
-  size_t                    executables         = 0;  ///< Executables processed
-  size_t                    systemLibraries     = 0;  ///< System libraries processed
-  size_t                    totalSymbols        = 0;  ///< Total symbols extracted
-  size_t                    processedComponents = 0;  ///< Components processed
-  size_t                    skippedFiles        = 0;  ///< Files skipped
-  std::chrono::milliseconds processingTime{0};        ///< Total processing time
+   size_t                    totalFiles          = 0;  ///< Total files processed
+   size_t                    objectFiles         = 0;  ///< Object files processed
+   size_t                    staticLibraries     = 0;  ///< Static libraries processed
+   size_t                    sharedLibraries     = 0;  ///< Shared libraries processed
+   size_t                    executables         = 0;  ///< Executables processed
+   size_t                    systemLibraries     = 0;  ///< System libraries processed
+   size_t                    totalSymbols        = 0;  ///< Total symbols extracted
+   size_t                    processedComponents = 0;  ///< Components processed
+   size_t                    skippedFiles        = 0;  ///< Files skipped
+   std::chrono::milliseconds processingTime{0};        ///< Total processing time
 };
 
 /**

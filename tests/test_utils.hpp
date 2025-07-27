@@ -15,8 +15,8 @@ namespace test_utils
  */
 inline heimdall::compat::fs::path getUniqueTestDirectory(const std::string& base_name)
 {
-  auto pid = std::to_string(getpid());
-  return heimdall::compat::fs::temp_directory_path() / (base_name + "_" + pid);
+   auto pid = std::to_string(getpid());
+   return heimdall::compat::fs::temp_directory_path() / (base_name + "_" + pid);
 }
 
 /**
@@ -29,25 +29,25 @@ inline heimdall::compat::fs::path getUniqueTestDirectory(const std::string& base
  */
 inline bool safeRemoveDirectory(const heimdall::compat::fs::path& path)
 {
-  try
-  {
-    if (heimdall::compat::fs::exists(path))
-    {
-      heimdall::compat::fs::remove_all(path);
-    }
-    return true;
-  }
-  catch (const heimdall::compat::fs::filesystem_error& e)
-  {
-    // Ignore filesystem errors during cleanup - this is common in CI
-    // where files might be cleaned up by other processes or have timing issues
-    return false;
-  }
-  catch (const std::exception& e)
-  {
-    // Catch any other exceptions during cleanup
-    return false;
-  }
+   try
+   {
+      if (heimdall::compat::fs::exists(path))
+      {
+         heimdall::compat::fs::remove_all(path);
+      }
+      return true;
+   }
+   catch (const heimdall::compat::fs::filesystem_error& e)
+   {
+      // Ignore filesystem errors during cleanup - this is common in CI
+      // where files might be cleaned up by other processes or have timing issues
+      return false;
+   }
+   catch (const std::exception& e)
+   {
+      // Catch any other exceptions during cleanup
+      return false;
+   }
 }
 
 /**
@@ -61,33 +61,33 @@ inline bool safeRemoveDirectory(const heimdall::compat::fs::path& path)
 inline bool safeRemoveDirectoryWithLogging(const heimdall::compat::fs::path& path,
                                            const std::string&                context = "")
 {
-  try
-  {
-    if (heimdall::compat::fs::exists(path))
-    {
-      heimdall::compat::fs::remove_all(path);
-    }
-    return true;
-  }
-  catch (const heimdall::compat::fs::filesystem_error& e)
-  {
-    // Log the error but don't throw - this is expected in CI environments
-    if (!context.empty())
-    {
-      // Note: In a real implementation, you might want to use a proper logging framework
-      // For now, we'll just ignore the error as it's expected in CI
-    }
-    return false;
-  }
-  catch (const std::exception& e)
-  {
-    // Catch any other exceptions during cleanup
-    if (!context.empty())
-    {
-      // Log other exceptions
-    }
-    return false;
-  }
+   try
+   {
+      if (heimdall::compat::fs::exists(path))
+      {
+         heimdall::compat::fs::remove_all(path);
+      }
+      return true;
+   }
+   catch (const heimdall::compat::fs::filesystem_error& e)
+   {
+      // Log the error but don't throw - this is expected in CI environments
+      if (!context.empty())
+      {
+         // Note: In a real implementation, you might want to use a proper logging framework
+         // For now, we'll just ignore the error as it's expected in CI
+      }
+      return false;
+   }
+   catch (const std::exception& e)
+   {
+      // Catch any other exceptions during cleanup
+      if (!context.empty())
+      {
+         // Log other exceptions
+      }
+      return false;
+   }
 }
 
 }  // namespace test_utils

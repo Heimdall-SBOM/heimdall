@@ -41,164 +41,164 @@ namespace heimdall
  */
 class LLDAdapter
 {
-  public:
-  /**
-   * @brief Default constructor
-   */
-  LLDAdapter();
+   public:
+   /**
+    * @brief Default constructor
+    */
+   LLDAdapter();
 
-  /**
-   * @brief Destructor
-   */
-  ~LLDAdapter();
+   /**
+    * @brief Destructor
+    */
+   ~LLDAdapter();
 
-  /**
-   * @brief Initialize the LLD adapter
-   * @return true if initialization was successful
-   */
-  bool initialize();
+   /**
+    * @brief Initialize the LLD adapter
+    * @return true if initialization was successful
+    */
+   bool initialize();
 
-  /**
-   * @brief Process an input file with full metadata extraction
-   * @param filePath The path to the input file
-   */
-  void processInputFile(const std::string& filePath);
+   /**
+    * @brief Process an input file with full metadata extraction
+    * @param filePath The path to the input file
+    */
+   void processInputFile(const std::string& filePath);
 
-  /**
-   * @brief Process a library with full metadata extraction
-   * @param libraryPath The path to the library file
-   */
-  void processLibrary(const std::string& libraryPath);
+   /**
+    * @brief Process a library with full metadata extraction
+    * @param libraryPath The path to the library file
+    */
+   void processLibrary(const std::string& libraryPath);
 
-  /**
-   * @brief Finalize the LLD adapter and generate SBOM
-   */
-  void finalize();
+   /**
+    * @brief Finalize the LLD adapter and generate SBOM
+    */
+   void finalize();
 
-  /**
-   * @brief Set the output path for the generated SBOM
-   * @param path The output file path
-   */
-  void setOutputPath(const std::string& path);
+   /**
+    * @brief Set the output path for the generated SBOM
+    * @param path The output file path
+    */
+   void setOutputPath(const std::string& path);
 
-  /**
-   * @brief Set the output format for the generated SBOM
-   * @param format The output format (spdx, cyclonedx)
-   */
-  void setFormat(const std::string& format);
+   /**
+    * @brief Set the output format for the generated SBOM
+    * @param format The output format (spdx, cyclonedx)
+    */
+   void setFormat(const std::string& format);
 
-  /**
-   * @brief Set the CycloneDX specification version
-   * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
-   * @note Only applies when format is "cyclonedx"
-   */
-  void setCycloneDXVersion(const std::string& version);
+   /**
+    * @brief Set the CycloneDX specification version
+    * @param version The CycloneDX version (e.g., "1.4", "1.5", "1.6")
+    * @note Only applies when format is "cyclonedx"
+    */
+   void setCycloneDXVersion(const std::string& version);
 
-  /**
-   * @brief Set the SPDX specification version
-   * @param version The SPDX version (e.g., "2.3", "3.0")
-   * @note Only applies when format is "spdx"
-   */
-  void setSPDXVersion(const std::string& version);
+   /**
+    * @brief Set the SPDX specification version
+    * @param version The SPDX version (e.g., "2.3", "3.0")
+    * @note Only applies when format is "spdx"
+    */
+   void setSPDXVersion(const std::string& version);
 
-  /**
-   * @brief Set verbose output mode
-   * @param verbose Whether to enable verbose output
-   */
-  void setVerbose(bool verbose);
+   /**
+    * @brief Set verbose output mode
+    * @param verbose Whether to enable verbose output
+    */
+   void setVerbose(bool verbose);
 
-  /**
-   * @brief Set whether to extract debug information
-   * @param extract Whether to extract DWARF debug information
-   */
-  void setExtractDebugInfo(bool extract);
+   /**
+    * @brief Set whether to extract debug information
+    * @param extract Whether to extract DWARF debug information
+    */
+   void setExtractDebugInfo(bool extract);
 
-  /**
-   * @brief Set whether to include system libraries in the SBOM
-   * @param include true to include system libraries, false to exclude them
-   */
-  void setIncludeSystemLibraries(bool include);
+   /**
+    * @brief Set whether to include system libraries in the SBOM
+    * @param include true to include system libraries, false to exclude them
+    */
+   void setIncludeSystemLibraries(bool include);
 
-  /**
-   * @brief Set whether to recursively include transitive dependencies
-   * @param transitive true to include transitive dependencies, false for direct only
-   */
-  void setTransitiveDependencies(bool transitive);
+   /**
+    * @brief Set whether to recursively include transitive dependencies
+    * @param transitive true to include transitive dependencies, false for direct only
+    */
+   void setTransitiveDependencies(bool transitive);
 
-  /**
-   * @brief Process a symbol with metadata extraction
-   * @param symbolName The name of the symbol
-   * @param address The symbol address
-   * @param size The symbol size
-   */
-  void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size);
+   /**
+    * @brief Process a symbol with metadata extraction
+    * @param symbolName The name of the symbol
+    * @param address The symbol address
+    * @param size The symbol size
+    */
+   void processSymbol(const std::string& symbolName, uint64_t address, uint64_t size);
 
-  /**
-   * @brief Get the list of processed files
-   * @return Vector of processed file paths
-   */
-  std::vector<std::string> getProcessedFiles() const;
+   /**
+    * @brief Get the list of processed files
+    * @return Vector of processed file paths
+    */
+   std::vector<std::string> getProcessedFiles() const;
 
-  /**
-   * @brief Get the list of processed libraries
-   * @return Vector of processed library paths
-   */
-  std::vector<std::string> getProcessedLibraries() const;
+   /**
+    * @brief Get the list of processed libraries
+    * @return Vector of processed library paths
+    */
+   std::vector<std::string> getProcessedLibraries() const;
 
-  /**
-   * @brief Get the list of processed symbols
-   * @return Vector of processed symbol names
-   */
-  std::vector<std::string> getProcessedSymbols() const;
+   /**
+    * @brief Get the list of processed symbols
+    * @return Vector of processed symbol names
+    */
+   std::vector<std::string> getProcessedSymbols() const;
 
-  /**
-   * @brief Check if a file should be processed
-   * @param filePath The file path to check
-   * @return true if the file should be processed
-   */
-  bool shouldProcessFile(const std::string& filePath) const;
+   /**
+    * @brief Check if a file should be processed
+    * @param filePath The file path to check
+    * @return true if the file should be processed
+    */
+   bool shouldProcessFile(const std::string& filePath) const;
 
-  /**
-   * @brief Extract component name from file path
-   * @param filePath The file path
-   * @return The extracted component name
-   */
-  std::string extractComponentName(const std::string& filePath) const;
+   /**
+    * @brief Extract component name from file path
+    * @param filePath The file path
+    * @return The extracted component name
+    */
+   std::string extractComponentName(const std::string& filePath) const;
 
-  /**
-   * @brief Clean up resources
-   */
-  void cleanup();
+   /**
+    * @brief Clean up resources
+    */
+   void cleanup();
 
-  /**
-   * @brief Generate the SBOM
-   */
-  void generateSBOM();
+   /**
+    * @brief Generate the SBOM
+    */
+   void generateSBOM();
 
-  /**
-   * @brief Get the number of components processed
-   * @return The number of components in the SBOM
-   */
-  size_t getComponentCount() const;
+   /**
+    * @brief Get the number of components processed
+    * @return The number of components in the SBOM
+    */
+   size_t getComponentCount() const;
 
-  /**
-   * @brief Print statistics about the processed components
-   */
-  void printStatistics() const;
+   /**
+    * @brief Print statistics about the processed components
+    */
+   void printStatistics() const;
 
-  /**
-   * @brief Process multiple files in parallel
-   * @param filePaths Vector of file paths to process
-   */
-  void processFilesParallel(const std::vector<std::string>& filePaths);
+   /**
+    * @brief Process multiple files in parallel
+    * @param filePaths Vector of file paths to process
+    */
+   void processFilesParallel(const std::vector<std::string>& filePaths);
 
-  private:
-  /**
-   * @brief Implementation class for LLD adapter
-   */
-  class Impl;
+   private:
+   /**
+    * @brief Implementation class for LLD adapter
+    */
+   class Impl;
 
-  std::unique_ptr<Impl> pImpl;  ///< Implementation pointer
+   std::unique_ptr<Impl> pImpl;  ///< Implementation pointer
 };
 
 }  // namespace heimdall

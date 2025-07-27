@@ -3,33 +3,33 @@
 
 ValidationLib::ValidationLib() : validationCount(0)
 {
-  std::cout << "[ValidationLib] Initialized" << std::endl;
+   std::cout << "[ValidationLib] Initialized" << std::endl;
 }
 
 ValidationLib::~ValidationLib()
 {
-  std::cout << "[ValidationLib] Destroyed" << std::endl;
+   std::cout << "[ValidationLib] Destroyed" << std::endl;
 }
 
 bool ValidationLib::validate(const std::string& data)
 {
-  validationCount++;
+   validationCount++;
 
-  // Simple validation logic
-  if (data.empty())
-  {
-    return false;
-  }
+   // Simple validation logic
+   if (data.empty())
+   {
+      return false;
+   }
 
-  if (data.find("invalid") != std::string::npos)
-  {
-    return false;
-  }
+   if (data.find("invalid") != std::string::npos)
+   {
+      return false;
+   }
 
-  return true;
+   return true;
 }
 
 int ValidationLib::getValidationCount() const
 {
-  return validationCount;
+   return validationCount;
 }

@@ -26,11 +26,12 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <vector>
+#include "../compat/compatibility.hpp"
 #include "ComponentInfo.hpp"
 #include "LazySymbolExtractor.hpp"
-#include "../compat/compatibility.hpp"
 
-namespace heimdall {
+namespace heimdall
+{
 
 /**
  * @brief Main class for extracting metadata from binary files
@@ -39,255 +40,254 @@ namespace heimdall {
  * from binary files including symbols, sections, dependencies, and
  * package manager information.
  */
-class MetadataExtractor {
-public:
-    /**
-     * @brief Default constructor
-     */
-    MetadataExtractor();
-    /**
-     * @brief Destructor
-     */
-    ~MetadataExtractor();
+class MetadataExtractor
+{
+   public:
+   /**
+    * @brief Default constructor
+    */
+   MetadataExtractor();
+   /**
+    * @brief Destructor
+    */
+   ~MetadataExtractor();
 
-    /**
-     * @brief Extract all metadata from a component
-     * @param component The component to extract metadata from
-     * @return true if extraction was successful
-     */
-    bool extractMetadata(ComponentInfo& component);
+   /**
+    * @brief Extract all metadata from a component
+    * @param component The component to extract metadata from
+    * @return true if extraction was successful
+    */
+   bool extractMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Extract version information from a component
-     * @param component The component to extract version from
-     * @return true if version was extracted successfully
-     */
-    bool extractVersionInfo(ComponentInfo& component);
+   /**
+    * @brief Extract version information from a component
+    * @param component The component to extract version from
+    * @return true if version was extracted successfully
+    */
+   bool extractVersionInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract license information from a component
-     * @param component The component to extract license from
-     * @return true if license was extracted successfully
-     */
-    bool extractLicenseInfo(ComponentInfo& component);
+   /**
+    * @brief Extract license information from a component
+    * @param component The component to extract license from
+    * @return true if license was extracted successfully
+    */
+   bool extractLicenseInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract symbol information from a component
-     * @param component The component to extract symbols from
-     * @return true if symbols were extracted successfully
-     */
-    bool extractSymbolInfo(ComponentInfo& component);
+   /**
+    * @brief Extract symbol information from a component
+    * @param component The component to extract symbols from
+    * @return true if symbols were extracted successfully
+    */
+   bool extractSymbolInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract section information from a component
-     * @param component The component to extract sections from
-     * @return true if sections were extracted successfully
-     */
-    bool extractSectionInfo(ComponentInfo& component);
+   /**
+    * @brief Extract section information from a component
+    * @param component The component to extract sections from
+    * @return true if sections were extracted successfully
+    */
+   bool extractSectionInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract debug information from a component
-     * @param component The component to extract debug info from
-     * @return true if debug info was extracted successfully
-     */
-    bool extractDebugInfo(ComponentInfo& component);
+   /**
+    * @brief Extract debug information from a component
+    * @param component The component to extract debug info from
+    * @return true if debug info was extracted successfully
+    */
+   bool extractDebugInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract dependency information from a component
-     * @param component The component to extract dependencies from
-     * @return true if dependencies were extracted successfully
-     */
-    bool extractDependencyInfo(ComponentInfo& component);
+   /**
+    * @brief Extract dependency information from a component
+    * @param component The component to extract dependencies from
+    * @return true if dependencies were extracted successfully
+    */
+   bool extractDependencyInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract enhanced Mach-O metadata from a component
-     * @param component The component to extract enhanced metadata from
-     * @return true if enhanced metadata was extracted successfully
-     */
-    bool extractEnhancedMachOMetadata(ComponentInfo& component);
+   /**
+    * @brief Extract enhanced Mach-O metadata from a component
+    * @param component The component to extract enhanced metadata from
+    * @return true if enhanced metadata was extracted successfully
+    */
+   bool extractEnhancedMachOMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Extract code signing information from a Mach-O component
-     * @param component The component to extract code signing info from
-     * @return true if code signing info was extracted successfully
-     */
-    bool extractMachOCodeSignInfo(ComponentInfo& component);
+   /**
+    * @brief Extract code signing information from a Mach-O component
+    * @param component The component to extract code signing info from
+    * @return true if code signing info was extracted successfully
+    */
+   bool extractMachOCodeSignInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract build configuration from a Mach-O component
-     * @param component The component to extract build config from
-     * @return true if build configuration was extracted successfully
-     */
-    bool extractMachOBuildConfig(ComponentInfo& component);
+   /**
+    * @brief Extract build configuration from a Mach-O component
+    * @param component The component to extract build config from
+    * @return true if build configuration was extracted successfully
+    */
+   bool extractMachOBuildConfig(ComponentInfo& component);
 
-    /**
-     * @brief Extract platform information from a Mach-O component
-     * @param component The component to extract platform info from
-     * @return true if platform info was extracted successfully
-     */
-    bool extractMachOPlatformInfo(ComponentInfo& component);
+   /**
+    * @brief Extract platform information from a Mach-O component
+    * @param component The component to extract platform info from
+    * @return true if platform info was extracted successfully
+    */
+   bool extractMachOPlatformInfo(ComponentInfo& component);
 
-    /**
-     * @brief Extract entitlements from a Mach-O component
-     * @param component The component to extract entitlements from
-     * @return true if entitlements were extracted successfully
-     */
-    bool extractMachOEntitlements(ComponentInfo& component);
+   /**
+    * @brief Extract entitlements from a Mach-O component
+    * @param component The component to extract entitlements from
+    * @return true if entitlements were extracted successfully
+    */
+   bool extractMachOEntitlements(ComponentInfo& component);
 
-    /**
-     * @brief Extract architecture information from a Mach-O component
-     * @param component The component to extract architecture info from
-     * @return true if architecture info was extracted successfully
-     */
-    bool extractMachOArchitectures(ComponentInfo& component);
+   /**
+    * @brief Extract architecture information from a Mach-O component
+    * @param component The component to extract architecture info from
+    * @return true if architecture info was extracted successfully
+    */
+   bool extractMachOArchitectures(ComponentInfo& component);
 
-    /**
-     * @brief Extract framework dependencies from a Mach-O component
-     * @param component The component to extract framework dependencies from
-     * @return true if framework dependencies were extracted successfully
-     */
-    bool extractMachOFrameworks(ComponentInfo& component);
+   /**
+    * @brief Extract framework dependencies from a Mach-O component
+    * @param component The component to extract framework dependencies from
+    * @return true if framework dependencies were extracted successfully
+    */
+   bool extractMachOFrameworks(ComponentInfo& component);
 
-    /**
-     * @brief Check if a file is in ELF format
-     * @param filePath The path to the file
-     * @return true if the file is in ELF format
-     */
-    bool isELF(const std::string& filePath);
+   /**
+    * @brief Check if a file is in ELF format
+    * @param filePath The path to the file
+    * @return true if the file is in ELF format
+    */
+   bool isELF(const std::string& filePath);
 
-    /**
-     * @brief Check if a file is in Mach-O format
-     * @param filePath The path to the file
-     * @return true if the file is in Mach-O format
-     */
-    bool isMachO(const std::string& filePath);
+   /**
+    * @brief Check if a file is in Mach-O format
+    * @param filePath The path to the file
+    * @return true if the file is in Mach-O format
+    */
+   bool isMachO(const std::string& filePath);
 
-    /**
-     * @brief Check if a file is in PE format
-     * @param filePath The path to the file
-     * @return true if the file is in PE format
-     */
-    bool isPE(const std::string& filePath);
+   /**
+    * @brief Check if a file is in PE format
+    * @param filePath The path to the file
+    * @return true if the file is in PE format
+    */
+   bool isPE(const std::string& filePath);
 
-    /**
-     * @brief Check if a file is an archive
-     * @param filePath The path to the file
-     * @return true if the file is an archive
-     */
-    bool isArchive(const std::string& filePath);
+   /**
+    * @brief Check if a file is an archive
+    * @param filePath The path to the file
+    * @return true if the file is an archive
+    */
+   bool isArchive(const std::string& filePath);
 
-    /**
-     * @brief Extract Conan package manager metadata
-     * @param component The component to extract metadata from
-     * @return true if metadata was extracted successfully
-     */
-    bool extractConanMetadata(ComponentInfo& component);
+   /**
+    * @brief Extract Conan package manager metadata
+    * @param component The component to extract metadata from
+    * @return true if metadata was extracted successfully
+    */
+   bool extractConanMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Extract vcpkg package manager metadata
-     * @param component The component to extract metadata from
-     * @return true if metadata was extracted successfully
-     */
-    bool extractVcpkgMetadata(ComponentInfo& component);
+   /**
+    * @brief Extract vcpkg package manager metadata
+    * @param component The component to extract metadata from
+    * @return true if metadata was extracted successfully
+    */
+   bool extractVcpkgMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Extract system package manager metadata
-     * @param component The component to extract metadata from
-     * @return true if metadata was extracted successfully
-     */
-    bool extractSystemMetadata(ComponentInfo& component);
+   /**
+    * @brief Extract system package manager metadata
+    * @param component The component to extract metadata from
+    * @return true if metadata was extracted successfully
+    */
+   bool extractSystemMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Extract macOS app bundle metadata from Info.plist
-     * @param component The component to extract metadata from
-     * @return true if metadata was extracted successfully
-     */
-    bool extractMacOSAppBundleMetadata(ComponentInfo& component);
+   /**
+    * @brief Extract macOS app bundle metadata from Info.plist
+    * @param component The component to extract metadata from
+    * @return true if metadata was extracted successfully
+    */
+   bool extractMacOSAppBundleMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Detect RPM package manager metadata
-     * @param component The component to detect metadata for
-     * @return true if RPM metadata was detected
-     */
-    bool detectRpmMetadata(ComponentInfo& component);
+   /**
+    * @brief Detect RPM package manager metadata
+    * @param component The component to detect metadata for
+    * @return true if RPM metadata was detected
+    */
+   bool detectRpmMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Detect Debian package manager metadata
-     * @param component The component to detect metadata for
-     * @return true if Debian metadata was detected
-     */
-    bool detectDebMetadata(ComponentInfo& component);
+   /**
+    * @brief Detect Debian package manager metadata
+    * @param component The component to detect metadata for
+    * @return true if Debian metadata was detected
+    */
+   bool detectDebMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Detect Pacman package manager metadata
-     * @param component The component to detect metadata for
-     * @return true if Pacman metadata was detected
-     */
-    bool detectPacmanMetadata(ComponentInfo& component);
+   /**
+    * @brief Detect Pacman package manager metadata
+    * @param component The component to detect metadata for
+    * @return true if Pacman metadata was detected
+    */
+   bool detectPacmanMetadata(ComponentInfo& component);
 
-    /**
-     * @brief Set verbose output mode
-     * @param verbose true to enable verbose output
-     */
-    void setVerbose(bool verbose);
+   /**
+    * @brief Set verbose output mode
+    * @param verbose true to enable verbose output
+    */
+   void setVerbose(bool verbose);
 
-    /**
-     * @brief Set whether to extract debug information
-     * @param extract true to extract debug information
-     */
-    void setExtractDebugInfo(bool extract);
+   /**
+    * @brief Set whether to extract debug information
+    * @param extract true to extract debug information
+    */
+   void setExtractDebugInfo(bool extract);
 
-    /**
-     * @brief Set whether to suppress warnings (for test mode)
-     * @param suppress true to suppress warnings
-     */
-    void setSuppressWarnings(bool suppress);
+   /**
+    * @brief Set whether to suppress warnings (for test mode)
+    * @param suppress true to suppress warnings
+    */
+   void setSuppressWarnings(bool suppress);
 
-    /**
-     * @brief Extract metadata from multiple files with optimal batching
-     * @param filePaths Vector of file paths to process
-     * @param components Output vector for extracted components
-     * @param batch_size Size of processing batches (0 for auto)
-     * @return true if extraction was successful
-     */
-    bool extractMetadataBatched(const std::vector<std::string>& filePaths,
-                               std::vector<ComponentInfo>& components,
-                               size_t batch_size = 0);
+   /**
+    * @brief Extract metadata from multiple files with optimal batching
+    * @param filePaths Vector of file paths to process
+    * @param components Output vector for extracted components
+    * @param batch_size Size of processing batches (0 for auto)
+    * @return true if extraction was successful
+    */
+   bool extractMetadataBatched(const std::vector<std::string>& filePaths,
+                               std::vector<ComponentInfo>& components, size_t batch_size = 0);
 
-    /**
-     * @brief Extract Ada metadata from ALI files
-     * @param component The component to extract metadata from
-     * @param aliFiles Vector of ALI file paths to parse
-     * @return true if extraction was successful
-     */
-    bool extractAdaMetadata(ComponentInfo& component, 
-                          const std::vector<std::string>& aliFiles);
+   /**
+    * @brief Extract Ada metadata from ALI files
+    * @param component The component to extract metadata from
+    * @param aliFiles Vector of ALI file paths to parse
+    * @return true if extraction was successful
+    */
+   bool extractAdaMetadata(ComponentInfo& component, const std::vector<std::string>& aliFiles);
 
-    /**
-     * @brief Check if a file is an Ada ALI file
-     * @param filePath Path to the file
-     * @return true if the file is an ALI file
-     */
-    bool isAdaAliFile(const std::string& filePath);
+   /**
+    * @brief Check if a file is an Ada ALI file
+    * @param filePath Path to the file
+    * @return true if the file is an ALI file
+    */
+   bool isAdaAliFile(const std::string& filePath);
 
-    /**
-     * @brief Find ALI files in a directory
-     * @param directory Directory to search
-     * @param aliFiles Output vector of ALI file paths
-     * @return true if search was successful
-     */
-    bool findAdaAliFiles(const std::string& directory, 
-                        std::vector<std::string>& aliFiles);
+   /**
+    * @brief Find ALI files in a directory
+    * @param directory Directory to search
+    * @param aliFiles Output vector of ALI file paths
+    * @return true if search was successful
+    */
+   bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& aliFiles);
 
-private:
-    class Impl;
-    std::unique_ptr<Impl> pImpl;
+   private:
+   class Impl;
+   std::unique_ptr<Impl> pImpl;
 };
 
 /**
  * @brief Namespace containing helper functions for metadata extraction
  */
-namespace MetadataHelpers {
+namespace MetadataHelpers
+{
 
 /**
  * @brief Check if a file is in ELF format
@@ -411,7 +411,8 @@ bool extractMachOBuildConfig(const std::string& filePath, BuildConfigInfo& build
  * @param bundleName Reference to store the bundle name
  * @return true if version was extracted successfully
  */
-bool extractMacOSAppBundleInfo(const std::string& appBundlePath, std::string& version, std::string& bundleName);
+bool extractMacOSAppBundleInfo(const std::string& appBundlePath, std::string& version,
+                               std::string& bundleName);
 
 /**
  * @brief Extract platform information from a Mach-O file
@@ -435,7 +436,8 @@ bool extractMachOEntitlements(const std::string& filePath, std::vector<std::stri
  * @param architectures Vector to store architecture information
  * @return true if architectures were extracted successfully
  */
-bool extractMachOArchitectures(const std::string& filePath, std::vector<ArchitectureInfo>& architectures);
+bool extractMachOArchitectures(const std::string&             filePath,
+                               std::vector<ArchitectureInfo>& architectures);
 
 /**
  * @brief Extract framework dependencies from a Mach-O file
@@ -642,8 +644,7 @@ bool isAdaAliFile(const std::string& filePath);
  * @param aliFiles Output vector of ALI file paths
  * @return true if search was successful
  */
-bool findAdaAliFiles(const std::string& directory, 
-                    std::vector<std::string>& aliFiles);
+bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& aliFiles);
 
 /**
  * @brief Thread-safe test mode control
@@ -663,8 +664,7 @@ bool isTestMode();
  * @param component The component to store metadata in
  * @return true if extraction was successful
  */
-bool extractAdaMetadata(const std::vector<std::string>& aliFiles, 
-                       ComponentInfo& component);
+bool extractAdaMetadata(const std::vector<std::string>& aliFiles, ComponentInfo& component);
 
 }  // namespace MetadataHelpers
 

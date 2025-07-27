@@ -46,70 +46,69 @@ namespace heimdall
  */
 class LazySymbolExtractor
 {
-  public:
-  /**
-   * @brief Default constructor
-   */
-  LazySymbolExtractor();
+   public:
+   /**
+    * @brief Default constructor
+    */
+   LazySymbolExtractor();
 
-  /**
-   * @brief Destructor
-   */
-  ~LazySymbolExtractor();
+   /**
+    * @brief Destructor
+    */
+   ~LazySymbolExtractor();
 
-  /**
-   * @brief Get symbols for a file (lazy loading with caching)
-   *
-   * @param filePath Path to the file
-   * @return Vector of symbol information
-   */
-  std::vector<SymbolInfo> getSymbols(const std::string& filePath);
+   /**
+    * @brief Get symbols for a file (lazy loading with caching)
+    *
+    * @param filePath Path to the file
+    * @return Vector of symbol information
+    */
+   std::vector<SymbolInfo> getSymbols(const std::string& filePath);
 
-  /**
-   * @brief Clear the symbol cache
-   */
-  void clearCache();
+   /**
+    * @brief Clear the symbol cache
+    */
+   void clearCache();
 
-  /**
-   * @brief Get cache statistics
-   *
-   * @return Pair of (cache hits, cache misses)
-   */
-  std::pair<size_t, size_t> getCacheStats() const;
+   /**
+    * @brief Get cache statistics
+    *
+    * @return Pair of (cache hits, cache misses)
+    */
+   std::pair<size_t, size_t> getCacheStats() const;
 
-  /**
-   * @brief Get cache size
-   *
-   * @return Number of cached files
-   */
-  size_t getCacheSize() const;
+   /**
+    * @brief Get cache size
+    *
+    * @return Number of cached files
+    */
+   size_t getCacheSize() const;
 
-  private:
-  /**
-   * @brief Extract symbols from file (actual implementation)
-   *
-   * @param filePath Path to the file
-   * @return Vector of symbol information
-   */
-  std::vector<SymbolInfo> extractSymbols(const std::string& filePath);
+   private:
+   /**
+    * @brief Extract symbols from file (actual implementation)
+    *
+    * @param filePath Path to the file
+    * @return Vector of symbol information
+    */
+   std::vector<SymbolInfo> extractSymbols(const std::string& filePath);
 
-  /**
-   * @brief Check if symbols should be cached for this file
-   *
-   * @param filePath Path to the file
-   * @return true if symbols should be cached, false otherwise
-   */
-  bool shouldCache(const std::string& filePath) const;
+   /**
+    * @brief Check if symbols should be cached for this file
+    *
+    * @param filePath Path to the file
+    * @return true if symbols should be cached, false otherwise
+    */
+   bool shouldCache(const std::string& filePath) const;
 
+   std::unordered_map<std::string, std::vector<SymbolInfo>> symbolCache;
+   mutable std::mutex                                       cacheMutex;
+   size_t                                                   cacheHits{0};
+   size_t                                                   cacheMisses{0};
 
-    std::unordered_map<std::string, std::vector<SymbolInfo>> symbolCache;
-    mutable std::mutex cacheMutex;
-    size_t cacheHits{0};
-    size_t cacheMisses{0};
-    
-    // Cache configuration
-    static constexpr size_t MAX_CACHE_SIZE = 100;  // Maximum number of cached files
-    static constexpr size_t MIN_SYMBOLS_TO_CACHE = 100;  // Minimum symbols to trigger caching
+   // Cache configuration
+   static constexpr size_t MAX_CACHE_SIZE       = 100;  // Maximum number of cached files
+   static constexpr size_t MIN_SYMBOLS_TO_CACHE = 100;  // Minimum symbols to trigger caching
 };
 
 }  // namespace heimdall
