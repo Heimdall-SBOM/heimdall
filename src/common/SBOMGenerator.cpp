@@ -1033,13 +1033,11 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
    if (appName.empty() && !components.empty())
    {
-      // Find the main executable in an app bundle
+      // Find the main executable - prioritize executables, then any component with a good name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
-         if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-             (component.fileType == FileType::Executable ||
-              component.fileType == FileType::Unknown))
+         if (component.fileType == FileType::Executable)
          {
             appName = component.name;
             if (!component.version.empty())
@@ -1047,6 +1045,44 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
                appVersion = component.version;
             }
             break;
+         }
+      }
+      
+      // If no executable found, look for app bundle executables (macOS)
+      if (appName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
+                (component.fileType == FileType::Executable ||
+                 component.fileType == FileType::Unknown))
+            {
+               appName = component.name;
+               if (!component.version.empty())
+               {
+                  appVersion = component.version;
+               }
+               break;
+            }
+         }
+      }
+      
+      // If still no executable found, use the first component with a non-empty name
+      if (appName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (!component.name.empty() && component.name != "Unknown")
+            {
+               appName = component.name;
+               if (!component.version.empty())
+               {
+                  appVersion = component.version;
+               }
+               break;
+            }
          }
       }
    }
@@ -1066,17 +1102,47 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
    if (mainAppName.empty() && !components.empty())
    {
-      // Find the main executable in an app bundle
+      // Find the main executable - prioritize executables, then any component with a good name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
-         if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-             (component.fileType == FileType::Executable ||
-              component.fileType == FileType::Unknown))
+         if (component.fileType == FileType::Executable)
          {
             mainAppName = component.name;
             mainAppPath = component.filePath;
             break;
+         }
+      }
+      
+      // If no executable found, look for app bundle executables (macOS)
+      if (mainAppName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
+                (component.fileType == FileType::Executable ||
+                 component.fileType == FileType::Unknown))
+            {
+               mainAppName = component.name;
+               mainAppPath = component.filePath;
+               break;
+            }
+         }
+      }
+      
+      // If still no executable found, use the first component with a non-empty name
+      if (mainAppName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (!component.name.empty() && component.name != "Unknown")
+            {
+               mainAppName = component.name;
+               mainAppPath = component.filePath;
+               break;
+            }
          }
       }
    }
