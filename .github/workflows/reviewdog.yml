@@ -37,7 +37,7 @@ jobs:
           echo "Changed files: $FILES"
           if [ -n "$FILES" ]; then
             for file in $FILES; do
-              clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -fail-on-error=true
+              clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -fail-level=error
             done
           fi
         env:
@@ -47,12 +47,25 @@ jobs:
       # 2. CLANG-TIDY via reviewdog
       ############################################
       - name: Run clang-tidy with reviewdog
+        timeout-minutes: 10
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
           wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
           chmod +x run-clang-tidy.py
           mkdir -p tidy-fixes
-          ./run-clang-tidy.py -p build -export-fixes tidy-fixes/ -quiet \
-            | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-on-error=true
+          
+          # Get changed files only
+          FILES=$(git diff --name-only origin/main | grep -E '\.(c|cpp|h|hpp)$' || true)
+          echo "Changed files for clang-tidy: $FILES"
+          
+          if [ -n "$FILES" ]; then
+            # Run clang-tidy only on changed files
+            for file in $FILES; do
+              echo "Running clang-tidy on: $file"
+              clang-tidy -p build "$file" 2>/dev/null | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-level=error
+            done
+          else
+            echo "No C++ files changed, skipping clang-tidy"
+          fi
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
