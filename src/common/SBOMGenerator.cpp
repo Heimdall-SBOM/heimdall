@@ -237,6 +237,8 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
    std::string canonicalPath = Utils::resolveLibraryPath(component.filePath);
    std::string key           = canonicalPath;  // Use canonical file path as unique key
 
+   std::cerr << "[DEBUG] processComponent: " << component.name << " -> key: " << key << std::endl;
+
    if (pImpl->components.find(key) == pImpl->components.end())
    {
       // New component, extract metadata
@@ -248,6 +250,7 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
       }
 
       pImpl->components[key] = processedComponent;
+      std::cerr << "[DEBUG] Added component to map: " << component.name << " -> key: " << key << std::endl;
       Utils::debugPrint("Processed component: " + component.name);
 
       // Process dependencies based on transitiveDependencies setting
@@ -1030,15 +1033,23 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    // Try to get a better application name
    std::string appName    = buildInfo.targetName;
    std::string appVersion = buildInfo.buildId;
+   
+   std::cerr << "[DEBUG] buildInfo.targetName: '" << buildInfo.targetName << "'" << std::endl;
+   std::cerr << "[DEBUG] buildInfo.buildId: '" << buildInfo.buildId << "'" << std::endl;
+   std::cerr << "[DEBUG] appName: '" << appName << "'" << std::endl;
+   std::cerr << "[DEBUG] components.empty(): " << (components.empty() ? "true" : "false") << std::endl;
 
    if (appName.empty() && !components.empty())
    {
+      std::cerr << "[DEBUG] Looking for executable components. Total components: " << components.size() << std::endl;
       // Find the main executable - prioritize executables, then any component with a good name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
+         std::cerr << "[DEBUG] Component: " << component.name << " -> fileType: " << static_cast<int>(component.fileType) << " -> path: " << component.filePath << std::endl;
          if (component.fileType == FileType::Executable)
          {
+            std::cerr << "[DEBUG] Found executable: " << component.name << std::endl;
             appName = component.name;
             if (!component.version.empty())
             {
@@ -1150,29 +1161,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    for (const auto& pair : components)
    {
       const auto& component = pair.second;
-
-      // Skip the main application - it should only appear in metadata.component
-      bool isMainApp = false;
-      if (!mainAppName.empty() && component.name == mainAppName)
-      {
-         // If we have a main app path, check it matches too
-         if (mainAppPath.empty() || component.filePath == mainAppPath)
-         {
-            isMainApp = true;
-         }
-      }
-
-      // Also check if this is an executable in an app bundle (likely the main app)
-      if (!isMainApp && component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-          (component.fileType == FileType::Executable || component.fileType == FileType::Unknown))
-      {
-         isMainApp = true;
-      }
-
-      if (isMainApp)
-      {
-         continue;  // Skip the main application
-      }
+      std::cerr << "[DEBUG] Processing component in CycloneDX loop: " << component.name << " -> fileType: " << static_cast<int>(component.fileType) << std::endl;
 
       if (!first)
          ss << ",\n";
