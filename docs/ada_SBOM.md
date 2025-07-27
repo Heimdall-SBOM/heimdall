@@ -1,6 +1,8 @@
+<img src="https://github.com/Heimdall-SBOM/heimdall/blob/main/docs/images/heimdall-ada.png?raw=true" alt="Ada and Heimdall" width="50%">
+
 # Ada SBOM Generation with Heimdall
 
-This document describes how Heimdall extracts Ada-specific metadata from object files, executables, and ALI (Ada Library Information) files and stores this information in SPDX and CycloneDX SBOM formats.
+Heimdall extracts Ada-specific metadata from object files, executables, and ALI (Ada Library Information) files and stores this comprehensive information in SPDX and CycloneDX SBOM formats.  
 
 ## Overview
 
