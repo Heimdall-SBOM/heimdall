@@ -33,6 +33,7 @@ limitations under the License.
 
 #include <string>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include "../compat/compatibility.hpp"
 
 namespace heimdall
@@ -62,6 +63,7 @@ struct SignatureInfo
    std::string signature;     ///< Base64-encoded signature
    std::string certificate;   ///< Base64-encoded certificate (optional)
    std::string timestamp;     ///< ISO 8601 timestamp
+   std::vector<std::string> excludes; ///< Fields excluded during canonicalization
 };
 
 /**
@@ -143,6 +145,22 @@ class SBOMSigner
     * @return Error message
     */
    std::string getLastError() const;
+
+   /**
+    * @brief Create canonical JSON for signing according to JSF standards
+    * @param sbomJson The original SBOM JSON
+    * @param excludes Output vector of excluded field paths
+    * @return Canonical JSON string ready for signing
+    */
+   std::string createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes);
+
+   /**
+    * @brief Verify that canonical JSON excludes all signature fields
+    * @param originalJson The original SBOM JSON
+    * @param canonicalJson The canonical JSON string
+    * @return true if canonicalization is correct
+    */
+   bool verifyCanonicalization(const nlohmann::json& originalJson, const std::string& canonicalJson);
 
    private:
    class Impl;

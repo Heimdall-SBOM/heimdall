@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <nlohmann/json.hpp>
 #include "../src/common/SBOMComparator.hpp"
+#include "../src/common/SBOMSigner.hpp"
 
 using namespace heimdall;
 
@@ -105,6 +107,42 @@ int main() {
     std::cout << "  - Certificate and key ID support\n";
     std::cout << "  - Command-line integration with heimdall-sbom\n";
     std::cout << "  - Example: heimdall-sbom plugin.so binary --format cyclonedx --output sbom.json --sign-key private.key --sign-algorithm RS256\n\n";
+    
+    // Test canonicalization functionality
+    std::cout << "Canonicalization Test:\n";
+    heimdall::SBOMSigner signer;
+    
+    // Create a test SBOM with signature fields
+    nlohmann::json testSbom;
+    testSbom["bomFormat"] = "CycloneDX";
+    testSbom["specVersion"] = "1.6";
+    testSbom["version"] = 1;
+    testSbom["signature"] = {{"algorithm", "RS256"}, {"signature", "test-signature"}};
+    
+    testSbom["components"] = nlohmann::json::array();
+    nlohmann::json component;
+    component["bom-ref"] = "test-component";
+    component["name"] = "test";
+    component["version"] = "1.0.0";
+    component["signature"] = {{"algorithm", "RS256"}, {"signature", "component-signature"}};
+    testSbom["components"].push_back(component);
+    
+         // Test canonicalization with excludes tracking
+     std::vector<std::string> excludes;
+     std::string canonicalJson = signer.createCanonicalJSON(testSbom, excludes);
+     if (signer.verifyCanonicalization(testSbom, canonicalJson)) {
+         std::cout << "  ✅ Canonicalization working correctly - all signature fields excluded\n";
+         std::cout << "  📋 Excluded fields: ";
+         for (size_t i = 0; i < excludes.size(); ++i) {
+             if (i > 0) std::cout << ", ";
+             std::cout << excludes[i];
+         }
+         std::cout << "\n";
+     } else {
+         std::cout << "  ❌ Canonicalization failed: " << signer.getLastError() << "\n";
+     }
+    
+    std::cout << "\n";
 
     return 0;
 } 

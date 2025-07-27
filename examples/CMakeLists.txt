@@ -6,7 +6,7 @@ add_subdirectory(openssl_pthread_demo)
 
 # Add BOM reference demo
 add_executable(bom_ref_demo bom_ref_demo.cpp)
-target_link_libraries(bom_ref_demo PRIVATE heimdall-core ${LLVM_LIBRARIES})
+target_link_libraries(bom_ref_demo PRIVATE heimdall-core ${OPENSSL_LIBRARIES})
 target_include_directories(bom_ref_demo PRIVATE ${CMAKE_SOURCE_DIR}/src)
 if(DEFINED LLVM_LIBRARY_DIRS)
     target_link_directories(bom_ref_demo PRIVATE ${LLVM_LIBRARY_DIRS})
@@ -29,3 +29,9 @@ if(ENABLE_PROFILING)
         RUNTIME DESTINATION bin
     )
 endif() 
+
+ 
+
+ 
+
+ 

@@ -359,18 +359,14 @@ bool SBOMSigner::signSBOM(const std::string& sbomContent, SignatureInfo& signatu
       return false;
    }
    
-   // Remove existing signature if present
-   if (sbomJson.contains("signature")) {
-      sbomJson.erase("signature");
-   }
-   
-   // Create canonical JSON string
-   std::string canonicalJson = sbomJson.dump();
+   // Create canonical JSON for signing according to JSF standards
+   std::vector<std::string> excludes;
+   std::string canonicalJsonString = createCanonicalJSON(sbomJson, excludes);
    
    // Sign the canonical JSON
    std::string signature;
-   if (!pImpl->signData(reinterpret_cast<const unsigned char*>(canonicalJson.c_str()),
-                       canonicalJson.length(), signature)) {
+   if (!pImpl->signData(reinterpret_cast<const unsigned char*>(canonicalJsonString.c_str()),
+                       canonicalJsonString.length(), signature)) {
       return false;
    }
    
@@ -379,6 +375,7 @@ bool SBOMSigner::signSBOM(const std::string& sbomContent, SignatureInfo& signatu
    signatureInfo.keyId = pImpl->keyId;
    signatureInfo.signature = signature;
    signatureInfo.timestamp = pImpl->getCurrentTimestamp();
+   signatureInfo.excludes = excludes;
    
    // Add certificate if available
    if (pImpl->certificate) {
@@ -404,19 +401,21 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
       return sbomContent;
    }
    
-   // Create signature object
-   nlohmann::json signatureJson;
-   signatureJson["algorithm"] = signatureInfo.algorithm;
-   signatureJson["keyId"] = signatureInfo.keyId;
-   signatureJson["signature"] = signatureInfo.signature;
-   signatureJson["timestamp"] = signatureInfo.timestamp;
+   // Create signature object according to JSON Signature Format (JSF) specification
+   nlohmann::json signatureObj;
+   signatureObj["algorithm"] = signatureInfo.algorithm;
+   signatureObj["value"] = signatureInfo.signature;
    
-   if (!signatureInfo.certificate.empty()) {
-      signatureJson["certificate"] = signatureInfo.certificate;
+   if (!signatureInfo.keyId.empty()) {
+      signatureObj["keyId"] = signatureInfo.keyId;
+   }
+   
+   if (!signatureInfo.excludes.empty()) {
+      signatureObj["excludes"] = signatureInfo.excludes;
    }
    
    // Add signature to SBOM
-   sbomJson["signature"] = signatureJson;
+   sbomJson["signature"] = signatureObj;
    
    return sbomJson.dump(2);
 }
@@ -451,11 +450,22 @@ bool SBOMSigner::extractSignature(const std::string& sbomContent, SignatureInfo&
    
    nlohmann::json sigJson = sbomJson["signature"];
    
-   signatureInfo.algorithm = sigJson.value("algorithm", "");
-   signatureInfo.keyId = sigJson.value("keyId", "");
-   signatureInfo.signature = sigJson.value("signature", "");
-   signatureInfo.timestamp = sigJson.value("timestamp", "");
-   signatureInfo.certificate = sigJson.value("certificate", "");
+   // Handle signature as object with value field
+   if (sigJson.is_object()) {
+      signatureInfo.signature = sigJson.value("value", "");
+      signatureInfo.algorithm = sigJson.value("algorithm", "");
+      signatureInfo.keyId = sigJson.value("keyId", "");
+      signatureInfo.timestamp = sigJson.value("timestamp", "");
+      signatureInfo.certificate = sigJson.value("certificate", "");
+      
+      // Extract excludes array if present
+      if (sigJson.contains("excludes") && sigJson["excludes"].is_array()) {
+         signatureInfo.excludes = sigJson["excludes"].get<std::vector<std::string>>();
+      }
+   } else if (sigJson.is_string()) {
+      // Fallback for simple string format
+      signatureInfo.signature = sigJson.get<std::string>();
+   }
    
    return true;
 }
@@ -463,6 +473,189 @@ bool SBOMSigner::extractSignature(const std::string& sbomContent, SignatureInfo&
 std::string SBOMSigner::getLastError() const
 {
    return pImpl->lastError;
+}
+
+std::string SBOMSigner::createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes)
+{
+   // Create a deep copy to avoid modifying the original
+   nlohmann::json canonicalJson = sbomJson;
+   
+   // Clear the excludes vector
+   excludes.clear();
+   
+   // Remove signature field from root level
+   if (canonicalJson.contains("signature")) {
+      canonicalJson.erase("signature");
+      excludes.push_back("signature");
+   }
+   
+   // Remove signature fields from all components
+   if (canonicalJson.contains("components")) {
+      for (size_t i = 0; i < canonicalJson["components"].size(); ++i) {
+         auto& component = canonicalJson["components"][i];
+         if (component.contains("signature")) {
+            component.erase("signature");
+            excludes.push_back("components[" + std::to_string(i) + "].signature");
+         }
+      }
+   }
+   
+   // Remove signature fields from all services
+   if (canonicalJson.contains("services")) {
+      for (size_t i = 0; i < canonicalJson["services"].size(); ++i) {
+         auto& service = canonicalJson["services"][i];
+         if (service.contains("signature")) {
+            service.erase("signature");
+            excludes.push_back("services[" + std::to_string(i) + "].signature");
+         }
+      }
+   }
+   
+   // Remove signature fields from all vulnerabilities
+   if (canonicalJson.contains("vulnerabilities")) {
+      for (size_t i = 0; i < canonicalJson["vulnerabilities"].size(); ++i) {
+         auto& vulnerability = canonicalJson["vulnerabilities"][i];
+         if (vulnerability.contains("signature")) {
+            vulnerability.erase("signature");
+            excludes.push_back("vulnerabilities[" + std::to_string(i) + "].signature");
+         }
+      }
+   }
+   
+   // Remove signature fields from all annotations
+   if (canonicalJson.contains("annotations")) {
+      for (size_t i = 0; i < canonicalJson["annotations"].size(); ++i) {
+         auto& annotation = canonicalJson["annotations"][i];
+         if (annotation.contains("signature")) {
+            annotation.erase("signature");
+            excludes.push_back("annotations[" + std::to_string(i) + "].signature");
+         }
+      }
+   }
+   
+   // Remove signature fields from compositions
+   if (canonicalJson.contains("compositions")) {
+      for (size_t i = 0; i < canonicalJson["compositions"].size(); ++i) {
+         auto& composition = canonicalJson["compositions"][i];
+         if (composition.contains("signature")) {
+            composition.erase("signature");
+            excludes.push_back("compositions[" + std::to_string(i) + "].signature");
+         }
+      }
+   }
+   
+   // Remove signature fields from formulations
+   if (canonicalJson.contains("formulation")) {
+      for (size_t i = 0; i < canonicalJson["formulation"].size(); ++i) {
+         auto& formula = canonicalJson["formulation"][i];
+         if (formula.contains("signature")) {
+            formula.erase("signature");
+            excludes.push_back("formulation[" + std::to_string(i) + "].signature");
+         }
+      }
+   }
+   
+   // Remove signature fields from metadata
+   if (canonicalJson.contains("metadata")) {
+      auto& metadata = canonicalJson["metadata"];
+      if (metadata.contains("signature")) {
+         metadata.erase("signature");
+         excludes.push_back("metadata.signature");
+      }
+      
+      // Remove signature fields from metadata tools
+      if (metadata.contains("tools")) {
+         for (size_t i = 0; i < metadata["tools"].size(); ++i) {
+            auto& tool = metadata["tools"][i];
+            if (tool.contains("signature")) {
+               tool.erase("signature");
+               excludes.push_back("metadata.tools[" + std::to_string(i) + "].signature");
+            }
+         }
+      }
+      
+      // Remove signature fields from metadata authors
+      if (metadata.contains("authors")) {
+         for (size_t i = 0; i < metadata["authors"].size(); ++i) {
+            auto& author = metadata["authors"][i];
+            if (author.contains("signature")) {
+               author.erase("signature");
+               excludes.push_back("metadata.authors[" + std::to_string(i) + "].signature");
+            }
+         }
+      }
+   }
+   
+   // Create canonical JSON string with consistent formatting
+   // Use compact JSON to ensure consistent canonicalization
+   return canonicalJson.dump();
+}
+
+bool SBOMSigner::verifyCanonicalization(const nlohmann::json& originalJson, const std::string& canonicalJson)
+{
+   try {
+      nlohmann::json canonicalJsonObj = nlohmann::json::parse(canonicalJson);
+      
+      // Check that root signature is excluded
+      if (canonicalJsonObj.contains("signature")) {
+         pImpl->lastError = "Root signature field not excluded from canonical JSON";
+         return false;
+      }
+      
+      // Check that component signatures are excluded
+      if (canonicalJsonObj.contains("components")) {
+         for (const auto& component : canonicalJsonObj["components"]) {
+            if (component.contains("signature")) {
+               pImpl->lastError = "Component signature field not excluded from canonical JSON";
+               return false;
+            }
+         }
+      }
+      
+      // Check that service signatures are excluded
+      if (canonicalJsonObj.contains("services")) {
+         for (const auto& service : canonicalJsonObj["services"]) {
+            if (service.contains("signature")) {
+               pImpl->lastError = "Service signature field not excluded from canonical JSON";
+               return false;
+            }
+         }
+      }
+      
+      // Check that vulnerability signatures are excluded
+      if (canonicalJsonObj.contains("vulnerabilities")) {
+         for (const auto& vulnerability : canonicalJsonObj["vulnerabilities"]) {
+            if (vulnerability.contains("signature")) {
+               pImpl->lastError = "Vulnerability signature field not excluded from canonical JSON";
+               return false;
+            }
+         }
+      }
+      
+      // Check that annotation signatures are excluded
+      if (canonicalJsonObj.contains("annotations")) {
+         for (const auto& annotation : canonicalJsonObj["annotations"]) {
+            if (annotation.contains("signature")) {
+               pImpl->lastError = "Annotation signature field not excluded from canonical JSON";
+               return false;
+            }
+         }
+      }
+      
+      // Check that metadata signatures are excluded
+      if (canonicalJsonObj.contains("metadata")) {
+         const auto& metadata = canonicalJsonObj["metadata"];
+         if (metadata.contains("signature")) {
+            pImpl->lastError = "Metadata signature field not excluded from canonical JSON";
+            return false;
+         }
+      }
+      
+      return true;
+   } catch (const std::exception& e) {
+      pImpl->lastError = "Failed to parse canonical JSON for verification: " + std::string(e.what());
+      return false;
+   }
 }
 
 }  // namespace heimdall 
