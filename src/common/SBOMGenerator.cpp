@@ -1351,14 +1351,54 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
    ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
    ss << "      \"version\": "
       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version) << ",\n";
-   ss << "      \"description\": "
-      << Utils::formatJsonValue(component.getFileTypeString() + " component") << ",\n";
-   ss << "      \"supplier\": {\n";
-   ss << "        \"name\": "
-      << Utils::formatJsonValue(component.supplier.empty() ? "system-package-manager"
-                                                           : component.supplier)
-      << "\n";
-   ss << "      },\n";
+   // Enhanced description
+   std::string description = component.description.empty() ? 
+      component.getFileTypeString() + " component" : component.description;
+   ss << "      \"description\": " << Utils::formatJsonValue(description) << ",\n";
+   
+   // Scope
+   if (!component.scope.empty()) {
+      ss << "      \"scope\": \"" << component.scope << "\",\n";
+   }
+   
+   // Group
+   if (!component.group.empty()) {
+      ss << "      \"group\": " << Utils::formatJsonValue(component.group) << ",\n";
+   }
+   
+   // MIME type
+   if (!component.mimeType.empty()) {
+      ss << "      \"mime-type\": " << Utils::formatJsonValue(component.mimeType) << ",\n";
+   }
+   
+   // Copyright
+   if (!component.copyright.empty()) {
+      ss << "      \"copyright\": " << Utils::formatJsonValue(component.copyright) << ",\n";
+   }
+   
+   // CPE
+   if (!component.cpe.empty()) {
+      ss << "      \"cpe\": " << Utils::formatJsonValue(component.cpe) << ",\n";
+   }
+   
+   // Supplier
+   if (!component.supplier.empty()) {
+      ss << "      \"supplier\": {\n";
+      ss << "        \"name\": " << Utils::formatJsonValue(component.supplier) << "\n";
+      ss << "      },\n";
+   }
+   
+   // Manufacturer
+   if (!component.manufacturer.empty()) {
+      ss << "      \"manufacturer\": {\n";
+      ss << "        \"name\": " << Utils::formatJsonValue(component.manufacturer) << "\n";
+      ss << "      },\n";
+   }
+   
+   // Publisher
+   if (!component.publisher.empty()) {
+      ss << "      \"publisher\": " << Utils::formatJsonValue(component.publisher) << ",\n";
+   }
    // Only include hash if we have a valid checksum
    if (!component.checksum.empty() && component.checksum.length() == 64)
    {
@@ -1370,15 +1410,42 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       ss << "      ],\n";
    }
    ss << "      \"purl\": \"" << generatePURL(component) << "\",\n";
+   // External references
    ss << "      \"externalReferences\": [\n";
-   ss << "        {\n";
-   ss << "          \"type\": \"distribution\",\n";
-   ss << "          \"url\": "
-      << Utils::formatJsonValue(component.downloadLocation.empty() ? "NOASSERTION"
-                                                                   : component.downloadLocation)
-      << "\n";
-   ss << "        }\n";
-   ss << "      ]";
+   
+   // Download location
+   if (!component.downloadLocation.empty()) {
+      ss << "        {\n";
+      ss << "          \"type\": \"distribution\",\n";
+      ss << "          \"url\": " << Utils::formatJsonValue(component.downloadLocation) << "\n";
+      ss << "        }";
+   }
+   
+   // Homepage
+   if (!component.homepage.empty()) {
+      if (!component.downloadLocation.empty()) {
+         ss << ",\n";
+      }
+      ss << "        {\n";
+      ss << "          \"type\": \"website\",\n";
+      ss << "          \"url\": " << Utils::formatJsonValue(component.homepage) << "\n";
+      ss << "        }";
+   }
+   
+   // Additional external references from properties
+   for (const auto& [key, value] : component.properties) {
+      if (key.find("external:") == 0) {
+         if (!component.downloadLocation.empty() || !component.homepage.empty()) {
+            ss << ",\n";
+         }
+         ss << "        {\n";
+         ss << "          \"type\": \"" << key.substr(9) << "\",\n";
+         ss << "          \"url\": " << Utils::formatJsonValue(value) << "\n";
+         ss << "        }";
+      }
+   }
+   
+   ss << "\n      ]";
 
    // Add all component properties (including enhanced Ada metadata and Mach-O metadata)
    if (!component.properties.empty() || component.containsDebugInfo ||

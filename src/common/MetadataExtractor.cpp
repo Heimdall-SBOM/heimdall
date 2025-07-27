@@ -894,14 +894,44 @@ bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component
       return true;
    }
 
-   // Try to extract version from package manager
-   std::string packageName = heimdall::Utils::extractPackageName(component.filePath);
-   if (!packageName.empty())
-   {
-      component.setSupplier("system-package-manager");
-   }
+         // Try to extract version from package manager
+      std::string packageName = heimdall::Utils::extractPackageName(component.filePath);
+      if (!packageName.empty())
+      {
+         component.setSupplier("system-package-manager");
+      }
 
-   return true;
+      // Enhanced metadata extraction
+      extractEnhancedPackageInfo(component);
+      
+      // Generate description
+      std::string description = generateComponentDescription(component);
+      if (!description.empty()) {
+         component.setDescription(description);
+      }
+      
+      // Determine scope
+      std::string scope = determineComponentScope(component);
+      if (!scope.empty()) {
+         component.setScope(scope);
+      }
+      
+      // Determine MIME type
+      std::string mimeType = determineMimeType(component);
+      if (!mimeType.empty()) {
+         component.setMimeType(mimeType);
+      }
+      
+      // Extract copyright information
+      std::string copyright = extractCopyrightInfo(component);
+      if (!copyright.empty()) {
+         component.setCopyright(copyright);
+      }
+      
+      // Add component evidence
+      addComponentEvidence(component);
+
+      return true;
 }
 
 bool MetadataExtractor::extractMacOSAppBundleMetadata(ComponentInfo& component)
@@ -4264,6 +4294,167 @@ bool extractMacOSAppBundleInfo(const std::string& appBundlePath, std::string& ve
 }
 
 }  // namespace MetadataHelpers
+
+// Enhanced metadata extraction methods
+
+std::string MetadataExtractor::generateComponentDescription(const ComponentInfo& component)
+{
+   std::stringstream desc;
+   desc << component.getFileTypeString() << " file";
+   
+   if (!component.symbols.empty()) {
+      desc << " with " << component.symbols.size() << " symbols";
+   }
+   
+   if (component.containsDebugInfo) {
+      desc << ", contains debug information";
+   }
+   
+   if (component.isSystemLibrary) {
+      desc << ", system library";
+   }
+   
+   if (!component.packageManager.empty()) {
+      desc << ", managed by " << component.packageManager;
+   }
+   
+   if (component.fileSize > 0) {
+      desc << " (" << component.fileSize << " bytes)";
+   }
+   
+   return desc.str();
+}
+
+std::string MetadataExtractor::determineComponentScope(const ComponentInfo& component)
+{
+   if (component.isSystemLibrary) {
+      return "excluded";  // System libraries are excluded
+   }
+   
+   if (component.dependencies.empty()) {
+      return "required";  // No dependencies = required
+   }
+   
+   // Could implement more sophisticated logic based on usage analysis
+   return "required";
+}
+
+std::string MetadataExtractor::extractComponentGroup(const ComponentInfo& component)
+{
+   // Extract group from package manager metadata
+   if (!component.packageManager.empty()) {
+      if (component.packageManager == "rpm") {
+         return "rpm";
+      } else if (component.packageManager == "deb") {
+         return "deb";
+      } else if (component.packageManager == "conan") {
+         return "conan";
+      } else if (component.packageManager == "vcpkg") {
+         return "vcpkg";
+      }
+   }
+   
+   // Extract from package name patterns
+   std::string name = component.name;
+   size_t dotPos = name.find('.');
+   if (dotPos != std::string::npos) {
+      return name.substr(0, dotPos);
+   }
+   
+   return "";
+}
+
+std::string MetadataExtractor::determineMimeType(const ComponentInfo& component)
+{
+   // Determine MIME type based on file type and extension
+   switch (component.fileType) {
+      case FileType::Executable:
+         return "application/x-executable";
+      case FileType::SharedLibrary:
+         return "application/x-sharedlib";
+      case FileType::StaticLibrary:
+         return "application/x-archive";
+      case FileType::Object:
+         return "application/x-object";
+      case FileType::Source:
+         return "text/x-source";
+      default:
+         return "application/octet-stream";
+   }
+}
+
+std::string MetadataExtractor::extractCopyrightInfo(const ComponentInfo& component)
+{
+   // Try to extract copyright from binary strings
+   std::ifstream file(component.filePath, std::ios::binary);
+   if (!file.is_open()) {
+      return "";
+   }
+   
+   std::string content;
+   file.seekg(0, std::ios::end);
+   content.resize(file.tellg());
+   file.seekg(0, std::ios::beg);
+   file.read(&content[0], content.size());
+   
+   // Look for copyright patterns
+   std::regex copyrightPattern(R"((Copyright|©)\s*[0-9]{4}[-\s]*[0-9]{4}?\s*[^\n\r]*?)", std::regex::icase);
+   std::smatch match;
+   
+   if (std::regex_search(content, match, copyrightPattern)) {
+      return match.str();
+   }
+   
+   return "";
+}
+
+void MetadataExtractor::extractEnhancedPackageInfo(ComponentInfo& component)
+{
+   // Extract supplier from package manager
+   if (component.packageManager == "rpm") {
+      component.setSupplier("Red Hat Package Manager");
+   } else if (component.packageManager == "deb") {
+      component.setSupplier("Debian Package Manager");
+   } else if (component.packageManager == "conan") {
+      component.setSupplier("Conan Center");
+   } else if (component.packageManager == "vcpkg") {
+      component.setSupplier("vcpkg");
+   } else if (component.packageManager == "spack") {
+      component.setSupplier("Spack");
+   }
+   
+   // Extract group from package name
+   std::string group = extractComponentGroup(component);
+   if (!group.empty()) {
+      component.setGroup(group);
+   }
+   
+   // Set manufacturer same as supplier for now
+   if (!component.supplier.empty()) {
+      component.setManufacturer(component.supplier);
+   }
+}
+
+void MetadataExtractor::addComponentEvidence(ComponentInfo& component)
+{
+   // Add identity evidence
+   if (!component.checksum.empty()) {
+      component.addProperty("evidence:identity:hash", component.checksum);
+   }
+   component.addProperty("evidence:identity:symbols", std::to_string(component.symbols.size()));
+   component.addProperty("evidence:identity:sections", std::to_string(component.sections.size()));
+   
+   // Add occurrence evidence
+   component.addProperty("evidence:occurrence:location", component.filePath);
+   component.addProperty("evidence:occurrence:size", std::to_string(component.fileSize));
+   
+   // Add file type evidence
+   component.addProperty("evidence:identity:fileType", component.getFileTypeString());
+   
+   // Add debug info evidence
+   component.addProperty("evidence:identity:hasDebugInfo", component.containsDebugInfo ? "true" : "false");
+   component.addProperty("evidence:identity:isStripped", component.isStripped ? "true" : "false");
+}
 
 }  // namespace heimdall
 

@@ -43,6 +43,8 @@ limitations under the License.
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <fstream>
+#include "../common/SBOMSigner.hpp"
 
 // LLVM symbols are now provided by llvm_symbols shared library
 
@@ -180,7 +182,8 @@ int main(int argc, char* argv[])
    {
       std::cerr << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output "
                    "<output_path> [--cyclonedx-version <version>] [--spdx-version <version>] "
-                   "[--no-transitive-dependencies]"
+                   "[--no-transitive-dependencies] [--sign-key <key_path>] [--sign-cert <cert_path>] "
+                   "[--sign-algorithm <algorithm>] [--sign-key-id <key_id>]"
                 << std::endl;
       std::cerr << "  Supported formats: spdx, spdx-2.3, spdx-3.0, spdx-3.0.0, spdx-3.0.1, "
                    "cyclonedx, cyclonedx-1.4, cyclonedx-1.6"
@@ -189,6 +192,10 @@ int main(int argc, char* argv[])
       std::cerr << "  --no-transitive-dependencies: Include only direct dependencies (default: "
                    "include all transitive dependencies)"
                 << std::endl;
+      std::cerr << "  --sign-key <key_path>: Path to private key file for signing" << std::endl;
+      std::cerr << "  --sign-cert <cert_path>: Path to certificate file (optional)" << std::endl;
+      std::cerr << "  --sign-algorithm <algorithm>: Signature algorithm (RS256, RS384, RS512, ES256, ES384, ES512, Ed25519)" << std::endl;
+      std::cerr << "  --sign-key-id <key_id>: Key identifier for the signature" << std::endl;
       return 1;
    }
 
@@ -199,6 +206,12 @@ int main(int argc, char* argv[])
    const char* cyclonedx_version       = "1.6";
    const char* spdx_version            = "2.3";
    bool        transitive_dependencies = true;
+   
+   // Signing options
+   const char* sign_key_path           = nullptr;
+   const char* sign_cert_path          = nullptr;
+   const char* sign_algorithm          = "RS256";
+   const char* sign_key_id             = nullptr;
 
    // Parse command line arguments
    for (int i = 3; i < argc; i++)
@@ -232,6 +245,22 @@ int main(int argc, char* argv[])
       else if (strcmp(argv[i], "--spdx-version") == 0 && i + 1 < argc)
       {
          spdx_version = argv[++i];
+      }
+      else if (strcmp(argv[i], "--sign-key") == 0 && i + 1 < argc)
+      {
+         sign_key_path = argv[++i];
+      }
+      else if (strcmp(argv[i], "--sign-cert") == 0 && i + 1 < argc)
+      {
+         sign_cert_path = argv[++i];
+      }
+      else if (strcmp(argv[i], "--sign-algorithm") == 0 && i + 1 < argc)
+      {
+         sign_algorithm = argv[++i];
+      }
+      else if (strcmp(argv[i], "--sign-key-id") == 0 && i + 1 < argc)
+      {
+         sign_key_id = argv[++i];
       }
    }
 
@@ -329,6 +358,82 @@ int main(int argc, char* argv[])
 
    // Finalize and generate the SBOM
    finalize();
+   
+   // Sign the SBOM if signing options are provided
+   if (sign_key_path && strncmp(format, "cyclonedx", 9) == 0)
+   {
+      // Only sign CycloneDX format for now
+      std::cout << "Signing SBOM with key: " << sign_key_path << std::endl;
+      
+      // Read the generated SBOM file
+      std::ifstream sbomFile(output_path);
+      if (!sbomFile.is_open()) {
+         std::cerr << "Failed to open generated SBOM file for signing: " << output_path << std::endl;
+         dlclose(handle);
+         return 1;
+      }
+      
+      std::string sbomContent((std::istreambuf_iterator<char>(sbomFile)),
+                             std::istreambuf_iterator<char>());
+      sbomFile.close();
+      
+      // Create signer and configure it
+      heimdall::SBOMSigner signer;
+      
+      // Load private key
+      if (!signer.loadPrivateKey(sign_key_path)) {
+         std::cerr << "Failed to load private key: " << signer.getLastError() << std::endl;
+         dlclose(handle);
+         return 1;
+      }
+      
+      // Load certificate if provided
+      if (sign_cert_path && !signer.loadCertificate(sign_cert_path)) {
+         std::cerr << "Failed to load certificate: " << signer.getLastError() << std::endl;
+         dlclose(handle);
+         return 1;
+      }
+      
+      // Set key ID if provided
+      if (sign_key_id) {
+         signer.setKeyId(sign_key_id);
+      }
+      
+      // Set signature algorithm
+      heimdall::SignatureAlgorithm algorithm = heimdall::SignatureAlgorithm::RS256;
+      if (strcmp(sign_algorithm, "RS384") == 0) algorithm = heimdall::SignatureAlgorithm::RS384;
+      else if (strcmp(sign_algorithm, "RS512") == 0) algorithm = heimdall::SignatureAlgorithm::RS512;
+      else if (strcmp(sign_algorithm, "ES256") == 0) algorithm = heimdall::SignatureAlgorithm::ES256;
+      else if (strcmp(sign_algorithm, "ES384") == 0) algorithm = heimdall::SignatureAlgorithm::ES384;
+      else if (strcmp(sign_algorithm, "ES512") == 0) algorithm = heimdall::SignatureAlgorithm::ES512;
+      else if (strcmp(sign_algorithm, "Ed25519") == 0) algorithm = heimdall::SignatureAlgorithm::Ed25519;
+      
+      signer.setSignatureAlgorithm(algorithm);
+      
+      // Sign the SBOM
+      heimdall::SignatureInfo signatureInfo;
+      if (!signer.signSBOM(sbomContent, signatureInfo)) {
+         std::cerr << "Failed to sign SBOM: " << signer.getLastError() << std::endl;
+         dlclose(handle);
+         return 1;
+      }
+      
+      // Add signature to SBOM and write back
+      std::string signedSbom = signer.addSignatureToCycloneDX(sbomContent, signatureInfo);
+      
+      std::ofstream signedFile(output_path);
+      if (!signedFile.is_open()) {
+         std::cerr << "Failed to write signed SBOM to: " << output_path << std::endl;
+         dlclose(handle);
+         return 1;
+      }
+      
+      signedFile << signedSbom;
+      signedFile.close();
+      
+      std::cout << "SBOM signed successfully with algorithm: " << signatureInfo.algorithm << std::endl;
+   }
+   
    dlclose(handle);
    return 0;
 }
