@@ -586,7 +586,16 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    bool buildConfigSuccess = extractMachOBuildConfig(component);
    if (buildConfigSuccess)
    {
-      
+      std::cerr << "[DEBUG] Build config - targetPlatform: " << component.buildConfig.targetPlatform
+                << std::endl;
+      std::cerr << "[DEBUG] Build config - minOSVersion: " << component.buildConfig.minOSVersion
+                << std::endl;
+      std::cerr << "[DEBUG] Build config - sdkVersion: " << component.buildConfig.sdkVersion
+                << std::endl;
+      std::cerr << "[DEBUG] Build config - buildVersion: " << component.buildConfig.buildVersion
+                << std::endl;
+      std::cerr << "[DEBUG] Build config - sourceVersion: " << component.buildConfig.sourceVersion
+                << std::endl;
    }
    anySuccess |= buildConfigSuccess;
 
@@ -601,15 +610,16 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    anySuccess |= entitlementsSuccess;
 
    bool architecturesSuccess = extractMachOArchitectures(component);
+
    anySuccess |= architecturesSuccess;
 
    bool frameworksSuccess = extractMachOFrameworks(component);
+
    anySuccess |= frameworksSuccess;
 
    // Update component name and version from enhanced Mach-O metadata
    if (anySuccess)
    {
-
       // Try to get a better name from the file path (for macOS apps)
       std::string fileName = heimdall::Utils::getFileName(component.filePath);
       if (!fileName.empty() && fileName != component.name)
@@ -637,6 +647,7 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
 
       // First priority: Try to extract version from Info.plist for macOS apps
       std::string originalVersion = component.version;
+
       bool appBundleSuccess        = extractMacOSAppBundleMetadata(component);
       bool versionSetFromInfoPlist = false;
 
@@ -644,7 +655,6 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
       // Info.plist
       if (appBundleSuccess && !component.version.empty())
       {
-
          versionSetFromInfoPlist = true;
       }
 
@@ -666,7 +676,6 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
             component.version = component.buildConfig.minOSVersion;
          }
       }
-
    }
 
    heimdall::Utils::debugPrint("Enhanced Mach-O extraction: Completed with success: " +
@@ -3915,7 +3924,6 @@ bool extractMachOEntitlements(const std::string& filePath, std::vector<std::stri
          file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
       }
    }
-
    return false;
 #else
    Utils::debugPrint("Mach-O entitlements extraction not supported on this platform");

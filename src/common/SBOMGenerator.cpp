@@ -237,8 +237,6 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
    std::string canonicalPath = Utils::resolveLibraryPath(component.filePath);
    std::string key           = canonicalPath;  // Use canonical file path as unique key
 
-
-
    if (pImpl->components.find(key) == pImpl->components.end())
    {
       // New component, extract metadata
@@ -290,6 +288,7 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
 
             // Create a new ComponentInfo for the dependency
             ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
+
             // Let the constructor determine the file type instead of hardcoding it
             // This allows executables to be properly detected even when processed as dependencies
 
@@ -1032,8 +1031,6 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    // Try to get a better application name
    std::string appName    = buildInfo.targetName;
    std::string appVersion = buildInfo.buildId;
-   
-
 
    if (appName.empty() && !components.empty())
    {
@@ -1157,8 +1154,10 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
       if (!first)
          ss << ",\n";
-      ss << generateCycloneDXComponent(component);
-      first = false;
+      
+     ss << generateCycloneDXComponent(component);
+
+     first = false;
    }
 
    ss << "\n  ]";
@@ -2082,6 +2081,7 @@ void SBOMGenerator::Impl::processDependenciesRecursively(const ComponentInfo&   
 
       // Create a new ComponentInfo for the dependency
       ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
+
       // Let the constructor determine the file type instead of hardcoding it
       // This allows executables to be properly detected even when processed as dependencies
 
