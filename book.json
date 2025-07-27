@@ -3,9 +3,11 @@
   "ignore": [
     "external"
   ],
-
-  "plugins": ["mermaid-md-adoc", "highlight"],
+  "plugins": ["mermaid-gb3", "highlight"],
   "pluginsConfig": {
+    "mermaid-gb3": {
+      "theme": "default"
+    },
     "highlight": {
       "init": {
         "tabReplace": "  ",
