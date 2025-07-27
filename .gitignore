@@ -34,6 +34,7 @@ Makefile
 *.cyclonedx.json
 *.json
 !schema/*.json
+!package.json
 *.log
 *.xml
 examples/*/build/

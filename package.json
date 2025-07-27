@@ -1,0 +1,16 @@
+{
+  "name": "heimdall-docs",
+  "version": "1.0.0",
+  "description": "Heimdall SBOM Documentation",
+  "scripts": {
+    "build": "honkit build",
+    "serve": "honkit serve"
+  },
+  "devDependencies": {
+    "honkit": "^4.0.4",
+    "gitbook-plugin-mermaid-gb3": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
