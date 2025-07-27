@@ -237,237 +237,237 @@ namespace fs
 {
 class path
 {
-  private:
-  std::string path_str;
+   private:
+   std::string path_str;
 
-  public:
-  path() = default;
-  path(const std::string& str) : path_str(str) {}
-  path(const char* str) : path_str(str ? str : "") {}
+   public:
+   path() = default;
+   path(const std::string& str) : path_str(str) {}
+   path(const char* str) : path_str(str ? str : "") {}
 
-  // Basic operations
-  std::string string() const
-  {
-    return path_str;
-  }
-  path filename() const
-  {
-    size_t pos = path_str.find_last_of("/\\");
-    return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
-  }
-  path parent_path() const
-  {
-    size_t pos = path_str.find_last_of("/\\");
-    return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
-  }
+   // Basic operations
+   std::string string() const
+   {
+      return path_str;
+   }
+   path filename() const
+   {
+      size_t pos = path_str.find_last_of("/\\");
+      return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
+   }
+   path parent_path() const
+   {
+      size_t pos = path_str.find_last_of("/\\");
+      return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
+   }
 
-  // Operators
-  path operator/(const path& other) const
-  {
-    if (path_str.empty())
-      return other;
-    if (other.path_str.empty())
+   // Operators
+   path operator/(const path& other) const
+   {
+      if (path_str.empty())
+         return other;
+      if (other.path_str.empty())
+         return *this;
+      if (path_str.back() == '/' || path_str.back() == '\\')
+      {
+         return path(path_str + other.path_str);
+      }
+      return path(path_str + "/" + other.path_str);
+   }
+
+   path& operator/=(const path& other)
+   {
+      *this = *this / other;
       return *this;
-    if (path_str.back() == '/' || path_str.back() == '\\')
-    {
-      return path(path_str + other.path_str);
-    }
-    return path(path_str + "/" + other.path_str);
-  }
+   }
 
-  path& operator/=(const path& other)
-  {
-    *this = *this / other;
-    return *this;
-  }
+   // Conversion operators
+   operator std::string() const
+   {
+      return path_str;
+   }
 
-  // Conversion operators
-  operator std::string() const
-  {
-    return path_str;
-  }
+   // Comparison operators
+   bool operator==(const path& other) const
+   {
+      return path_str == other.path_str;
+   }
+   bool operator!=(const path& other) const
+   {
+      return path_str != other.path_str;
+   }
+   bool operator==(const std::string& other) const
+   {
+      return path_str == other;
+   }
+   bool operator!=(const std::string& other) const
+   {
+      return path_str != other;
+   }
+   bool operator==(const char* other) const
+   {
+      return path_str == other;
+   }
+   bool operator!=(const char* other) const
+   {
+      return path_str != other;
+   }
 
-  // Comparison operators
-  bool operator==(const path& other) const
-  {
-    return path_str == other.path_str;
-  }
-  bool operator!=(const path& other) const
-  {
-    return path_str != other.path_str;
-  }
-  bool operator==(const std::string& other) const
-  {
-    return path_str == other;
-  }
-  bool operator!=(const std::string& other) const
-  {
-    return path_str != other;
-  }
-  bool operator==(const char* other) const
-  {
-    return path_str == other;
-  }
-  bool operator!=(const char* other) const
-  {
-    return path_str != other;
-  }
-
-  // Path utilities
-  bool is_absolute() const
-  {
-    return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
-  }
+   // Path utilities
+   bool is_absolute() const
+   {
+      return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
+   }
 };
 
 // Filesystem operations
 inline bool exists(const path& p)
 {
-  std::ifstream file(p.string());
-  return file.good();
+   std::ifstream file(p.string());
+   return file.good();
 }
 
 inline bool create_directories(const path& p)
 {
-  // Simple implementation - just create the directory
-  std::string cmd = "mkdir -p " + p.string();
-  return system(cmd.c_str()) == 0;
+   // Simple implementation - just create the directory
+   std::string cmd = "mkdir -p " + p.string();
+   return system(cmd.c_str()) == 0;
 }
 
 inline bool remove(const path& p)
 {
-  std::string cmd = "rm -f " + p.string();
-  return system(cmd.c_str()) == 0;
+   std::string cmd = "rm -f " + p.string();
+   return system(cmd.c_str()) == 0;
 }
 
 inline bool remove_all(const path& p)
 {
-  std::string cmd = "rm -rf " + p.string();
-  return system(cmd.c_str()) == 0;
+   std::string cmd = "rm -rf " + p.string();
+   return system(cmd.c_str()) == 0;
 }
 
 inline path current_path()
 {
-  char cwd[PATH_MAX];
-  if (getcwd(cwd, sizeof(cwd)) != nullptr)
-  {
-    return path(cwd);
-  }
-  return path();
+   char cwd[PATH_MAX];
+   if (getcwd(cwd, sizeof(cwd)) != nullptr)
+   {
+      return path(cwd);
+   }
+   return path();
 }
 
 inline bool current_path(const path& p)
 {
-  return chdir(p.string().c_str()) == 0;
+   return chdir(p.string().c_str()) == 0;
 }
 
 inline path temp_directory_path()
 {
-  const char* temp_dir = getenv("TMPDIR");
-  if (!temp_dir)
-    temp_dir = getenv("TEMP");
-  if (!temp_dir)
-    temp_dir = getenv("TMP");
-  if (!temp_dir)
-    temp_dir = "/tmp";
-  return path(temp_dir);
+   const char* temp_dir = getenv("TMPDIR");
+   if (!temp_dir)
+      temp_dir = getenv("TEMP");
+   if (!temp_dir)
+      temp_dir = getenv("TMP");
+   if (!temp_dir)
+      temp_dir = "/tmp";
+   return path(temp_dir);
 }
 
 inline uintmax_t file_size(const path& p)
 {
-  std::ifstream file(p.string(), std::ios::binary | std::ios::ate);
-  if (file.is_open())
-  {
-    return file.tellg();
-  }
-  return 0;
+   std::ifstream file(p.string(), std::ios::binary | std::ios::ate);
+   if (file.is_open())
+   {
+      return file.tellg();
+   }
+   return 0;
 }
 
 // File permissions enum
 enum class perms
 {
-  none         = 0,
-  owner_read   = 0400,
-  owner_write  = 0200,
-  owner_exec   = 0100,
-  owner_all    = owner_read | owner_write | owner_exec,
-  group_read   = 0040,
-  group_write  = 0020,
-  group_exec   = 0010,
-  group_all    = group_read | group_write | group_exec,
-  others_read  = 0004,
-  others_write = 0002,
-  others_exec  = 0001,
-  others_all   = others_read | others_write | others_exec,
-  all          = owner_all | group_all | others_all,
-  set_uid      = 04000,
-  set_gid      = 02000,
-  sticky_bit   = 01000,
-  mask         = all | set_uid | set_gid | sticky_bit,
-  unknown      = 0xFFFF
+   none         = 0,
+   owner_read   = 0400,
+   owner_write  = 0200,
+   owner_exec   = 0100,
+   owner_all    = owner_read | owner_write | owner_exec,
+   group_read   = 0040,
+   group_write  = 0020,
+   group_exec   = 0010,
+   group_all    = group_read | group_write | group_exec,
+   others_read  = 0004,
+   others_write = 0002,
+   others_exec  = 0001,
+   others_all   = others_read | others_write | others_exec,
+   all          = owner_all | group_all | others_all,
+   set_uid      = 04000,
+   set_gid      = 02000,
+   sticky_bit   = 01000,
+   mask         = all | set_uid | set_gid | sticky_bit,
+   unknown      = 0xFFFF
 };
 
 // Bitwise operators for perms enum
 inline perms operator|(perms lhs, perms rhs)
 {
-  return static_cast<perms>(static_cast<int>(lhs) | static_cast<int>(rhs));
+   return static_cast<perms>(static_cast<int>(lhs) | static_cast<int>(rhs));
 }
 
 inline perms operator&(perms lhs, perms rhs)
 {
-  return static_cast<perms>(static_cast<int>(lhs) & static_cast<int>(rhs));
+   return static_cast<perms>(static_cast<int>(lhs) & static_cast<int>(rhs));
 }
 
 inline perms operator^(perms lhs, perms rhs)
 {
-  return static_cast<perms>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
+   return static_cast<perms>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
 }
 
 inline perms operator~(perms p)
 {
-  return static_cast<perms>(~static_cast<int>(p));
+   return static_cast<perms>(~static_cast<int>(p));
 }
 
 inline perms& operator|=(perms& lhs, perms rhs)
 {
-  lhs = lhs | rhs;
-  return lhs;
+   lhs = lhs | rhs;
+   return lhs;
 }
 
 inline perms& operator&=(perms& lhs, perms rhs)
 {
-  lhs = lhs & rhs;
-  return lhs;
+   lhs = lhs & rhs;
+   return lhs;
 }
 
 inline perms& operator^=(perms& lhs, perms rhs)
 {
-  lhs = lhs ^ rhs;
-  return lhs;
+   lhs = lhs ^ rhs;
+   return lhs;
 }
 
 // Copy options enum
 enum class copy_options
 {
-  none               = 0,
-  skip_existing      = 1,
-  overwrite_existing = 2,
-  update_existing    = 4,
-  recursive          = 8,
-  copy_symlinks      = 16,
-  skip_symlinks      = 32,
-  directories_only   = 64,
-  create_symlinks    = 128,
-  create_hard_links  = 256
+   none               = 0,
+   skip_existing      = 1,
+   overwrite_existing = 2,
+   update_existing    = 4,
+   recursive          = 8,
+   copy_symlinks      = 16,
+   skip_symlinks      = 32,
+   directories_only   = 64,
+   create_symlinks    = 128,
+   create_hard_links  = 256
 };
 
 // Permission options enum
 enum class perm_options
 {
-  replace  = 0,
-  add      = 1,
-  remove   = 2,
-  nofollow = 4
+   replace  = 0,
+   add      = 1,
+   remove   = 2,
+   nofollow = 4
 };
 
 // Forward declaration
@@ -476,175 +476,175 @@ class filesystem_error;
 // Filesystem operations
 inline void permissions(const path& p, perms prms, perm_options opts = perm_options::replace)
 {
-  // Simple implementation using chmod
-  chmod(p.string().c_str(), static_cast<mode_t>(prms));
+   // Simple implementation using chmod
+   chmod(p.string().c_str(), static_cast<mode_t>(prms));
 }
 
 inline void copy_file(const path& from, const path& to, copy_options options = copy_options::none)
 {
-  // Simple implementation using system commands
-  std::string cmd = "cp ";
-  if (static_cast<int>(options) & static_cast<int>(copy_options::overwrite_existing))
-  {
-    cmd += "-f ";
-  }
-  cmd += from.string() + " " + to.string();
-  system(cmd.c_str());
+   // Simple implementation using system commands
+   std::string cmd = "cp ";
+   if (static_cast<int>(options) & static_cast<int>(copy_options::overwrite_existing))
+   {
+      cmd += "-f ";
+   }
+   cmd += from.string() + " " + to.string();
+   system(cmd.c_str());
 }
 
 inline void create_symlink(const path& to, const path& new_symlink)
 {
-  symlink(to.string().c_str(), new_symlink.string().c_str());
+   symlink(to.string().c_str(), new_symlink.string().c_str());
 }
 
 inline void create_hard_link(const path& to, const path& new_hard_link)
 {
-  link(to.string().c_str(), new_hard_link.string().c_str());
+   link(to.string().c_str(), new_hard_link.string().c_str());
 }
 
 inline path absolute(const path& p)
 {
-  char resolved_path[PATH_MAX];
-  if (realpath(p.string().c_str(), resolved_path) != nullptr)
-  {
-    return path(resolved_path);
-  }
-  return p;
+   char resolved_path[PATH_MAX];
+   if (realpath(p.string().c_str(), resolved_path) != nullptr)
+   {
+      return path(resolved_path);
+   }
+   return p;
 }
 
 // Directory iterator implementation
 class recursive_directory_iterator
 {
-  private:
-  std::vector<path> files;
-  size_t            current_index;
+   private:
+   std::vector<path> files;
+   size_t            current_index;
 
-  public:
-  recursive_directory_iterator() : current_index(0) {}
-  recursive_directory_iterator(const path& p) : current_index(0)
-  {
-    // Simple implementation - collect all files
-    DIR* dir = opendir(p.string().c_str());
-    if (dir)
-    {
-      struct dirent* entry;
-      while ((entry = readdir(dir)) != nullptr)
+   public:
+   recursive_directory_iterator() : current_index(0) {}
+   recursive_directory_iterator(const path& p) : current_index(0)
+   {
+      // Simple implementation - collect all files
+      DIR* dir = opendir(p.string().c_str());
+      if (dir)
       {
-        if (entry->d_name[0] != '.')
-        {
-          files.push_back(p / entry->d_name);
-        }
+         struct dirent* entry;
+         while ((entry = readdir(dir)) != nullptr)
+         {
+            if (entry->d_name[0] != '.')
+            {
+               files.push_back(p / entry->d_name);
+            }
+         }
+         closedir(dir);
       }
-      closedir(dir);
-    }
-  }
+   }
 
-  recursive_directory_iterator& operator++()
-  {
-    if (current_index < files.size())
-    {
-      ++current_index;
-    }
-    return *this;
-  }
+   recursive_directory_iterator& operator++()
+   {
+      if (current_index < files.size())
+      {
+         ++current_index;
+      }
+      return *this;
+   }
 
-  bool operator!=(const recursive_directory_iterator& other) const
-  {
-    return current_index != other.current_index;
-  }
+   bool operator!=(const recursive_directory_iterator& other) const
+   {
+      return current_index != other.current_index;
+   }
 
-  bool is_regular_file() const
-  {
-    if (current_index >= files.size())
+   bool is_regular_file() const
+   {
+      if (current_index >= files.size())
+         return false;
+      struct stat st;
+      if (stat(files[current_index].string().c_str(), &st) == 0)
+      {
+         return S_ISREG(st.st_mode);
+      }
       return false;
-    struct stat st;
-    if (stat(files[current_index].string().c_str(), &st) == 0)
-    {
-      return S_ISREG(st.st_mode);
-    }
-    return false;
-  }
+   }
 
-  path get_path() const
-  {
-    if (current_index < files.size())
-    {
-      return files[current_index];
-    }
-    return path();
-  }
+   path get_path() const
+   {
+      if (current_index < files.size())
+      {
+         return files[current_index];
+      }
+      return path();
+   }
 };
 
 // Directory iterator
 struct DirCloser
 {
-  void operator()(DIR* d) const
-  {
-    if (d)
-      closedir(d);
-  }
+   void operator()(DIR* d) const
+   {
+      if (d)
+         closedir(d);
+   }
 };
 
 class directory_iterator
 {
-  private:
-  std::unique_ptr<DIR, DirCloser> dir;
-  std::string                     current_path;
+   private:
+   std::unique_ptr<DIR, DirCloser> dir;
+   std::string                     current_path;
 
-  public:
-  directory_iterator() : dir(nullptr) {}
-  directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
-  ~directory_iterator() = default;
+   public:
+   directory_iterator() : dir(nullptr) {}
+   directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
+   ~directory_iterator() = default;
 
-  // Disable copy operations
-  directory_iterator(const directory_iterator&)            = delete;
-  directory_iterator& operator=(const directory_iterator&) = delete;
-  directory_iterator(directory_iterator&&)                 = delete;
-  directory_iterator& operator=(directory_iterator&&)      = delete;
+   // Disable copy operations
+   directory_iterator(const directory_iterator&)            = delete;
+   directory_iterator& operator=(const directory_iterator&) = delete;
+   directory_iterator(directory_iterator&&)                 = delete;
+   directory_iterator& operator=(directory_iterator&&)      = delete;
 
-  directory_iterator& operator++()
-  {
-    if (dir)
-    {
-      struct dirent* entry = readdir(dir.get());
-      if (entry)
+   directory_iterator& operator++()
+   {
+      if (dir)
       {
-        current_path = entry->d_name;
+         struct dirent* entry = readdir(dir.get());
+         if (entry)
+         {
+            current_path = entry->d_name;
+         }
+         else
+         {
+            dir.reset();
+         }
       }
-      else
-      {
-        dir.reset();
-      }
-    }
-    return *this;
-  }
+      return *this;
+   }
 
-  bool operator!=(const directory_iterator& other) const
-  {
-    return dir != other.dir;
-  }
+   bool operator!=(const directory_iterator& other) const
+   {
+      return dir != other.dir;
+   }
 
-  path operator*() const
-  {
-    return path(current_path);
-  }
+   path operator*() const
+   {
+      return path(current_path);
+   }
 };
 
 inline directory_iterator& begin(directory_iterator& iter)
 {
-  return iter;
+   return iter;
 }
 inline const directory_iterator& end(const directory_iterator&)
 {
-  static const directory_iterator end_iter;
-  return end_iter;
+   static const directory_iterator end_iter;
+   return end_iter;
 }
 
 // Exception types
 class filesystem_error : public std::runtime_error
 {
-  public:
-  filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
+   public:
+   filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 }  // namespace fs
 #endif
@@ -672,14 +672,14 @@ namespace compat
 template <typename T, typename... Args>
 inline std::unique_ptr<T> make_unique(Args&&... args)
 {
-  return std::make_unique<T>(std::forward<Args>(args)...);
+   return std::make_unique<T>(std::forward<Args>(args)...);
 }
 #else
 // C++11: provide fallback
 template <typename T, typename... Args>
 inline std::unique_ptr<T> make_unique(Args&&... args)
 {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 #endif
 
@@ -707,7 +707,7 @@ template <typename T>
 concept arithmetic = std::is_arithmetic_v<T>;
 template <typename T>
 concept convertible_to_string = requires(T t) {
-  { std::to_string(t) } -> std::convertible_to<std::string>;
+   { std::to_string(t) } -> std::convertible_to<std::string>;
 };
 
 #if __cplusplus >= 202302L
@@ -720,7 +720,7 @@ concept contiguous_range = std::ranges::contiguous_range<T>;
 template <typename T>
 constexpr auto to_underlying(T e) noexcept
 {
-  return static_cast<std::underlying_type_t<T>>(e);
+   return static_cast<std::underlying_type_t<T>>(e);
 }
 #endif
 #endif
@@ -735,170 +735,170 @@ namespace fallback
 template <typename T>
 class optional
 {
-  private:
-  T    value_;
-  bool has_value_;
+   private:
+   T    value_;
+   bool has_value_;
 
-  public:
-  optional() : has_value_(false) {}
-  optional(const T& value) : value_(value), has_value_(true) {}
-  optional(T&& value) : value_(std::move(value)), has_value_(true) {}
+   public:
+   optional() : has_value_(false) {}
+   optional(const T& value) : value_(value), has_value_(true) {}
+   optional(T&& value) : value_(std::move(value)), has_value_(true) {}
 
-  bool has_value() const
-  {
-    return has_value_;
-  }
-  const T& value() const
-  {
-    if (!has_value_)
-      throw std::runtime_error("Optional has no value");
-    return value_;
-  }
-  T& value()
-  {
-    if (!has_value_)
-      throw std::runtime_error("Optional has no value");
-    return value_;
-  }
+   bool has_value() const
+   {
+      return has_value_;
+   }
+   const T& value() const
+   {
+      if (!has_value_)
+         throw std::runtime_error("Optional has no value");
+      return value_;
+   }
+   T& value()
+   {
+      if (!has_value_)
+         throw std::runtime_error("Optional has no value");
+      return value_;
+   }
 
-  // Dereference operators to match std::optional
-  const T& operator*() const
-  {
-    return value();
-  }
-  T& operator*()
-  {
-    return value();
-  }
-  const T* operator->() const
-  {
-    return &value();
-  }
-  T* operator->()
-  {
-    return &value();
-  }
+   // Dereference operators to match std::optional
+   const T& operator*() const
+   {
+      return value();
+   }
+   T& operator*()
+   {
+      return value();
+   }
+   const T* operator->() const
+   {
+      return &value();
+   }
+   T* operator->()
+   {
+      return &value();
+   }
 
-  // value_or method to match std::optional
-  template <typename U>
-  T value_or(U&& default_value) const
-  {
-    return has_value_ ? value_ : static_cast<T>(std::forward<U>(default_value));
-  }
+   // value_or method to match std::optional
+   template <typename U>
+   T value_or(U&& default_value) const
+   {
+      return has_value_ ? value_ : static_cast<T>(std::forward<U>(default_value));
+   }
 
-  operator bool() const
-  {
-    return has_value_;
-  }
+   operator bool() const
+   {
+      return has_value_;
+   }
 };
 
 class string_view
 {
-  private:
-  const char* data_;
-  size_t      size_;
+   private:
+   const char* data_;
+   size_t      size_;
 
-  public:
-  string_view() : data_(nullptr), size_(0) {}
-  string_view(const char* str) : data_(str), size_(str ? strlen(str) : 0) {}
-  string_view(const std::string& str) : data_(str.data()), size_(str.size()) {}
-  string_view(const char* data, size_t size) : data_(data), size_(size) {}
+   public:
+   string_view() : data_(nullptr), size_(0) {}
+   string_view(const char* str) : data_(str), size_(str ? strlen(str) : 0) {}
+   string_view(const std::string& str) : data_(str.data()), size_(str.size()) {}
+   string_view(const char* data, size_t size) : data_(data), size_(size) {}
 
-  const char* data() const
-  {
-    return data_;
-  }
-  size_t size() const
-  {
-    return size_;
-  }
-  bool empty() const
-  {
-    return size_ == 0;
-  }
+   const char* data() const
+   {
+      return data_;
+   }
+   size_t size() const
+   {
+      return size_;
+   }
+   bool empty() const
+   {
+      return size_ == 0;
+   }
 
-  const char& operator[](size_t pos) const
-  {
-    return data_[pos];
-  }
+   const char& operator[](size_t pos) const
+   {
+      return data_[pos];
+   }
 
-  // find method to match std::string_view
-  size_t find(char ch, size_t pos = 0) const
-  {
-    for (size_t i = pos; i < size_; ++i)
-    {
-      if (data_[i] == ch)
-        return i;
-    }
-    return std::string::npos;
-  }
+   // find method to match std::string_view
+   size_t find(char ch, size_t pos = 0) const
+   {
+      for (size_t i = pos; i < size_; ++i)
+      {
+         if (data_[i] == ch)
+            return i;
+      }
+      return std::string::npos;
+   }
 
-  // substr method to match std::string_view
-  string_view substr(size_t pos = 0, size_t count = std::string::npos) const
-  {
-    if (pos > size_)
-      return string_view();
+   // substr method to match std::string_view
+   string_view substr(size_t pos = 0, size_t count = std::string::npos) const
+   {
+      if (pos > size_)
+         return string_view();
     size_t actual_count =
       (count == std::string::npos) ? (size_ - pos) : std::min(count, size_ - pos);
-    return string_view(data_ + pos, actual_count);
-  }
+      return string_view(data_ + pos, actual_count);
+   }
 
-  std::string to_string() const
-  {
-    return std::string(data_, size_);
-  }
-  operator std::string() const
-  {
-    return to_string();
-  }
+   std::string to_string() const
+   {
+      return std::string(data_, size_);
+   }
+   operator std::string() const
+   {
+      return to_string();
+   }
 };
 
 template <typename... Types>
 class variant
 {
-  private:
-  enum class type_index
-  {
-    none = 0
-  };
-  type_index                                 current_type_;
-  typename std::aligned_storage<64, 8>::type storage_;  // Simplified storage for C++11
+   private:
+   enum class type_index
+   {
+      none = 0
+   };
+   type_index                                 current_type_;
+   typename std::aligned_storage<64, 8>::type storage_;  // Simplified storage for C++11
 
-  public:
-  variant() : current_type_(type_index::none) {}
+   public:
+   variant() : current_type_(type_index::none) {}
 
-  template <typename T>
-  variant(const T& value) : current_type_(type_index::none)
-  {
-    // Simplified implementation - just store the first type
-    static_assert(sizeof...(Types) > 0, "Variant must have at least one type");
-  }
+   template <typename T>
+   variant(const T& value) : current_type_(type_index::none)
+   {
+      // Simplified implementation - just store the first type
+      static_assert(sizeof...(Types) > 0, "Variant must have at least one type");
+   }
 
-  // index method to match std::variant
-  size_t index() const
-  {
-    return static_cast<size_t>(current_type_);
-  }
+   // index method to match std::variant
+   size_t index() const
+   {
+      return static_cast<size_t>(current_type_);
+   }
 
-  // get method to match std::variant (simplified)
-  template <typename T>
-  T get() const
-  {
-    // Simplified implementation - just return a default value
-    return T{};
-  }
+   // get method to match std::variant (simplified)
+   template <typename T>
+   T get() const
+   {
+      // Simplified implementation - just return a default value
+      return T{};
+   }
 
-  // Non-template get method for the first type
-  int get() const
-  {
-    // Simplified implementation - just return 0
-    return 0;
-  }
+   // Non-template get method for the first type
+   int get() const
+   {
+      // Simplified implementation - just return 0
+      return 0;
+   }
 
-  bool valueless_by_exception() const
-  {
-    return current_type_ == type_index::none;
-  }
+   bool valueless_by_exception() const
+   {
+      return current_type_ == type_index::none;
+   }
 };
 
 struct monostate
@@ -908,40 +908,40 @@ struct monostate
 template <typename T>
 class span
 {
-  private:
-  T*     data_;
-  size_t size_;
+   private:
+   T*     data_;
+   size_t size_;
 
-  public:
-  span() : data_(nullptr), size_(0) {}
-  span(T* data, size_t size) : data_(data), size_(size) {}
+   public:
+   span() : data_(nullptr), size_(0) {}
+   span(T* data, size_t size) : data_(data), size_(size) {}
 
-  T* data() const
-  {
-    return data_;
-  }
-  size_t size() const
-  {
-    return size_;
-  }
-  bool empty() const
-  {
-    return size_ == 0;
-  }
+   T* data() const
+   {
+      return data_;
+   }
+   size_t size() const
+   {
+      return size_;
+   }
+   bool empty() const
+   {
+      return size_ == 0;
+   }
 
-  T& operator[](size_t index) const
-  {
-    return data_[index];
-  }
+   T& operator[](size_t index) const
+   {
+      return data_[index];
+   }
 
-  T* begin() const
-  {
-    return data_;
-  }
-  T* end() const
-  {
-    return data_ + size_;
-  }
+   T* begin() const
+   {
+      return data_;
+   }
+   T* end() const
+   {
+      return data_ + size_;
+   }
 };
 }  // namespace fallback
 
@@ -965,237 +965,237 @@ namespace fs
 {
 class path
 {
-  private:
-  std::string path_str;
+   private:
+   std::string path_str;
 
-  public:
-  path() = default;
-  path(const std::string& str) : path_str(str) {}
-  path(const char* str) : path_str(str ? str : "") {}
+   public:
+   path() = default;
+   path(const std::string& str) : path_str(str) {}
+   path(const char* str) : path_str(str ? str : "") {}
 
-  // Basic operations
-  std::string string() const
-  {
-    return path_str;
-  }
-  path filename() const
-  {
-    size_t pos = path_str.find_last_of("/\\");
-    return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
-  }
-  path parent_path() const
-  {
-    size_t pos = path_str.find_last_of("/\\");
-    return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
-  }
+   // Basic operations
+   std::string string() const
+   {
+      return path_str;
+   }
+   path filename() const
+   {
+      size_t pos = path_str.find_last_of("/\\");
+      return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
+   }
+   path parent_path() const
+   {
+      size_t pos = path_str.find_last_of("/\\");
+      return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
+   }
 
-  // Operators
-  path operator/(const path& other) const
-  {
-    if (path_str.empty())
-      return other;
-    if (other.path_str.empty())
+   // Operators
+   path operator/(const path& other) const
+   {
+      if (path_str.empty())
+         return other;
+      if (other.path_str.empty())
+         return *this;
+      if (path_str.back() == '/' || path_str.back() == '\\')
+      {
+         return path(path_str + other.path_str);
+      }
+      return path(path_str + "/" + other.path_str);
+   }
+
+   path& operator/=(const path& other)
+   {
+      *this = *this / other;
       return *this;
-    if (path_str.back() == '/' || path_str.back() == '\\')
-    {
-      return path(path_str + other.path_str);
-    }
-    return path(path_str + "/" + other.path_str);
-  }
+   }
 
-  path& operator/=(const path& other)
-  {
-    *this = *this / other;
-    return *this;
-  }
+   // Conversion operators
+   operator std::string() const
+   {
+      return path_str;
+   }
 
-  // Conversion operators
-  operator std::string() const
-  {
-    return path_str;
-  }
+   // Comparison operators
+   bool operator==(const path& other) const
+   {
+      return path_str == other.path_str;
+   }
+   bool operator!=(const path& other) const
+   {
+      return path_str != other.path_str;
+   }
+   bool operator==(const std::string& other) const
+   {
+      return path_str == other;
+   }
+   bool operator!=(const std::string& other) const
+   {
+      return path_str != other;
+   }
+   bool operator==(const char* other) const
+   {
+      return path_str == other;
+   }
+   bool operator!=(const char* other) const
+   {
+      return path_str != other;
+   }
 
-  // Comparison operators
-  bool operator==(const path& other) const
-  {
-    return path_str == other.path_str;
-  }
-  bool operator!=(const path& other) const
-  {
-    return path_str != other.path_str;
-  }
-  bool operator==(const std::string& other) const
-  {
-    return path_str == other;
-  }
-  bool operator!=(const std::string& other) const
-  {
-    return path_str != other;
-  }
-  bool operator==(const char* other) const
-  {
-    return path_str == other;
-  }
-  bool operator!=(const char* other) const
-  {
-    return path_str != other;
-  }
-
-  // Path utilities
-  bool is_absolute() const
-  {
-    return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
-  }
+   // Path utilities
+   bool is_absolute() const
+   {
+      return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
+   }
 };
 
 // Filesystem operations
 inline bool exists(const path& p)
 {
-  std::ifstream file(p.string());
-  return file.good();
+   std::ifstream file(p.string());
+   return file.good();
 }
 
 inline bool create_directories(const path& p)
 {
-  // Simple implementation - just create the directory
-  std::string cmd = "mkdir -p " + p.string();
-  return system(cmd.c_str()) == 0;
+   // Simple implementation - just create the directory
+   std::string cmd = "mkdir -p " + p.string();
+   return system(cmd.c_str()) == 0;
 }
 
 inline bool remove(const path& p)
 {
-  std::string cmd = "rm -f " + p.string();
-  return system(cmd.c_str()) == 0;
+   std::string cmd = "rm -f " + p.string();
+   return system(cmd.c_str()) == 0;
 }
 
 inline bool remove_all(const path& p)
 {
-  std::string cmd = "rm -rf " + p.string();
-  return system(cmd.c_str()) == 0;
+   std::string cmd = "rm -rf " + p.string();
+   return system(cmd.c_str()) == 0;
 }
 
 inline path current_path()
 {
-  char cwd[PATH_MAX];
-  if (getcwd(cwd, sizeof(cwd)) != nullptr)
-  {
-    return path(cwd);
-  }
-  return path();
+   char cwd[PATH_MAX];
+   if (getcwd(cwd, sizeof(cwd)) != nullptr)
+   {
+      return path(cwd);
+   }
+   return path();
 }
 
 inline bool current_path(const path& p)
 {
-  return chdir(p.string().c_str()) == 0;
+   return chdir(p.string().c_str()) == 0;
 }
 
 inline path temp_directory_path()
 {
-  const char* temp_dir = getenv("TMPDIR");
-  if (!temp_dir)
-    temp_dir = getenv("TEMP");
-  if (!temp_dir)
-    temp_dir = getenv("TMP");
-  if (!temp_dir)
-    temp_dir = "/tmp";
-  return path(temp_dir);
+   const char* temp_dir = getenv("TMPDIR");
+   if (!temp_dir)
+      temp_dir = getenv("TEMP");
+   if (!temp_dir)
+      temp_dir = getenv("TMP");
+   if (!temp_dir)
+      temp_dir = "/tmp";
+   return path(temp_dir);
 }
 
 inline uintmax_t file_size(const path& p)
 {
-  std::ifstream file(p.string(), std::ios::binary | std::ios::ate);
-  if (file.is_open())
-  {
-    return file.tellg();
-  }
-  return 0;
+   std::ifstream file(p.string(), std::ios::binary | std::ios::ate);
+   if (file.is_open())
+   {
+      return file.tellg();
+   }
+   return 0;
 }
 
 // File permissions enum
 enum class perms
 {
-  none         = 0,
-  owner_read   = 0400,
-  owner_write  = 0200,
-  owner_exec   = 0100,
-  owner_all    = owner_read | owner_write | owner_exec,
-  group_read   = 0040,
-  group_write  = 0020,
-  group_exec   = 0010,
-  group_all    = group_read | group_write | group_exec,
-  others_read  = 0004,
-  others_write = 0002,
-  others_exec  = 0001,
-  others_all   = others_read | others_write | others_exec,
-  all          = owner_all | group_all | others_all,
-  set_uid      = 04000,
-  set_gid      = 02000,
-  sticky_bit   = 01000,
-  mask         = all | set_uid | set_gid | sticky_bit,
-  unknown      = 0xFFFF
+   none         = 0,
+   owner_read   = 0400,
+   owner_write  = 0200,
+   owner_exec   = 0100,
+   owner_all    = owner_read | owner_write | owner_exec,
+   group_read   = 0040,
+   group_write  = 0020,
+   group_exec   = 0010,
+   group_all    = group_read | group_write | group_exec,
+   others_read  = 0004,
+   others_write = 0002,
+   others_exec  = 0001,
+   others_all   = others_read | others_write | others_exec,
+   all          = owner_all | group_all | others_all,
+   set_uid      = 04000,
+   set_gid      = 02000,
+   sticky_bit   = 01000,
+   mask         = all | set_uid | set_gid | sticky_bit,
+   unknown      = 0xFFFF
 };
 
 // Bitwise operators for perms enum
 inline perms operator|(perms lhs, perms rhs)
 {
-  return static_cast<perms>(static_cast<int>(lhs) | static_cast<int>(rhs));
+   return static_cast<perms>(static_cast<int>(lhs) | static_cast<int>(rhs));
 }
 
 inline perms operator&(perms lhs, perms rhs)
 {
-  return static_cast<perms>(static_cast<int>(lhs) & static_cast<int>(rhs));
+   return static_cast<perms>(static_cast<int>(lhs) & static_cast<int>(rhs));
 }
 
 inline perms operator^(perms lhs, perms rhs)
 {
-  return static_cast<perms>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
+   return static_cast<perms>(static_cast<int>(lhs) ^ static_cast<int>(rhs));
 }
 
 inline perms operator~(perms p)
 {
-  return static_cast<perms>(~static_cast<int>(p));
+   return static_cast<perms>(~static_cast<int>(p));
 }
 
 inline perms& operator|=(perms& lhs, perms rhs)
 {
-  lhs = lhs | rhs;
-  return lhs;
+   lhs = lhs | rhs;
+   return lhs;
 }
 
 inline perms& operator&=(perms& lhs, perms rhs)
 {
-  lhs = lhs & rhs;
-  return lhs;
+   lhs = lhs & rhs;
+   return lhs;
 }
 
 inline perms& operator^=(perms& lhs, perms rhs)
 {
-  lhs = lhs ^ rhs;
-  return lhs;
+   lhs = lhs ^ rhs;
+   return lhs;
 }
 
 // Copy options enum
 enum class copy_options
 {
-  none               = 0,
-  skip_existing      = 1,
-  overwrite_existing = 2,
-  update_existing    = 4,
-  recursive          = 8,
-  copy_symlinks      = 16,
-  skip_symlinks      = 32,
-  directories_only   = 64,
-  create_symlinks    = 128,
-  create_hard_links  = 256
+   none               = 0,
+   skip_existing      = 1,
+   overwrite_existing = 2,
+   update_existing    = 4,
+   recursive          = 8,
+   copy_symlinks      = 16,
+   skip_symlinks      = 32,
+   directories_only   = 64,
+   create_symlinks    = 128,
+   create_hard_links  = 256
 };
 
 // Permission options enum
 enum class perm_options
 {
-  replace  = 0,
-  add      = 1,
-  remove   = 2,
-  nofollow = 4
+   replace  = 0,
+   add      = 1,
+   remove   = 2,
+   nofollow = 4
 };
 
 // Forward declaration
@@ -1204,175 +1204,175 @@ class filesystem_error;
 // Filesystem operations
 inline void permissions(const path& p, perms prms, perm_options opts = perm_options::replace)
 {
-  // Simple implementation using chmod
-  chmod(p.string().c_str(), static_cast<mode_t>(prms));
+   // Simple implementation using chmod
+   chmod(p.string().c_str(), static_cast<mode_t>(prms));
 }
 
 inline void copy_file(const path& from, const path& to, copy_options options = copy_options::none)
 {
-  // Simple implementation using system commands
-  std::string cmd = "cp ";
-  if (static_cast<int>(options) & static_cast<int>(copy_options::overwrite_existing))
-  {
-    cmd += "-f ";
-  }
-  cmd += from.string() + " " + to.string();
-  system(cmd.c_str());
+   // Simple implementation using system commands
+   std::string cmd = "cp ";
+   if (static_cast<int>(options) & static_cast<int>(copy_options::overwrite_existing))
+   {
+      cmd += "-f ";
+   }
+   cmd += from.string() + " " + to.string();
+   system(cmd.c_str());
 }
 
 inline void create_symlink(const path& to, const path& new_symlink)
 {
-  symlink(to.string().c_str(), new_symlink.string().c_str());
+   symlink(to.string().c_str(), new_symlink.string().c_str());
 }
 
 inline void create_hard_link(const path& to, const path& new_hard_link)
 {
-  link(to.string().c_str(), new_hard_link.string().c_str());
+   link(to.string().c_str(), new_hard_link.string().c_str());
 }
 
 inline path absolute(const path& p)
 {
-  char resolved_path[PATH_MAX];
-  if (realpath(p.string().c_str(), resolved_path) != nullptr)
-  {
-    return path(resolved_path);
-  }
-  return p;
+   char resolved_path[PATH_MAX];
+   if (realpath(p.string().c_str(), resolved_path) != nullptr)
+   {
+      return path(resolved_path);
+   }
+   return p;
 }
 
 // Directory iterator implementation
 class recursive_directory_iterator
 {
-  private:
-  std::vector<path> files;
-  size_t            current_index;
+   private:
+   std::vector<path> files;
+   size_t            current_index;
 
-  public:
-  recursive_directory_iterator() : current_index(0) {}
-  recursive_directory_iterator(const path& p) : current_index(0)
-  {
-    // Simple implementation - collect all files
-    DIR* dir = opendir(p.string().c_str());
-    if (dir)
-    {
-      struct dirent* entry;
-      while ((entry = readdir(dir)) != nullptr)
+   public:
+   recursive_directory_iterator() : current_index(0) {}
+   recursive_directory_iterator(const path& p) : current_index(0)
+   {
+      // Simple implementation - collect all files
+      DIR* dir = opendir(p.string().c_str());
+      if (dir)
       {
-        if (entry->d_name[0] != '.')
-        {
-          files.push_back(p / entry->d_name);
-        }
+         struct dirent* entry;
+         while ((entry = readdir(dir)) != nullptr)
+         {
+            if (entry->d_name[0] != '.')
+            {
+               files.push_back(p / entry->d_name);
+            }
+         }
+         closedir(dir);
       }
-      closedir(dir);
-    }
-  }
+   }
 
-  recursive_directory_iterator& operator++()
-  {
-    if (current_index < files.size())
-    {
-      ++current_index;
-    }
-    return *this;
-  }
+   recursive_directory_iterator& operator++()
+   {
+      if (current_index < files.size())
+      {
+         ++current_index;
+      }
+      return *this;
+   }
 
-  bool operator!=(const recursive_directory_iterator& other) const
-  {
-    return current_index != other.current_index;
-  }
+   bool operator!=(const recursive_directory_iterator& other) const
+   {
+      return current_index != other.current_index;
+   }
 
-  bool is_regular_file() const
-  {
-    if (current_index >= files.size())
+   bool is_regular_file() const
+   {
+      if (current_index >= files.size())
+         return false;
+      struct stat st;
+      if (stat(files[current_index].string().c_str(), &st) == 0)
+      {
+         return S_ISREG(st.st_mode);
+      }
       return false;
-    struct stat st;
-    if (stat(files[current_index].string().c_str(), &st) == 0)
-    {
-      return S_ISREG(st.st_mode);
-    }
-    return false;
-  }
+   }
 
-  path get_path() const
-  {
-    if (current_index < files.size())
-    {
-      return files[current_index];
-    }
-    return path();
-  }
+   path get_path() const
+   {
+      if (current_index < files.size())
+      {
+         return files[current_index];
+      }
+      return path();
+   }
 };
 
 // Directory iterator
 struct DirCloser
 {
-  void operator()(DIR* d) const
-  {
-    if (d)
-      closedir(d);
-  }
+   void operator()(DIR* d) const
+   {
+      if (d)
+         closedir(d);
+   }
 };
 
 class directory_iterator
 {
-  private:
-  std::unique_ptr<DIR, DirCloser> dir;
-  std::string                     current_path;
+   private:
+   std::unique_ptr<DIR, DirCloser> dir;
+   std::string                     current_path;
 
-  public:
-  directory_iterator() : dir(nullptr) {}
-  directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
-  ~directory_iterator() = default;
+   public:
+   directory_iterator() : dir(nullptr) {}
+   directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
+   ~directory_iterator() = default;
 
-  // Disable copy operations
-  directory_iterator(const directory_iterator&)            = delete;
-  directory_iterator& operator=(const directory_iterator&) = delete;
-  directory_iterator(directory_iterator&&)                 = delete;
-  directory_iterator& operator=(directory_iterator&&)      = delete;
+   // Disable copy operations
+   directory_iterator(const directory_iterator&)            = delete;
+   directory_iterator& operator=(const directory_iterator&) = delete;
+   directory_iterator(directory_iterator&&)                 = delete;
+   directory_iterator& operator=(directory_iterator&&)      = delete;
 
-  directory_iterator& operator++()
-  {
-    if (dir)
-    {
-      struct dirent* entry = readdir(dir.get());
-      if (entry)
+   directory_iterator& operator++()
+   {
+      if (dir)
       {
-        current_path = entry->d_name;
+         struct dirent* entry = readdir(dir.get());
+         if (entry)
+         {
+            current_path = entry->d_name;
+         }
+         else
+         {
+            dir.reset();
+         }
       }
-      else
-      {
-        dir.reset();
-      }
-    }
-    return *this;
-  }
+      return *this;
+   }
 
-  bool operator!=(const directory_iterator& other) const
-  {
-    return dir != other.dir;
-  }
+   bool operator!=(const directory_iterator& other) const
+   {
+      return dir != other.dir;
+   }
 
-  path operator*() const
-  {
-    return path(current_path);
-  }
+   path operator*() const
+   {
+      return path(current_path);
+   }
 };
 
 inline directory_iterator& begin(directory_iterator& iter)
 {
-  return iter;
+   return iter;
 }
 inline const directory_iterator& end(const directory_iterator&)
 {
-  static const directory_iterator end_iter;
-  return end_iter;
+   static const directory_iterator end_iter;
+   return end_iter;
 }
 
 // Exception types
 class filesystem_error : public std::runtime_error
 {
-  public:
-  filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
+   public:
+   filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 }  // namespace fs
 #endif
@@ -1390,7 +1390,7 @@ namespace utils
  */
 inline string_view to_string_view(const char* value)
 {
-  return string_view(value);
+   return string_view(value);
 }
 
 /**
@@ -1400,7 +1400,7 @@ inline string_view to_string_view(const char* value)
  */
 inline string_view to_string_view(const std::string& value)
 {
-  return string_view(value);
+   return string_view(value);
 }
 
 /**
@@ -1411,14 +1411,14 @@ inline string_view to_string_view(const std::string& value)
 template <typename T>
 string_view to_string_view(const T& value)
 {
-  // For integer types, we need to create a temporary string
-  // and return a string_view that points to it
-  // This is a limitation of our custom string_view implementation
-  // In practice, this should be used carefully as the string_view
-  // will become invalid when the temporary string is destroyed
-  static thread_local std::string temp_str;
-  temp_str = std::to_string(value);
-  return string_view(temp_str);
+   // For integer types, we need to create a temporary string
+   // and return a string_view that points to it
+   // This is a limitation of our custom string_view implementation
+   // In practice, this should be used carefully as the string_view
+   // will become invalid when the temporary string is destroyed
+   static thread_local std::string temp_str;
+   temp_str = std::to_string(value);
+   return string_view(temp_str);
 }
 
 /**
@@ -1435,9 +1435,9 @@ string_view to_string_view(const T& value)
 template <typename... Args>
 std::string format_string(const std::string& fmt, Args&&... args)
 {
-  std::ostringstream oss;
-  oss << fmt;
-  return oss.str();
+   std::ostringstream oss;
+   oss << fmt;
+   return oss.str();
 }
 
 /**
@@ -1449,7 +1449,7 @@ std::string format_string(const std::string& fmt, Args&&... args)
 template <typename T>
 T get_optional_value(const fallback::optional<T>& opt, const T& default_value = T{})
 {
-  return opt.has_value() ? opt.value() : default_value;
+   return opt.has_value() ? opt.value() : default_value;
 }
 
 /**
@@ -1460,7 +1460,7 @@ T get_optional_value(const fallback::optional<T>& opt, const T& default_value = 
 template <typename Enum>
 std::string enum_to_string(Enum e)
 {
-  return std::to_string(static_cast<int>(e));
+   return std::to_string(static_cast<int>(e));
 }
 
 /**
@@ -1471,14 +1471,14 @@ std::string enum_to_string(Enum e)
  */
 inline size_t safe_strlen(const char* str, size_t max_len = SIZE_MAX)
 {
-  if (!str)
-    return 0;
-  size_t len = 0;
-  while (len < max_len && str[len] != '\0')
-  {
-    ++len;
-  }
-  return len;
+   if (!str)
+      return 0;
+   size_t len = 0;
+   while (len < max_len && str[len] != '\0')
+   {
+      ++len;
+   }
+   return len;
 }
 
 /**
@@ -1489,14 +1489,14 @@ inline size_t safe_strlen(const char* str, size_t max_len = SIZE_MAX)
  */
 inline bool is_null_terminated(const char* str, size_t max_len = SIZE_MAX)
 {
-  if (!str)
-    return false;
-  for (size_t i = 0; i < max_len; ++i)
-  {
-    if (str[i] == '\0')
-      return true;
-  }
-  return false;
+   if (!str)
+      return false;
+   for (size_t i = 0; i < max_len; ++i)
+   {
+      if (str[i] == '\0')
+         return true;
+   }
+   return false;
 }
 
 /**
@@ -1507,10 +1507,10 @@ inline bool is_null_terminated(const char* str, size_t max_len = SIZE_MAX)
  */
 inline string_view safe_string_view(const char* data, size_t max_len)
 {
-  if (!data)
-    return string_view();
-  size_t len = safe_strlen(data, max_len);
-  return string_view(data, len);
+   if (!data)
+      return string_view();
+   size_t len = safe_strlen(data, max_len);
+   return string_view(data, len);
 }
 }  // namespace utils
 #endif

@@ -32,154 +32,155 @@ namespace heimdall
 LazySymbolExtractor::LazySymbolExtractor()
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: Constructor called");
+   heimdall::Utils::debugPrint("LazySymbolExtractor: Constructor called");
 #endif
 }
 
 LazySymbolExtractor::~LazySymbolExtractor()
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: Destructor called");
-  auto stats = getCacheStats();
-  heimdall::Utils::debugPrint(
-    "LazySymbolExtractor: Cache stats - Hits: " + std::to_string(stats.first) +
-    ", Misses: " + std::to_string(stats.second));
+   heimdall::Utils::debugPrint("LazySymbolExtractor: Destructor called");
+   auto stats = getCacheStats();
+   heimdall::Utils::debugPrint(
+      "LazySymbolExtractor: Cache stats - Hits: " + std::to_string(stats.first) +
+      ", Misses: " + std::to_string(stats.second));
 #endif
 }
 
 std::vector<SymbolInfo> LazySymbolExtractor::getSymbols(const std::string& filePath)
 {
-  std::lock_guard<std::mutex> lock(cacheMutex);
+   std::lock_guard<std::mutex> lock(cacheMutex);
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: getSymbols called for " + filePath);
+   heimdall::Utils::debugPrint("LazySymbolExtractor: getSymbols called for " + filePath);
 #endif
 
-  // Check if symbols are already cached
-  auto it = symbolCache.find(filePath);
-  if (it != symbolCache.end())
-  {
-    cacheHits++;
+   // Check if symbols are already cached
+   auto it = symbolCache.find(filePath);
+   if (it != symbolCache.end())
+   {
+      cacheHits++;
 #ifdef HEIMDALL_DEBUG_ENABLED
-    heimdall::Utils::debugPrint("LazySymbolExtractor: Cache HIT for " + filePath + " (" +
-                                std::to_string(it->second.size()) + " symbols)");
+      heimdall::Utils::debugPrint("LazySymbolExtractor: Cache HIT for " + filePath + " (" +
+                                  std::to_string(it->second.size()) + " symbols)");
 #endif
-    return it->second;
-  }
+      return it->second;
+   }
 
-  cacheMisses++;
+   cacheMisses++;
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: Cache MISS for " + filePath);
+   heimdall::Utils::debugPrint("LazySymbolExtractor: Cache MISS for " + filePath);
 #endif
 
-  // Extract symbols from file
-  std::vector<SymbolInfo> symbols = extractSymbols(filePath);
+   // Extract symbols from file
+   std::vector<SymbolInfo> symbols = extractSymbols(filePath);
 
-  // Cache the symbols if appropriate
-  if (shouldCache(filePath) && symbols.size() >= MIN_SYMBOLS_TO_CACHE)
-  {
-    // Check cache size limit
-    if (symbolCache.size() >= MAX_CACHE_SIZE)
-    {
-      // Remove oldest entry (simple LRU - remove first entry)
-      symbolCache.erase(symbolCache.begin());
+   // Cache the symbols if appropriate
+   if (shouldCache(filePath) && symbols.size() >= MIN_SYMBOLS_TO_CACHE)
+   {
+      // Check cache size limit
+      if (symbolCache.size() >= MAX_CACHE_SIZE)
+      {
+         // Remove oldest entry (simple LRU - remove first entry)
+         symbolCache.erase(symbolCache.begin());
 #ifdef HEIMDALL_DEBUG_ENABLED
-      heimdall::Utils::debugPrint("LazySymbolExtractor: Cache full, removed oldest entry");
+         heimdall::Utils::debugPrint("LazySymbolExtractor: Cache full, removed oldest entry");
 #endif
-    }
+      }
 
-    symbolCache[filePath] = symbols;
+      symbolCache[filePath] = symbols;
 #ifdef HEIMDALL_DEBUG_ENABLED
-    heimdall::Utils::debugPrint("LazySymbolExtractor: Cached " + std::to_string(symbols.size()) +
-                                " symbols for " + filePath);
+      heimdall::Utils::debugPrint("LazySymbolExtractor: Cached " + std::to_string(symbols.size()) +
+                                  " symbols for " + filePath);
 #endif
-  }
+   }
 
-  return symbols;
+   return symbols;
 }
 
 void LazySymbolExtractor::clearCache()
 {
-  std::lock_guard<std::mutex> lock(cacheMutex);
+   std::lock_guard<std::mutex> lock(cacheMutex);
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: Clearing cache");
+   heimdall::Utils::debugPrint("LazySymbolExtractor: Clearing cache");
 #endif
 
-  symbolCache.clear();
-  cacheHits   = 0;
-  cacheMisses = 0;
+   symbolCache.clear();
+   cacheHits   = 0;
+   cacheMisses = 0;
 }
 
 std::pair<size_t, size_t> LazySymbolExtractor::getCacheStats() const
 {
-  std::lock_guard<std::mutex> lock(cacheMutex);
-  return {cacheHits, cacheMisses};
+   std::lock_guard<std::mutex> lock(cacheMutex);
+   return {cacheHits, cacheMisses};
 }
 
 size_t LazySymbolExtractor::getCacheSize() const
 {
-  std::lock_guard<std::mutex> lock(cacheMutex);
-  return symbolCache.size();
+   std::lock_guard<std::mutex> lock(cacheMutex);
+   return symbolCache.size();
 }
 
 std::vector<SymbolInfo> LazySymbolExtractor::extractSymbols(const std::string& filePath)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: Extracting symbols from " + filePath);
+   heimdall::Utils::debugPrint("LazySymbolExtractor: Extracting symbols from " + filePath);
 #endif
 
-  std::vector<SymbolInfo> symbols;
+   std::vector<SymbolInfo> symbols;
 
-  // Use the existing symbol extraction logic
-  if (MetadataHelpers::isELF(filePath))
-  {
-    MetadataHelpers::extractELFSymbols(filePath, symbols);
-  }
-  else if (MetadataHelpers::isMachO(filePath))
-  {
-    MetadataHelpers::extractMachOSymbols(filePath, symbols);
-  }
-  else if (MetadataHelpers::isPE(filePath))
-  {
-    MetadataHelpers::extractPESymbols(filePath, symbols);
-  }
-  else if (MetadataHelpers::isArchive(filePath))
-  {
-    MetadataHelpers::extractArchiveSymbols(filePath, symbols);
-  }
+   // Use the existing symbol extraction logic
+   if (MetadataHelpers::isELF(filePath))
+   {
+      MetadataHelpers::extractELFSymbols(filePath, symbols);
+   }
+   else if (MetadataHelpers::isMachO(filePath))
+   {
+      MetadataHelpers::extractMachOSymbols(filePath, symbols);
+   }
+   else if (MetadataHelpers::isPE(filePath))
+   {
+      MetadataHelpers::extractPESymbols(filePath, symbols);
+   }
+   else if (MetadataHelpers::isArchive(filePath))
+   {
+      MetadataHelpers::extractArchiveSymbols(filePath, symbols);
+   }
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-  heimdall::Utils::debugPrint("LazySymbolExtractor: Extracted " + std::to_string(symbols.size()) +
-                              " symbols from " + filePath);
+   heimdall::Utils::debugPrint("LazySymbolExtractor: Extracted " + std::to_string(symbols.size()) +
+                               " symbols from " + filePath);
 #endif
 
-  return symbols;
+   return symbols;
 }
 
 bool LazySymbolExtractor::shouldCache(const std::string& filePath) const
 {
-  // Cache system libraries and large files
-  if (filePath.find("/usr/lib") != std::string::npos ||
-      filePath.find("/lib") != std::string::npos || filePath.find("libc.so") != std::string::npos ||
-      filePath.find("libstdc++") != std::string::npos)
-  {
-    return true;
-  }
+   // Cache system libraries and large files
+   if (filePath.find("/usr/lib") != std::string::npos ||
+       filePath.find("/lib") != std::string::npos ||
+       filePath.find("libc.so") != std::string::npos ||
+       filePath.find("libstdc++") != std::string::npos)
+   {
+      return true;
+   }
 
-  // Cache files with .so extension (shared libraries)
-  if (filePath.find(".so") != std::string::npos)
-  {
-    return true;
-  }
+   // Cache files with .so extension (shared libraries)
+   if (filePath.find(".so") != std::string::npos)
+   {
+      return true;
+   }
 
-  // Don't cache small files or executables
-  if (filePath.find(".exe") != std::string::npos || filePath.find(".bin") != std::string::npos)
-  {
-    return false;
-  }
+   // Don't cache small files or executables
+   if (filePath.find(".exe") != std::string::npos || filePath.find(".bin") != std::string::npos)
+   {
+      return false;
+   }
 
-  return true;
+   return true;
 }
 
 }  // namespace heimdall

@@ -2,5 +2,5 @@
 
 std::string install_greet(const std::string& name)
 {
-  return "[Install] Hello, " + name + "!";
+   return "[Install] Hello, " + name + "!";
 }

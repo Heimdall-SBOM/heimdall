@@ -3,6 +3,6 @@
 
 int main()
 {
-  std::cout << install_greet("InstallLib User") << std::endl;
-  return 0;
+   std::cout << install_greet("InstallLib User") << std::endl;
+   return 0;
 }

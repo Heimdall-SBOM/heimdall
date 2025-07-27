@@ -27,26 +27,26 @@ using namespace heimdall;
 
 class MetadataExtractorTest : public ::testing::Test
 {
-  protected:
-  void SetUp() override
-  {
-    test_dir = test_utils::getUniqueTestDirectory("heimdall_metadata_test");
-    heimdall::compat::fs::create_directories(test_dir);
+   protected:
+   void SetUp() override
+   {
+      test_dir = test_utils::getUniqueTestDirectory("heimdall_metadata_test");
+      heimdall::compat::fs::create_directories(test_dir);
 
-    // Create test files
-    createTestFiles();
-  }
+      // Create test files
+      createTestFiles();
+   }
 
-  void TearDown() override
-  {
-    test_utils::safeRemoveDirectory(test_dir);
-  }
+   void TearDown() override
+   {
+      test_utils::safeRemoveDirectory(test_dir);
+   }
 
-  void createTestFiles()
-  {
-    // Create a simple C source file for testing
-    test_source = test_dir / "testlib.c";
-    std::ofstream(test_source) << R"(
+   void createTestFiles()
+   {
+      // Create a simple C source file for testing
+      test_source = test_dir / "testlib.c";
+      std::ofstream(test_source) << R"(
 #include <stdio.h>
 
 __attribute__((visibility("default")))
@@ -61,93 +61,93 @@ __attribute__((visibility("default")))
 const char* test_license = "MIT";
 )";
 
-    // Compile it into a shared library with symbols
-    test_lib = test_dir / "libtest.so";
-    std::string compile_cmd =
-      "gcc -shared -fPIC -g -o " + test_lib.string() + " " + test_source.string() + " 2>/dev/null";
-    int compile_result = system(compile_cmd.c_str());
-    (void)compile_result;  // Suppress unused variable warning
+      // Compile it into a shared library with symbols
+      test_lib                = test_dir / "libtest.so";
+      std::string compile_cmd = "gcc -shared -fPIC -g -o " + test_lib.string() + " " +
+                                test_source.string() + " 2>/dev/null";
+      int compile_result = system(compile_cmd.c_str());
+      (void)compile_result;  // Suppress unused variable warning
 
-    // Fallback to dummy file if compilation fails
-    if (!heimdall::compat::fs::exists(test_lib))
-    {
-      std::ofstream(test_lib) << "dummy content";
-    }
-  }
-  heimdall::compat::fs::path test_dir;
-  heimdall::compat::fs::path test_source;
-  heimdall::compat::fs::path test_lib;
+      // Fallback to dummy file if compilation fails
+      if (!heimdall::compat::fs::exists(test_lib))
+      {
+         std::ofstream(test_lib) << "dummy content";
+      }
+   }
+   heimdall::compat::fs::path test_dir;
+   heimdall::compat::fs::path test_source;
+   heimdall::compat::fs::path test_lib;
 };
 
 TEST_F(MetadataExtractorTest, ExtractMetadataBasic)
 {
-  MetadataExtractor extractor;
-  ComponentInfo     component("testlib", test_lib.string());
+   MetadataExtractor extractor;
+   ComponentInfo     component("testlib", test_lib.string());
 
-  // Debug: Check if the library exists and its size
-  std::cout << "Test library path: " << test_lib.string() << std::endl;
-  std::cout << "Test library exists: " << heimdall::compat::fs::exists(test_lib) << std::endl;
-  std::cout << "Test library size: " << heimdall::compat::fs::file_size(test_lib) << std::endl;
+   // Debug: Check if the library exists and its size
+   std::cout << "Test library path: " << test_lib.string() << std::endl;
+   std::cout << "Test library exists: " << heimdall::compat::fs::exists(test_lib) << std::endl;
+   std::cout << "Test library size: " << heimdall::compat::fs::file_size(test_lib) << std::endl;
 
-  // Debug: Check if it's recognized as ELF
-  std::cout << "Is ELF: " << extractor.isELF(test_lib.string()) << std::endl;
+   // Debug: Check if it's recognized as ELF
+   std::cout << "Is ELF: " << extractor.isELF(test_lib.string()) << std::endl;
 
-  // Test individual extraction methods
-  if (heimdall::compat::fs::file_size(test_lib) > 100)
-  {
-    // Real library - should extract symbols and sections
-    std::cout << "Testing symbol extraction..." << std::endl;
-    bool symbolResult = extractor.extractSymbolInfo(component);
-    std::cout << "Symbol extraction result: " << symbolResult << std::endl;
-    std::cout << "Number of symbols extracted: " << component.symbols.size() << std::endl;
-    EXPECT_TRUE(symbolResult);
+   // Test individual extraction methods
+   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   {
+      // Real library - should extract symbols and sections
+      std::cout << "Testing symbol extraction..." << std::endl;
+      bool symbolResult = extractor.extractSymbolInfo(component);
+      std::cout << "Symbol extraction result: " << symbolResult << std::endl;
+      std::cout << "Number of symbols extracted: " << component.symbols.size() << std::endl;
+      EXPECT_TRUE(symbolResult);
 
-    std::cout << "Testing section extraction..." << std::endl;
-    bool sectionResult = extractor.extractSectionInfo(component);
-    std::cout << "Section extraction result: " << sectionResult << std::endl;
-    std::cout << "Number of sections extracted: " << component.sections.size() << std::endl;
-    EXPECT_TRUE(sectionResult);
+      std::cout << "Testing section extraction..." << std::endl;
+      bool sectionResult = extractor.extractSectionInfo(component);
+      std::cout << "Section extraction result: " << sectionResult << std::endl;
+      std::cout << "Number of sections extracted: " << component.sections.size() << std::endl;
+      EXPECT_TRUE(sectionResult);
 
-    // Test the full extraction process
-    bool result = extractor.extractMetadata(component);
-    EXPECT_TRUE(component.wasProcessed);
+      // Test the full extraction process
+      bool result = extractor.extractMetadata(component);
+      EXPECT_TRUE(component.wasProcessed);
 
-    // The overall result may be false if version/license extraction fails,
-    // but the component should still be processed
-    EXPECT_TRUE(result || !result);  // Accept either true or false
-  }
-  else
-  {
-    // Dummy file - should fail
-    bool result = extractor.extractMetadata(component);
-    EXPECT_FALSE(result);
-    EXPECT_TRUE(component.wasProcessed);
-  }
+      // The overall result may be false if version/license extraction fails,
+      // but the component should still be processed
+      EXPECT_TRUE(result || !result);  // Accept either true or false
+   }
+   else
+   {
+      // Dummy file - should fail
+      bool result = extractor.extractMetadata(component);
+      EXPECT_FALSE(result);
+      EXPECT_TRUE(component.wasProcessed);
+   }
 }
 
 TEST_F(MetadataExtractorTest, FileFormatDetection)
 {
-  MetadataExtractor extractor;
-  EXPECT_FALSE(extractor.isELF(test_source.string()));  // .c file
-  EXPECT_FALSE(extractor.isMachO("nonexistent"));
-  EXPECT_FALSE(extractor.isPE(test_source.string()));
-  EXPECT_FALSE(extractor.isArchive(test_source.string()));
+   MetadataExtractor extractor;
+   EXPECT_FALSE(extractor.isELF(test_source.string()));  // .c file
+   EXPECT_FALSE(extractor.isMachO("nonexistent"));
+   EXPECT_FALSE(extractor.isPE(test_source.string()));
+   EXPECT_FALSE(extractor.isArchive(test_source.string()));
 
-  // Test with the actual library
-  if (heimdall::compat::fs::file_size(test_lib) > 100)
-  {
+   // Test with the actual library
+   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   {
 // Platform-specific format detection
 #ifdef __linux__
-    // On Linux, should detect ELF format for real library
-    EXPECT_TRUE(extractor.isELF(test_lib.string()));
+      // On Linux, should detect ELF format for real library
+      EXPECT_TRUE(extractor.isELF(test_lib.string()));
 #elif defined(__APPLE__)
-    // On macOS, should detect Mach-O format for real library
-    EXPECT_TRUE(extractor.isMachO(test_lib.string()));
+      // On macOS, should detect Mach-O format for real library
+      EXPECT_TRUE(extractor.isMachO(test_lib.string()));
 #else
-    // On other platforms, just check that some format is detected
-    bool hasFormat = extractor.isELF(test_lib.string()) || extractor.isMachO(test_lib.string()) ||
-                     extractor.isPE(test_lib.string());
-    EXPECT_TRUE(hasFormat);
+      // On other platforms, just check that some format is detected
+      bool hasFormat = extractor.isELF(test_lib.string()) || extractor.isMachO(test_lib.string()) ||
+                       extractor.isPE(test_lib.string());
+      EXPECT_TRUE(hasFormat);
 #endif
-  }
+   }
 }

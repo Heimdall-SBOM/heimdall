@@ -38,79 +38,79 @@ namespace heimdall
  */
 class SBOMGenerator
 {
-  public:
-  /**
-   * @brief Default constructor
-   */
-  SBOMGenerator();
-  /**
-   * @brief Destructor
-   */
-  ~SBOMGenerator();
+   public:
+   /**
+    * @brief Default constructor
+    */
+   SBOMGenerator();
+   /**
+    * @brief Destructor
+    */
+   ~SBOMGenerator();
 
-  /**
-   * @brief Process a component and add it to the SBOM
-   * @param component The component to process
-   */
-  void processComponent(const ComponentInfo& component);
-  /**
-   * @brief Generate the SBOM in the specified format
-   */
-  void generateSBOM();
-  /**
-   * @brief Set the output path for the SBOM file
-   * @param path The output file path
-   */
-  void setOutputPath(const std::string& path);
-  /**
-   * @brief Set the output format for the SBOM
-   * @param format The format (e.g., "spdx", "cyclonedx")
-   */
-  void setFormat(const std::string& format);
+   /**
+    * @brief Process a component and add it to the SBOM
+    * @param component The component to process
+    */
+   void processComponent(const ComponentInfo& component);
+   /**
+    * @brief Generate the SBOM in the specified format
+    */
+   void generateSBOM();
+   /**
+    * @brief Set the output path for the SBOM file
+    * @param path The output file path
+    */
+   void setOutputPath(const std::string& path);
+   /**
+    * @brief Set the output format for the SBOM
+    * @param format The format (e.g., "spdx", "cyclonedx")
+    */
+   void setFormat(const std::string& format);
 
-  /**
-   * @brief Set the SPDX version for the SBOM
-   * @param version The SPDX version (e.g., "2.3", "3.0.0", "3.0.1")
-   */
-  void setSPDXVersion(const std::string& version);
+   /**
+    * @brief Set the SPDX version for the SBOM
+    * @param version The SPDX version (e.g., "2.3", "3.0.0", "3.0.1")
+    */
+   void setSPDXVersion(const std::string& version);
 
-  /**
-   * @brief Set the CycloneDX version for the SBOM
-   * @param version The CycloneDX version (e.g., "1.4", "1.6")
-   */
-  void setCycloneDXVersion(const std::string& version);
+   /**
+    * @brief Set the CycloneDX version for the SBOM
+    * @param version The CycloneDX version (e.g., "1.4", "1.6")
+    */
+   void setCycloneDXVersion(const std::string& version);
 
-  /**
-   * @brief Set whether to suppress warnings (for test mode)
-   * @param suppress true to suppress warnings
-   */
-  void setSuppressWarnings(bool suppress);
+   /**
+    * @brief Set whether to suppress warnings (for test mode)
+    * @param suppress true to suppress warnings
+    */
+   void setSuppressWarnings(bool suppress);
 
-  /**
-   * @brief Set whether to recursively include transitive dependencies
-   * @param transitive true to include transitive dependencies, false for direct only
-   */
-  void setTransitiveDependencies(bool transitive);
+   /**
+    * @brief Set whether to recursively include transitive dependencies
+    * @param transitive true to include transitive dependencies, false for direct only
+    */
+   void setTransitiveDependencies(bool transitive);
 
-  /**
-   * @brief Get the number of components in the SBOM
-   * @return Number of components
-   */
-  [[nodiscard]] size_t getComponentCount() const;
-  /**
-   * @brief Check if a component exists in the SBOM
-   * @param name The component name to check
-   * @return true if the component exists
-   */
-  [[nodiscard]] bool hasComponent(const std::string& name) const;
-  /**
-   * @brief Print statistics about the SBOM
-   */
-  void printStatistics() const;
+   /**
+    * @brief Get the number of components in the SBOM
+    * @return Number of components
+    */
+   [[nodiscard]] size_t getComponentCount() const;
+   /**
+    * @brief Check if a component exists in the SBOM
+    * @param name The component name to check
+    * @return true if the component exists
+    */
+   [[nodiscard]] bool hasComponent(const std::string& name) const;
+   /**
+    * @brief Print statistics about the SBOM
+    */
+   void printStatistics() const;
 
-  private:
-  class Impl;
-  std::unique_ptr<Impl> pImpl;
+   private:
+   class Impl;
+   std::unique_ptr<Impl> pImpl;
 };
 
 }  // namespace heimdall
