@@ -1,6 +1,6 @@
 # NOTE: Modern Build System and Compatibility (2024)
 
-> **Heimdall now features a modern build system with automatic compiler and LLVM selection.**
+> **Heimdall features a modern build system with automatic compiler and LLVM selection.**
 >
 > - All build scripts are in the `scripts/` directory.
 > - The build system automatically detects and selects the best available compiler (GCC/Clang) and LLVM version for each C++ standard.
@@ -34,23 +34,6 @@ Heimdall relies on LLVM libraries for DWARF debug information extraction and LLD
 
 ---
 
-## Known Issues
-
-- **LLVM 19+ and C++11/14:**
-  - LLVM 19 headers and libraries use C++14/17/20 features (e.g., `std::optional`, `std::string_view`, `std::index_sequence`, `if constexpr`, etc.) that are not available in C++11/14.
-  - Attempting to build Heimdall with C++11/14 and LLVM 19+ will result in compiler errors.
-  - The LLD plugin cannot be built or used with C++11/14 and LLVM 19+.
-
-- **LLD Plugin:**
-  - The LLD plugin requires C++14+ and LLVM 11+.
-  - For C++11/14 builds, the LLD plugin is not available; only the Gold plugin is supported.
-
-- **DWARF Extraction:**
-  - DWARF extraction via LLVM works with C++11/14 only if using LLVM 7–18.
-  - LLVM 19+ requires C++17 or newer for all features.
-
----
-
 ## Solutions and Recommendations
 
 ### 1. Use an Older LLVM Version (7–18) for C++11/14
@@ -76,34 +59,5 @@ Heimdall relies on LLVM libraries for DWARF debug information extraction and LLD
 - If you are limited to C++11/14, use the Gold plugin for SBOM generation.
 - Note: Gold is not available on macOS; use LLD with C++17+ on macOS.
 
-### 4. Wrapper Script Approach
-- If you need to generate SBOMs with LLD but are limited by LLVM/C++ version compatibility, use a wrapper script to run SBOM generation as a post-link step instead of as a plugin.
-- See `docs/rationale.md` for details.
-
 ---
 
-## Best Practices
-
-- **For maximum compatibility:**
-  - Use C++17 or newer and LLVM 19+ if possible.
-  - For legacy projects requiring C++11/14, use LLVM 7–18 and the Gold plugin.
-  - Always check your compiler and LLVM versions with `llvm-config --version` and `c++ --version`.
-  - If you encounter build errors related to missing C++ features, verify your LLVM version and C++ standard settings.
-
-- **CI/CD:**
-  - Test builds with all supported C++ standards and relevant LLVM versions.
-  - Document your build matrix and environment in your CI configuration.
-
----
-
-## References
-
-- [LLVM Releases](https://releases.llvm.org/)
-- [Heimdall Multi-Standard Support](./multi-standard-support.md)
-- [Heimdall Limitations](./heimdall-limitations.md)
-- [Linker Integration Rationale](./rationale.md)
-- [Gold Plugin API](https://sourceware.org/binutils/docs-2.39/gold/Plugin.html)
-
----
-
-For further help, see the main README or open an issue on the Heimdall project repository. 
