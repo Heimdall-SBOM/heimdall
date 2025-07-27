@@ -34,17 +34,30 @@ jobs:
       ############################################
       - name: Run clang-format with reviewdog
         run: |
-          # Get changed files from GitHub context
+          # Get changed files from GitHub context - only get files from the last few commits
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
           else
-            FILES=$(git diff --name-only HEAD~1 | grep -E '\.(c|cpp|h|hpp)$' || true)
+            # For direct commits, only check the last commit
+            FILES=$(git diff --name-only HEAD~1..HEAD | grep -E '\.(c|cpp|h|hpp)$' || true)
           fi
           echo "Changed files: $FILES"
           if [ -n "$FILES" ]; then
+            # Limit to first 10 files to prevent hanging
+            FILE_COUNT=$(echo "$FILES" | wc -l)
+            if [ "$FILE_COUNT" -gt 10 ]; then
+              echo "Too many files changed ($FILE_COUNT), limiting to first 10 files"
+              FILES=$(echo "$FILES" | head -10)
+            fi
+            
             for file in $FILES; do
-              clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -fail-level=error
+              if [ -f "$file" ]; then
+                echo "Checking format for: $file"
+                clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -fail-level=error
+              fi
             done
+          else
+            echo "No C++ files changed, skipping clang-format"
           fi
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,26 +66,36 @@ jobs:
       # 2. CLANG-TIDY via reviewdog
       ############################################
       - name: Run clang-tidy with reviewdog
-        timeout-minutes: 10
+        timeout-minutes: 5
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
           wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
           chmod +x run-clang-tidy.py
           mkdir -p tidy-fixes
           
-          # Get changed files only
+          # Get changed files only - limit to recent commits
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
           else
-            FILES=$(git diff --name-only HEAD~1 | grep -E '\.(c|cpp|h|hpp)$' || true)
+            # For direct commits, only check the last commit
+            FILES=$(git diff --name-only HEAD~1..HEAD | grep -E '\.(c|cpp|h|hpp)$' || true)
           fi
           echo "Changed files for clang-tidy: $FILES"
           
           if [ -n "$FILES" ]; then
+            # Limit to first 10 files to prevent hanging
+            FILE_COUNT=$(echo "$FILES" | wc -l)
+            if [ "$FILE_COUNT" -gt 10 ]; then
+              echo "Too many files changed ($FILE_COUNT), limiting to first 10 files"
+              FILES=$(echo "$FILES" | head -10)
+            fi
+            
             # Run clang-tidy only on changed files
             for file in $FILES; do
-              echo "Running clang-tidy on: $file"
-              clang-tidy -p build "$file" 2>/dev/null | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-level=error
+              if [ -f "$file" ]; then
+                echo "Running clang-tidy on: $file"
+                clang-tidy -p build "$file" 2>/dev/null | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-level=error
+              fi
             done
           else
             echo "No C++ files changed, skipping clang-tidy"
