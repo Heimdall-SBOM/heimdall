@@ -78,6 +78,7 @@ std::string getFileName(const std::string& filePath)
 
    return filename;
 }
+  
 std::string getFileExtension(const std::string& filePath)
 {
    if (filePath.empty())
@@ -85,20 +86,25 @@ std::string getFileExtension(const std::string& filePath)
       return "";
    }
 
-   size_t last_dot = filePath.find_last_of('.');
+   // First get the filename without the path
+   std::string fileName = getFileName(filePath);
+   
+   size_t last_dot = fileName.find_last_of('.');
+
    if (last_dot == std::string::npos || last_dot == 0)
    {
       return "";
    }
 
    // Check if the dot is not the last character
-   if (last_dot == filePath.length() - 1)
+   if (last_dot == fileName.length() - 1)
    {
       return "";
    }
 
-   return filePath.substr(last_dot);
+   return fileName.substr(last_dot);
 }
+  
 std::string getDirectory(const std::string& filePath)
 {
    if (filePath.empty())
@@ -130,6 +136,7 @@ std::string getDirectory(const std::string& filePath)
 
    return directory;
 }
+  
 std::string normalizePath(const std::string& path)
 {
    if (path.empty())
@@ -177,6 +184,7 @@ std::string normalizePath(const std::string& path)
       result += '/';
    return result;
 }
+  
 std::vector<std::string> splitPath(const std::string& path)
 {
    std::vector<std::string> result;
@@ -230,6 +238,7 @@ std::vector<std::string> splitPath(const std::string& path)
 
    return result;
 }
+  
 bool fileExists(const std::string& filePath)
 {
    if (filePath.empty())
@@ -240,6 +249,7 @@ bool fileExists(const std::string& filePath)
    std::ifstream file(filePath);
    return file.good();
 }
+  
 uint64_t getFileSize(const std::string& filePath)
 {
    if (!fileExists(filePath))

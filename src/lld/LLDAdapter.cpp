@@ -116,6 +116,7 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
    }
 
    processedFiles.push_back(filePath);
+
    if (verbose)
    {
       logProcessing("Processing input file: " + filePath);
@@ -226,6 +227,7 @@ void LLDAdapter::Impl::processFilesParallel(const std::vector<std::string>& file
 
       return component;
    };
+  
    auto results = ParallelProcessor::process(filePaths, processFile);
    for (auto& component : results)
    {
