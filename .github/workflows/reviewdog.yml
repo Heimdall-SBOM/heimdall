@@ -53,6 +53,6 @@ jobs:
           chmod +x run-clang-tidy.py
           mkdir -p tidy-fixes
           ./run-clang-tidy.py -p build -export-fixes tidy-fixes/ -quiet \
-            | reviewdog -f=gcc -name="clang-tidy" -reporter=github-pr-review -fail-on-error=true
+            | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-on-error=true
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
