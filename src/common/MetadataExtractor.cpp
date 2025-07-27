@@ -238,11 +238,9 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component) {
 
         // Enhanced Mach-O metadata extraction
         if (isMachO(component.filePath)) {
-            std::cerr << "[DEBUG] MetadataExtractor: Detected Mach-O file, calling enhanced extraction: " + component.filePath << std::endl;
             heimdall::Utils::debugPrint("MetadataExtractor: Detected Mach-O file, calling enhanced extraction: " + component.filePath);
             success &= extractEnhancedMachOMetadata(component);
         } else {
-            std::cerr << "[DEBUG] MetadataExtractor: File is not Mach-O: " + component.filePath << std::endl;
             heimdall::Utils::debugPrint("MetadataExtractor: File is not Mach-O: " + component.filePath);
         }
 
@@ -498,22 +496,18 @@ bool MetadataExtractor::extractDependencyInfo(ComponentInfo& component) {
 
 bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component) {
     if (!isMachO(component.filePath)) {
-        std::cerr << "[DEBUG] Enhanced Mach-O extraction: File is not a Mach-O binary: " + component.filePath << std::endl;
         heimdall::Utils::debugPrint("Enhanced Mach-O extraction: File is not a Mach-O binary: " + component.filePath);
         return false;
     }
 
-    std::cerr << "[DEBUG] Enhanced Mach-O extraction: Starting extraction for: " + component.filePath << std::endl;
     heimdall::Utils::debugPrint("Enhanced Mach-O extraction: Starting extraction for: " + component.filePath);
     bool anySuccess = false;
     
     // Extract all enhanced Mach-O metadata
     bool codeSignSuccess = extractMachOCodeSignInfo(component);
-    std::cerr << "[DEBUG] Code signing extraction: " << (codeSignSuccess ? "success" : "failed") << std::endl;
     anySuccess |= codeSignSuccess;
     
     bool buildConfigSuccess = extractMachOBuildConfig(component);
-    std::cerr << "[DEBUG] Build config extraction: " << (buildConfigSuccess ? "success" : "failed") << std::endl;
     if (buildConfigSuccess) {
         std::cerr << "[DEBUG] Build config - targetPlatform: " << component.buildConfig.targetPlatform << std::endl;
         std::cerr << "[DEBUG] Build config - minOSVersion: " << component.buildConfig.minOSVersion << std::endl;
@@ -558,7 +552,6 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component) {
                         std::string appName = filePath.substr(lastSlash + 1, appPos - lastSlash - 1);
                         if (!appName.empty()) {
                             component.name = appName;
-                            std::cerr << "[DEBUG] Updated component name to: " << appName << std::endl;
                         }
                     }
                 }
@@ -602,7 +595,6 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component) {
         }
     }
     
-    std::cerr << "[DEBUG] Enhanced Mach-O extraction: Completed with success: " << anySuccess << std::endl;
     heimdall::Utils::debugPrint("Enhanced Mach-O extraction: Completed with success: " + std::to_string(anySuccess));
     return anySuccess;
 }
@@ -842,13 +834,11 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
             time_t start_time = time(nullptr);
             const int timeout_seconds = 30;
             
-            std::cerr << "DEBUG: Starting filesystem scan for directory: " << directory << std::endl;
             std::vector<std::string> dirs_to_scan = {directory};
             
             while (!dirs_to_scan.empty()) {
                 // Check timeout
                 if (time(nullptr) - start_time > timeout_seconds) {
-                    std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory << std::endl;
                     return false;
                 }
                 
@@ -856,17 +846,14 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                 dirs_to_scan.pop_back();
                 
                 try {
-                    std::cerr << "DEBUG: Starting directory iteration for: " << current_dir << std::endl;
                     for (const auto& entry : std::filesystem::directory_iterator(current_dir)) {
                         // Check timeout for each entry
                         if (time(nullptr) - start_time > timeout_seconds) {
-                            std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory << std::endl;
                             return false;
                         }
                         
                         if (entry.is_regular_file() && isAdaAliFile(entry.path().string())) {
                             aliFiles.push_back(entry.path().string());
-                            std::cerr << "DEBUG: Found ALI file: " << entry.path().string() << std::endl;
                         } else if (entry.is_directory()) {
                             // Add subdirectory for scanning
                             dirs_to_scan.push_back(entry.path().string());
@@ -879,7 +866,6 @@ bool MetadataExtractor::findAdaAliFiles(const std::string& directory,
                 }
             }
         } catch (const std::exception& e) {
-            std::cerr << "DEBUG: Error searching for ALI files in: " << directory << ": " << e.what() << std::endl;
             return false;
         }
 #else

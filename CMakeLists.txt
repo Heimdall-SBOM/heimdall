@@ -205,21 +205,13 @@ endif()
 # Compiler flags
 # Extract LLVM flags but exclude -fno-exceptions for external libraries
 string(REPLACE "-fno-exceptions" "" LLVM_CXXFLAGS_CLEAN "${LLVM_CXXFLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXXFLAGS_CLEAN}")
+# Don't set global flags - use target-specific flags instead
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-# Linker flags
+# Linker flags - store for target-specific use instead of setting globally
 if(DEFINED LLVM_LIBRARY_DIRS)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${LLVM_LIBRARY_DIRS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${LLVM_LIBRARY_DIRS}")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -L${LLVM_LIBRARY_DIRS}")
-    
-    # Also add /lib64 to the library search path for SCL environments
-    # where LLVM libraries might be in /lib64 instead of /usr/lib64
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/lib64")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L/lib64")
-    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -L/lib64")
+    set(LLVM_LINKER_FLAGS "-L${LLVM_LIBRARY_DIRS} -L/lib64" CACHE INTERNAL "LLVM linker flags")
 endif()
 
 # Coverage
@@ -243,19 +235,26 @@ if(ENABLE_BENCHMARKS)
 endif()
 
 # Ensure json-schema-validator public header is in the expected include path
-add_custom_command(
-    OUTPUT ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp
-        ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
-    DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp
-    COMMENT "Copying json-schema.hpp to include directory"
-)
+# Only copy if the file doesn't exist or if the source is newer
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp OR
+   ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp IS_NEWER_THAN ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp)
+    add_custom_command(
+        OUTPUT ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp
+            ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
+        DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/src/nlohmann/json-schema.hpp
+        COMMENT "Copying json-schema.hpp to include directory"
+    )
+endif()
 
-add_custom_target(copy_json_schema_header
-    DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
-)
+# Only create the target if the custom command was actually added
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    add_custom_target(copy_json_schema_header
+        DEPENDS ${CMAKE_SOURCE_DIR}/external/json-schema-validator/include/nlohmann/json-schema.hpp
+    )
+endif()
 
 # Include directories
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -278,6 +277,8 @@ add_subdirectory(src)
 # Add examples directory (for test binary)
 add_subdirectory(examples)
 
+# Add cmake directory for CMake modules
+add_subdirectory(cmake)
 
 # Add tests if enabled
 if(BUILD_TESTS)

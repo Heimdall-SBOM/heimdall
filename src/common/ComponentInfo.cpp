@@ -115,7 +115,6 @@ ComponentInfo::ComponentInfo(std::string componentName, const std::string& path)
     isStripped(false)
 {
   checksum = calculateSHA256(path);
-  std::cerr << "[DEBUG] ComponentInfo: Constructed for '" << path << "' with checksum '" << checksum << "'\n";
 }
 
 /**

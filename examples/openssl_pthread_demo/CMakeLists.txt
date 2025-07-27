@@ -34,10 +34,10 @@ target_compile_options(openssl_pthread_demo PRIVATE
     -gdwarf-4             # Force DWARF 4 for better LLVM compatibility
 )
 
-# Install target
-install(TARGETS openssl_pthread_demo
-    RUNTIME DESTINATION bin
-)
+# Install target - commented out to prevent installation
+# install(TARGETS openssl_pthread_demo
+#     RUNTIME DESTINATION bin
+# )
 
 # Print configuration info
 message(STATUS "OpenSSL version: ${OPENSSL_VERSION}")

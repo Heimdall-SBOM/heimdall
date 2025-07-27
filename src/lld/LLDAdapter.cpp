@@ -132,6 +132,7 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
   MetadataExtractor extractor;
   extractor.setExtractDebugInfo(extractDebugInfo);
   extractor.setVerbose(verbose);
+  
   extractor.extractMetadata(component);
 
   // Always restore the checksum if it was lost during metadata extraction

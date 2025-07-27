@@ -12,6 +12,10 @@ if(NOT GTest_FOUND)
         URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     )
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    # Prevent Google Test from being installed
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+    set(INSTALL_GMOCK OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
     
     # Fix RPATH for macOS to ensure dynamic libraries are found
@@ -236,7 +240,16 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     gtest_discover_tests(heimdall-tests)
 
     target_link_libraries(heimdall-tests PRIVATE nlohmann_json_schema_validator)
-add_dependencies(heimdall-tests copy_json_schema_header)
+    # Only add dependency if the target exists
+    if(TARGET copy_json_schema_header)
+        add_dependencies(heimdall-tests copy_json_schema_header)
+    endif()
+    # Add LLVM flags to this specific target
+    target_compile_options(heimdall-tests PRIVATE ${LLVM_CXXFLAGS_CLEAN})
+    # Add LLVM linker flags to this specific target
+    if(DEFINED LLVM_LINKER_FLAGS)
+        target_link_options(heimdall-tests PRIVATE ${LLVM_LINKER_FLAGS})
+    endif()
 
     # Link stdc++fs for C++17 on Linux only
     if(CMAKE_CXX_STANDARD EQUAL 17 AND UNIX AND NOT APPLE)

@@ -80,7 +80,19 @@ if(ENABLE_DEBUG)
 endif()
 
 target_link_libraries(heimdall-core PRIVATE nlohmann_json_schema_validator)
-add_dependencies(heimdall-core copy_json_schema_header)
+
+# Add LLVM flags to this specific target instead of globally
+target_compile_options(heimdall-core PRIVATE ${LLVM_CXXFLAGS_CLEAN})
+
+# Add LLVM linker flags to this specific target
+if(DEFINED LLVM_LINKER_FLAGS)
+    target_link_options(heimdall-core PRIVATE ${LLVM_LINKER_FLAGS})
+endif()
+
+# Only add dependency if the target exists
+if(TARGET copy_json_schema_header)
+    add_dependencies(heimdall-core copy_json_schema_header)
+endif()
 
 
 # Add DWARF support definitions
@@ -159,6 +171,14 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         set(LLD_LIBS "")
     endif()
 
+    # Add LLVM flags to this specific target
+    target_compile_options(heimdall-lld PRIVATE ${LLVM_CXXFLAGS_CLEAN})
+    
+    # Add LLVM linker flags to this specific target
+    if(DEFINED LLVM_LINKER_FLAGS)
+        target_link_options(heimdall-lld PRIVATE ${LLVM_LINKER_FLAGS})
+    endif()
+    
     target_link_libraries(heimdall-lld PRIVATE
         heimdall-core
         ${LLVM_LIBRARIES}
@@ -191,6 +211,14 @@ if(UNIX AND NOT APPLE)
         ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 
+    # Add LLVM flags to this specific target
+    target_compile_options(heimdall-gold PRIVATE ${LLVM_CXXFLAGS_CLEAN})
+    
+    # Add LLVM linker flags to this specific target
+    if(DEFINED LLVM_LINKER_FLAGS)
+        target_link_options(heimdall-gold PRIVATE ${LLVM_LINKER_FLAGS})
+    endif()
+    
     target_link_libraries(heimdall-gold PRIVATE
         heimdall-core
     )

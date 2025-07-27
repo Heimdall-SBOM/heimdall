@@ -198,13 +198,10 @@ int main(int argc, char* argv[])
   bool transitive_dependencies = true;
 
   // Parse command line arguments
-  std::cout << "Parsing " << (argc - 3) << " arguments starting from index 3" << std::endl;
   for (int i = 3; i < argc; i++)
   {
-    std::cout << "Processing argument " << i << ": " << argv[i] << std::endl;
     if (strcmp(argv[i], "--no-transitive-dependencies") == 0) {
       transitive_dependencies = false;
-      std::cout << "Found --no-transitive-dependencies flag, setting transitive_dependencies to false" << std::endl;
     }
     else if (strcmp(argv[i], "--format") == 0 && i + 1 < argc)
     {

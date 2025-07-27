@@ -258,7 +258,6 @@ extern "C"
 
   int heimdall_set_transitive_dependencies(int transitive)
   {
-    std::cout << "Plugin: heimdall_set_transitive_dependencies called with: " << transitive << std::endl;
     if (globalAdapter)
     {
       globalAdapter->setTransitiveDependencies(transitive != 0);

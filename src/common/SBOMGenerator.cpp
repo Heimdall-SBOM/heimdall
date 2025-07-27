@@ -349,7 +349,6 @@ void SBOMGenerator::generateSBOM() {
     if (pImpl->format == "spdx" || pImpl->format == "spdx-2.3" ||
         pImpl->format == "spdx-3.0" || pImpl->format == "spdx-3.0.0" || pImpl->format == "spdx-3.0.1") {
         // If version is 2.3, use tag-value; if 3.0/3.0.0/3.0.1, use JSON
-        std::cerr << "[DEBUG] spdxVersion: " << pImpl->spdxVersion << ", format: " << pImpl->format << std::endl;
         if (pImpl->spdxVersion == "2.3") {
             success = pImpl->generateSPDX(pImpl->outputPath);
         } else if (pImpl->spdxVersion == "3.0" || pImpl->spdxVersion == "3.0.0" || pImpl->spdxVersion == "3.0.1") {
@@ -426,7 +425,6 @@ void SBOMGenerator::setSuppressWarnings(bool suppress) {
  */
 void SBOMGenerator::setTransitiveDependencies(bool include) {
     pImpl->transitiveDependencies = include;
-    std::cout << "SBOMGenerator::setTransitiveDependencies called with: " << (include ? "true" : "false") << std::endl;
 }
 
 /**
@@ -1621,7 +1619,6 @@ void SBOMGenerator::Impl::processDependenciesRecursively(const ComponentInfo& co
         // Create a new ComponentInfo for the dependency
         ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
         depComponent.fileType = FileType::SharedLibrary; // Most dependencies are shared libraries
-        std::cerr << "[DEBUG] SBOMGenerator::processDependenciesRecursively: Created depComponent for '" << resolvedPath << "' with checksum '" << depComponent.checksum << "'\n";
         
         // Check if it's a system library
         if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0) {
