@@ -26,7 +26,7 @@ Heimdall's Ada extractor provides comprehensive SBOM generation for Ada applicat
 #### **Example Extraction:**
 ```bash
 # Binary analysis of Ada executable
-./heimdall-sbom lib/heimdall-gold.so main_static --format spdx-2.3
+./heimdall-sbom lib/heimdall-lld.so main_static --format spdx-2.3
 ```
 
 **Output includes:**
