@@ -2,5 +2,6 @@
   "title": "Heimdall-SBOM Documentation",
   "ignore": [
     "external"
-  ]
+  ],
+  "plugins": ["mermaid-md-adoc"]
 }
