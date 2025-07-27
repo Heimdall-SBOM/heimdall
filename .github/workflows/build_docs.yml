@@ -28,6 +28,7 @@ jobs:
 
       - name: Install Honkit
         run: npm install honkit --save-dev
+             npm install honkit-plugin-mermaid-md-adoc
 
       - name: Generate SUMMARY.md
         run: |
