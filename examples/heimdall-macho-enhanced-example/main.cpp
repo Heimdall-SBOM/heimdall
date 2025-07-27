@@ -83,11 +83,6 @@ limitations under the License.
       std::cout << "Version: " << component.version << std::endl;
    }
 
-   if (!component.uuid.empty())
-   {
-      std::cout << "UUID: " << component.uuid << std::endl;
-   }
-
    // Display platform info
    std::cout << std::endl << "--- Platform Information ---" << std::endl;
    if (!component.platformInfo.architecture.empty())
@@ -273,11 +268,6 @@ int main(int argc, char* argv[])
    if (!component.version.empty())
    {
       std::cout << "Version: " << component.version << std::endl;
-   }
-
-   if (!component.uuid.empty())
-   {
-      std::cout << "UUID: " << component.uuid << std::endl;
    }
 
    // Display platform info
