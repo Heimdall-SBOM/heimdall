@@ -151,6 +151,8 @@ extern "C"
    // File processing functions
    int heimdall_process_input_file(const char* filePath)
    {
+   
+      
       if (!globalAdapter || !filePath)
          return -1;
 

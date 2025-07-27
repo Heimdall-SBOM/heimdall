@@ -85,19 +85,22 @@ std::string getFileExtension(const std::string& filePath)
       return "";
    }
 
-   size_t last_dot = filePath.find_last_of('.');
+   // First get the filename without the path
+   std::string fileName = getFileName(filePath);
+   
+   size_t last_dot = fileName.find_last_of('.');
    if (last_dot == std::string::npos || last_dot == 0)
    {
       return "";
    }
 
    // Check if the dot is not the last character
-   if (last_dot == filePath.length() - 1)
+   if (last_dot == fileName.length() - 1)
    {
       return "";
    }
 
-   return filePath.substr(last_dot);
+   return fileName.substr(last_dot);
 }
 std::string getDirectory(const std::string& filePath)
 {
@@ -817,7 +820,7 @@ std::string extractPackageName(const std::string& filePath)
 void debugPrint(const std::string& message)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   std::cerr << "[DEBUG] " << message << std::endl;
+
 #endif
 }
 

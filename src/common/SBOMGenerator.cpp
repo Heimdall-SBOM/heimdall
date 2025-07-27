@@ -237,6 +237,8 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
    std::string canonicalPath = Utils::resolveLibraryPath(component.filePath);
    std::string key           = canonicalPath;  // Use canonical file path as unique key
 
+
+
    if (pImpl->components.find(key) == pImpl->components.end())
    {
       // New component, extract metadata
@@ -288,8 +290,8 @@ void SBOMGenerator::processComponent(const ComponentInfo& component)
 
             // Create a new ComponentInfo for the dependency
             ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
-            depComponent.fileType =
-               FileType::SharedLibrary;  // Most dependencies are shared libraries
+            // Let the constructor determine the file type instead of hardcoding it
+            // This allows executables to be properly detected even when processed as dependencies
 
             // Check if it's a system library
             if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0)
@@ -1030,16 +1032,16 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    // Try to get a better application name
    std::string appName    = buildInfo.targetName;
    std::string appVersion = buildInfo.buildId;
+   
+
 
    if (appName.empty() && !components.empty())
    {
-      // Find the main executable in an app bundle
+      // Find the main executable - prioritize executables, then any component with a good name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
-         if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-             (component.fileType == FileType::Executable ||
-              component.fileType == FileType::Unknown))
+         if (component.fileType == FileType::Executable)
          {
             appName = component.name;
             if (!component.version.empty())
@@ -1047,6 +1049,44 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
                appVersion = component.version;
             }
             break;
+         }
+      }
+      
+      // If no executable found, look for app bundle executables (macOS)
+      if (appName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
+                (component.fileType == FileType::Executable ||
+                 component.fileType == FileType::Unknown))
+            {
+               appName = component.name;
+               if (!component.version.empty())
+               {
+                  appVersion = component.version;
+               }
+               break;
+            }
+         }
+      }
+      
+      // If still no executable found, use the first component with a non-empty name
+      if (appName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (!component.name.empty() && component.name != "Unknown")
+            {
+               appName = component.name;
+               if (!component.version.empty())
+               {
+                  appVersion = component.version;
+               }
+               break;
+            }
          }
       }
    }
@@ -1066,17 +1106,47 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
    if (mainAppName.empty() && !components.empty())
    {
-      // Find the main executable in an app bundle
+      // Find the main executable - prioritize executables, then any component with a good name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
-         if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-             (component.fileType == FileType::Executable ||
-              component.fileType == FileType::Unknown))
+         if (component.fileType == FileType::Executable)
          {
             mainAppName = component.name;
             mainAppPath = component.filePath;
             break;
+         }
+      }
+      
+      // If no executable found, look for app bundle executables (macOS)
+      if (mainAppName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
+                (component.fileType == FileType::Executable ||
+                 component.fileType == FileType::Unknown))
+            {
+               mainAppName = component.name;
+               mainAppPath = component.filePath;
+               break;
+            }
+         }
+      }
+      
+      // If still no executable found, use the first component with a non-empty name
+      if (mainAppName.empty())
+      {
+         for (const auto& pair : components)
+         {
+            const auto& component = pair.second;
+            if (!component.name.empty() && component.name != "Unknown")
+            {
+               mainAppName = component.name;
+               mainAppPath = component.filePath;
+               break;
+            }
          }
       }
    }
@@ -1084,29 +1154,6 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    for (const auto& pair : components)
    {
       const auto& component = pair.second;
-
-      // Skip the main application - it should only appear in metadata.component
-      bool isMainApp = false;
-      if (!mainAppName.empty() && component.name == mainAppName)
-      {
-         // If we have a main app path, check it matches too
-         if (mainAppPath.empty() || component.filePath == mainAppPath)
-         {
-            isMainApp = true;
-         }
-      }
-
-      // Also check if this is an executable in an app bundle (likely the main app)
-      if (!isMainApp && component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-          (component.fileType == FileType::Executable || component.fileType == FileType::Unknown))
-      {
-         isMainApp = true;
-      }
-
-      if (isMainApp)
-      {
-         continue;  // Skip the main application
-      }
 
       if (!first)
          ss << ",\n";
@@ -1199,7 +1246,26 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
 {
    std::stringstream ss;
    ss << "    {\n";
-   ss << "      \"type\": \"library\",\n";
+   // Determine the correct component type based on file type
+   std::string componentType = "library";
+   if (component.fileType == FileType::Executable)
+   {
+      componentType = "application";
+   }
+   else if (component.fileType == FileType::StaticLibrary)
+   {
+      componentType = "library";
+   }
+   else if (component.fileType == FileType::SharedLibrary)
+   {
+      componentType = "library";
+   }
+   else if (component.fileType == FileType::Object)
+   {
+      componentType = "library";
+   }
+   
+   ss << "      \"type\": \"" << componentType << "\",\n";
    ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
    ss << "      \"version\": "
       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version) << ",\n";
@@ -1933,7 +1999,8 @@ void SBOMGenerator::Impl::processDependenciesRecursively(const ComponentInfo&   
 
       // Create a new ComponentInfo for the dependency
       ComponentInfo depComponent(Utils::getFileName(resolvedPath), resolvedPath);
-      depComponent.fileType = FileType::SharedLibrary;  // Most dependencies are shared libraries
+      // Let the constructor determine the file type instead of hardcoding it
+      // This allows executables to be properly detected even when processed as dependencies
 
       // Check if it's a system library
       if (resolvedPath.find("/usr/lib/") == 0 || resolvedPath.find("/System/Library/") == 0)

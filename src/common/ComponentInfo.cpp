@@ -60,6 +60,130 @@ uint64_t getFileSize(const std::string& filePath)
 }
 
 /**
+ * @brief Helper function to detect ELF file type by examining the file header
+ * @param filePath The path to the file
+ * @return The determined file type based on ELF header, or FileType::Unknown if not ELF
+ */
+FileType detectElfFileType(const std::string& filePath)
+{
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return FileType::Unknown;
+   }
+
+   // Read ELF magic number (first 4 bytes)
+   char magic[4];
+   file.read(magic, 4);
+   if (file.gcount() != 4)
+   {
+      return FileType::Unknown;
+   }
+
+   // Check if it's an ELF file (0x7f, 'E', 'L', 'F')
+   if (magic[0] != 0x7f || magic[1] != 'E' || magic[2] != 'L' || magic[3] != 'F')
+   {
+      return FileType::Unknown;
+   }
+
+   // Read the ELF header to determine file type
+   // Skip to the e_type field (offset 16, 2 bytes)
+   file.seekg(16);
+   uint16_t e_type;
+   file.read(reinterpret_cast<char*>(&e_type), 2);
+   if (file.gcount() != 2)
+   {
+      return FileType::Unknown;
+   }
+
+   // Convert from big-endian if necessary (ELF files are typically little-endian on x86)
+   // For simplicity, we'll assume little-endian for now
+   // ET_RELOC = 1 (relocatable file - .o files)
+   // ET_EXEC = 2 (executable file)
+   // ET_DYN = 3 (shared object file - .so files)
+   // ET_CORE = 4 (core file)
+
+   switch (e_type)
+   {
+   case 1: // ET_RELOC
+      return FileType::Object;
+   case 2: // ET_EXEC
+      return FileType::Executable;
+   case 3: // ET_DYN
+      return FileType::SharedLibrary;
+   default:
+      return FileType::Unknown;
+   }
+}
+
+/**
+ * @brief Helper function to detect Mach-O file type by examining the file header
+ * @param filePath The path to the file
+ * @return The determined file type based on Mach-O header, or FileType::Unknown if not Mach-O
+ */
+FileType detectMachOFileType(const std::string& filePath)
+{
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return FileType::Unknown;
+   }
+
+   // Read Mach-O magic number (first 4 bytes)
+   uint32_t magic;
+   file.read(reinterpret_cast<char*>(&magic), 4);
+   if (file.gcount() != 4)
+   {
+      return FileType::Unknown;
+   }
+
+   // Check if it's a Mach-O file
+   // MH_MAGIC = 0xfeedface (32-bit)
+   // MH_MAGIC_64 = 0xfeedfacf (64-bit)
+   // MH_CIGAM = 0xcefaedfe (32-bit, swapped)
+   // MH_CIGAM_64 = 0xcffaedfe (64-bit, swapped)
+   if (magic != 0xfeedface && magic != 0xfeedfacf && 
+       magic != 0xcefaedfe && magic != 0xcffaedfe)
+   {
+      return FileType::Unknown;
+   }
+
+   // Read the file type field (offset 12, 4 bytes)
+   file.seekg(12);
+   uint32_t filetype;
+   file.read(reinterpret_cast<char*>(&filetype), 4);
+   if (file.gcount() != 4)
+   {
+      return FileType::Unknown;
+   }
+
+   // MH_OBJECT = 1 (relocatable object file - .o files)
+   // MH_EXECUTE = 2 (demand paged executable file)
+   // MH_FVMLIB = 3 (fixed VM shared library file)
+   // MH_CORE = 4 (core file)
+   // MH_PRELOAD = 5 (preloaded executable file)
+   // MH_DYLIB = 6 (dynamically bound shared library - .dylib files)
+   // MH_DYLINKER = 7 (dynamic link editor)
+   // MH_BUNDLE = 8 (dynamically bound bundle - .bundle files)
+   // MH_DYLIB_STUB = 9 (shared library stub for static linking)
+   // MH_DSYM = 10 (companion file with only debug sections)
+
+   switch (filetype)
+   {
+   case 1: // MH_OBJECT
+      return FileType::Object;
+   case 2: // MH_EXECUTE
+      return FileType::Executable;
+   case 6: // MH_DYLIB
+      return FileType::SharedLibrary;
+   case 8: // MH_BUNDLE
+      return FileType::SharedLibrary; // Treat bundles as shared libraries
+   default:
+      return FileType::Unknown;
+   }
+}
+
+/**
  * @brief Helper function to determine file type from extension
  * @param filePath The path to the file
  * @return The determined file type
@@ -68,6 +192,8 @@ FileType determineFileType(const std::string& filePath)
 {
    std::string lowerPath = filePath;
    std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), ::tolower);
+   
+
 
    // Helper function to check if string ends with suffix
    auto endsWith = [](const std::string& str, const std::string& suffix)
@@ -93,6 +219,26 @@ FileType determineFileType(const std::string& filePath)
    else if (endsWith(lowerPath, ".exe") || lowerPath.find("bin/") != std::string::npos)
    {
       return FileType::Executable;
+   }
+   else if (endsWith(lowerPath, ".app/contents/macos/"))
+   {
+      return FileType::Executable;
+   }
+   else
+   {
+      // Try to detect ELF file type by examining the file header
+      FileType elfType = detectElfFileType(filePath);
+      if (elfType != FileType::Unknown)
+      {
+               return elfType;
+      }
+
+      // Try to detect Mach-O file type by examining the file header
+      FileType machoType = detectMachOFileType(filePath);
+      if (machoType != FileType::Unknown)
+      {
+               return machoType;
+      }
    }
 
    return FileType::Unknown;

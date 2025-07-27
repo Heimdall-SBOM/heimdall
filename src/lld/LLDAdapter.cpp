@@ -116,6 +116,7 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
    }
 
    processedFiles.push_back(filePath);
+
    if (verbose)
    {
       logProcessing("Processing input file: " + filePath);
