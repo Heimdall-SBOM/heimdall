@@ -78,6 +78,7 @@ bool SPDXParser::processSPDXLine(const std::string& line, SBOMComponent& compone
       component.id = line.substr(line.find(':') + 1);
       component.id.erase(0, component.id.find_first_not_of(" \t"));
       component.id.erase(component.id.find_last_not_of(" \t") + 1);
+      component.bomRef = component.id;  // Use SPDXID as BOM reference
       return false;
    }
    else if (line.find("PackageLicenseConcluded:") != std::string::npos)
@@ -161,6 +162,7 @@ std::vector<SBOMComponent> SPDXParser::parseSPDX3_0(const std::string& content)
       component.name    = (*iter)[1];
       component.version = (*iter)[2];
       component.id      = (*iter)[3];
+      component.bomRef  = (*iter)[3];  // Use SPDXID as BOM reference
       component.type    = "package";
       components.push_back(component);
    }
@@ -251,22 +253,87 @@ std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_5(const std::string&
 std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_6(const std::string& content) const
 {
    std::vector<SBOMComponent> components;
+   std::map<std::string, std::vector<std::string>> componentDependencies;
 
-   // Basic regex-based extraction for demonstration
+   // Extract components using a simpler regex that matches the test data
    std::regex componentRegex(
-      "\"name\"\\s*:\\s*\"([^\"]+)\"[^}]*\"version\"\\s*:\\s*\"([^\"]*)\"[^}]*\"bom-ref\"\\s*:\\s*"
-      "\"([^\"]+)\"");
+      "\"type\"\\s*:\\s*\"([^\"]*)\"[^}]*\"name\"\\s*:\\s*\"([^\"]+)\"[^}]*\"version\"\\s*:\\s*\"([^\"]*)\"[^}]*\"bom-ref\"\\s*:\\s*\"([^\"]+)\"");
    std::sregex_iterator iter(content.begin(), content.end(), componentRegex);
    std::sregex_iterator end;
 
    for (; iter != end; ++iter)
    {
       SBOMComponent component;
-      component.name    = (*iter)[1];
-      component.version = (*iter)[2];
-      component.id      = (*iter)[3];
-      component.type    = "library";
+      component.type    = (*iter)[1].str().empty() ? "library" : (*iter)[1].str();
+      component.name    = (*iter)[2];
+      component.version = (*iter)[3];
+      component.bomRef  = (*iter)[4];
+      component.id      = (*iter)[4];  // Use bom-ref as id for consistency
       components.push_back(component);
+   }
+
+   // If no components found with the first pattern, try a simpler pattern
+   if (components.empty())
+   {
+      std::regex simpleComponentRegex(
+         "\"name\"\\s*:\\s*\"([^\"]+)\"[^}]*\"version\"\\s*:\\s*\"([^\"]*)\"[^}]*\"bom-ref\"\\s*:\\s*\"([^\"]+)\"");
+      std::sregex_iterator simpleIter(content.begin(), content.end(), simpleComponentRegex);
+      
+      for (; simpleIter != end; ++simpleIter)
+      {
+         SBOMComponent component;
+         component.name    = (*simpleIter)[1];
+         component.version = (*simpleIter)[2];
+         component.bomRef  = (*simpleIter)[3];
+         component.id      = (*simpleIter)[3];  // Use bom-ref as id for consistency
+         component.type    = "library";  // Default type
+         components.push_back(component);
+      }
+   }
+
+   // Extract dependencies section if present
+   std::regex dependenciesRegex(
+      "\"dependencies\"\\s*:\\s*\\[([^\\]]*)\\]");
+   std::sregex_iterator depIter(content.begin(), content.end(), dependenciesRegex);
+   
+   for (; depIter != end; ++depIter)
+   {
+      std::string dependenciesSection = (*depIter)[1];
+      
+      // Extract individual dependency objects
+      std::regex dependencyRegex(
+         "\\{\\s*\"ref\"\\s*:\\s*\"([^\"]+)\"[^}]*\"dependsOn\"\\s*:\\s*\\[([^\\]]*)\\]");
+      std::sregex_iterator depObjIter(dependenciesSection.begin(), dependenciesSection.end(), dependencyRegex);
+      
+      std::sregex_iterator depObjEnd;
+      for (; depObjIter != depObjEnd; ++depObjIter)
+      {
+         std::string ref = (*depObjIter)[1];
+         std::string dependsOn = (*depObjIter)[2];
+         
+         // Extract individual dependsOn references
+         std::regex dependsOnRegex("\"([^\"]+)\"");
+         std::sregex_iterator dependsIter(dependsOn.begin(), dependsOn.end(), dependsOnRegex);
+         
+         std::vector<std::string> deps;
+         std::sregex_iterator dependsEnd;
+         for (; dependsIter != dependsEnd; ++dependsIter)
+         {
+            deps.push_back((*dependsIter)[1]);
+         }
+         
+         componentDependencies[ref] = deps;
+      }
+   }
+
+   // Assign dependencies to components
+   for (auto& component : components)
+   {
+      auto it = componentDependencies.find(component.bomRef);
+      if (it != componentDependencies.end())
+      {
+         component.dependencies = it->second;
+      }
    }
 
    return components;
@@ -565,17 +632,41 @@ std::string SBOMComparator::generateSPDXOutput(const std::vector<SBOMComponent>&
       for (const auto& comp : components)
       {
          ss << "PackageName: " << comp.name << "\n";
-         ss << "SPDXID: " << comp.id << "\n";
+         ss << "SPDXID: " << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\n";
          if (!comp.version.empty())
          {
             ss << "PackageVersion: " << comp.version << "\n";
          }
+         if (!comp.purl.empty())
+         {
+            ss << "PackageDownloadLocation: " << comp.purl << "\n";
+         }
+         else
+         {
+            ss << "PackageDownloadLocation: NOASSERTION\n";
+         }
+         if (!comp.license.empty())
+         {
+            ss << "PackageLicenseConcluded: " << comp.license << "\n";
+         }
+         else
+         {
+            ss << "PackageLicenseConcluded: NOASSERTION\n";
+         }
          ss << "PackageSupplier: NOASSERTION\n";
-         ss << "PackageDownloadLocation: NOASSERTION\n";
          ss << "FilesAnalyzed: false\n";
-         ss << "PackageLicenseConcluded: NOASSERTION\n";
          ss << "PackageLicenseDeclared: NOASSERTION\n";
          ss << "PackageCopyrightText: NOASSERTION\n\n";
+      }
+
+      // Add relationships for dependencies
+      for (const auto& comp : components)
+      {
+         for (const auto& dep : comp.dependencies)
+         {
+            ss << "Relationship: " << (comp.bomRef.empty() ? comp.id : comp.bomRef) 
+               << " DEPENDS_ON " << dep << "\n";
+         }
       }
    }
    else
@@ -593,11 +684,19 @@ std::string SBOMComparator::generateSPDXOutput(const std::vector<SBOMComponent>&
       {
          const auto& comp = components[i];
          ss << "    {\n";
-         ss << "      \"SPDXID\": \"" << comp.id << "\",\n";
+         ss << "      \"SPDXID\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
          ss << "      \"name\": \"" << comp.name << "\"";
          if (!comp.version.empty())
          {
             ss << ",\n      \"versionInfo\": \"" << comp.version << "\"";
+         }
+         if (!comp.purl.empty())
+         {
+            ss << ",\n      \"downloadLocation\": \"" << comp.purl << "\"";
+         }
+         if (!comp.license.empty())
+         {
+            ss << ",\n      \"licenseConcluded\": \"" << comp.license << "\"";
          }
          ss << "\n    }";
          if (i < components.size() - 1)
@@ -607,8 +706,43 @@ std::string SBOMComparator::generateSPDXOutput(const std::vector<SBOMComponent>&
          ss << "\n";
       }
 
-      ss << "  ]\n";
-      ss << "}\n";
+      ss << "  ]";
+
+      // Add relationships for dependencies
+      bool hasDependencies = false;
+      for (const auto& comp : components)
+      {
+         if (!comp.dependencies.empty())
+         {
+            hasDependencies = true;
+            break;
+         }
+      }
+
+      if (hasDependencies)
+      {
+         ss << ",\n  \"relationships\": [\n";
+         bool firstRel = true;
+         for (const auto& comp : components)
+         {
+            for (const auto& dep : comp.dependencies)
+            {
+               if (!firstRel)
+               {
+                  ss << ",\n";
+               }
+               ss << "    {\n";
+               ss << "      \"spdxElementId\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
+               ss << "      \"relatedSpdxElement\": \"" << dep << "\",\n";
+               ss << "      \"relationshipType\": \"DEPENDS_ON\"\n";
+               ss << "    }";
+               firstRel = false;
+            }
+         }
+         ss << "\n  ]";
+      }
+
+      ss << "\n}\n";
    }
 
    return ss.str();
@@ -636,12 +770,24 @@ std::string SBOMComparator::generateCycloneDXOutput(const std::vector<SBOMCompon
    {
       const auto& comp = components[i];
       ss << "    {\n";
-      ss << "      \"bom-ref\": \"" << comp.id << "\",\n";
-      ss << "      \"type\": \"library\",\n";
+      ss << "      \"bom-ref\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
+      ss << "      \"type\": \"" << comp.type << "\",\n";
       ss << "      \"name\": \"" << comp.name << "\"";
       if (!comp.version.empty())
       {
          ss << ",\n      \"version\": \"" << comp.version << "\"";
+      }
+      if (!comp.purl.empty())
+      {
+         ss << ",\n      \"purl\": \"" << comp.purl << "\"";
+      }
+      if (!comp.license.empty())
+      {
+         ss << ",\n      \"licenses\": [{\n";
+         ss << "        \"license\": {\n";
+         ss << "          \"id\": \"" << comp.license << "\"\n";
+         ss << "        }\n";
+         ss << "      }]";
       }
       ss << "\n    }";
       if (i < components.size() - 1)
@@ -651,8 +797,52 @@ std::string SBOMComparator::generateCycloneDXOutput(const std::vector<SBOMCompon
       ss << "\n";
    }
 
-   ss << "  ]\n";
-   ss << "}\n";
+   ss << "  ]";
+
+   // Add dependencies section if any component has dependencies
+   bool hasDependencies = false;
+   for (const auto& comp : components)
+   {
+      if (!comp.dependencies.empty())
+      {
+         hasDependencies = true;
+         break;
+      }
+   }
+
+   if (hasDependencies)
+   {
+      ss << ",\n  \"dependencies\": [\n";
+      bool firstDep = true;
+      for (const auto& comp : components)
+      {
+         if (!comp.dependencies.empty())
+         {
+            if (!firstDep)
+            {
+               ss << ",\n";
+            }
+            ss << "    {\n";
+            ss << "      \"ref\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
+            ss << "      \"dependsOn\": [\n";
+            for (size_t j = 0; j < comp.dependencies.size(); ++j)
+            {
+               ss << "        \"" << comp.dependencies[j] << "\"";
+               if (j < comp.dependencies.size() - 1)
+               {
+                  ss << ",";
+               }
+               ss << "\n";
+            }
+            ss << "      ]\n";
+            ss << "    }";
+            firstDep = false;
+         }
+      }
+      ss << "\n  ]";
+   }
+
+   ss << "\n}\n";
 
    return ss.str();
 }
