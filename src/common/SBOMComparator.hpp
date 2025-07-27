@@ -101,13 +101,13 @@ struct SBOMComponent
                  std::string purl, std::string license,
                  const std::map<std::string, std::string>& properties   = {},
                  const std::vector<std::string>&           dependencies = {})
-      : id(std::move(std::move(id))),
-        bomRef(std::move(std::move(bomRef))),
-        name(std::move(std::move(name))),
-        version(std::move(std::move(version))),
-        type(std::move(std::move(type))),
-        purl(std::move(std::move(purl))),
-        license(std::move(std::move(license))),
+      : id(std::move(id)),
+        bomRef(std::move(bomRef)),
+        name(std::move(name)),
+        version(std::move(version)),
+        type(std::move(type)),
+        purl(std::move(purl)),
+        license(std::move(license)),
         properties(properties),
         dependencies(dependencies)
    {
@@ -154,9 +154,9 @@ struct SBOMDifference
    SBOMDifference& operator=(const SBOMDifference& other) = default;
 
    // Parameterized constructors
-   SBOMDifference(Type t, SBOMComponent comp) : type(t), component(std::move(std::move(comp))) {}
+   SBOMDifference(Type t, SBOMComponent comp) : type(t), component(std::move(comp)) {}
    SBOMDifference(Type t, SBOMComponent comp, const SBOMComponent& oldComp)
-      : type(t), component(std::move(std::move(comp))), oldComponent(oldComp)
+      : type(t), component(std::move(comp)), oldComponent(oldComp)
    {
    }
 };

@@ -452,8 +452,8 @@ TEST_F(SBOMValidationTest, DiffReportGeneration)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
-   SBOMComponent               comp2{"comp2", "Component2", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp2{"comp2", "comp2-bom-ref", "Component2", "1.0.0", "library", "", "", {}, {}};
 
    differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
    differences.emplace_back(SBOMDifference::Type::REMOVED, comp2);
@@ -469,7 +469,7 @@ TEST_F(SBOMValidationTest, DiffReportGenerationJSON)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
    differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
 
    std::string report = comparator.generateDiffReport(differences, "json");
@@ -484,7 +484,7 @@ TEST_F(SBOMValidationTest, DiffReportGenerationCSV)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
    differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
 
    std::string report = comparator.generateDiffReport(differences, "csv");
@@ -498,7 +498,7 @@ TEST_F(SBOMValidationTest, DiffReportGenerationInvalidFormat)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
    differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
 
    std::string report = comparator.generateDiffReport(differences, "invalid");
@@ -509,8 +509,8 @@ TEST_F(SBOMValidationTest, DiffReportGenerationInvalidFormat)
 
 TEST_F(SBOMValidationTest, SBOMDifferenceConstruction)
 {
-   SBOMComponent  comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
-   SBOMComponent  comp2{"comp2", "Component2", "2.0.0", "library", "", "", {}, {}};
+   SBOMComponent  comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent  comp2{"comp2", "comp2-bom-ref", "Component2", "2.0.0", "library", "", "", {}, {}};
 
    SBOMDifference diff1(SBOMDifference::Type::ADDED, comp1);
    EXPECT_EQ(diff1.type, SBOMDifference::Type::ADDED);
@@ -622,9 +622,10 @@ TEST_F(SBOMValidationTest, SBOMComponentDefaultConstruction)
 
 TEST_F(SBOMValidationTest, SBOMComponentConstructionWithValues)
 {
-   SBOMComponent component{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent component{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
 
    EXPECT_EQ(component.id, "test-id");
+   EXPECT_EQ(component.bomRef, "test-bom-ref");
    EXPECT_EQ(component.name, "test-name");
    EXPECT_EQ(component.version, "1.0.0");
    EXPECT_EQ(component.type, "library");
@@ -634,10 +635,11 @@ TEST_F(SBOMValidationTest, SBOMComponentConstructionWithValues)
 
 TEST_F(SBOMValidationTest, SBOMComponentCopyConstruction)
 {
-   SBOMComponent original{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent original{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMComponent copy = original;
 
    EXPECT_EQ(copy.id, original.id);
+   EXPECT_EQ(copy.bomRef, original.bomRef);
    EXPECT_EQ(copy.name, original.name);
    EXPECT_EQ(copy.version, original.version);
    EXPECT_EQ(copy.type, original.type);
@@ -647,11 +649,12 @@ TEST_F(SBOMValidationTest, SBOMComponentCopyConstruction)
 
 TEST_F(SBOMValidationTest, SBOMComponentAssignment)
 {
-   SBOMComponent original{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent original{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMComponent assigned;
    assigned = original;
 
    EXPECT_EQ(assigned.id, original.id);
+   EXPECT_EQ(assigned.bomRef, original.bomRef);
    EXPECT_EQ(assigned.name, original.name);
    EXPECT_EQ(assigned.version, original.version);
    EXPECT_EQ(assigned.type, original.type);
@@ -661,10 +664,11 @@ TEST_F(SBOMValidationTest, SBOMComponentAssignment)
 
 TEST_F(SBOMValidationTest, SBOMComponentMoveConstruction)
 {
-   SBOMComponent original{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent original{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMComponent moved = std::move(original);
 
    EXPECT_EQ(moved.id, "test-id");
+   EXPECT_EQ(moved.bomRef, "test-bom-ref");
    EXPECT_EQ(moved.name, "test-name");
    EXPECT_EQ(moved.version, "1.0.0");
    EXPECT_EQ(moved.type, "library");
@@ -674,11 +678,12 @@ TEST_F(SBOMValidationTest, SBOMComponentMoveConstruction)
 
 TEST_F(SBOMValidationTest, SBOMComponentMoveAssignment)
 {
-   SBOMComponent original{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent original{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMComponent assigned;
    assigned = std::move(original);
 
    EXPECT_EQ(assigned.id, "test-id");
+   EXPECT_EQ(assigned.bomRef, "test-bom-ref");
    EXPECT_EQ(assigned.name, "test-name");
    EXPECT_EQ(assigned.version, "1.0.0");
    EXPECT_EQ(assigned.type, "library");
@@ -688,9 +693,9 @@ TEST_F(SBOMValidationTest, SBOMComponentMoveAssignment)
 
 TEST_F(SBOMValidationTest, SBOMComponentHashConsistency)
 {
-   SBOMComponent comp1{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
-   SBOMComponent comp2{"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
-   SBOMComponent comp3{"id2", "name2", "2.0.0", "library", "purl2", "MIT", {}, {}};
+   SBOMComponent comp1{"id1", "id1-bom-ref", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
+   SBOMComponent comp2{"id1", "id1-bom-ref", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}};
+   SBOMComponent comp3{"id2", "id2-bom-ref", "name2", "2.0.0", "library", "purl2", "MIT", {}, {}};
 
    std::string   hash1 = comp1.getHash();
    std::string   hash2 = comp2.getHash();
@@ -704,11 +709,11 @@ TEST_F(SBOMValidationTest, SBOMComponentHashConsistency)
 TEST_F(SBOMValidationTest, SBOMComponentHashUniqueness)
 {
    std::vector<SBOMComponent> components = {
-      {"id1", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}},
-      {"id2", "name2", "2.0.0", "library", "purl2", "MIT", {}, {}},
-      {"id3", "name3", "3.0.0", "library", "purl3", "MIT", {}, {}},
-      {"id4", "name4", "4.0.0", "library", "purl4", "MIT", {}, {}},
-      {"id5", "name5", "5.0.0", "library", "purl5", "MIT", {}, {}}};
+      {"id1", "id1-bom-ref", "name1", "1.0.0", "library", "purl1", "MIT", {}, {}},
+      {"id2", "id2-bom-ref", "name2", "2.0.0", "library", "purl2", "MIT", {}, {}},
+      {"id3", "id3-bom-ref", "name3", "3.0.0", "library", "purl3", "MIT", {}, {}},
+      {"id4", "id4-bom-ref", "name4", "4.0.0", "library", "purl4", "MIT", {}, {}},
+      {"id5", "id5-bom-ref", "name5", "5.0.0", "library", "purl5", "MIT", {}, {}}};
 
    std::set<std::string> hashes;
    for (const auto& comp : components)
@@ -729,7 +734,7 @@ TEST_F(SBOMValidationTest, SBOMDifferenceTypeEnum)
 
 TEST_F(SBOMValidationTest, SBOMDifferenceConstructionWithAdded)
 {
-   SBOMComponent  comp{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent  comp{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMDifference diff(SBOMDifference::Type::ADDED, comp);
 
    EXPECT_EQ(diff.type, SBOMDifference::Type::ADDED);
@@ -737,7 +742,7 @@ TEST_F(SBOMValidationTest, SBOMDifferenceConstructionWithAdded)
 
 TEST_F(SBOMValidationTest, SBOMDifferenceConstructionWithRemoved)
 {
-   SBOMComponent  comp{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent  comp{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMDifference diff(SBOMDifference::Type::REMOVED, comp);
 
    EXPECT_EQ(diff.type, SBOMDifference::Type::REMOVED);
@@ -745,8 +750,8 @@ TEST_F(SBOMValidationTest, SBOMDifferenceConstructionWithRemoved)
 
 TEST_F(SBOMValidationTest, SBOMDifferenceConstructionWithModified)
 {
-   SBOMComponent  old_comp{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
-   SBOMComponent  new_comp{"test-id", "test-name", "2.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent  old_comp{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent  new_comp{"test-id", "test-bom-ref", "test-name", "2.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMDifference diff(SBOMDifference::Type::MODIFIED, new_comp, old_comp);
 
    EXPECT_EQ(diff.type, SBOMDifference::Type::MODIFIED);
@@ -754,7 +759,7 @@ TEST_F(SBOMValidationTest, SBOMDifferenceConstructionWithModified)
 
 TEST_F(SBOMValidationTest, SBOMDifferenceCopyConstruction)
 {
-   SBOMComponent  comp{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent  comp{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMDifference original(SBOMDifference::Type::ADDED, comp);
    SBOMDifference copy = original;
 
@@ -763,7 +768,7 @@ TEST_F(SBOMValidationTest, SBOMDifferenceCopyConstruction)
 
 TEST_F(SBOMValidationTest, SBOMDifferenceAssignment)
 {
-   SBOMComponent  comp{"test-id", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
+   SBOMComponent  comp{"test-id", "test-bom-ref", "test-name", "1.0.0", "library", "purl:test", "MIT", {}, {}};
    SBOMDifference original(SBOMDifference::Type::ADDED, comp);
    SBOMDifference assigned;
    assigned = original;
@@ -809,7 +814,7 @@ TEST_F(SBOMValidationTest, SingleDiffStatistics)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
    differences.emplace_back(SBOMDifference::Type::ADDED, comp);
 
    auto stats = comparator.getDiffStatistics(differences);
@@ -824,10 +829,10 @@ TEST_F(SBOMValidationTest, MultipleDiffStatistics)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
-   SBOMComponent               comp2{"comp2", "Component2", "1.0.0", "library", "", "", {}, {}};
-   SBOMComponent               comp3_old{"comp3", "Component3", "1.0.0", "library", "", "", {}, {}};
-   SBOMComponent               comp3_new{"comp3", "Component3", "2.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp2{"comp2", "comp2-bom-ref", "Component2", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp3_old{"comp3", "comp3-old-bom-ref", "Component3", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp3_new{"comp3", "comp3-new-bom-ref", "Component3", "2.0.0", "library", "", "", {}, {}};
 
    differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
    differences.emplace_back(SBOMDifference::Type::REMOVED, comp2);
@@ -856,7 +861,7 @@ TEST_F(SBOMValidationTest, SingleDiffReport)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
    differences.emplace_back(SBOMDifference::Type::ADDED, comp);
 
    std::string report = comparator.generateDiffReport(differences, "text");
@@ -870,8 +875,8 @@ TEST_F(SBOMValidationTest, MultipleDiffReport)
    SBOMComparator              comparator;
    std::vector<SBOMDifference> differences;
 
-   SBOMComponent               comp1{"comp1", "Component1", "1.0.0", "library", "", "", {}, {}};
-   SBOMComponent               comp2{"comp2", "Component2", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp1{"comp1", "comp1-bom-ref", "Component1", "1.0.0", "library", "", "", {}, {}};
+   SBOMComponent               comp2{"comp2", "comp2-bom-ref", "Component2", "1.0.0", "library", "", "", {}, {}};
 
    differences.emplace_back(SBOMDifference::Type::ADDED, comp1);
    differences.emplace_back(SBOMDifference::Type::REMOVED, comp2);

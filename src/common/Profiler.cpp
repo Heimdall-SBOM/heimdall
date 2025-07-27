@@ -137,7 +137,7 @@ class PerformanceBenchmark
 
    public:
    PerformanceBenchmark(std::string name, std::function<void()> func, int iterations = 1)
-      : name_(std::move(name)), test_function_(std::move(std::move(func))), iterations_(iterations)
+      : name_(std::move(name)), test_function_(std::move(func)), iterations_(iterations)
    {
    }
 
