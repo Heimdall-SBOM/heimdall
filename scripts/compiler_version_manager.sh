@@ -54,7 +54,7 @@ detect_gcc_versions() {
     # Check for system-installed GCC versions
     for version in {7..20}; do
         if command -v "gcc-${version}" >/dev/null 2>&1; then
-            local gcc_version=$("gcc-${version}" --version | head -n1 | cut -d' ' -f3)
+            local gcc_version=$("gcc-${version}" --version | head -n1 | cut -d' ' -f3 | sed 's/)//')
             echo "[DEBUG] Found system gcc-${version}: $gcc_version" 1>&2
             versions+=("gcc-${version}:${gcc_version}")
         fi
@@ -81,7 +81,7 @@ detect_gcc_versions() {
     
     # Check for default gcc
     if command -v "gcc" >/dev/null 2>&1; then
-        local default_version=$(gcc --version | head -n1 | cut -d' ' -f3)
+        local default_version=$(gcc --version | head -n1 | cut -d' ' -f3 | sed 's/)//')
         echo "[DEBUG] Found default gcc: $default_version" 1>&2
         versions+=("gcc:${default_version}")
     fi
@@ -120,8 +120,18 @@ get_compiler_major_version() {
 select_compiler() {
     local cxx_standard="$1"
     local compiler_preference="$2"
-    local available_gcc=("${@:3}")
-    local available_clang=("${@:4}")
+    shift 2
+    local available_gcc=()
+    local available_clang=()
+    
+    # Parse the remaining arguments into GCC and Clang arrays
+    for arg in "$@"; do
+        if [[ "$arg" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]]; then
+            available_gcc+=("$arg")
+        elif [[ "$arg" =~ ^clang ]]; then
+            available_clang+=("$arg")
+        fi
+    done
     
     case $cxx_standard in
         11)
@@ -324,9 +334,17 @@ setup_compiler_environment() {
     elif [ "$compiler_type" = "gcc" ]; then
         export CC="$compiler_name"
         export CXX="${compiler_name/gcc/g++}"
+    elif [[ "$compiler_type" =~ ^gcc-[0-9]+$ ]]; then
+        # Handle versioned GCC (e.g., gcc-13)
+        export CC="$compiler_type"
+        export CXX="${compiler_type/gcc/g++}"
     elif [ "$compiler_type" = "clang" ]; then
         export CC="$compiler_name"
         export CXX="${compiler_name/clang/clang++}"
+    elif [[ "$compiler_type" =~ ^clang-[0-9]+$ ]]; then
+        # Handle versioned Clang (e.g., clang-19)
+        export CC="$compiler_type"
+        export CXX="${compiler_type/clang/clang++}"
     elif [[ "$compiler_type" =~ ^scl-gcc-toolset- ]]; then
         # Extract version from compiler type (e.g., scl-gcc-toolset-14 -> 14)
         local version=$(echo "$compiler_type" | sed 's/scl-gcc-toolset-//')
@@ -415,8 +433,8 @@ EOF
         export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
         export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
     else
-        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3)"
-        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3)"
+        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3 | sed 's/)//')"
+        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3 | sed 's/)//')"
         export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
         export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
     fi

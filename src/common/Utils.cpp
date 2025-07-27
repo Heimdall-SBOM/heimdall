@@ -23,15 +23,17 @@ limitations under the License.
  */
 
 #include "Utils.hpp"
+#include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <regex>
+#include <sstream>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
-#include <cstring>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 #include "../compat/compatibility.hpp"
-#include "compat/compatibility.hpp"
 
 #ifdef _WIN32
 #include <direct.h>
