@@ -179,8 +179,6 @@ Relationship: SPDXRef-Package CONTAINS SPDXRef-main-static
 - Build configuration flags
 - Package type information (spec/body)
 
-### Potential Enhancements
-
 #### **Security Information:**
 ```json
 {
@@ -250,17 +248,17 @@ Relationship: SPDXRef-Package CONTAINS SPDXRef-main-static
 ### Basic SBOM Generation
 ```bash
 # Generate SPDX 2.3 SBOM
-./heimdall-sbom lib/heimdall-gold.so main_static --format spdx-2.3 --output ada_sbom.spdx.json
+./heimdall-sbom lib/heimdall-lld.so main_static --format spdx-2.3 --output ada_sbom.spdx.json
 
 # Generate CycloneDX SBOM  
-./heimdall-sbom lib/heimdall-gold.so main_static --format cyclonedx-1.6 --output ada_sbom.cdx.json
+./heimdall-sbom lib/heimdall-lld.so main_static --format cyclonedx-1.6 --output ada_sbom.cdx.json
 ```
 
 ### Integration with Build Systems
 ```bash
 # In Makefile or build script
 gnatmake -g main.adb
-./heimdall-sbom lib/heimdall-gold.so main --format spdx-2.3 --output sbom.spdx.json
+./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
 ```
 
 ### CI/CD Integration
@@ -269,89 +267,9 @@ gnatmake -g main.adb
 - name: Generate Ada SBOM
   run: |
     gnatmake -g main.adb
-    ./heimdall-sbom lib/heimdall-gold.so main --format spdx-2.3 --output sbom.spdx.json
-    ./heimdall-sbom lib/heimdall-gold.so main --format cyclonedx-1.6 --output sbom.cdx.json
+    ./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
+    ./heimdall-sbom lib/heimdall-lld.so main --format cyclonedx-1.6 --output sbom.cdx.json
 ```
-
-## Benefits
-
-### **Security Analysis:**
-- Build configuration flags for security assessment
-- Compiler version for vulnerability analysis
-- Runtime safety settings evaluation
-
-### **Dependency Management:**
-- Complete Ada package dependency graph
-- Cross-package function call relationships
-- Build-time vs runtime dependency classification
-
-### **Compliance:**
-- Package manager identification for licensing
-- Source file mapping for attribution
-- Build reproducibility for audit trails
-
-### **Type Safety:**
-- Ada's rich type system information
-- Function signature verification
-- Variable type safety guarantees
-
-### **Build Reproducibility:**
-- Exact compilation timestamps
-- File integrity checksums
-- Complete build configuration
-
-## Technical Implementation
-
-### Ada Extractor Architecture
-
-```cpp
-class AdaExtractor {
-    // ALI file parsing
-    bool parseAliFile(const std::string& aliFilePath, AdaPackageInfo& packageInfo);
-    bool parseDependencyLine(const std::string& line, AdaPackageInfo& packageInfo);
-    bool parseFunctionLine(const std::string& line, std::vector<AdaFunctionInfo>& functions);
-    
-    // Metadata extraction
-    bool extractAdaMetadata(ComponentInfo& component, const std::vector<std::string>& aliFiles);
-    bool findAliFiles(const std::string& directory, std::vector<std::string>& aliFiles);
-    
-    // Integration
-    bool extractSourceFilePath(const std::string& aliFilePath);
-    std::string extractPackageName(const std::string& aliFilePath);
-};
-```
-
-### Integration with Metadata Extractor
-
-```cpp
-// In MetadataExtractor::extractMetadata()
-if (!packageManagerDetected) {
-    std::vector<std::string> aliFiles;
-    if (findAdaAliFiles(searchPath, aliFiles)) {
-        if (extractAdaMetadata(component, aliFiles)) {
-            packageManagerDetected = true;
-        }
-    }
-}
-```
-
-## Future Enhancements
-
-### Planned Features:
-1. **Enhanced function signature extraction** from X lines
-2. **Cross-reference analysis** from G lines  
-3. **Build configuration parsing** from RV lines
-4. **Timestamp and checksum extraction** from D lines
-5. **Type system information** from variable and function declarations
-6. **Security flag analysis** for compliance reporting
-7. **Function call graph generation** for impact analysis
-
-### Potential Use Cases:
-- **Security scanning**: Build flag analysis for vulnerabilities
-- **Impact analysis**: Function call graphs for change impact
-- **Compliance auditing**: Type safety and build configuration verification
-- **Build reproducibility**: Complete build environment documentation
-- **Dependency analysis**: Cross-package relationship mapping
 
 ## Conclusion
 
