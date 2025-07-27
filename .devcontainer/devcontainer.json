@@ -1,5 +1,5 @@
 {
-	"image": "ghcr.io/tbakker/heimdall-devcontainer:latest",
+	"image": "ghcr.io/heimdall-sbom/heimdall-devcontainer:latest",
 	"build": {
 		"dockerfile": "./Dockerfile",
 		"context": "."
