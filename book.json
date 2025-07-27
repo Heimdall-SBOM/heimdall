@@ -3,5 +3,16 @@
   "ignore": [
     "external"
   ],
-  "plugins": ["mermaid-md-adoc"]
+
+  "plugins": ["mermaid-md-adoc", "highlight"],
+  "pluginsConfig": {
+    "highlight": {
+      "init": {
+        "tabReplace": "  ",
+        "useBR": false,
+        "classPrefix": "hljs-",
+        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript"]
+      }
+    }
+  }
 }
