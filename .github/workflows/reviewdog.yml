@@ -26,6 +26,7 @@ jobs:
           sudo apt update
           sudo apt install -y clang-format clang-tidy cmake ninja-build curl
           curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /usr/local/bin
+          pip install PyYAML
 
       ############################################
       # 1. CLANG-FORMAT via reviewdog
@@ -50,7 +51,8 @@ jobs:
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
           wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
           chmod +x run-clang-tidy.py
-          ./run-clang-tidy.py -p build -export-fixes tidy-fixes.yaml -quiet \
+          mkdir -p tidy-fixes
+          ./run-clang-tidy.py -p build -export-fixes tidy-fixes/ -quiet \
             | reviewdog -f=clang-tidy -name="clang-tidy" -reporter=github-pr-review -fail-on-error=true
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
