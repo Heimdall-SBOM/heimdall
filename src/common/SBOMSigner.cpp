@@ -571,20 +571,24 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
       return sbomContent;
    }
    
-   // Create signature object with basic fields for CycloneDX compatibility
+   // Create signature object according to JSON Signature Format (JSF) specification
+   // JSF format: https://cyberphone.github.io/doc/security/jsf.html
    nlohmann::json signatureObj;
    
-   // Basic signature fields
+   // Required fields for JSF signaturecore
    signatureObj["algorithm"] = signatureInfo.algorithm;
-   signatureObj["value"] = signatureInfo.signature;
+   signatureObj["value"] = signatureInfo.signature; // Base64URL-encoded signature
    
-   // Optional fields
-   if (!signatureInfo.keyId.empty()) {
-      signatureObj["keyId"] = signatureInfo.keyId;
+   // Optional public key information (if available)
+   if (!signatureInfo.certificate.empty()) {
+      // TODO: Extract public key from certificate and format as JWK
+      // For now, we'll include the certificate as-is
+      signatureObj["certificate"] = signatureInfo.certificate;
    }
    
-   if (!signatureInfo.timestamp.empty()) {
-      signatureObj["timestamp"] = signatureInfo.timestamp;
+   // Optional key ID (not part of JSF spec but useful for CycloneDX)
+   if (!signatureInfo.keyId.empty()) {
+      signatureObj["keyId"] = signatureInfo.keyId;
    }
    
    // Add signature to SBOM
@@ -659,13 +663,20 @@ bool SBOMSigner::extractSignature(const std::string& sbomContent, SignatureInfo&
    
    nlohmann::json sigJson = sbomJson["signature"];
    
-   // Handle signature as object with basic format
+   // Handle signature as object with JSF signaturecore format
    if (sigJson.is_object()) {
-      signatureInfo.signature = sigJson.value("value", "");
+      // Extract required JSF fields
       signatureInfo.algorithm = sigJson.value("algorithm", "");
+      signatureInfo.signature = sigJson.value("value", "");
+      
+      // Extract optional fields
       signatureInfo.keyId = sigJson.value("keyId", "");
-      signatureInfo.timestamp = sigJson.value("timestamp", "");
       signatureInfo.certificate = sigJson.value("certificate", "");
+      
+      // Extract public key if present (JWK format)
+      if (sigJson.contains("publicKey") && sigJson["publicKey"].is_object()) {
+         // TODO: Convert JWK to certificate format if needed
+      }
    } else if (sigJson.is_string()) {
       // Fallback for simple string format
       signatureInfo.signature = sigJson.get<std::string>();
