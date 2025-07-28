@@ -1,2 +1,0 @@
-This is a sample data file for the Heimdall Ada demo application.
-It is used to demonstrate resource tracking in SBOM generation. 
