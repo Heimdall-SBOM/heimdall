@@ -212,6 +212,13 @@ class SBOMGenerator::Impl
     */
    void processDependenciesRecursively(const ComponentInfo&   component,
                                        std::set<std::string>& processedKeys);
+
+   /**
+    * @brief Generate CycloneDX license format
+    * @param license The license string to convert
+    * @return The CycloneDX license format as a string
+    */
+   std::string generateCycloneDXLicense(const std::string& license);
 };
 
 /**
@@ -1090,9 +1097,29 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
    ss << Utils::formatJsonValue(appName.empty() ? "Unknown" : appName) << ",\n";
    ss << "      \"version\": "
-      << Utils::formatJsonValue(appVersion.empty() ? "Unknown" : appVersion) << "\n";
+      << Utils::formatJsonValue(appVersion.empty() ? "Unknown" : appVersion) << ",\n";
+   ss << "      \"licenses\": [\n";
+   ss << "        {\n";
+   ss << "          \"license\": {\n";
+   ss << "            \"name\": \"NOASSERTION\",\n";
+   ss << "            \"licensing\": {\n";
+   ss << "              \"licenseTypes\": [\"perpetual\"]\n";
+   ss << "            }\n";
+   ss << "          }\n";
+   ss << "        }\n";
+   ss << "      ]\n";
    ss << "    }\n";
    ss << "  },\n";
+   ss << "  \"licenses\": [\n";
+   ss << "    {\n";
+   ss << "      \"license\": {\n";
+   ss << "        \"name\": \"NOASSERTION\",\n";
+   ss << "        \"licensing\": {\n";
+   ss << "          \"licenseTypes\": [\"perpetual\"]\n";
+   ss << "        }\n";
+   ss << "      }\n";
+   ss << "    }\n";
+   ss << "  ],\n";
    ss << "  \"components\": [\n";
 
    bool first = true;
@@ -1516,6 +1543,20 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       }
       ss << "]";
    }
+
+   // Add licenses field for NTIA compliance - always include a license field
+   std::string licenseField = generateCycloneDXLicense(component.license);
+   ss << ",\n      \"licenses\": [\n";
+   if (!licenseField.empty())
+   {
+      ss << licenseField;
+   }
+   else
+   {
+      // Default to NOASSERTION for unknown licenses (NTIA compliance)
+      ss << "        {\n          \"license\": {\n            \"name\": \"NOASSERTION\",\n            \"licensing\": {\n              \"licenseTypes\": [\"perpetual\"]\n            }\n          }\n        }";
+   }
+   ss << "\n      ]";
 
    ss << "\n    }";
    return ss.str();
@@ -2110,6 +2151,61 @@ std::string SBOMGenerator::Impl::generateSPDXLicenseId(const std::string& licens
    {
       return "NOASSERTION";
    }
+}
+
+std::string SBOMGenerator::Impl::generateCycloneDXLicense(const std::string& license)
+{
+   if (license.empty() || license == "UNKNOWN")
+   {
+      return "";
+   }
+
+   // Basic SPDX license validation and mapping to CycloneDX format
+   std::string upperLicense = Utils::toUpper(license);
+   std::string spdxId;
+   
+   if (upperLicense.find("APACHE") != std::string::npos)
+   {
+      spdxId = "Apache-2.0";
+   }
+   else if (upperLicense.find("MIT") != std::string::npos)
+   {
+      spdxId = "MIT";
+   }
+   else if (upperLicense.find("GPL") != std::string::npos)
+   {
+      if (upperLicense.find('3') != std::string::npos)
+      {
+         spdxId = "GPL-3.0-only";
+      }
+      else
+      {
+         spdxId = "GPL-2.0-only";
+      }
+   }
+   else if (upperLicense.find("LGPL") != std::string::npos)
+   {
+      if (upperLicense.find('3') != std::string::npos)
+      {
+         spdxId = "LGPL-3.0-only";
+      }
+      else
+      {
+         spdxId = "LGPL-2.1-only";
+      }
+   }
+   else if (upperLicense.find("BSD") != std::string::npos)
+   {
+      spdxId = "BSD-3-Clause";
+   }
+   else
+   {
+      // For unknown licenses, use the original license string as name
+      return "{\n        \"license\": {\n          \"name\": " + Utils::formatJsonValue(license) + ",\n          \"licensing\": {\n            \"licenseTypes\": [\"perpetual\"]\n          }\n        }\n      }";
+   }
+
+   // Return CycloneDX license format with SPDX ID and basic licensing info
+   return "{\n        \"license\": {\n          \"id\": \"" + spdxId + "\",\n          \"licensing\": {\n            \"licenseTypes\": [\"perpetual\"]\n          }\n        }\n      }";
 }
 
 /**
