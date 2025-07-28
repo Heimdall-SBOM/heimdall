@@ -642,27 +642,20 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    bool buildConfigSuccess = extractMachOBuildConfig(component);
    if (buildConfigSuccess)
    {
-      std::cerr << "[DEBUG] Build config - targetPlatform: " << component.buildConfig.targetPlatform
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - minOSVersion: " << component.buildConfig.minOSVersion
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - sdkVersion: " << component.buildConfig.sdkVersion
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - buildVersion: " << component.buildConfig.buildVersion
-                << std::endl;
-      std::cerr << "[DEBUG] Build config - sourceVersion: " << component.buildConfig.sourceVersion
-                << std::endl;
+      Utils::debugPrint("Build config - targetPlatform" + component.buildConfig.targetPlatform);
+      Utils::debugPrint("Build config - minOSVersion" + component.buildConfig.sdkVersion);
+      Utils::debugPrint("Build config - buildVersion" + component.buildConfig.buildVersion);
+      Utils::debugPrint("Build config - sourceVersion" + component.buildConfig.sourceVersion);
    }
    anySuccess |= buildConfigSuccess;
 
    bool platformSuccess = extractMachOPlatformInfo(component);
-   std::cerr << "[DEBUG] Platform info extraction: " << (platformSuccess ? "success" : "failed")
-             << std::endl;
+   
+   Utils::debugPrint("Platform info extraction: " + (platformSuccess ? "success" : "failed") );
    anySuccess |= platformSuccess;
 
    bool entitlementsSuccess = extractMachOEntitlements(component);
-   std::cerr << "[DEBUG] Entitlements extraction: " << (entitlementsSuccess ? "success" : "failed")
-             << std::endl;
+   Utils::debugPrint("Entitlements extraction: " + (entitlementsSuccess ? "success" : "failed") );
    anySuccess |= entitlementsSuccess;
 
    bool architecturesSuccess = extractMachOArchitectures(component);
@@ -1095,8 +1088,8 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
             catch (const std::filesystem::filesystem_error& e)
             {
                // Skip problematic directories but continue scanning
-               std::cerr << "DEBUG: Skipping problematic directory: " << current_dir << ": "
-                         << e.what() << std::endl;
+               std::string error_msg = e.what();
+               Utils::debugPrint("Skipping problematic directory: " + current_dir + ": " + error_msg);
                continue;
             }
          }
@@ -1114,7 +1107,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
 
          if (pImpl->verbose)
          {
-            std::cerr << "DEBUG: Starting portable directory scan for: " << directory << std::endl;
+            Utils::debugPrint("Starting portable directory scan for: " + directory);
          }
 
          // Use a stack-based approach to avoid recursion depth issues
@@ -1127,8 +1120,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
             {
                if (pImpl->verbose)
                {
-                  std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory
-                            << std::endl;
+                  Utils::debugPrint("Timeout searching for ALI files in: " + directory);
                }
                return false;
             }
@@ -1144,7 +1136,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
                {
                   if (pImpl->verbose)
                   {
-                     std::cerr << "DEBUG: Failed to open directory: " << current_dir << std::endl;
+                     Utils::errorPrint("Failed to open directory: " + current_dir);
                   }
                   continue;
                }
@@ -1157,8 +1149,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
                   {
                      if (pImpl->verbose)
                      {
-                        std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory
-                                  << std::endl;
+                        Utils::debugPrint("Timeout searching for ALI files in: " + directory);
                      }
                      closedir(dir);
                      return false;
@@ -1200,7 +1191,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
                         aliFiles.push_back(full_path);
                         if (pImpl->verbose)
                         {
-                           std::cerr << "DEBUG: Found ALI file: " << full_path << std::endl;
+                           Utils::infoPrint("Found ALI file: " + full_path);
                         }
                      }
                   }
@@ -1236,8 +1227,8 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
                // Skip problematic directories but continue scanning
                if (pImpl->verbose)
                {
-                  std::cerr << "DEBUG: Skipping problematic directory: " << current_dir << ": "
-                            << e.what() << std::endl;
+                  std::string error_msg = e.what();
+                  Utils::warningPrint("Skipping problematic directory: " + current_dir + ": " + error_msg);
                }
                continue;
             }
@@ -1249,8 +1240,8 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
       {
          if (pImpl->verbose)
          {
-            std::cerr << "DEBUG: Error searching for ALI files in: " << directory << ": "
-                      << e.what() << std::endl;
+            std::string error_msg = e.what();
+            Utils::errorPrint("Error searching for ALI files in: " + directory + ": " + error_msg );
          }
          return false;
       }
@@ -1261,7 +1252,8 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
    {
       if (pImpl->verbose)
       {
-         std::cerr << "Error searching for ALI files: " << e.what() << std::endl;
+         std::string error_msg = e.what();
+         Utils::errorPrint("Error searching for ALI files: " + error_msg );
       }
       return false;
    }
@@ -1451,8 +1443,7 @@ bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::Symbol
    int fd = open(filePath.c_str(), O_RDONLY);
    if (fd < 0)
    {
-      std::cerr << "Failed to open ELF file: " << filePath << std::endl;
-      heimdall::Utils::debugPrint("Failed to open ELF file: " + filePath);
+      Utils::errorPrint("Failed to open ELF file: " + filePath);
       return false;
    }
 
@@ -1460,8 +1451,7 @@ bool extractELFSymbols(const std::string& filePath, std::vector<heimdall::Symbol
    if (!elf)
    {
       close(fd);
-      std::cerr << "Failed to open ELF file with libelf: " << filePath << std::endl;
-      heimdall::Utils::debugPrint("Failed to open ELF file with libelf: " + filePath);
+      Utils::errorPrint("Failed to open ELF file with libelf: " + filePath);
       return false;
    }
 
@@ -3343,8 +3333,7 @@ bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& ali
    // Skip Ada ALI file search in test environment to avoid hanging
    if (isTestMode())
    {
-      std::cerr << "DEBUG: Skipping Ada ALI file search in test mode for: " << directory
-                << std::endl;
+      Utils::debugPrint("Skipping Ada ALI file search in test mode for: " + directory);
       return true;
    }
 
@@ -3354,18 +3343,17 @@ bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& ali
       std::string command =
          "/usr/bin/timeout 30s /usr/bin/find " + directory + " -name \"*.ali\" -type f 2>/dev/null";
 
-      std::cerr << "DEBUG: Starting findAdaAliFiles for directory: " << directory << std::endl;
-      std::cerr << "DEBUG: Command: " << command << std::endl;
-      std::cerr << "DEBUG: About to call popen with command: " << command << std::endl;
+      Utils::debugPrint("Starting findAdaAliFiles for directory: " + directory);
+      Utils::debugPrint("Command: " + command);
+      Utils::debugPrint("About to call popen with command: " + command);
 
       FILE* pipe = popen(command.c_str(), "r");
       if (!pipe)
       {
-         std::cerr << "DEBUG: popen failed for directory: " << directory << " with errno: " << errno
-                   << std::endl;
+         Utils::errorPrint("popen failed for directory: " + directory + " with errno: " + std::to_string(errno));
          return false;
       }
-      std::cerr << "DEBUG: popen succeeded, pipe fd: " << fileno(pipe) << std::endl;
+      Utils::debugPrint("popen succeeded, pipe fd: " + std::to_string(fileno(pipe)));
 
       // Set non-blocking mode for timeout handling
       int fd    = fileno(pipe);
@@ -3381,7 +3369,7 @@ bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& ali
          // Check timeout
          if (time(nullptr) - start_time > timeout_seconds)
          {
-            std::cerr << "DEBUG: Timeout searching for ALI files in: " << directory << std::endl;
+            Utils::warningPrint("Timeout searching for ALI files in: " + directory);
             pclose(pipe);
             return false;
          }
@@ -3410,23 +3398,24 @@ bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& ali
          if (!line.empty())
          {
             aliFiles.push_back(line);
-            std::cerr << "DEBUG: Found ALI file: " << line << std::endl;
+            Utils::infoPrint("Found ALI file: " + line);
          }
       }
 
-      std::cerr << "DEBUG: About to call pclose on pipe fd: " << fileno(pipe) << std::endl;
+      Utils::debugPrint("About to call pclose on pipe fd: " + std::to_string(fileno(pipe)));
       int status = pclose(pipe);
-      std::cerr << "DEBUG: pclose returned status: " << status << std::endl;
+      Utils::debugPrint("pclose returned status: " + status );
       if (status != 0)
       {
-         std::cerr << "DEBUG: Find command exited with status: " << status << std::endl;
+         Utils::errorPrint("Find command exited with status: " + status);
       }
 
       return true;
    }
    catch (const std::exception& e)
    {
-      std::cerr << "Error searching for ALI files: " << e.what() << std::endl;
+      std::string error_msg = e.what(); 
+      Utils::errorPrint("Error searching for ALI files: " + error_msg );
       return false;
    }
 }
