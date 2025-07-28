@@ -1098,6 +1098,9 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    ss << Utils::formatJsonValue(appName.empty() ? "Unknown" : appName) << ",\n";
    ss << "      \"version\": "
       << Utils::formatJsonValue(appVersion.empty() ? "Unknown" : appVersion) << ",\n";
+   ss << "      \"supplier\": {\n";
+   ss << "        \"name\": \"Heimdall Project\"\n";
+   ss << "      },\n";
    ss << "      \"licenses\": [\n";
    ss << "        {\n";
    ss << "          \"license\": {\n";
@@ -1113,6 +1116,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    ss << "  \"licenses\": [\n";
    ss << "    {\n";
    ss << "      \"license\": {\n";
+   ss << "        \"id\": \"NOASSERTION\",\n";
    ss << "        \"name\": \"NOASSERTION\",\n";
    ss << "        \"licensing\": {\n";
    ss << "          \"licenseTypes\": [\"perpetual\"]\n";

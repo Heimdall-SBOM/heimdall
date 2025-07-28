@@ -4496,6 +4496,11 @@ void MetadataExtractor::extractEnhancedPackageInfo(ComponentInfo& component)
       } else if (component.packageManager == "spack") {
          component.setSupplier("Spack");
       }
+      // Set supplier for heimdall-sbom executable
+      else if (component.fileType == FileType::Executable && 
+               (component.name == "heimdall-sbom" || component.filePath.find("heimdall-sbom") != std::string::npos)) {
+         component.setSupplier("Heimdall Project");
+      }
    }
    
    // Extract group from package name - only if not already set
