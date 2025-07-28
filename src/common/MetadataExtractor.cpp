@@ -51,10 +51,12 @@ limitations under the License.
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <cstdlib>  // for std::getenv
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -139,7 +141,7 @@ class MetadataExtractor::Impl
 {
    public:
    bool verbose          = false;  ///< Enable verbose output for debugging
-   bool extractDebugInfo = true;   ///< Whether to extract debug information
+   bool extractDebugInfo = true;   ///< Whether to extract debug information (enabled by default)
    bool suppressWarnings = false;
 
    /**
@@ -232,17 +234,19 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 
       bool success = true;
 
-      // Extract basic metadata
+      // Extract basic metadata (essential for SBOM generation)
       success &= extractVersionInfo(component);
       success &= extractLicenseInfo(component);
       success &= extractSymbolInfo(component);
       success &= extractSectionInfo(component);
 
+      // Extract debug info only if explicitly requested (expensive operation)
       if (pImpl->extractDebugInfo)
       {
          success &= extractDebugInfo(component);
       }
 
+      // Extract dependency info (essential for SBOM)
       success &= extractDependencyInfo(component);
 
       // Enhanced Mach-O metadata extraction
@@ -253,66 +257,54 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
             component.filePath);
          success &= extractEnhancedMachOMetadata(component);
       }
-      else
-      {
-         heimdall::Utils::debugPrint("MetadataExtractor: File is not Mach-O: " +
-                                     component.filePath);
-      }
 
-      // Enhanced package manager detection and metadata extraction
+      // Optimized package manager detection - use path-based detection first
+      std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
       bool packageManagerDetected = false;
 
-      // Try RPM detection
-      if (heimdall::MetadataHelpers::detectRpmMetadata(component))
+      if (packageManager == "rpm")
       {
-         packageManagerDetected = true;
-         heimdall::Utils::debugPrint("Detected RPM package metadata");
+         if (heimdall::MetadataHelpers::detectRpmMetadata(component))
+         {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected RPM package metadata");
+         }
       }
-
-      // Try Debian detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectDebMetadata(component))
+      else if (packageManager == "deb")
       {
-         packageManagerDetected = true;
-         heimdall::Utils::debugPrint("Detected Debian package metadata");
+         if (heimdall::MetadataHelpers::detectDebMetadata(component))
+         {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Debian package metadata");
+         }
       }
-
-      // Try Conan detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectConanMetadata(component))
+      else if (packageManager == "conan")
       {
+         extractConanMetadata(component);
          packageManagerDetected = true;
          heimdall::Utils::debugPrint("Detected Conan package metadata");
       }
-
-      // Try vcpkg detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectVcpkgMetadata(component))
+      else if (packageManager == "vcpkg")
       {
+         extractVcpkgMetadata(component);
          packageManagerDetected = true;
          heimdall::Utils::debugPrint("Detected vcpkg package metadata");
       }
-
-      // Try Spack detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectSpackMetadata(component))
+      else if (packageManager == "spack")
       {
-         packageManagerDetected = true;
-         heimdall::Utils::debugPrint("Detected Spack package metadata");
+         if (heimdall::MetadataHelpers::detectSpackMetadata(component))
+         {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Spack package metadata");
+         }
       }
-
-      // Fallback to generic package manager detection
-      if (!packageManagerDetected)
+      else if (packageManager == "system")
       {
-         std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
-         if (packageManager == "conan")
-         {
-            extractConanMetadata(component);
-         }
-         else if (packageManager == "vcpkg")
-         {
-            extractVcpkgMetadata(component);
-         }
-         else if (packageManager == "system")
-         {
-            extractSystemMetadata(component);
-         }
+         // For system libraries, just set basic metadata without expensive operations
+         component.setPackageManager("system");
+         component.markAsSystemLibrary();
+         component.setSupplier("system-package-manager");
+         packageManagerDetected = true;
       }
 
       // Try Ada metadata extraction only if Ada files might be present
@@ -349,23 +341,56 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
       searchPaths.push_back(".");
 #endif
 
-      // Quick heuristic: check if any Ada-related files exist in the search paths
-      for (const auto& searchPath : searchPaths)
+      // Performance optimization: Skip Ada file detection by default to avoid directory scanning
+      // This was causing exponential slowdown when processing many components
+      
+      // Only enable Ada detection if explicitly requested or in specific environments
+      // This can be controlled via environment variable or configuration
+      const char* enableAdaDetection = std::getenv("HEIMDALL_ENABLE_ADA_DETECTION");
+      const char* aliFilePath = std::getenv("HEIMDALL_ALI_FILE_PATH");
+      
+      if (enableAdaDetection && (strcmp(enableAdaDetection, "1") == 0 || 
+                                strcmp(enableAdaDetection, "true") == 0))
       {
-         if (searchPath.empty())
-            continue;
+         // Quick heuristic: check if any Ada-related files exist in the search paths
+         for (const auto& searchPath : searchPaths)
+         {
+            if (searchPath.empty())
+               continue;
 
-         // Check for common Ada file patterns in the directory
-         bool hasAdaFiles = false;
+            // Check for common Ada file patterns in the directory
+            bool hasAdaFiles = false;
 #if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || \
    defined(HEIMDALL_CPP23_AVAILABLE)
-         try
-         {
-            for (const auto& entry : std::filesystem::directory_iterator(searchPath))
+            try
             {
-               if (entry.is_regular_file())
+               for (const auto& entry : std::filesystem::directory_iterator(searchPath))
                {
-                  std::string fname = entry.path().filename().string();
+                  if (entry.is_regular_file())
+                  {
+                     std::string fname = entry.path().filename().string();
+                     if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" ||
+                                              fname.substr(fname.size() - 4) == ".ads" ||
+                                              fname.substr(fname.size() - 4) == ".ali"))
+                     {
+                        hasAdaFiles = true;
+                        break;
+                     }
+                  }
+               }
+            }
+            catch (const std::filesystem::filesystem_error&)
+            {
+               // Ignore filesystem errors, continue with next path
+            }
+#else
+            DIR* dir = opendir(searchPath.c_str());
+            if (dir)
+            {
+               struct dirent* entry;
+               while ((entry = readdir(dir)) != nullptr)
+               {
+                  std::string fname = entry->d_name;
                   if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" ||
                                            fname.substr(fname.size() - 4) == ".ads" ||
                                            fname.substr(fname.size() - 4) == ".ali"))
@@ -374,44 +399,26 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
                      break;
                   }
                }
+               closedir(dir);
             }
-         }
-         catch (const std::filesystem::filesystem_error&)
-         {
-            // Ignore filesystem errors, continue with next path
-         }
-#else
-         DIR* dir = opendir(searchPath.c_str());
-         if (dir)
-         {
-            struct dirent* entry;
-            while ((entry = readdir(dir)) != nullptr)
-            {
-               std::string fname = entry->d_name;
-               if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" ||
-                                        fname.substr(fname.size() - 4) == ".ads" ||
-                                        fname.substr(fname.size() - 4) == ".ali"))
-               {
-                  hasAdaFiles = true;
-                  break;
-               }
-            }
-            closedir(dir);
-         }
 #endif
-         if (hasAdaFiles)
-         {
-            shouldSearchForAda = true;
-            break;
+            if (hasAdaFiles)
+            {
+               shouldSearchForAda = true;
+               break;
+            }
          }
       }
 
       // Only search for ALI files if Ada files are present
       if (shouldSearchForAda)
       {
-         for (const auto& searchPath : searchPaths)
+         bool adaMetadataFound = false;
+         
+         // If a specific ALI file path is provided, search only there
+         if (aliFilePath)
          {
-            if (findAdaAliFiles(searchPath, aliFiles))
+            if (findAdaAliFiles(aliFilePath, aliFiles))
             {
                if (extractAdaMetadata(component, aliFiles))
                {
@@ -420,29 +427,70 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
                      packageManagerDetected = true;
                   }
                   heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " +
-                                              searchPath);
-                  break;
+                                              std::string(aliFilePath));
+                  adaMetadataFound = true;
+               }
+            }
+         }
+         else
+         {
+            // Search in the default search paths
+            for (const auto& searchPath : searchPaths)
+            {
+               if (findAdaAliFiles(searchPath, aliFiles))
+               {
+                  if (extractAdaMetadata(component, aliFiles))
+                  {
+                     if (!packageManagerDetected)
+                     {
+                        packageManagerDetected = true;
+                     }
+                     heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " +
+                                                 searchPath);
+                     adaMetadataFound = true;
+                     break;
+                  }
                }
             }
          }
       }
 
-      component.markAsProcessed();
+      // Enhanced metadata extraction
+      extractEnhancedPackageInfo(component);
+      
+      // Generate description
+      std::string description = generateComponentDescription(component);
+      if (!description.empty()) {
+         component.setDescription(description);
+      }
+      
+      // Determine scope
+      std::string scope = determineComponentScope(component);
+      if (!scope.empty()) {
+         component.setScope(scope);
+      }
+      
+      // Determine MIME type
+      std::string mimeType = determineMimeType(component);
+      if (!mimeType.empty()) {
+         component.setMimeType(mimeType);
+      }
+      
+      // Extract copyright information (optimized - only reads first 1MB for performance)
+      std::string copyright = extractCopyrightInfo(component);
+      if (!copyright.empty()) {
+         component.setCopyright(copyright);
+      }
+      
+      // Add component evidence
+      addComponentEvidence(component);
+
       return success;
-#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || \
-   defined(HEIMDALL_CPP23_AVAILABLE)
-   }
-   catch (const std::filesystem::filesystem_error& e)
-   {
-      heimdall::Utils::errorPrint(std::string("Filesystem error in extractMetadata: ") + e.what());
-      return false;
-#else
    }
    catch (const std::exception& e)
    {
       heimdall::Utils::errorPrint(std::string("Exception in extractMetadata: ") + e.what());
       return false;
-#endif
    }
 }
 
@@ -922,7 +970,7 @@ bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component
          component.setMimeType(mimeType);
       }
       
-      // Extract copyright information
+      // Extract copyright information (optimized - only reads first 1MB for performance)
       std::string copyright = extractCopyrightInfo(component);
       if (!copyright.empty()) {
          component.setCopyright(copyright);
@@ -4385,17 +4433,28 @@ std::string MetadataExtractor::determineMimeType(const ComponentInfo& component)
 
 std::string MetadataExtractor::extractCopyrightInfo(const ComponentInfo& component)
 {
-   // Try to extract copyright from binary strings
+   // Try to extract copyright from binary strings (optimized for performance)
    std::ifstream file(component.filePath, std::ios::binary);
    if (!file.is_open()) {
       return "";
    }
    
-   std::string content;
+   // For large files, only read the first 1MB to avoid performance issues
+   // Copyright information is typically in headers or early in the file
+   const size_t maxReadSize = 1024 * 1024; // 1MB
+   
    file.seekg(0, std::ios::end);
-   content.resize(file.tellg());
+   size_t fileSize = file.tellg();
+   size_t readSize = std::min(fileSize, maxReadSize);
+   
+   if (readSize == 0) {
+      return "";
+   }
+   
+   std::string content;
+   content.resize(readSize);
    file.seekg(0, std::ios::beg);
-   file.read(&content[0], content.size());
+   file.read(&content[0], readSize);
    
    // Look for copyright patterns
    std::regex copyrightPattern(R"((Copyright|©)\s*[0-9]{4}[-\s]*[0-9]{4}?\s*[^\n\r]*?)", std::regex::icase);
@@ -4437,10 +4496,7 @@ void MetadataExtractor::extractEnhancedPackageInfo(ComponentInfo& component)
 
 void MetadataExtractor::addComponentEvidence(ComponentInfo& component)
 {
-   // Add identity evidence
-   if (!component.checksum.empty()) {
-      component.addProperty("evidence:identity:hash", component.checksum);
-   }
+   // Add identity evidence (removed duplicate hash - already in component.checksum)
    component.addProperty("evidence:identity:symbols", std::to_string(component.symbols.size()));
    component.addProperty("evidence:identity:sections", std::to_string(component.sections.size()));
    

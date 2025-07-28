@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
       std::cerr << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output "
                    "<output_path> [--cyclonedx-version <version>] [--spdx-version <version>] "
                    "[--no-transitive-dependencies] [--sign-key <key_path>] [--sign-cert <cert_path>] "
-                   "[--sign-algorithm <algorithm>] [--sign-key-id <key_id>]"
+                   "[--sign-algorithm <algorithm>] [--sign-key-id <key_id>] [--ali-file-path <path>]"
                 << std::endl;
       std::cerr << "  Supported formats: spdx, spdx-2.3, spdx-3.0, spdx-3.0.0, spdx-3.0.1, "
                    "cyclonedx, cyclonedx-1.4, cyclonedx-1.6"
@@ -196,6 +196,7 @@ int main(int argc, char* argv[])
       std::cerr << "  --sign-cert <cert_path>: Path to certificate file (optional)" << std::endl;
       std::cerr << "  --sign-algorithm <algorithm>: Signature algorithm (RS256, RS384, RS512, ES256, ES384, ES512, Ed25519)" << std::endl;
       std::cerr << "  --sign-key-id <key_id>: Key identifier for the signature" << std::endl;
+      std::cerr << "  --ali-file-path <path>: Enable Ada detection and search for .ali files in the specified path" << std::endl;
       return 1;
    }
 
@@ -212,6 +213,9 @@ int main(int argc, char* argv[])
    const char* sign_cert_path          = nullptr;
    const char* sign_algorithm          = "RS256";
    const char* sign_key_id             = nullptr;
+   
+   // Ada detection options
+   const char* ali_file_path           = nullptr;
 
    // Parse command line arguments
    for (int i = 3; i < argc; i++)
@@ -262,6 +266,10 @@ int main(int argc, char* argv[])
       {
          sign_key_id = argv[++i];
       }
+      else if (strcmp(argv[i], "--ali-file-path") == 0 && i + 1 < argc)
+      {
+         ali_file_path = argv[++i];
+      }
    }
 
    // Load the plugin shared library
@@ -287,6 +295,9 @@ int main(int argc, char* argv[])
    using set_transitive_func_t = int (*)(int);
    set_transitive_func_t set_transitive =
       (set_transitive_func_t)dlsym(handle, "heimdall_set_transitive_dependencies");
+   using set_ali_file_path_func_t = int (*)(const char*);
+   set_ali_file_path_func_t set_ali_file_path =
+      (set_ali_file_path_func_t)dlsym(handle, "heimdall_set_ali_file_path");
 
    // Check that all required functions are available
    if (!onload || !set_format || !set_output_path || !process_input_file || !finalize)
@@ -308,6 +319,17 @@ int main(int argc, char* argv[])
    if (set_transitive)
    {
       set_transitive(transitive_dependencies ? 1 : 0);
+   }
+
+   // Set Ada file path if specified
+   if (ali_file_path && set_ali_file_path)
+   {
+      if (set_ali_file_path(ali_file_path) != 0)
+      {
+         std::cerr << "Failed to set Ada file path" << std::endl;
+         dlclose(handle);
+         return 1;
+      }
    }
 
    // Set the output format

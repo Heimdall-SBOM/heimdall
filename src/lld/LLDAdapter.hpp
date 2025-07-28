@@ -126,6 +126,12 @@ class LLDAdapter
    void setTransitiveDependencies(bool transitive);
 
    /**
+    * @brief Set the Ada ALI file path for Ada metadata extraction
+    * @param path The path to search for .ali files
+    */
+   void setAliFilePath(const std::string& path);
+
+   /**
     * @brief Process a symbol with metadata extraction
     * @param symbolName The name of the symbol
     * @param address The symbol address

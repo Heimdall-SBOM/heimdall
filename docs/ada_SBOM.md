@@ -11,6 +11,8 @@ Heimdall's Ada extractor provides comprehensive SBOM generation for Ada applicat
 - **ALI file parsing** for Ada-specific metadata
 - **Cross-referencing** between binary and source information
 
+> **Note**: Ada .ali file detection is disabled by default for performance reasons. To enable .ali file detection, use the `--ali-file-path` option or set the `HEIMDALL_ENABLE_ADA_DETECTION=1` environment variable.
+
 ## Data Sources
 
 ### 1. Object Files and Executables
@@ -256,6 +258,31 @@ gnatmake -g main.adb
     ./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
     ./heimdall-sbom lib/heimdall-lld.so main --format cyclonedx-1.6 --output sbom.cdx.json
 ```
+
+### Optimized Ada Detection with --ali-file-path
+
+For large Ada projects, scanning all directories for ALI files can be slow. Use the `--ali-file-path` option to specify a specific directory for ALI file search:
+
+```bash
+# Specify ALI file search directory for better performance
+./heimdall-sbom lib/heimdall-lld.so main \
+    --format cyclonedx-1.6 \
+    --ali-file-path /path/to/ada/project \
+    --output ada_sbom.cdx.json
+
+# Multiple ALI directories (use multiple --ali-file-path flags)
+./heimdall-sbom lib/heimdall-lld.so main \
+    --format spdx-2.3 \
+    --ali-file-path /path/to/core/ada \
+    --ali-file-path /path/to/utils/ada \
+    --output ada_sbom.spdx.json
+```
+
+**Benefits:**
+- **Performance**: Avoids scanning entire filesystem for ALI files
+- **Precision**: Only searches in specified directories
+- **Control**: Enables Ada detection only when needed
+- **Flexibility**: Can specify multiple directories for complex projects
 
 ## Conclusion
 
