@@ -1446,7 +1446,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
    bool hasExternalRefs = !component.downloadLocation.empty() || 
                          !component.homepage.empty() ||
                          std::any_of(component.properties.begin(), component.properties.end(),
-                                    [](const auto& prop) { return prop.first.find("external:") == 0; });
+                                    [](const std::pair<const std::string, std::string>& prop) { return prop.first.find("external:") == 0; });
    
    if (hasExternalRefs) {
       ss << ",\n      \"externalReferences\": [\n";
@@ -1475,7 +1475,9 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       }
       
       // Additional external references from properties
-      for (const auto& [key, value] : component.properties) {
+      for (const auto& property : component.properties) {
+         const std::string& key = property.first;
+         const std::string& value = property.second;
          if (key.find("external:") == 0) {
             if (!firstRef) {
                ss << ",\n";
