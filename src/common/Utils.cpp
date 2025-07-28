@@ -738,16 +738,8 @@ std::string detectPackageManager(const std::string& filePath)
 {
    std::string normalizedPath = normalizePath(filePath);
 
-   if (normalizedPath.find("/usr/lib") != std::string::npos ||
-       normalizedPath.find("/lib") != std::string::npos)
-   {
-      return "system";
-   }
-   else if (normalizedPath.find("/usr/local/lib") != std::string::npos)
-   {
-      return "local";
-   }
-   else if (normalizedPath.find("conan") != std::string::npos)
+   // Check for specific package managers first (more specific patterns)
+   if (normalizedPath.find("conan") != std::string::npos)
    {
       return "conan";
    }
@@ -759,6 +751,35 @@ std::string detectPackageManager(const std::string& filePath)
             normalizedPath.find("/opt/homebrew") != std::string::npos)
    {
       return "homebrew";
+   }
+   else if (normalizedPath.find("spack") != std::string::npos)
+   {
+      return "spack";
+   }
+   else if (normalizedPath.find("pacman") != std::string::npos ||
+            normalizedPath.find("/var/lib/pacman") != std::string::npos)
+   {
+      return "pacman";
+   }
+   else if (normalizedPath.find("deb") != std::string::npos ||
+            normalizedPath.find("/var/lib/dpkg") != std::string::npos ||
+            normalizedPath.find("/usr/lib") != std::string::npos)
+   {
+      return "deb";
+   }
+   else if (normalizedPath.find("rpm") != std::string::npos ||
+            normalizedPath.find("/var/lib/rpm") != std::string::npos)
+   {
+      return "rpm";
+   }
+   // Check for generic system paths last (less specific patterns)
+   else if (normalizedPath.find("/usr/local/lib") != std::string::npos)
+   {
+      return "local";
+   }
+   else if (normalizedPath.find("/lib") != std::string::npos)
+   {
+      return "system";
    }
 
    return "unknown";

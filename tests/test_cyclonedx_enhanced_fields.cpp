@@ -397,7 +397,12 @@ TEST_F(CycloneDXEnhancedFieldsTest, MetadataExtractionEnhancedFields)
 // Test enhanced fields with empty/null values
 TEST_F(CycloneDXEnhancedFieldsTest, EmptyEnhancedFields)
 {
-    ComponentInfo component = createEnhancedComponentInfo();
+    // Create a component with a non-existent file path to prevent metadata extraction
+    ComponentInfo component;
+    component.name = "test-component";
+    component.filePath = "/non/existent/path/test-component.so";  // Non-existent path
+    component.version = "1.0.0";
+    component.license = "MIT";
     
     // Set some fields to empty
     component.description = "";
@@ -414,8 +419,9 @@ TEST_F(CycloneDXEnhancedFieldsTest, EmptyEnhancedFields)
     generator.setOutputPath((test_dir / "empty_fields.json").string());
     generator.setFormat("cyclonedx");
     generator.setCycloneDXVersion("1.6");
-    generator.processComponent(component);
     
+    // Process component - metadata extractor should return false for non-existent file
+    generator.processComponent(component);
     generator.generateSBOM();
     
     // Verify that empty fields are handled gracefully

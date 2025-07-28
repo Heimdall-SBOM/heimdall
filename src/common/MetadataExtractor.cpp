@@ -458,28 +458,36 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
       // Enhanced metadata extraction
       extractEnhancedPackageInfo(component);
       
-      // Generate description
-      std::string description = generateComponentDescription(component);
-      if (!description.empty()) {
-         component.setDescription(description);
+      // Generate description - only if not already set
+      if (component.description.empty()) {
+         std::string description = generateComponentDescription(component);
+         if (!description.empty()) {
+            component.setDescription(description);
+         }
       }
       
-      // Determine scope
-      std::string scope = determineComponentScope(component);
-      if (!scope.empty()) {
-         component.setScope(scope);
+      // Determine scope - only if not already set
+      if (component.scope.empty()) {
+         std::string scope = determineComponentScope(component);
+         if (!scope.empty()) {
+            component.setScope(scope);
+         }
       }
       
-      // Determine MIME type
-      std::string mimeType = determineMimeType(component);
-      if (!mimeType.empty()) {
-         component.setMimeType(mimeType);
+      // Determine MIME type - only if not already set
+      if (component.mimeType.empty()) {
+         std::string mimeType = determineMimeType(component);
+         if (!mimeType.empty()) {
+            component.setMimeType(mimeType);
+         }
       }
       
       // Extract copyright information (optimized - only reads first 1MB for performance)
-      std::string copyright = extractCopyrightInfo(component);
-      if (!copyright.empty()) {
-         component.setCopyright(copyright);
+      if (component.copyright.empty()) {
+         std::string copyright = extractCopyrightInfo(component);
+         if (!copyright.empty()) {
+            component.setCopyright(copyright);
+         }
       }
       
       // Add component evidence
@@ -952,22 +960,28 @@ bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component
       // Enhanced metadata extraction
       extractEnhancedPackageInfo(component);
       
-      // Generate description
-      std::string description = generateComponentDescription(component);
-      if (!description.empty()) {
-         component.setDescription(description);
+      // Generate description - only if not already set
+      if (component.description.empty()) {
+         std::string description = generateComponentDescription(component);
+         if (!description.empty()) {
+            component.setDescription(description);
+         }
       }
       
-      // Determine scope
-      std::string scope = determineComponentScope(component);
-      if (!scope.empty()) {
-         component.setScope(scope);
+      // Determine scope - only if not already set
+      if (component.scope.empty()) {
+         std::string scope = determineComponentScope(component);
+         if (!scope.empty()) {
+            component.setScope(scope);
+         }
       }
       
-      // Determine MIME type
-      std::string mimeType = determineMimeType(component);
-      if (!mimeType.empty()) {
-         component.setMimeType(mimeType);
+      // Determine MIME type - only if not already set
+      if (component.mimeType.empty()) {
+         std::string mimeType = determineMimeType(component);
+         if (!mimeType.empty()) {
+            component.setMimeType(mimeType);
+         }
       }
       
       // Extract copyright information (optimized - only reads first 1MB for performance)
@@ -4469,27 +4483,31 @@ std::string MetadataExtractor::extractCopyrightInfo(const ComponentInfo& compone
 
 void MetadataExtractor::extractEnhancedPackageInfo(ComponentInfo& component)
 {
-   // Extract supplier from package manager
-   if (component.packageManager == "rpm") {
-      component.setSupplier("Red Hat Package Manager");
-   } else if (component.packageManager == "deb") {
-      component.setSupplier("Debian Package Manager");
-   } else if (component.packageManager == "conan") {
-      component.setSupplier("Conan Center");
-   } else if (component.packageManager == "vcpkg") {
-      component.setSupplier("vcpkg");
-   } else if (component.packageManager == "spack") {
-      component.setSupplier("Spack");
+   // Extract supplier from package manager - only if not already set
+   if (component.supplier.empty()) {
+      if (component.packageManager == "rpm") {
+         component.setSupplier("Red Hat Package Manager");
+      } else if (component.packageManager == "deb") {
+         component.setSupplier("Debian Package Manager");
+      } else if (component.packageManager == "conan") {
+         component.setSupplier("Conan Center");
+      } else if (component.packageManager == "vcpkg") {
+         component.setSupplier("vcpkg");
+      } else if (component.packageManager == "spack") {
+         component.setSupplier("Spack");
+      }
    }
    
-   // Extract group from package name
-   std::string group = extractComponentGroup(component);
-   if (!group.empty()) {
-      component.setGroup(group);
+   // Extract group from package name - only if not already set
+   if (component.group.empty()) {
+      std::string group = extractComponentGroup(component);
+      if (!group.empty()) {
+         component.setGroup(group);
+      }
    }
    
-   // Set manufacturer same as supplier for now
-   if (!component.supplier.empty()) {
+   // Set manufacturer same as supplier - only if not already set
+   if (component.manufacturer.empty() && !component.supplier.empty()) {
       component.setManufacturer(component.supplier);
    }
 }

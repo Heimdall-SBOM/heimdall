@@ -206,7 +206,33 @@ protected:
     // Helper method to run heimdall-sbom command
     int runHeimdallSbom(const std::vector<std::string>& args)
     {
-        std::string cmd = "/home/tbakker/code/heimdall/build-gcc-cpp23/src/tools/heimdall-sbom";
+        // Try to find heimdall-sbom in common build directories
+        std::vector<std::string> possiblePaths = {
+            "../src/tools/heimdall-sbom",
+            "./src/tools/heimdall-sbom",
+            "./build-clang-cpp17/src/tools/heimdall-sbom",
+            "./build-clang-cpp20/src/tools/heimdall-sbom", 
+            "./build-clang-cpp23/src/tools/heimdall-sbom",
+            "./build-gcc-cpp17/src/tools/heimdall-sbom",
+            "./build-gcc-cpp20/src/tools/heimdall-sbom",
+            "./build-gcc-cpp23/src/tools/heimdall-sbom",
+            "/home/tbakker/code/heimdall/build-gcc-cpp23/src/tools/heimdall-sbom"
+        };
+        
+        std::string heimdallSbomPath;
+        for (const auto& path : possiblePaths) {
+            if (heimdall::compat::fs::exists(path)) {
+                heimdallSbomPath = path;
+                break;
+            }
+        }
+        
+        if (heimdallSbomPath.empty()) {
+            std::cerr << "Could not find heimdall-sbom in any of the expected locations" << std::endl;
+            return -1;
+        }
+        
+        std::string cmd = heimdallSbomPath;
         for (const auto& arg : args) {
             cmd += " " + arg;
         }
@@ -216,7 +242,33 @@ protected:
     // Helper method to run heimdall-validate command
     int runHeimdallValidate(const std::vector<std::string>& args)
     {
-        std::string cmd = "/home/tbakker/code/heimdall/build-gcc-cpp23/src/tools/heimdall-validate";
+        // Try to find heimdall-validate in common build directories
+        std::vector<std::string> possiblePaths = {
+            "../src/tools/heimdall-validate",
+            "./src/tools/heimdall-validate",
+            "./build-clang-cpp17/src/tools/heimdall-validate",
+            "./build-clang-cpp20/src/tools/heimdall-validate",
+            "./build-clang-cpp23/src/tools/heimdall-validate", 
+            "./build-gcc-cpp17/src/tools/heimdall-validate",
+            "./build-gcc-cpp20/src/tools/heimdall-validate",
+            "./build-gcc-cpp23/src/tools/heimdall-validate",
+            "/home/tbakker/code/heimdall/build-gcc-cpp23/src/tools/heimdall-validate"
+        };
+        
+        std::string heimdallValidatePath;
+        for (const auto& path : possiblePaths) {
+            if (heimdall::compat::fs::exists(path)) {
+                heimdallValidatePath = path;
+                break;
+            }
+        }
+        
+        if (heimdallValidatePath.empty()) {
+            std::cerr << "Could not find heimdall-validate in any of the expected locations" << std::endl;
+            return -1;
+        }
+        
+        std::string cmd = heimdallValidatePath;
         for (const auto& arg : args) {
             cmd += " " + arg;
         }
