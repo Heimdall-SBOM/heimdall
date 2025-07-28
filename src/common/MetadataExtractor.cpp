@@ -55,6 +55,7 @@ limitations under the License.
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <cstdlib>  // for std::getenv
 #include <fstream>
 #include <iostream>
 #include <mutex>
@@ -349,23 +350,56 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
       searchPaths.push_back(".");
 #endif
 
-      // Quick heuristic: check if any Ada-related files exist in the search paths
-      for (const auto& searchPath : searchPaths)
+      // Performance optimization: Skip Ada file detection by default to avoid directory scanning
+      // This was causing exponential slowdown when processing many components
+      
+      // Only enable Ada detection if explicitly requested or in specific environments
+      // This can be controlled via environment variable or configuration
+      const char* enableAdaDetection = std::getenv("HEIMDALL_ENABLE_ADA_DETECTION");
+      const char* aliFilePath = std::getenv("HEIMDALL_ALI_FILE_PATH");
+      
+      if (enableAdaDetection && (strcmp(enableAdaDetection, "1") == 0 || 
+                                strcmp(enableAdaDetection, "true") == 0))
       {
-         if (searchPath.empty())
-            continue;
+         // Quick heuristic: check if any Ada-related files exist in the search paths
+         for (const auto& searchPath : searchPaths)
+         {
+            if (searchPath.empty())
+               continue;
 
-         // Check for common Ada file patterns in the directory
-         bool hasAdaFiles = false;
+            // Check for common Ada file patterns in the directory
+            bool hasAdaFiles = false;
 #if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || \
    defined(HEIMDALL_CPP23_AVAILABLE)
-         try
-         {
-            for (const auto& entry : std::filesystem::directory_iterator(searchPath))
+            try
             {
-               if (entry.is_regular_file())
+               for (const auto& entry : std::filesystem::directory_iterator(searchPath))
                {
-                  std::string fname = entry.path().filename().string();
+                  if (entry.is_regular_file())
+                  {
+                     std::string fname = entry.path().filename().string();
+                     if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" ||
+                                              fname.substr(fname.size() - 4) == ".ads" ||
+                                              fname.substr(fname.size() - 4) == ".ali"))
+                     {
+                        hasAdaFiles = true;
+                        break;
+                     }
+                  }
+               }
+            }
+            catch (const std::filesystem::filesystem_error&)
+            {
+               // Ignore filesystem errors, continue with next path
+            }
+#else
+            DIR* dir = opendir(searchPath.c_str());
+            if (dir)
+            {
+               struct dirent* entry;
+               while ((entry = readdir(dir)) != nullptr)
+               {
+                  std::string fname = entry->d_name;
                   if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" ||
                                            fname.substr(fname.size() - 4) == ".ads" ||
                                            fname.substr(fname.size() - 4) == ".ali"))
@@ -374,44 +408,26 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
                      break;
                   }
                }
+               closedir(dir);
             }
-         }
-         catch (const std::filesystem::filesystem_error&)
-         {
-            // Ignore filesystem errors, continue with next path
-         }
-#else
-         DIR* dir = opendir(searchPath.c_str());
-         if (dir)
-         {
-            struct dirent* entry;
-            while ((entry = readdir(dir)) != nullptr)
-            {
-               std::string fname = entry->d_name;
-               if (fname.size() > 4 && (fname.substr(fname.size() - 4) == ".adb" ||
-                                        fname.substr(fname.size() - 4) == ".ads" ||
-                                        fname.substr(fname.size() - 4) == ".ali"))
-               {
-                  hasAdaFiles = true;
-                  break;
-               }
-            }
-            closedir(dir);
-         }
 #endif
-         if (hasAdaFiles)
-         {
-            shouldSearchForAda = true;
-            break;
+            if (hasAdaFiles)
+            {
+               shouldSearchForAda = true;
+               break;
+            }
          }
       }
 
       // Only search for ALI files if Ada files are present
       if (shouldSearchForAda)
       {
-         for (const auto& searchPath : searchPaths)
+         bool adaMetadataFound = false;
+         
+         // If a specific ALI file path is provided, search only there
+         if (aliFilePath)
          {
-            if (findAdaAliFiles(searchPath, aliFiles))
+            if (findAdaAliFiles(aliFilePath, aliFiles))
             {
                if (extractAdaMetadata(component, aliFiles))
                {
@@ -420,8 +436,29 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
                      packageManagerDetected = true;
                   }
                   heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " +
-                                              searchPath);
-                  break;
+                                              std::string(aliFilePath));
+                  adaMetadataFound = true;
+               }
+            }
+         }
+         else
+         {
+            // Search in the default search paths
+            for (const auto& searchPath : searchPaths)
+            {
+               if (findAdaAliFiles(searchPath, aliFiles))
+               {
+                  if (extractAdaMetadata(component, aliFiles))
+                  {
+                     if (!packageManagerDetected)
+                     {
+                        packageManagerDetected = true;
+                     }
+                     heimdall::Utils::debugPrint("Detected Ada metadata from ALI files in: " +
+                                                 searchPath);
+                     adaMetadataFound = true;
+                     break;
+                  }
                }
             }
          }
