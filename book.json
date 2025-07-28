@@ -3,7 +3,6 @@
   "ignore": [
     "external"
   ],
-  "plugins": ["highlight"],
   "pluginsConfig": {
     "highlight": {
       "init": {

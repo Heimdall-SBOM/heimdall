@@ -57,6 +57,12 @@ examples/*/test_plugin.c
 tests/temp/
 tests/output/
 
+# Ignore test certificate files
+test_*.pem
+test_*.key
+*.pem
+*.key
+
 # Ignore macOS system files
 .DS_Store
 

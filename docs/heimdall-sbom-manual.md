@@ -10,6 +10,7 @@
 6. [Plugin System](#plugin-system)
 7. [Examples](#examples)
 8. [Advanced Usage](#advanced-usage)
+   - [SBOM Signing](#sbom-signing)
 9. [Troubleshooting](#troubleshooting)
 10. [Integration](#integration)
 
@@ -124,6 +125,20 @@ heimdall-sbom <plugin_path> <binary_path> [options]
 
 - `--no-transitive-dependencies` - Include only direct dependencies (default: include all transitive dependencies)
 
+#### Ada Detection Options
+
+- `--ali-file-path <path>` - Specify directory to search for Ada Library Information (.ali) files
+  - Enables Ada detection and restricts search to the specified path only
+  - Useful for large projects where scanning all directories would be slow
+  - Example: `--ali-file-path /path/to/ada/project`
+
+#### Signing Options
+
+- `--sign-key <path>` - Path to private key file for SBOM signing (PEM format)
+- `--sign-cert <path>` - Path to certificate file (optional, PEM format)
+- `--sign-algorithm <algorithm>` - Signature algorithm (RS256, RS384, RS512, ES256, ES384, ES512, Ed25519, default: RS256)
+- `--sign-key-id <id>` - Key identifier for signature metadata
+
 #### Examples
 
 ```bash
@@ -145,6 +160,12 @@ heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
     --format cyclonedx \
     --no-transitive-dependencies \
     --output myapp-direct.cdx.json
+
+# With Ada detection enabled for specific path
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --ali-file-path /path/to/ada/project \
+    --output myapp-with-ada.cdx.json
 ```
 
 ## Supported Formats
@@ -309,7 +330,338 @@ heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
 diff myapp-all.cdx.json myapp-direct.cdx.json
 ```
 
+#### Signing SBOMs
+```bash
+# Generate and sign a CycloneDX SBOM
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp-signed.cdx.json \
+    --sign-key private.key \
+    --sign-algorithm RS256
+
+# Sign with certificate and key ID
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp-signed.cdx.json \
+    --sign-key private.key \
+    --sign-cert certificate.pem \
+    --sign-algorithm ES256 \
+    --sign-key-id "my-key-2025"
+```
+
 ## Advanced Usage
+
+### SBOM Signing
+
+Heimdall supports signing SBOMs using the JSON Signature Format (JSF) for CycloneDX 1.6+ documents. This provides cryptographic integrity and authenticity verification for generated SBOMs.
+
+#### Supported Signing Algorithms
+
+The following cryptographic algorithms are supported:
+
+**RSA Signatures:**
+- **RS256** - RSA with SHA-256 (default)
+- **RS384** - RSA with SHA-384  
+- **RS512** - RSA with SHA-512
+
+**ECDSA Signatures:**
+- **ES256** - ECDSA with SHA-256
+- **ES384** - ECDSA with SHA-384
+- **ES512** - ECDSA with SHA-512
+
+**Ed25519 Signatures:**
+- **Ed25519** - Ed25519 signature (no separate digest)
+
+#### Basic Signing
+
+```bash
+# Sign a CycloneDX SBOM with RSA
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp.cdx.json \
+    --sign-key private.key \
+    --sign-algorithm RS256
+
+# Sign with ECDSA
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp.cdx.json \
+    --sign-key ecdsa_private.key \
+    --sign-algorithm ES256
+
+# Sign with Ed25519
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp.cdx.json \
+    --sign-key ed25519_private.key \
+    --sign-algorithm Ed25519
+```
+
+#### Signing Options
+
+- `--sign-key <path>` - Path to private key file (PEM format)
+- `--sign-cert <path>` - Path to certificate file (optional, PEM format)
+- `--sign-algorithm <algorithm>` - Signature algorithm (default: RS256)
+- `--sign-key-id <id>` - Key identifier for signature metadata
+
+#### Key Management
+
+**Generating RSA Keys:**
+```bash
+# Generate RSA private key
+openssl genrsa -out private.key 2048
+
+# Generate RSA public key
+openssl rsa -in private.key -pubout -out public.key
+
+# Generate self-signed certificate
+openssl req -new -x509 -key private.key -out certificate.pem -days 365
+```
+
+**Generating ECDSA Keys:**
+```bash
+# Generate ECDSA private key (P-256 curve)
+openssl ecparam -genkey -name prime256v1 -out ecdsa_private.key
+
+# Generate ECDSA public key
+openssl ec -in ecdsa_private.key -pubout -out ecdsa_public.key
+```
+
+**Generating Ed25519 Keys:**
+```bash
+# Generate Ed25519 private key
+openssl genpkey -algorithm ED25519 -out ed25519_private.key
+
+# Generate Ed25519 public key
+openssl pkey -in ed25519_private.key -pubout -out ed25519_public.key
+```
+
+#### Signature Structure
+
+The signature follows the JSON Signature Format (JSF) specification:
+
+```json
+{
+  "signature": {
+    "algorithm": "RS256",
+    "value": "base64-encoded-signature",
+    "keyId": "key-identifier",
+    "excludes": ["signature", "components[0].signature"]
+  }
+}
+```
+
+**Signature Fields:**
+- `algorithm` - The signature algorithm used (required)
+- `value` - Base64-encoded signature value (required)
+- `keyId` - Key identifier for verification (optional)
+- `excludes` - Array of fields excluded during canonicalization (optional)
+
+#### Canonicalization
+
+Before signing, the SBOM content is canonicalized according to JSF standards:
+
+1. **Field Exclusion**: All existing `signature` fields are removed from the SBOM
+2. **JSON Canonicalization**: Content is serialized using RFC 8785 JSON Canonicalization Scheme
+3. **Excludes Tracking**: Removed field paths are tracked in the `excludes` array
+
+This ensures that:
+- The signature covers only the actual SBOM content
+- Existing signatures don't interfere with new signatures
+- The canonicalization process is transparent and verifiable
+
+#### Verification
+
+Signed SBOMs can be verified using standard cryptographic tools:
+
+```bash
+# Extract the signature value
+jq -r '.signature.value' myapp.cdx.json | base64 -d > signature.bin
+
+# Extract the canonicalized content (excluding signature fields)
+jq 'del(.signature)' myapp.cdx.json | jq -c . > content.json
+
+# Verify with OpenSSL
+openssl dgst -sha256 -verify public.key -signature signature.bin content.json
+```
+
+#### Advanced Signing Examples
+
+**Signing with Certificate:**
+```bash
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp.cdx.json \
+    --sign-key private.key \
+    --sign-cert certificate.pem \
+    --sign-algorithm RS256 \
+    --sign-key-id "my-key-2025"
+```
+
+**Batch Signing Multiple SBOMs:**
+```bash
+#!/bin/bash
+# sign-sboms.sh
+
+PLUGIN="/usr/lib/heimdall/heimdall-lld.so"
+PRIVATE_KEY="private.key"
+ALGORITHM="RS256"
+
+for binary in *.exe *.bin; do
+    if [ -f "$binary" ]; then
+        echo "Signing SBOM for $binary..."
+        heimdall-sbom "$PLUGIN" "$binary" \
+            --format cyclonedx-1.6 \
+            --output "${binary%.*}.cdx.json" \
+            --sign-key "$PRIVATE_KEY" \
+            --sign-algorithm "$ALGORITHM"
+    fi
+done
+```
+
+**Signing with Different Algorithms:**
+```bash
+# Generate multiple signed versions
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp-rs256.cdx.json \
+    --sign-key rsa_private.key \
+    --sign-algorithm RS256
+
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp-es256.cdx.json \
+    --sign-key ecdsa_private.key \
+    --sign-algorithm ES256
+
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --output myapp-ed25519.cdx.json \
+    --sign-key ed25519_private.key \
+    --sign-algorithm Ed25519
+```
+
+#### Integration with CI/CD
+
+**GitHub Actions with SBOM Signing:**
+```yaml
+name: Build and Sign SBOM
+on: [push, release]
+
+jobs:
+  build-and-sign:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Application
+        run: g++ -o myapp main.cpp
+      
+      - name: Setup OpenSSL
+        run: |
+          openssl genrsa -out private.key 2048
+          openssl rsa -in private.key -pubout -out public.key
+      
+      - name: Generate and Sign SBOM
+        run: |
+          ./heimdall/build/heimdall-sbom \
+            ./heimdall/build/lib/heimdall-lld.so \
+            myapp \
+            --format cyclonedx-1.6 \
+            --output myapp.cdx.json \
+            --sign-key private.key \
+            --sign-algorithm RS256
+      
+      - name: Upload Signed SBOM
+        uses: actions/upload-artifact@v3
+        with:
+          name: signed-sbom
+          path: |
+            myapp.cdx.json
+            public.key
+```
+
+**Jenkins Pipeline with Signing:**
+```groovy
+pipeline {
+    agent any
+    
+    environment {
+        PRIVATE_KEY = credentials('sbom-signing-key')
+    }
+    
+    stages {
+        stage('Build') {
+            steps {
+                sh 'g++ -o myapp main.cpp'
+            }
+        }
+        
+        stage('Generate and Sign SBOM') {
+            steps {
+                sh '''
+                    ./heimdall/build/heimdall-sbom \
+                        ./heimdall/build/lib/heimdall-lld.so \
+                        myapp \
+                        --format cyclonedx-1.6 \
+                        --output myapp.cdx.json \
+                        --sign-key $PRIVATE_KEY \
+                        --sign-algorithm RS256
+                '''
+            }
+        }
+        
+        stage('Archive') {
+            steps {
+                archiveArtifacts artifacts: 'myapp.cdx.json'
+            }
+        }
+    }
+}
+```
+
+#### Security Considerations
+
+1. **Key Protection**: Store private keys securely and never commit them to version control
+2. **Algorithm Selection**: Use appropriate algorithms for your security requirements
+   - RS256/ES256: Good general-purpose security
+   - RS384/ES384: Higher security for sensitive applications
+   - RS512/ES512: Maximum security for critical systems
+   - Ed25519: Modern, efficient alternative
+3. **Certificate Validation**: Use valid certificates from trusted Certificate Authorities
+4. **Key Rotation**: Implement key rotation policies for long-term projects
+5. **Verification**: Always verify signatures before trusting SBOM content
+
+#### Troubleshooting Signing Issues
+
+**Common Signing Errors:**
+
+1. **"Failed to load private key"**
+   ```bash
+   # Check key file exists and is readable
+   ls -la private.key
+   chmod 600 private.key
+   ```
+
+2. **"Unsupported signature algorithm"**
+   ```bash
+   # Verify algorithm is supported
+   heimdall-sbom --help | grep sign-algorithm
+   ```
+
+3. **"Failed to create signature"**
+   ```bash
+   # Check key format and OpenSSL compatibility
+   openssl rsa -in private.key -check
+   ```
+
+4. **"Invalid key type for algorithm"**
+   ```bash
+   # Ensure key type matches algorithm
+   # RSA key for RS256/RS384/RS512
+   # EC key for ES256/ES384/ES512
+   # Ed25519 key for Ed25519
+   ```
 
 ### Plugin Development
 
@@ -514,6 +866,25 @@ file myapp
 ls -la myapp
 ```
 
+#### 5. "Failed to load private key"
+**Cause:** Private key file doesn't exist, has wrong permissions, or is corrupted
+**Solution:** Check key file and permissions
+```bash
+ls -la private.key
+chmod 600 private.key
+openssl rsa -in private.key -check
+```
+
+#### 6. "Unsupported signature algorithm"
+**Cause:** Algorithm not supported or key type doesn't match algorithm
+**Solution:** Use supported algorithm and matching key type
+```bash
+# Supported algorithms: RS256, RS384, RS512, ES256, ES384, ES512, Ed25519
+# RSA key for RS256/RS384/RS512
+# EC key for ES256/ES384/ES512  
+# Ed25519 key for Ed25519
+```
+
 ### Debug Mode
 
 Enable verbose output for debugging:
@@ -532,6 +903,7 @@ heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp --format cyclonedx
 | 2 | Plugin initialization failed |
 | 3 | Binary processing failed |
 | 4 | Invalid command line arguments |
+| 5 | Signing failed (key loading, algorithm, etc.) |
 
 ### Performance Tips
 

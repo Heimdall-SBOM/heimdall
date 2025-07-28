@@ -340,6 +340,78 @@ void ComponentInfo::setPackageManager(const std::string& pkgMgr)
 }
 
 /**
+ * @brief Set the component description
+ * @param desc The description string
+ */
+void ComponentInfo::setDescription(const std::string& desc)
+{
+   description = desc;
+}
+
+/**
+ * @brief Set the component scope
+ * @param s The scope string (required/optional/excluded)
+ */
+void ComponentInfo::setScope(const std::string& s)
+{
+   scope = s;
+}
+
+/**
+ * @brief Set the component group
+ * @param g The group string
+ */
+void ComponentInfo::setGroup(const std::string& g)
+{
+   group = g;
+}
+
+/**
+ * @brief Set the MIME type
+ * @param mime The MIME type string
+ */
+void ComponentInfo::setMimeType(const std::string& mime)
+{
+   mimeType = mime;
+}
+
+/**
+ * @brief Set the copyright information
+ * @param copy The copyright string
+ */
+void ComponentInfo::setCopyright(const std::string& copy)
+{
+   copyright = copy;
+}
+
+/**
+ * @brief Set the CPE identifier
+ * @param cpeId The CPE identifier string
+ */
+void ComponentInfo::setCPE(const std::string& cpeId)
+{
+   cpe = cpeId;
+}
+
+/**
+ * @brief Set the manufacturer
+ * @param manu The manufacturer string
+ */
+void ComponentInfo::setManufacturer(const std::string& manu)
+{
+   manufacturer = manu;
+}
+
+/**
+ * @brief Set the publisher
+ * @param pub The publisher string
+ */
+void ComponentInfo::setPublisher(const std::string& pub)
+{
+   publisher = pub;
+}
+
+/**
  * @brief Mark the component as processed
  */
 void ComponentInfo::markAsProcessed()

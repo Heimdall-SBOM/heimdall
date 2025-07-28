@@ -527,5 +527,3 @@ g++ -fuse-ld=gold \
 
 This comprehensive example demonstrates how Heimdall integrates seamlessly into existing build workflows while providing accurate, standards-compliant SBOM generation.
 
-<function_calls>
-<invoke name="TodoWrite">

@@ -26,6 +26,7 @@ set(HEIMDALL_CORE_SOURCES
     common/PluginInterface.cpp
     common/SBOMValidator.cpp
     common/SBOMComparator.cpp
+    common/SBOMSigner.cpp
     common/Profiler.cpp
 )
 

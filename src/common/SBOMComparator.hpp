@@ -67,8 +67,18 @@ struct SBOMComponent
    std::string                        type;
    std::string                        purl;
    std::string                        license;
+   std::string                        description;  // Component description
+   std::string                        scope;        // Component scope (required/optional/excluded)
+   std::string                        group;        // Component group/organization
+   std::string                        mimeType;     // MIME type of the component
+   std::string                        copyright;    // Copyright information
+   std::string                        cpe;          // Common Platform Enumeration identifier
+   std::string                        supplier;     // Organization that supplied the component
+   std::string                        manufacturer; // Organization that created the component
+   std::string                        publisher;    // Organization that published the component
    std::map<std::string, std::string> properties;
    std::vector<std::string>           dependencies;  // BOM references to dependent components
+   std::vector<std::string>           externalReferences; // External reference URLs
 
    // Default constructor
    SBOMComponent() = default;
@@ -94,13 +104,26 @@ struct SBOMComponent
     * @param type The component type
     * @param purl The package URL
     * @param license The license
+    * @param description The component description
+    * @param scope The component scope
+    * @param group The component group
+    * @param mimeType The MIME type
+    * @param copyright The copyright information
+    * @param cpe The CPE identifier
+    * @param supplier The supplier organization
+    * @param manufacturer The manufacturer organization
+    * @param publisher The publisher organization
     * @param properties Additional properties
     * @param dependencies List of BOM references to dependencies
+    * @param externalReferences List of external reference URLs
     */
    SBOMComponent(std::string id, std::string bomRef, std::string name, std::string version, std::string type,
-                 std::string purl, std::string license,
-                 const std::map<std::string, std::string>& properties   = {},
-                 const std::vector<std::string>&           dependencies = {})
+                 std::string purl, std::string license, std::string description = "", std::string scope = "required",
+                 std::string group = "", std::string mimeType = "", std::string copyright = "", std::string cpe = "",
+                 std::string supplier = "", std::string manufacturer = "", std::string publisher = "",
+                 const std::map<std::string, std::string>& properties = {},
+                 const std::vector<std::string>& dependencies = {},
+                 const std::vector<std::string>& externalReferences = {})
       : id(std::move(id)),
         bomRef(std::move(bomRef)),
         name(std::move(name)),
@@ -108,8 +131,18 @@ struct SBOMComponent
         type(std::move(type)),
         purl(std::move(purl)),
         license(std::move(license)),
+        description(std::move(description)),
+        scope(std::move(scope)),
+        group(std::move(group)),
+        mimeType(std::move(mimeType)),
+        copyright(std::move(copyright)),
+        cpe(std::move(cpe)),
+        supplier(std::move(supplier)),
+        manufacturer(std::move(manufacturer)),
+        publisher(std::move(publisher)),
         properties(properties),
-        dependencies(dependencies)
+        dependencies(dependencies),
+        externalReferences(externalReferences)
    {
    }
 

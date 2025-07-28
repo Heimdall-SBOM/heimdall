@@ -48,6 +48,7 @@ class LLDAdapter::Impl
    void   setExtractDebugInfo(bool extract);
    void   setIncludeSystemLibraries(bool include);
    void   setTransitiveDependencies(bool transitive);
+   void   setAliFilePath(const std::string& path);
    size_t getComponentCount() const;
    void   printStatistics() const;
 
@@ -304,6 +305,18 @@ void LLDAdapter::Impl::setTransitiveDependencies(bool transitive)
    }
 }
 
+void LLDAdapter::Impl::setAliFilePath(const std::string& path)
+{
+   // Set environment variable to enable Ada detection and specify the path
+   setenv("HEIMDALL_ENABLE_ADA_DETECTION", "1", 1);
+   setenv("HEIMDALL_ALI_FILE_PATH", path.c_str(), 1);
+   
+   if (verbose)
+   {
+      logProcessing("Ada ALI file path set to: " + path);
+   }
+}
+
 size_t LLDAdapter::Impl::getComponentCount() const
 {
    return sbomGenerator->getComponentCount();
@@ -383,6 +396,11 @@ void LLDAdapter::setIncludeSystemLibraries(bool include)
 void LLDAdapter::setTransitiveDependencies(bool transitive)
 {
    pImpl->setTransitiveDependencies(transitive);
+}
+
+void LLDAdapter::setAliFilePath(const std::string& path)
+{
+   pImpl->setAliFilePath(path);
 }
 
 void LLDAdapter::processSymbol(const std::string& symbolName, uint64_t address, uint64_t size)
