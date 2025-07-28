@@ -591,6 +591,14 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
       signatureObj["keyId"] = signatureInfo.keyId;
    }
    
+   // Optional timestamp (not part of JSF spec but useful for CycloneDX)
+   if (!signatureInfo.timestamp.empty()) {
+      signatureObj["timestamp"] = signatureInfo.timestamp;
+   }
+   
+   // Always include excludes field (even if empty) for CycloneDX compatibility
+   signatureObj["excludes"] = signatureInfo.excludes;
+   
    // Add signature to SBOM
    sbomJson["signature"] = signatureObj;
    
@@ -669,14 +677,20 @@ bool SBOMSigner::extractSignature(const std::string& sbomContent, SignatureInfo&
       signatureInfo.algorithm = sigJson.value("algorithm", "");
       signatureInfo.signature = sigJson.value("value", "");
       
-      // Extract optional fields
-      signatureInfo.keyId = sigJson.value("keyId", "");
-      signatureInfo.certificate = sigJson.value("certificate", "");
-      
-      // Extract public key if present (JWK format)
-      if (sigJson.contains("publicKey") && sigJson["publicKey"].is_object()) {
-         // TODO: Convert JWK to certificate format if needed
-      }
+         // Extract optional fields
+   signatureInfo.keyId = sigJson.value("keyId", "");
+   signatureInfo.certificate = sigJson.value("certificate", "");
+   signatureInfo.timestamp = sigJson.value("timestamp", "");
+   
+   // Extract excludes array if present
+   if (sigJson.contains("excludes") && sigJson["excludes"].is_array()) {
+      signatureInfo.excludes = sigJson["excludes"].get<std::vector<std::string>>();
+   }
+   
+   // Extract public key if present (JWK format)
+   if (sigJson.contains("publicKey") && sigJson["publicKey"].is_object()) {
+      // TODO: Convert JWK to certificate format if needed
+   }
    } else if (sigJson.is_string()) {
       // Fallback for simple string format
       signatureInfo.signature = sigJson.get<std::string>();
