@@ -96,14 +96,16 @@ detect_clang_versions() {
     # Check for system-installed Clang versions
     for version in {7..20}; do
         if command -v "clang-${version}" >/dev/null 2>&1; then
-            local clang_version=$("clang-${version}" --version | head -n1 | cut -d' ' -f3)
+            local clang_version=$("clang-${version}" --version | head -n1 | cut -d' ' -f3 | sed 's/(.*//')
+            echo "[DEBUG] Found system clang-${version}: $clang_version" 1>&2
             versions+=("clang-${version}:${clang_version}")
         fi
     done
     
     # Check for default clang
     if command -v "clang" >/dev/null 2>&1; then
-        local default_version=$(clang --version | head -n1 | cut -d' ' -f4)
+        local default_version=$(clang --version | head -n1 | cut -d' ' -f3)
+        echo "[DEBUG] Found default clang: $default_version" 1>&2
         versions+=("clang:${default_version}")
     fi
     
@@ -120,8 +122,14 @@ get_compiler_major_version() {
 select_compiler() {
     local cxx_standard="$1"
     local compiler_preference="$2"
-    local available_gcc=("${@:3}")
-    local available_clang=("${@:4}")
+    local available_gcc_string="$3"
+    local available_clang_string="$4"
+    
+    # Convert space-separated strings back to arrays
+    IFS=' ' read -ra available_gcc <<< "$available_gcc_string"
+    IFS=' ' read -ra available_clang <<< "$available_clang_string"
+    
+
     
     case $cxx_standard in
         11)
@@ -410,8 +418,8 @@ EOF
         export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
     elif [[ "$compiler_type" == "clang" ]]; then
         # For Clang, parse version correctly
-        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f4)"
-        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f4)"
+        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3 | sed 's/(.*//')"
+        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3 | sed 's/(.*//')"
         export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
         export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
     else
@@ -486,7 +494,7 @@ main() {
     fi
     
     # Select appropriate compiler
-    local selected_compiler=$(select_compiler "$cxx_standard" "$compiler_preference" "${available_gcc[@]}" "${available_clang[@]}")
+    local selected_compiler=$(select_compiler "$cxx_standard" "$compiler_preference" "${available_gcc[*]}" "${available_clang[*]}")
     
     if [ $? -ne 0 ]; then
         if [[ $quiet -eq 0 ]]; then
