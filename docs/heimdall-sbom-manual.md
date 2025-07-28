@@ -125,6 +125,13 @@ heimdall-sbom <plugin_path> <binary_path> [options]
 
 - `--no-transitive-dependencies` - Include only direct dependencies (default: include all transitive dependencies)
 
+#### Ada Detection Options
+
+- `--ali-file-path <path>` - Specify directory to search for Ada Library Information (.ali) files
+  - Enables Ada detection and restricts search to the specified path only
+  - Useful for large projects where scanning all directories would be slow
+  - Example: `--ali-file-path /path/to/ada/project`
+
 #### Signing Options
 
 - `--sign-key <path>` - Path to private key file for SBOM signing (PEM format)
@@ -153,6 +160,12 @@ heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
     --format cyclonedx \
     --no-transitive-dependencies \
     --output myapp-direct.cdx.json
+
+# With Ada detection enabled for specific path
+heimdall-sbom /usr/lib/heimdall/heimdall-lld.so myapp \
+    --format cyclonedx-1.6 \
+    --ali-file-path /path/to/ada/project \
+    --output myapp-with-ada.cdx.json
 ```
 
 ## Supported Formats
