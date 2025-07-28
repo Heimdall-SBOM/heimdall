@@ -571,11 +571,14 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
       return sbomContent;
    }
    
-   // Create signature object according to JSON Signature Format (JSF) specification
+   // Create signature object with basic fields for CycloneDX compatibility
    nlohmann::json signatureObj;
+   
+   // Basic signature fields
    signatureObj["algorithm"] = signatureInfo.algorithm;
    signatureObj["value"] = signatureInfo.signature;
    
+   // Optional fields
    if (!signatureInfo.keyId.empty()) {
       signatureObj["keyId"] = signatureInfo.keyId;
    }
@@ -583,9 +586,6 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
    if (!signatureInfo.timestamp.empty()) {
       signatureObj["timestamp"] = signatureInfo.timestamp;
    }
-   
-   // Always include excludes field, even if empty, to indicate what was excluded during canonicalization
-   signatureObj["excludes"] = signatureInfo.excludes;
    
    // Add signature to SBOM
    sbomJson["signature"] = signatureObj;
@@ -659,18 +659,13 @@ bool SBOMSigner::extractSignature(const std::string& sbomContent, SignatureInfo&
    
    nlohmann::json sigJson = sbomJson["signature"];
    
-   // Handle signature as object with value field
+   // Handle signature as object with basic format
    if (sigJson.is_object()) {
       signatureInfo.signature = sigJson.value("value", "");
       signatureInfo.algorithm = sigJson.value("algorithm", "");
       signatureInfo.keyId = sigJson.value("keyId", "");
       signatureInfo.timestamp = sigJson.value("timestamp", "");
       signatureInfo.certificate = sigJson.value("certificate", "");
-      
-      // Extract excludes array if present
-      if (sigJson.contains("excludes") && sigJson["excludes"].is_array()) {
-         signatureInfo.excludes = sigJson["excludes"].get<std::vector<std::string>>();
-      }
    } else if (sigJson.is_string()) {
       // Fallback for simple string format
       signatureInfo.signature = sigJson.get<std::string>();
