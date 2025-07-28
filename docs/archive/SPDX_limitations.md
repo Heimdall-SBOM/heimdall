@@ -72,4 +72,3 @@ This document summarizes the current limitations, challenges, and realities of w
 
 ---
 
-*This document will be updated as the SPDX ecosystem evolves and more robust SBOM profile schemas become available.* 

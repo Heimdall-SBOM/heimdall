@@ -1,646 +1,717 @@
-# Heimdall CMake Module Design
+# Heimdall CMake Module - Usage Guide
 
-*Heimdall Project*  
-*Last updated: January 2025*
+## Table of Contents
 
-## Executive Summary
+1. [Overview](#overview)
+2. [Installation](#installation)
+3. [Quick Start](#quick-start)
+4. [Basic Usage](#basic-usage)
+5. [Advanced Configuration](#advanced-configuration)
+6. [Supported Formats](#supported-formats)
+7. [Linker Integration](#linker-integration)
+8. [Examples](#examples)
+9. [Troubleshooting](#troubleshooting)
+10. [Integration](#integration)
 
-This document outlines the design for a CMake module that integrates Heimdall's SBOM generation capabilities into CMake-based build systems. The module will provide seamless SBOM generation for C++ projects using both LLVM LLD and GNU Gold linkers, leveraging Heimdall's existing wrapper and plugin approaches.
+## Overview
 
-## Rationale
+The Heimdall CMake module provides seamless integration of SBOM (Software Bill of Materials) generation into CMake-based build systems. It automatically detects available linkers and plugins, configures the build process, and generates SBOMs as part of your normal build workflow.
 
-### Current State Analysis
+### Key Features
 
-Heimdall currently provides SBOM generation through two distinct approaches:
+- **Automatic Integration**: SBOM generation integrated into your build process
+- **Multi-Linker Support**: Works with LLVM LLD and GNU Gold linkers
+- **Multi-Format Support**: SPDX (2.3, 3.0, 3.0.1) and CycloneDX (1.4, 1.5, 1.6)
+- **Cross-Platform**: Works on Linux and macOS
+- **Zero Configuration**: Sensible defaults for immediate use
+- **Flexible Configuration**: Extensive options for customization
 
-1. **LLD Wrapper Approach**: Uses `heimdall-sbom` tool for post-processing analysis
-2. **Gold Plugin Approach**: Uses native plugin interface during linking
+### Supported Platforms
 
-The current usage requires manual integration in build systems:
+| Platform | LLD Support | Gold Support | Notes |
+|----------|-------------|--------------|-------|
+| Linux | ✅ Full | ✅ Full | Gold requires elfutils |
+| macOS | ✅ Full | ❌ None | Gold not available |
+| Windows | ✅ Full | ❌ None | Gold not available |
+
+## Installation
+
+### Prerequisites
+
+- CMake 3.16 or later
+- C++17 or later compiler
+- Heimdall installation (see [Heimdall Installation Guide](heimdall-users-guide.md))
+
+### Installing the CMake Module
+
+#### Option 1: Copy to Your Project
 
 ```bash
-# Manual LLD approach
-g++ -fuse-ld=lld main.o -o app
-heimdall-sbom ../../build/lib/heimdall-lld.so app --format spdx --output app.spdx
+# Copy the cmake directory to your project
+cp -r /path/to/heimdall/cmake ./cmake
 
-# Manual Gold approach  
-g++ -fuse-ld=gold -Wl,--plugin=../../build/lib/heimdall-gold.so \
-    -Wl,--plugin-opt=sbom-output=app.spdx main.o -o app
+# Or clone the repository and copy
+git clone https://github.com/Heimdall-SBOM/heimdall.git
+cp -r heimdall/cmake ./cmake
 ```
 
-### Problems Addressed
+#### Option 2: Use as External Project
 
-1. **Manual Integration**: Users must manually add SBOM generation steps
-2. **Build System Fragmentation**: Different approaches for different linkers
-3. **Configuration Complexity**: Users must manage plugin paths and options
-4. **Inconsistent Output**: No standardized SBOM generation across projects
-5. **Limited Automation**: SBOM generation not integrated into build process
-
-### Benefits of CMake Module
-
-1. **Unified Interface**: Single CMake function for all linkers
-2. **Automatic Detection**: Automatically detects available linkers and plugins
-3. **Build Integration**: SBOM generation as part of normal build process
-4. **Configuration Management**: Centralized SBOM configuration
-5. **Cross-Platform Support**: Works on macOS (LLD only) and Linux (LLD + Gold)
-
-## Detailed Design
-
-### Module Architecture
-
-```
-HeimdallCMake/
-├── FindHeimdall.cmake          # Find Heimdall installation
-├── HeimdallSBOM.cmake          # Main SBOM generation functions
-├── HeimdallConfig.cmake        # Configuration and options
-└── templates/
-    ├── sbom-config.json        # Default SBOM configuration
-    └── cmake-sbom-template.cmake  # Template for user projects
-```
-
-### Core Functions
-
-#### 1. `heimdall_enable_sbom(target [options])`
-
-Main function to enable SBOM generation for a CMake target.
-
-**Parameters:**
-- `target`: CMake target name
-- `options`: Optional configuration parameters
-
-**Example Usage:**
 ```cmake
-# Basic usage
-heimdall_enable_sbom(myapp)
+# In your CMakeLists.txt
+include(FetchContent)
+FetchContent_Declare(
+    heimdall
+    GIT_REPOSITORY https://github.com/Heimdall-SBOM/heimdall.git
+    GIT_TAG main
+)
+FetchContent_MakeAvailable(heimdall)
+```
 
-# With options
-heimdall_enable_sbom(myapp
-    FORMAT spdx
-    OUTPUT myapp.spdx
-    VERBOSE ON
-    INCLUDE_SYSTEM_LIBS OFF
+#### Option 3: System Installation
+
+```bash
+# Install to system CMake modules directory
+sudo cp -r /path/to/heimdall/cmake/* /usr/share/cmake/Modules/
+```
+
+### Verifying Installation
+
+```cmake
+# Test in your CMakeLists.txt
+find_package(Heimdall REQUIRED)
+message(STATUS "Heimdall found: ${HEIMDALL_FOUND}")
+message(STATUS "LLD plugin: ${HEIMDALL_LLD_PLUGIN}")
+message(STATUS "Gold plugin: ${HEIMDALL_GOLD_PLUGIN}")
+```
+
+## Quick Start
+
+### Basic Setup
+
+1. **Add the module to your project:**
+   ```cmake
+   # CMakeLists.txt
+   cmake_minimum_required(VERSION 3.16)
+   project(MyProject)
+   
+   # Add Heimdall cmake modules to path
+   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+   
+   # Find and include Heimdall
+   find_package(Heimdall REQUIRED)
+   include(HeimdallSBOM)
+   ```
+
+2. **Create your target:**
+   ```cmake
+   add_executable(myapp main.cpp)
+   ```
+
+3. **Enable SBOM generation:**
+   ```cmake
+   heimdall_enable_sbom(myapp)
+   ```
+
+4. **Build your project:**
+   ```bash
+   mkdir build && cd build
+   cmake ..
+   make
+   ```
+
+The SBOM will be automatically generated during the build process!
+
+### Generated Files
+
+After building, you'll find:
+- `build/sbom/myapp.spdx` - SPDX format SBOM
+- `build/sbom/myapp.cyclonedx.json` - CycloneDX format SBOM (if enabled)
+
+## Basic Usage
+
+### Simple SBOM Generation
+
+```cmake
+# Enable SBOM generation with defaults
+heimdall_enable_sbom(myapp)
+```
+
+**Default behavior:**
+- Uses SPDX 2.3 format
+- Outputs to `${CMAKE_BINARY_DIR}/sbom/`
+- Uses automatic linker detection
+- Includes all dependencies
+
+### Specify Format
+
+```cmake
+# Generate CycloneDX SBOM
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+
+# Generate SPDX 3.0 JSON
+heimdall_enable_sbom(myapp FORMAT spdx-3.0)
+
+# Generate SPDX 2.3 tag-value
+heimdall_enable_sbom(myapp FORMAT spdx-2.3)
+```
+
+### Specify Output
+
+```cmake
+# Custom output path
+heimdall_enable_sbom(myapp 
+    FORMAT cyclonedx-1.6
+    OUTPUT myapp.cyclonedx.json
+)
+
+# Output to specific directory
+heimdall_enable_sbom(myapp 
+    FORMAT spdx-3.0
+    OUTPUT ${CMAKE_SOURCE_DIR}/docs/myapp.spdx.json
 )
 ```
 
-#### 2. `heimdall_find_plugins()`
-
-Automatically detects available Heimdall plugins and linkers.
-
-**Returns:**
-- `HEIMDALL_LLD_PLUGIN_PATH`: Path to LLD plugin
-- `HEIMDALL_GOLD_PLUGIN_PATH`: Path to Gold plugin  
-- `HEIMDALL_SBOM_TOOL_PATH`: Path to heimdall-sbom tool
-- `HEIMDALL_LLD_AVAILABLE`: Boolean for LLD availability
-- `HEIMDALL_GOLD_AVAILABLE`: Boolean for Gold availability
-
-#### 3. `heimdall_generate_sbom(target binary_path [options])`
-
-Low-level function for manual SBOM generation.
-
-**Parameters:**
-- `target`: CMake target name
-- `binary_path`: Path to binary for analysis
-- `options`: SBOM generation options
-
-### Configuration Options
-
-#### Global Options
+### Multiple Formats
 
 ```cmake
-# SBOM Configuration
-set(HEIMDALL_SBOM_FORMAT "spdx" CACHE STRING "Default SBOM format")
-set(HEIMDALL_SBOM_OUTPUT_DIR "${CMAKE_BINARY_DIR}/sbom" CACHE PATH "SBOM output directory")
-set(HEIMDALL_SBOM_VERBOSE OFF CACHE BOOL "Enable verbose SBOM generation")
-set(HEIMDALL_SBOM_INCLUDE_SYSTEM_LIBS OFF CACHE BOOL "Include system libraries in SBOM")
-
-# Linker Preferences
-set(HEIMDALL_PREFERRED_LINKER "auto" CACHE STRING "Preferred linker (lld, gold, auto)")
-set(HEIMDALL_FALLBACK_TO_WRAPPER ON CACHE BOOL "Fallback to wrapper approach if plugin fails")
-
-# Plugin Paths
-set(HEIMDALL_PLUGIN_SEARCH_PATHS "" CACHE STRING "Additional plugin search paths")
+# Generate multiple formats
+heimdall_enable_sbom(myapp FORMAT spdx-2.3)
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+heimdall_enable_sbom(myapp FORMAT spdx-3.0)
 ```
 
-#### Target-Specific Options
+## Advanced Configuration
+
+### Global Configuration
+
+Set global defaults in your `CMakeLists.txt`:
 
 ```cmake
-# Per-target SBOM options
+# Global SBOM configuration
+set(HEIMDALL_SBOM_FORMAT "cyclonedx-1.6" CACHE STRING "Default SBOM format")
+set(HEIMDALL_SBOM_OUTPUT_DIR "${CMAKE_BINARY_DIR}/sboms" CACHE PATH "SBOM output directory")
+set(HEIMDALL_SBOM_VERBOSE ON CACHE BOOL "Enable verbose SBOM generation")
+set(HEIMDALL_SBOM_INCLUDE_SYSTEM_LIBS OFF CACHE BOOL "Include system libraries")
+
+# Linker preferences
+set(HEIMDALL_PREFERRED_LINKER "auto" CACHE STRING "Preferred linker (lld, gold, auto)")
+```
+
+### Target-Specific Configuration
+
+```cmake
+# Configure specific target
 set_target_properties(myapp PROPERTIES
-    HEIMDALL_SBOM_FORMAT "cyclonedx"
+    HEIMDALL_SBOM_FORMAT "cyclonedx-1.6"
     HEIMDALL_SBOM_OUTPUT "myapp.cyclonedx.json"
     HEIMDALL_SBOM_VERBOSE ON
     HEIMDALL_SBOM_INCLUDE_SYSTEM_LIBS ON
 )
-```
 
-### Implementation Strategy
-
-#### Phase 1: Plugin Detection and Configuration
-
-1. **Find Heimdall Installation**
-   - Search for Heimdall in standard locations
-   - Support custom installation paths
-   - Validate plugin availability
-
-2. **Detect Available Linkers**
-   - Check for `ld.lld` availability
-   - Check for `ld.gold` availability
-   - Test plugin compatibility
-
-3. **Configure Build Environment**
-   - Set appropriate linker flags
-   - Configure plugin options
-   - Setup fallback mechanisms
-
-#### Phase 2: SBOM Generation Integration
-
-1. **LLD Integration (Wrapper Approach)**
-   ```cmake
-   # Add post-build command for SBOM generation
-   add_custom_command(TARGET ${target} POST_BUILD
-       COMMAND ${HEIMDALL_SBOM_TOOL_PATH} 
-               ${HEIMDALL_LLD_PLUGIN_PATH} 
-               $<TARGET_FILE:${target}>
-               --format ${sbom_format}
-               --output ${sbom_output}
-       COMMENT "Generating SBOM for ${target}"
-       VERBATIM
-   )
-   ```
-
-2. **Gold Integration (Plugin Approach)**
-   ```cmake
-   # Add linker options for plugin integration
-   target_link_options(${target} PRIVATE
-       "LINKER:--plugin=${HEIMDALL_GOLD_PLUGIN_PATH}"
-       "LINKER:--plugin-opt=sbom-output=${sbom_output}"
-       "LINKER:--plugin-opt=format=${sbom_format}"
-   )
-   ```
-
-3. **Fallback Mechanism**
-   ```cmake
-   # If plugin fails, fallback to wrapper approach
-   if(HEIMDALL_FALLBACK_TO_WRAPPER)
-       add_custom_command(TARGET ${target} POST_BUILD
-           COMMAND ${CMAKE_COMMAND} -E echo "Plugin failed, using wrapper approach"
-           COMMAND ${HEIMDALL_SBOM_TOOL_PATH} 
-                   ${HEIMDALL_GOLD_PLUGIN_PATH} 
-                   $<TARGET_FILE:${target}>
-                   --format ${sbom_format}
-                   --output ${sbom_output}
-       )
-   endif()
-   ```
-
-#### Phase 3: Advanced Features
-
-1. **Multi-Format Support**
-   - Generate multiple SBOM formats simultaneously
-   - Support for SPDX 2.3, 3.0, 3.0.1
-   - Support for CycloneDX 1.4, 1.5, 1.6
-
-2. **Dependency Analysis**
-   - Extract component dependencies
-   - Include transitive dependencies
-   - Generate dependency graphs
-
-3. **Custom Metadata**
-   - Project-specific metadata injection
-   - License information
-   - Version information
-   - Build environment details
-
-### File Structure
-
-```
-cmake/
-├── FindHeimdall.cmake
-├── HeimdallSBOM.cmake
-├── HeimdallConfig.cmake
-└── templates/
-    ├── sbom-config.json
-    └── cmake-sbom-template.cmake
-```
-
-## Implementation Steps
-
-### Step 1: Create FindHeimdall.cmake
-
-**Purpose**: Locate Heimdall installation and plugins
-
-**Key Features**:
-- Search in standard installation paths
-- Support custom HEIMDALL_ROOT variable
-- Validate plugin availability
-- Set up CMake variables for other modules
-
-**Implementation**:
-```cmake
-# FindHeimdall.cmake
-include(FindPackageHandleStandardArgs)
-
-# Search paths
-set(HEIMDALL_SEARCH_PATHS
-    ${HEIMDALL_ROOT}
-    $ENV{HEIMDALL_ROOT}
-    ${CMAKE_CURRENT_SOURCE_DIR}/build
-    ${CMAKE_CURRENT_SOURCE_DIR}/build-cpp23
-    /usr/local/lib/heimdall
-    /opt/heimdall
-)
-
-# Find plugins
-find_library(HEIMDALL_LLD_PLUGIN heimdall-lld
-    PATHS ${HEIMDALL_SEARCH_PATHS}
-    PATH_SUFFIXES lib
-)
-
-find_library(HEIMDALL_GOLD_PLUGIN heimdall-gold
-    PATHS ${HEIMDALL_SEARCH_PATHS}
-    PATH_SUFFIXES lib
-)
-
-# Find heimdall-sbom tool
-find_program(HEIMDALL_SBOM_TOOL heimdall-sbom
-    PATHS ${HEIMDALL_SEARCH_PATHS}
-    PATH_SUFFIXES bin src/tools
-)
-
-# Validate findings
-find_package_handle_standard_args(Heimdall
-    REQUIRED_VARS HEIMDALL_SBOM_TOOL
-    FOUND_VAR HEIMDALL_FOUND
-)
-```
-
-### Step 2: Create HeimdallConfig.cmake
-
-**Purpose**: Define configuration options and defaults
-
-**Key Features**:
-- Global configuration options
-- Target-specific property definitions
-- Default value management
-- Validation functions
-
-**Implementation**:
-```cmake
-# HeimdallConfig.cmake
-
-# Global configuration options
-option(HEIMDALL_ENABLE_SBOM "Enable SBOM generation" ON)
-option(HEIMDALL_VERBOSE "Enable verbose SBOM output" OFF)
-option(HEIMDALL_INCLUDE_SYSTEM_LIBS "Include system libraries in SBOM" OFF)
-
-# Default values
-set(HEIMDALL_SBOM_FORMAT "spdx" CACHE STRING "Default SBOM format")
-set(HEIMDALL_SBOM_OUTPUT_DIR "${CMAKE_BINARY_DIR}/sbom" CACHE PATH "SBOM output directory")
-set(HEIMDALL_PREFERRED_LINKER "auto" CACHE STRING "Preferred linker (lld, gold, auto)")
-
-# Validate format
-set_property(CACHE HEIMDALL_SBOM_FORMAT PROPERTY STRINGS 
-    "spdx" "spdx-2.3" "spdx-3.0" "spdx-3.0.1" 
-    "cyclonedx" "cyclonedx-1.4" "cyclonedx-1.5" "cyclonedx-1.6"
-)
-
-# Validate linker
-set_property(CACHE HEIMDALL_PREFERRED_LINKER PROPERTY STRINGS 
-    "auto" "lld" "gold"
-)
-```
-
-### Step 3: Create HeimdallSBOM.cmake
-
-**Purpose**: Main SBOM generation functions
-
-**Key Features**:
-- `heimdall_enable_sbom()` function
-- Automatic linker detection
-- Plugin vs wrapper approach selection
-- Post-build command generation
-
-**Implementation**:
-```cmake
-# HeimdallSBOM.cmake
-
-include(CMakeParseArguments)
-
-function(heimdall_enable_sbom target)
-    cmake_parse_arguments(HEIMDALL_SBOM
-        "VERBOSE;INCLUDE_SYSTEM_LIBS"
-        "FORMAT;OUTPUT;LINKER"
-        ""
-        ${ARGN}
-    )
-
-    # Find Heimdall
-    find_package(Heimdall REQUIRED)
-    
-    # Detect available linkers
-    heimdall_detect_linkers()
-    
-    # Configure SBOM generation
-    heimdall_configure_sbom_generation(${target})
-endfunction()
-
-function(heimdall_detect_linkers)
-    # Check for LLD
-    find_program(LLD_LINKER ld.lld)
-    if(LLD_LINKER)
-        set(HEIMDALL_LLD_AVAILABLE TRUE PARENT_SCOPE)
-    endif()
-    
-    # Check for Gold (Linux only)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        find_program(GOLD_LINKER ld.gold)
-        if(GOLD_LINKER)
-            set(HEIMDALL_GOLD_AVAILABLE TRUE PARENT_SCOPE)
-        endif()
-    endif()
-endfunction()
-
-function(heimdall_configure_sbom_generation target)
-    # Determine best approach based on available linkers
-    if(HEIMDALL_GOLD_AVAILABLE AND HEIMDALL_PREFERRED_LINKER STREQUAL "gold")
-        heimdall_configure_gold_plugin(${target})
-    elseif(HEIMDALL_LLD_AVAILABLE)
-        heimdall_configure_lld_wrapper(${target})
-    else()
-        message(WARNING "No suitable linker found for SBOM generation")
-    endif()
-endfunction()
-```
-
-### Step 4: Create Usage Examples
-
-**Purpose**: Demonstrate module usage
-
-**Examples**:
-```cmake
-# Basic usage
-find_package(Heimdall REQUIRED)
 heimdall_enable_sbom(myapp)
+```
 
-# Advanced usage
+### Advanced Options
+
+```cmake
+# Full configuration example
 heimdall_enable_sbom(myapp
     FORMAT cyclonedx-1.6
     OUTPUT myapp.cyclonedx.json
     VERBOSE ON
-    INCLUDE_SYSTEM_LIBS ON
+    INCLUDE_SYSTEM_LIBS OFF
+    LINKER lld  # Force LLD linker
 )
-
-# Multi-format generation
-heimdall_enable_sbom(myapp FORMAT spdx)
-heimdall_enable_sbom(myapp FORMAT cyclonedx)
 ```
 
-### Step 5: Integration Testing
+### Conditional SBOM Generation
 
-**Purpose**: Validate module functionality
+```cmake
+# Only generate SBOM in Release builds
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+endif()
 
-**Test Cases**:
-1. Plugin detection on different platforms
-2. LLD wrapper approach functionality
-3. Gold plugin approach functionality
-4. Fallback mechanism validation
-5. Multi-format generation
-6. Error handling and reporting
+# Generate different formats for different build types
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
+else()
+    heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+endif()
+```
 
-## Detailed TODO Steps
+## Supported Formats
 
-### Phase 1: Foundation (Week 1-2)
+### CycloneDX Formats
 
-#### Week 1: Core Infrastructure
-- [ ] **Day 1-2**: Create `FindHeimdall.cmake`
-  - Implement plugin search logic
-  - Add validation functions
-  - Test on macOS and Linux
-  - Document search paths and variables
+| Version | Format | Description |
+|---------|--------|-------------|
+| 1.4 | JSON | Basic component structure |
+| 1.5 | JSON | Enhanced validation |
+| 1.6 | JSON | Latest features (default) |
 
-- [ ] **Day 3-4**: Create `HeimdallConfig.cmake`
-  - Define global configuration options
-  - Implement property definitions
-  - Add validation functions
-  - Create default configuration templates
+**Example:**
+```cmake
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+```
 
-- [ ] **Day 5**: Create basic `HeimdallSBOM.cmake`
-  - Implement `heimdall_enable_sbom()` function
-  - Add linker detection logic
-  - Create basic post-build command generation
+### SPDX Formats
 
-#### Week 2: Linker Integration
-- [ ] **Day 1-2**: Implement LLD wrapper approach
-  - Add `heimdall_configure_lld_wrapper()` function
-  - Implement post-build command generation
-  - Test with various LLD versions
-  - Add error handling and fallback logic
+| Version | Format | Description |
+|---------|--------|-------------|
+| 2.3 | Tag-value | Traditional SPDX format |
+| 3.0 | JSON | Modern JSON format |
+| 3.0.1 | JSON | Latest SPDX JSON |
 
-- [ ] **Day 3-4**: Implement Gold plugin approach
-  - Add `heimdall_configure_gold_plugin()` function
-  - Implement linker option configuration
-  - Test plugin loading and error handling
-  - Add dependency validation (elfutils, libelf)
+**Examples:**
+```cmake
+# Tag-value format
+heimdall_enable_sbom(myapp FORMAT spdx-2.3)
 
-- [ ] **Day 5**: Implement automatic approach selection
-  - Add `heimdall_detect_linkers()` function
-  - Implement preference-based selection
-  - Add fallback mechanism
-  - Test cross-platform compatibility
+# JSON format
+heimdall_enable_sbom(myapp FORMAT spdx-3.0)
+```
 
-### Phase 2: Advanced Features (Week 3-4)
+## Linker Integration
 
-#### Week 3: Format Support and Configuration
-- [ ] **Day 1-2**: Multi-format support
-  - Implement format validation
-  - Add SPDX 2.3, 3.0, 3.0.1 support
-  - Add CycloneDX 1.4, 1.5, 1.6 support
-  - Test format-specific options
+### Automatic Detection
 
-- [ ] **Day 3-4**: Advanced configuration
-  - Implement target-specific properties
-  - Add custom metadata support
-  - Implement output directory management
-  - Add verbose output configuration
+The module automatically detects available linkers:
 
-- [ ] **Day 5**: Template system
-  - Create SBOM configuration templates
-  - Implement template customization
-  - Add project-specific metadata injection
-  - Create usage examples
+```cmake
+# Check what's available
+message(STATUS "LLD available: ${HEIMDALL_LLD_AVAILABLE}")
+message(STATUS "Gold available: ${HEIMDALL_GOLD_AVAILABLE}")
+```
 
-#### Week 4: Integration and Testing
-- [ ] **Day 1-2**: CMake integration testing
-  - Test with various CMake versions (3.16+)
-  - Validate cross-platform compatibility
-  - Test with different build types (Debug, Release)
-  - Add integration test suite
+### Manual Linker Selection
 
-- [ ] **Day 3-4**: Error handling and reporting
-  - Implement comprehensive error messages
-  - Add diagnostic information
-  - Create troubleshooting guide
-  - Add logging and debugging support
+```cmake
+# Force specific linker
+heimdall_enable_sbom(myapp LINKER lld)
+heimdall_enable_sbom(myapp LINKER gold)
+heimdall_enable_sbom(myapp LINKER auto)  # Default
+```
 
-- [ ] **Day 5**: Documentation and examples
-  - Create comprehensive documentation
-  - Add usage examples for different scenarios
-  - Create migration guide from manual approach
-  - Add best practices guide
+### Linker-Specific Configuration
 
-### Phase 3: Optimization and Polish (Week 5-6)
+#### LLD Configuration
 
-#### Week 5: Performance and Reliability
-- [ ] **Day 1-2**: Performance optimization
-  - Optimize plugin detection
-  - Implement caching for repeated operations
-  - Add parallel SBOM generation support
-  - Optimize memory usage
+```cmake
+# LLD-specific options
+set_target_properties(myapp PROPERTIES
+    HEIMDALL_LLD_VERBOSE ON
+    HEIMDALL_LLD_DEBUG_INFO ON
+)
 
-- [ ] **Day 3-4**: Reliability improvements
-  - Add comprehensive error recovery
-  - Implement retry mechanisms
-  - Add validation for generated SBOMs
-  - Improve cross-compilation support
+heimdall_enable_sbom(myapp LINKER lld)
+```
 
-- [ ] **Day 5**: Advanced features
-  - Add dependency analysis
-  - Implement SBOM comparison tools
-  - Add SBOM merging capabilities
-  - Create SBOM validation functions
+#### Gold Configuration
 
-#### Week 6: Final Integration and Release
-- [ ] **Day 1-2**: Final testing and validation
-  - Comprehensive testing on all supported platforms
-  - Performance benchmarking
-  - Security review
-  - User acceptance testing
+```cmake
+# Gold-specific options (Linux only)
+set_target_properties(myapp PROPERTIES
+    HEIMDALL_GOLD_PLUGIN_OPTIONS "--plugin-opt=verbose"
+)
 
-- [ ] **Day 3-4**: Documentation finalization
-  - Complete API documentation
-  - Create migration guide
-  - Add troubleshooting section
-  - Create video tutorials
+heimdall_enable_sbom(myapp LINKER gold)
+```
 
-- [ ] **Day 5**: Release preparation
-  - Create release notes
-  - Prepare installation instructions
-  - Create example projects
-  - Final code review and cleanup
+## Examples
 
-## Limitations and Considerations
+### Basic Examples
 
-### Technical Limitations
+#### Simple Application
 
-#### 1. Linker Compatibility
-- **LLD Plugin Interface**: LLD doesn't support traditional linker plugins
-- **Gold Dependencies**: Gold plugin requires elfutils, libelf, libdw
-- **Platform Restrictions**: Gold only available on Linux
-- **Version Compatibility**: Different LLVM versions have different plugin interfaces
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.16)
+project(SimpleApp)
 
-#### 2. Build System Constraints
-- **CMake Version**: Requires CMake 3.16+ for modern features
-- **Compiler Support**: Limited to GCC and Clang
-- **Cross-Compilation**: May not work with all cross-compilation setups
-- **Parallel Builds**: SBOM generation may conflict with parallel builds
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+find_package(Heimdall REQUIRED)
+include(HeimdallSBOM)
 
-#### 3. SBOM Generation Limitations
-- **Post-Processing**: LLD wrapper approach analyzes final binary
-- **No Real-Time**: Cannot capture linking-time information
-- **Limited Metadata**: Some metadata may not be available
-- **Format Restrictions**: Some SBOM formats may have limitations
+add_executable(simple_app main.cpp)
+heimdall_enable_sbom(simple_app)
+```
 
-### Operational Limitations
+#### Library with SBOM
 
-#### 1. User Experience
-- **Learning Curve**: Users must understand CMake integration
-- **Configuration Complexity**: Multiple options may confuse users
-- **Debugging Difficulty**: Plugin issues may be hard to diagnose
-- **Platform Differences**: Different behavior on different platforms
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.16)
+project(MyLibrary)
 
-#### 2. Maintenance Overhead
-- **Plugin Updates**: Must track plugin interface changes
-- **Linker Updates**: Must adapt to linker changes
-- **CMake Updates**: Must maintain CMake compatibility
-- **Platform Support**: Must support multiple platforms
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+find_package(Heimdall REQUIRED)
+include(HeimdallSBOM)
 
-#### 3. Performance Impact
-- **Build Time**: SBOM generation adds to build time
-- **Memory Usage**: Plugin loading increases memory usage
-- **Disk Space**: Generated SBOMs consume disk space
-- **Network**: May require downloading additional dependencies
+add_library(mylib SHARED src/lib.cpp)
+heimdall_enable_sbom(mylib FORMAT cyclonedx-1.6)
 
-### Mitigation Strategies
+add_executable(myapp src/main.cpp)
+target_link_libraries(myapp mylib)
+heimdall_enable_sbom(myapp FORMAT spdx-3.0)
+```
 
-#### 1. Technical Mitigations
-- **Fallback Mechanisms**: Automatic fallback to wrapper approach
-- **Dependency Detection**: Automatic detection of required libraries
-- **Error Recovery**: Comprehensive error handling and recovery
-- **Caching**: Cache plugin detection and configuration
+### Advanced Examples
 
-#### 2. User Experience Mitigations
-- **Default Configuration**: Sensible defaults for common use cases
-- **Progressive Disclosure**: Advanced options hidden by default
-- **Clear Documentation**: Comprehensive examples and guides
-- **Diagnostic Tools**: Built-in troubleshooting tools
+#### Multi-Format Generation
 
-#### 3. Maintenance Mitigations
-- **Version Compatibility**: Support multiple plugin versions
-- **Platform Abstraction**: Abstract platform-specific details
-- **Modular Design**: Separate concerns for easier maintenance
-- **Automated Testing**: Comprehensive test suite
+```cmake
+# Generate multiple formats for the same target
+add_executable(myapp main.cpp)
 
-## Future Enhancements
+# SPDX formats
+heimdall_enable_sbom(myapp FORMAT spdx-2.3 OUTPUT myapp.spdx)
+heimdall_enable_sbom(myapp FORMAT spdx-3.0 OUTPUT myapp.spdx.json)
 
-### Short-term (3-6 months)
-- **IDE Integration**: Visual Studio Code, CLion support
-- **CI/CD Integration**: GitHub Actions, GitLab CI templates
-- **Package Manager Support**: Conan, vcpkg integration
-- **Advanced Formats**: Support for additional SBOM formats
+# CycloneDX formats
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.4 OUTPUT myapp-1.4.cdx.json)
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6 OUTPUT myapp-1.6.cdx.json)
+```
 
-### Medium-term (6-12 months)
-- **Real-time Analysis**: Integration with build-time analysis
-- **Dependency Graphs**: Visual dependency analysis
-- **SBOM Comparison**: Tools for comparing SBOMs
-- **Vulnerability Scanning**: Integration with security tools
+#### Conditional Generation
 
-### Long-term (12+ months)
-- **Machine Learning**: Automated component identification
-- **Cloud Integration**: Cloud-based SBOM analysis
-- **Compliance Tools**: Automated compliance checking
-- **Enterprise Features**: Multi-project SBOM management
+```cmake
+# Generate different SBOMs for different build types
+add_executable(myapp main.cpp)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # Debug build: verbose SPDX
+    heimdall_enable_sbom(myapp 
+        FORMAT spdx-2.3 
+        OUTPUT debug.sbom 
+        VERBOSE ON
+    )
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    # Release build: compact CycloneDX
+    heimdall_enable_sbom(myapp 
+        FORMAT cyclonedx-1.6 
+        OUTPUT release.cdx.json
+        INCLUDE_SYSTEM_LIBS OFF
+    )
+endif()
+```
+
+#### Complex Project Structure
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.16)
+project(ComplexProject)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+find_package(Heimdall REQUIRED)
+include(HeimdallSBOM)
+
+# Global configuration
+set(HEIMDALL_SBOM_OUTPUT_DIR "${CMAKE_BINARY_DIR}/sboms")
+set(HEIMDALL_SBOM_VERBOSE ON)
+
+# Core library
+add_library(core SHARED src/core.cpp)
+heimdall_enable_sbom(core FORMAT cyclonedx-1.6)
+
+# Utility library
+add_library(utils STATIC src/utils.cpp)
+heimdall_enable_sbom(utils FORMAT spdx-2.3)
+
+# Main application
+add_executable(main src/main.cpp)
+target_link_libraries(main core utils)
+heimdall_enable_sbom(main FORMAT spdx-3.0)
+
+# Test executable
+add_executable(tests src/tests.cpp)
+target_link_libraries(tests core utils)
+heimdall_enable_sbom(tests FORMAT cyclonedx-1.6)
+```
+
+### CI/CD Integration
+
+#### GitHub Actions
+
+```yaml
+name: Build with SBOM
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+      
+      - name: Build with SBOM
+        run: |
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+      
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v3
+        with:
+          name: sboms
+          path: build/sboms/
+```
+
+#### Jenkins Pipeline
+
+```groovy
+pipeline {
+    agent any
+    
+    stages {
+        stage('Build') {
+            steps {
+                sh '''
+                    mkdir build
+                    cd build
+                    cmake ..
+                    make -j$(nproc)
+                '''
+            }
+        }
+        
+        stage('Archive SBOMs') {
+            steps {
+                archiveArtifacts artifacts: 'build/sboms/**/*'
+            }
+        }
+    }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. "Heimdall not found"
+
+**Problem:** CMake can't find Heimdall installation
+
+**Solutions:**
+```cmake
+# Set Heimdall root path
+set(HEIMDALL_ROOT "/path/to/heimdall" CACHE PATH "Heimdall installation path")
+
+# Or set environment variable
+set(ENV{HEIMDALL_ROOT} "/path/to/heimdall")
+```
+
+#### 2. "No suitable linker found"
+
+**Problem:** Neither LLD nor Gold is available
+
+**Solutions:**
+```bash
+# Install LLD
+sudo apt-get install lld  # Ubuntu/Debian
+brew install llvm         # macOS
+
+# Install Gold (Linux only)
+sudo apt-get install binutils-gold
+```
+
+#### 3. "Plugin loading failed"
+
+**Problem:** Heimdall plugins can't be loaded
+
+**Solutions:**
+```bash
+# Check plugin dependencies
+ldd /path/to/heimdall/lib/heimdall-lld.so
+
+# Check permissions
+chmod 755 /path/to/heimdall/lib/heimdall-lld.so
+
+# Verify plugin path
+ls -la /path/to/heimdall/lib/heimdall-lld.so
+```
+
+#### 4. "SBOM generation failed"
+
+**Problem:** SBOM generation step fails
+
+**Solutions:**
+```cmake
+# Enable verbose output for debugging
+heimdall_enable_sbom(myapp VERBOSE ON)
+
+# Check if binary exists
+add_custom_command(TARGET myapp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo "Binary: $<TARGET_FILE:myapp>"
+)
+```
+
+### Debug Mode
+
+Enable comprehensive debugging:
+
+```cmake
+# Enable all debug output
+set(HEIMDALL_DEBUG ON CACHE BOOL "Enable debug output")
+set(HEIMDALL_SBOM_VERBOSE ON CACHE BOOL "Enable verbose SBOM generation")
+
+# Check what was found
+message(STATUS "Heimdall found: ${HEIMDALL_FOUND}")
+message(STATUS "LLD plugin: ${HEIMDALL_LLD_PLUGIN}")
+message(STATUS "Gold plugin: ${HEIMDALL_GOLD_PLUGIN}")
+message(STATUS "SBOM tool: ${HEIMDALL_SBOM_TOOL}")
+```
+
+### Error Codes
+
+| Exit Code | Meaning | Solution |
+|-----------|---------|----------|
+| 1 | Plugin loading failed | Check plugin path and dependencies |
+| 2 | Plugin initialization failed | Check plugin compatibility |
+| 3 | Binary processing failed | Check binary file and permissions |
+| 4 | Invalid arguments | Check CMake configuration |
+
+## Integration
+
+### With Other CMake Modules
+
+#### Integration with CPack
+
+```cmake
+# Generate SBOM for packaging
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+
+# Include SBOM in package
+install(FILES ${CMAKE_BINARY_DIR}/sbom/myapp.cyclonedx.json
+        DESTINATION share/doc/myapp
+        COMPONENT documentation)
+
+# CPack configuration
+set(CPACK_PACKAGE_NAME "myapp")
+set(CPACK_GENERATOR "DEB")
+```
+
+#### Integration with Testing
+
+```cmake
+# Generate SBOM for test targets
+add_executable(unit_tests test_main.cpp)
+heimdall_enable_sbom(unit_tests FORMAT spdx-2.3)
+
+# Run tests and generate SBOM
+add_test(NAME UnitTests COMMAND unit_tests)
+```
+
+### With External Tools
+
+#### CycloneDX Tools
+
+```cmake
+# Generate CycloneDX SBOM
+heimdall_enable_sbom(myapp FORMAT cyclonedx-1.6)
+
+# Validate with cyclonedx-cli
+add_custom_command(TARGET myapp POST_BUILD
+    COMMAND cyclonedx-cli validate ${CMAKE_BINARY_DIR}/sbom/myapp.cyclonedx.json
+    COMMENT "Validating CycloneDX SBOM"
+)
+```
+
+#### SPDX Tools
+
+```cmake
+# Generate SPDX SBOM
+heimdall_enable_sbom(myapp FORMAT spdx-3.0)
+
+# Validate with SPDX tools
+add_custom_command(TARGET myapp POST_BUILD
+    COMMAND spdx-tools-validate ${CMAKE_BINARY_DIR}/sbom/myapp.spdx.json
+    COMMENT "Validating SPDX SBOM"
+)
+```
+
+### Custom Scripts
+
+#### SBOM Processing Script
+
+```bash
+#!/bin/bash
+# process-sboms.sh
+
+BUILD_DIR="$1"
+PROJECT_NAME="$2"
+
+if [ -z "$BUILD_DIR" ] || [ -z "$PROJECT_NAME" ]; then
+    echo "Usage: $0 <build_dir> <project_name>"
+    exit 1
+fi
+
+# Process all SBOMs in build directory
+find "$BUILD_DIR" -name "*.spdx" -o -name "*.cyclonedx.json" | while read sbom; do
+    echo "Processing: $sbom"
+    
+    # Validate SBOM
+    if [[ "$sbom" == *.json ]]; then
+        # CycloneDX validation
+        cyclonedx-cli validate "$sbom"
+    else
+        # SPDX validation
+        spdx-tools-validate "$sbom"
+    fi
+    
+    # Copy to project directory
+    cp "$sbom" "./$PROJECT_NAME-$(basename "$sbom")"
+done
+```
+
+#### Integration in CMake
+
+```cmake
+# Add custom target for SBOM processing
+add_custom_target(process-sboms
+    COMMAND ${CMAKE_SOURCE_DIR}/scripts/process-sboms.sh
+            ${CMAKE_BINARY_DIR}
+            ${PROJECT_NAME}
+    DEPENDS myapp
+    COMMENT "Processing generated SBOMs"
+)
+```
+
+## Best Practices
+
+### Configuration Management
+
+1. **Use Global Defaults**: Set sensible defaults at the project level
+2. **Override Per Target**: Use target-specific properties for customization
+3. **Conditional Generation**: Only generate SBOMs when needed
+4. **Version Control**: Include SBOM configuration in version control
+
+### Performance Optimization
+
+1. **Selective Generation**: Only generate SBOMs for release builds
+2. **Format Selection**: Choose appropriate format for your use case
+3. **Dependency Scope**: Use `INCLUDE_SYSTEM_LIBS OFF` when possible
+4. **Parallel Builds**: Ensure SBOM generation doesn't conflict with parallel builds
+
+### Integration Guidelines
+
+1. **CI/CD Integration**: Include SBOM generation in your CI/CD pipeline
+2. **Validation**: Validate generated SBOMs as part of your build process
+3. **Documentation**: Document your SBOM generation configuration
+4. **Monitoring**: Monitor SBOM generation success and failures
 
 ## Conclusion
 
-The Heimdall CMake module will provide a seamless integration of SBOM generation into CMake-based build systems. By leveraging Heimdall's existing wrapper and plugin approaches, the module will offer a unified interface that works across different linkers and platforms.
+The Heimdall CMake module provides a powerful and flexible way to integrate SBOM generation into your CMake-based projects. With automatic detection, multiple format support, and extensive configuration options, it makes SBOM generation accessible to all C++ developers.
 
-The implementation will be phased over 6 weeks, starting with core infrastructure and progressing through advanced features and optimization. The module will include comprehensive error handling, fallback mechanisms, and extensive documentation to ensure a smooth user experience.
-
-While there are technical limitations inherent in the current linker plugin architectures, the module will provide robust solutions that work reliably across different environments. The modular design will allow for future enhancements and adaptations to changing requirements.
-
-The CMake module represents a significant step forward in making SBOM generation accessible to C++ developers, providing the foundation for broader adoption of SBOM practices in the C++ ecosystem. 
-
-## Example Project and Usage Template
-
-A complete example project using the Heimdall CMake module is provided in [`examples/heimdall-cmake-module-example`](../examples/heimdall-cmake-module-example). This demonstrates both LLD and Gold integration, automatic SBOM generation, and validation.
-
-A ready-to-use CMake integration template is available at [`cmake/templates/cmake-sbom-template.cmake`](../cmake/templates/cmake-sbom-template.cmake). Copy and adapt this template for your own projects.
-
-### Quick Integration Steps
-
-1. Add the `cmake/` directory to your `CMAKE_MODULE_PATH`:
-   ```cmake
-   list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-   ```
-2. Include the Heimdall modules:
-   ```cmake
-   include(HeimdallConfig)
-   include(HeimdallSBOM)
-   ```
-3. Add your target and enable SBOM generation:
-   ```cmake
-   add_executable(myapp main.cpp)
-   heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
-   ```
-
-For advanced options, troubleshooting, and further details, see the rest of this document and the comments in the template file. 
+For more information, see:
+- [Heimdall User Guide](heimdall-users-guide.md)
+- [Heimdall SBOM Manual](heimdall-sbom-manual.md)
+- [Heimdall Validate Manual](heimdall-validate-manual.md)
+- [CycloneDX Specification](https://cyclonedx.org/specification/)

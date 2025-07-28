@@ -84,4 +84,3 @@ This document describes the mapping between Jenkins Docker image names, compiler
 
 **Note:**
 - For some distributions, not all GCC versions are available. The image may use the closest available version (e.g., Arch uses default GCC 15 for C++11).
-- The Jenkinsfile and build scripts should be kept in sync with this mapping. 

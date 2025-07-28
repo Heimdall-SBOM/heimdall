@@ -34,6 +34,7 @@ Makefile
 *.cyclonedx.json
 *.json
 !schema/*.json
+!package.json
 *.log
 *.xml
 examples/*/build/
@@ -52,6 +53,12 @@ examples/*/test_plugin.c
 # Ignore test outputs
 tests/temp/
 tests/output/
+
+# Ignore test certificate files
+test_*.pem
+test_*.key
+*.pem
+*.key
 
 # Ignore macOS system files
 .DS_Store
@@ -97,3 +104,4 @@ Testing/
 CTestTestfile.cmake
 CTestCostData.txt
 DartConfiguration.tcl 
+node_modules

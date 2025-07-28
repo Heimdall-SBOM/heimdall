@@ -440,4 +440,3 @@ namespace performance_utils {
 size_t get_current_memory_usage();
 ```
 
-This profiling system provides comprehensive performance measurement capabilities for Heimdall, enabling detailed analysis and optimization of SBOM generation and metadata extraction processes. 

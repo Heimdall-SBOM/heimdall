@@ -1,6 +1,4 @@
-# Heimdall-SBOM
-
-<img src="https://github.com/bakkertj/heimdall/blob/18e0ce7fc630923f15e6e29e94059e40b7d1af99/docs/images/logo_w_text.png" width="400">
+<center><img src="https://github.com/Heimdall-SBOM/heimdall/blob/main/docs/images/logo_w_text.png?raw=true" alt="Heimdall Logo" width="50%"></center>
 
 A comprehensive Software Bill of Materials (SBOM) generation plugin that works with both LLVM LLD and GNU Gold linkers. Heimdall automatically generates accurate SBOMs during the linking process, capturing all components that actually make it into your final binaries.
 

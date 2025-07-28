@@ -1,6 +1,8 @@
+<img src="https://github.com/Heimdall-SBOM/heimdall/blob/main/docs/images/heimdall-ada.png?raw=true" alt="Ada and Heimdall" width="50%">
+
 # Ada SBOM Generation with Heimdall
 
-This document describes how Heimdall extracts Ada-specific metadata from object files, executables, and ALI (Ada Library Information) files and stores this information in SPDX and CycloneDX SBOM formats.
+Heimdall extracts Ada-specific metadata from object files, executables, and ALI (Ada Library Information) files and stores this comprehensive information in SPDX and CycloneDX SBOM formats.  
 
 ## Overview
 
@@ -8,6 +10,8 @@ Heimdall's Ada extractor provides comprehensive SBOM generation for Ada applicat
 - **Binary analysis** of object files and executables
 - **ALI file parsing** for Ada-specific metadata
 - **Cross-referencing** between binary and source information
+
+> **Note**: Ada .ali file detection is disabled by default for performance reasons. To enable .ali file detection, use the `--ali-file-path` option or set the `HEIMDALL_ENABLE_ADA_DETECTION=1` environment variable.
 
 ## Data Sources
 
@@ -26,7 +30,7 @@ Heimdall's Ada extractor provides comprehensive SBOM generation for Ada applicat
 #### **Example Extraction:**
 ```bash
 # Binary analysis of Ada executable
-./heimdall-sbom lib/heimdall-gold.so main_static --format spdx-2.3
+./heimdall-sbom lib/heimdall-lld.so main_static --format spdx-2.3
 ```
 
 **Output includes:**
@@ -179,8 +183,6 @@ Relationship: SPDXRef-Package CONTAINS SPDXRef-main-static
 - Build configuration flags
 - Package type information (spec/body)
 
-### Potential Enhancements
-
 #### **Security Information:**
 ```json
 {
@@ -250,17 +252,17 @@ Relationship: SPDXRef-Package CONTAINS SPDXRef-main-static
 ### Basic SBOM Generation
 ```bash
 # Generate SPDX 2.3 SBOM
-./heimdall-sbom lib/heimdall-gold.so main_static --format spdx-2.3 --output ada_sbom.spdx.json
+./heimdall-sbom lib/heimdall-lld.so main_static --format spdx-2.3 --output ada_sbom.spdx.json
 
 # Generate CycloneDX SBOM  
-./heimdall-sbom lib/heimdall-gold.so main_static --format cyclonedx-1.6 --output ada_sbom.cdx.json
+./heimdall-sbom lib/heimdall-lld.so main_static --format cyclonedx-1.6 --output ada_sbom.cdx.json
 ```
 
 ### Integration with Build Systems
 ```bash
 # In Makefile or build script
 gnatmake -g main.adb
-./heimdall-sbom lib/heimdall-gold.so main --format spdx-2.3 --output sbom.spdx.json
+./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
 ```
 
 ### CI/CD Integration
@@ -269,89 +271,34 @@ gnatmake -g main.adb
 - name: Generate Ada SBOM
   run: |
     gnatmake -g main.adb
-    ./heimdall-sbom lib/heimdall-gold.so main --format spdx-2.3 --output sbom.spdx.json
-    ./heimdall-sbom lib/heimdall-gold.so main --format cyclonedx-1.6 --output sbom.cdx.json
+    ./heimdall-sbom lib/heimdall-lld.so main --format spdx-2.3 --output sbom.spdx.json
+    ./heimdall-sbom lib/heimdall-lld.so main --format cyclonedx-1.6 --output sbom.cdx.json
 ```
 
-## Benefits
+### Optimized Ada Detection with --ali-file-path
 
-### **Security Analysis:**
-- Build configuration flags for security assessment
-- Compiler version for vulnerability analysis
-- Runtime safety settings evaluation
+For large Ada projects, scanning all directories for ALI files can be slow. Use the `--ali-file-path` option to specify a specific directory for ALI file search:
 
-### **Dependency Management:**
-- Complete Ada package dependency graph
-- Cross-package function call relationships
-- Build-time vs runtime dependency classification
+```bash
+# Specify ALI file search directory for better performance
+./heimdall-sbom lib/heimdall-lld.so main \
+    --format cyclonedx-1.6 \
+    --ali-file-path /path/to/ada/project \
+    --output ada_sbom.cdx.json
 
-### **Compliance:**
-- Package manager identification for licensing
-- Source file mapping for attribution
-- Build reproducibility for audit trails
-
-### **Type Safety:**
-- Ada's rich type system information
-- Function signature verification
-- Variable type safety guarantees
-
-### **Build Reproducibility:**
-- Exact compilation timestamps
-- File integrity checksums
-- Complete build configuration
-
-## Technical Implementation
-
-### Ada Extractor Architecture
-
-```cpp
-class AdaExtractor {
-    // ALI file parsing
-    bool parseAliFile(const std::string& aliFilePath, AdaPackageInfo& packageInfo);
-    bool parseDependencyLine(const std::string& line, AdaPackageInfo& packageInfo);
-    bool parseFunctionLine(const std::string& line, std::vector<AdaFunctionInfo>& functions);
-    
-    // Metadata extraction
-    bool extractAdaMetadata(ComponentInfo& component, const std::vector<std::string>& aliFiles);
-    bool findAliFiles(const std::string& directory, std::vector<std::string>& aliFiles);
-    
-    // Integration
-    bool extractSourceFilePath(const std::string& aliFilePath);
-    std::string extractPackageName(const std::string& aliFilePath);
-};
+# Multiple ALI directories (use multiple --ali-file-path flags)
+./heimdall-sbom lib/heimdall-lld.so main \
+    --format spdx-2.3 \
+    --ali-file-path /path/to/core/ada \
+    --ali-file-path /path/to/utils/ada \
+    --output ada_sbom.spdx.json
 ```
 
-### Integration with Metadata Extractor
-
-```cpp
-// In MetadataExtractor::extractMetadata()
-if (!packageManagerDetected) {
-    std::vector<std::string> aliFiles;
-    if (findAdaAliFiles(searchPath, aliFiles)) {
-        if (extractAdaMetadata(component, aliFiles)) {
-            packageManagerDetected = true;
-        }
-    }
-}
-```
-
-## Future Enhancements
-
-### Planned Features:
-1. **Enhanced function signature extraction** from X lines
-2. **Cross-reference analysis** from G lines  
-3. **Build configuration parsing** from RV lines
-4. **Timestamp and checksum extraction** from D lines
-5. **Type system information** from variable and function declarations
-6. **Security flag analysis** for compliance reporting
-7. **Function call graph generation** for impact analysis
-
-### Potential Use Cases:
-- **Security scanning**: Build flag analysis for vulnerabilities
-- **Impact analysis**: Function call graphs for change impact
-- **Compliance auditing**: Type safety and build configuration verification
-- **Build reproducibility**: Complete build environment documentation
-- **Dependency analysis**: Cross-package relationship mapping
+**Benefits:**
+- **Performance**: Avoids scanning entire filesystem for ALI files
+- **Precision**: Only searches in specified directories
+- **Control**: Enables Ada detection only when needed
+- **Flexibility**: Can specify multiple directories for complex projects
 
 ## Conclusion
 

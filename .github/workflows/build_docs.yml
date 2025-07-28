@@ -26,9 +26,8 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install Honkit
-        run: npm install honkit --save-dev
-             npm install honkit-plugin-mermaid-md-adoc
+      - name: Install Dependencies
+        run: npm install
 
       - name: Generate SUMMARY.md
         run: |
@@ -43,7 +42,10 @@ jobs:
           done
 
       - name: Build Honkit Site
-        run: npx honkit build
+        run: |
+          npx honkit build
+          echo "Build completed. Checking for Mermaid diagrams..."
+          find _book -name "*.html" -exec grep -l "mermaid" {} \;
 
       - name: Add .nojekyll
         run: touch _book/.nojekyll

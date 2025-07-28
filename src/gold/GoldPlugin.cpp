@@ -466,6 +466,14 @@ extern "C"
       if (version)
       {
          cyclonedxVersion = version;
+         if (globalAdapter)
+         {
+            globalAdapter->setCycloneDXVersion(version);
+         }
+         if (verbose)
+         {
+            std::cout << "Heimdall: CycloneDX version set to " << version << "\n";
+         }
          return 0;
       }
       return -1;

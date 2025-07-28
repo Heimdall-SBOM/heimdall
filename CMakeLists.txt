@@ -205,6 +205,13 @@ endif()
 # Compiler flags
 # Extract LLVM flags but exclude -fno-exceptions for external libraries
 string(REPLACE "-fno-exceptions" "" LLVM_CXXFLAGS_CLEAN "${LLVM_CXXFLAGS}")
+
+# Note: LLVM was compiled with libc++ but we need to support both Clang and GCC
+# We'll handle the ABI compatibility in the DWARFExtractor code
+if(APPLE)
+    message(STATUS "LLVM compatibility: Will handle ABI differences in DWARFExtractor")
+endif()
+
 # Don't set global flags - use target-specific flags instead
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

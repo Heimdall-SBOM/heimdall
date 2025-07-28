@@ -3,8 +3,6 @@
   "ignore": [
     "external"
   ],
-
-  "plugins": ["mermaid-md-adoc", "highlight"],
   "pluginsConfig": {
     "highlight": {
       "init": {

@@ -271,6 +271,20 @@ extern "C"
       return -1;
    }
 
+   int heimdall_set_ali_file_path(const char* path)
+   {
+      if (globalAdapter && path)
+      {
+         globalAdapter->setAliFilePath(std::string(path));
+         if (verbose)
+         {
+            std::cout << "Heimdall: Ada ALI file path set to: " << path << "\n";
+         }
+         return 0;
+      }
+      return -1;
+   }
+
    // LLD plugin option handler
    int heimdall_lld_set_plugin_option(const char* option)
    {
