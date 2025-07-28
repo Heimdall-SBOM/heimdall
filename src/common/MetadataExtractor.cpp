@@ -4393,10 +4393,6 @@ std::string MetadataExtractor::determineComponentScope(const ComponentInfo& comp
       return "excluded";  // System libraries are excluded
    }
    
-   if (component.dependencies.empty()) {
-      return "required";  // No dependencies = required
-   }
-   
    // Could implement more sophisticated logic based on usage analysis
    return "required";
 }
