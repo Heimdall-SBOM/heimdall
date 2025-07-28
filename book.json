@@ -9,7 +9,7 @@
         "tabReplace": "  ",
         "useBR": false,
         "classPrefix": "hljs-",
-        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript"]
+        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript", "mermaid"]
       }
     }
   }

@@ -51,6 +51,13 @@ detect_gcc_versions() {
         fi
     fi
     
+    # Check for default gcc first (prioritize default)
+    if command -v "gcc" >/dev/null 2>&1; then
+        local default_version=$(gcc --version | head -n1 | cut -d' ' -f3)
+        echo "[DEBUG] Found default gcc: $default_version" 1>&2
+        versions+=("gcc:${default_version}")
+    fi
+    
     # Check for system-installed GCC versions
     for version in {7..20}; do
         if command -v "gcc-${version}" >/dev/null 2>&1; then
@@ -130,7 +137,6 @@ select_compiler() {
     IFS=' ' read -ra available_clang <<< "$available_clang_string"
     
 
-    
     case $cxx_standard in
         11)
             # C++11: GCC 4.8+ or Clang 3.3+
@@ -330,8 +336,12 @@ setup_compiler_environment() {
         export CC="/usr/local/opt/gcc/bin/gcc-15"
         export CXX="/usr/local/opt/gcc/bin/g++-15"
     elif [ "$compiler_type" = "gcc" ]; then
-        export CC="$compiler_name"
-        export CXX="${compiler_name/gcc/g++}"
+        export CC="gcc"
+        export CXX="g++"
+    elif [[ "$compiler_type" =~ ^gcc-[0-9]+$ ]]; then
+        # Handle versioned GCC (e.g., gcc-10, gcc-11, gcc-13)
+        export CC="$compiler_type"
+        export CXX="${compiler_type/gcc/g++}"
     elif [ "$compiler_type" = "clang" ]; then
         export CC="$compiler_name"
         # Handle different Clang naming patterns
@@ -430,8 +440,8 @@ EOF
         export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
         export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
     else
-        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3)"
-        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3)"
+        export CC_VERSION="$($CC --version | head -n1 | cut -d' ' -f3 | sed 's/)//')"
+        export CXX_VERSION="$($CXX --version | head -n1 | cut -d' ' -f3 | sed 's/)//')"
         export CC_MAJOR_VERSION=$(get_compiler_major_version "$CC_VERSION")
         export CXX_MAJOR_VERSION=$(get_compiler_major_version "$CXX_VERSION")
     fi
