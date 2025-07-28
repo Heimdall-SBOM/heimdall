@@ -650,12 +650,13 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    anySuccess |= buildConfigSuccess;
 
    bool platformSuccess = extractMachOPlatformInfo(component);
-   std::string status = platformSuccess ? "success" : "failed";
+   std::string status;
+   status = platformSuccess ? "success" : "failed";
    Utils::debugPrint("Platform info extraction: " + status );
    anySuccess |= platformSuccess;
 
    bool entitlementsSuccess = extractMachOEntitlements(component);
-   std::string status = entitlementsSuccess ? "success" : "failed";
+   status = entitlementsSuccess ? "success" : "failed";
    Utils::debugPrint("Entitlements extraction: " + status );
    anySuccess |= entitlementsSuccess;
 
