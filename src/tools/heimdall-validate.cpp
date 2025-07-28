@@ -41,13 +41,32 @@ void printUsage(const char* programName)
    std::cout << "  --report-format <f>  Diff report format (text, json, csv) [text]\n";
    std::cout << "  --verbose            Verbose output\n";
    std::cout << "  --help               Show this help message\n\n";
+   std::cout << "Signature Verification:\n";
+   std::cout << "  --key <key>          Path to public key file for signature verification\n";
+   std::cout << "  --cert <cert>        Path to certificate file for signature verification\n";
+   std::cout << "                       Either --key or --cert must be specified for verify-signature\n\n";
    std::cout << "Examples:\n";
+   std::cout << "  # Validate SBOM format and content\n";
    std::cout << "  " << programName << " validate sbom.spdx\n";
-   std::cout << "  " << programName << " verify-signature sbom.cdx.json --key public.key\n";
-   std::cout << "  " << programName << " verify-signature sbom.cdx.json --cert certificate.pem\n";
+   std::cout << "  " << programName << " validate sbom.cdx.json --format cyclonedx\n\n";
+   std::cout << "  # Verify signature using public key\n";
+   std::cout << "  " << programName << " verify-signature sbom.cdx.json --key public.key\n\n";
+   std::cout << "  # Verify signature using certificate\n";
+   std::cout << "  " << programName << " verify-signature sbom.cdx.json --cert certificate.pem\n\n";
+   std::cout << "  # Compare two SBOM files\n";
    std::cout << "  " << programName << " compare old.spdx new.spdx\n";
-   std::cout << "  " << programName << " merge sbom1.json sbom2.json --output merged.json\n";
+   std::cout << "  " << programName << " compare old.cdx.json new.cdx.json --format cyclonedx\n\n";
+   std::cout << "  # Merge multiple SBOMs\n";
+   std::cout << "  " << programName << " merge sbom1.json sbom2.json --output merged.json\n\n";
+   std::cout << "  # Generate diff report\n";
    std::cout << "  " << programName << " diff old.spdx new.spdx --report-format json\n";
+   std::cout << "  " << programName << " diff old.cdx.json new.cdx.json --report-format csv\n\n";
+   std::cout << "Notes:\n";
+   std::cout << "  - Signature verification supports JSF (JSON Signature Format) compliant signatures\n";
+   std::cout << "  - Supported signature algorithms: RS256, RS384, RS512, ES256, ES384, ES512, Ed25519\n";
+   std::cout << "  - Public key files should be in PEM format\n";
+   std::cout << "  - Certificate files should be in PEM format\n";
+   std::cout << "  - Format auto-detection works for common file extensions (.spdx, .cdx.json, .json)\n";
 }
 
 /**

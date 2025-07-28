@@ -178,6 +178,69 @@ int generate_sbom(const char* plugin_path, const char* binary_path, const char* 
  */
 int main(int argc, char* argv[])
 {
+   // Check for help option first
+   for (int i = 1; i < argc; i++)
+   {
+      if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+      {
+         std::cout << "Heimdall SBOM Generator Tool\n\n";
+         std::cout << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output <output_path> [options]\n\n";
+         std::cout << "Required Arguments:\n";
+         std::cout << "  <plugin_path>           Path to the Heimdall plugin (.so file)\n";
+         std::cout << "  <binary_path>           Path to the binary file to analyze\n";
+         std::cout << "  --format <format>       SBOM format to generate\n";
+         std::cout << "  --output <output_path>  Output file path for the generated SBOM\n\n";
+         std::cout << "Format Options:\n";
+         std::cout << "  --format spdx           Generate SPDX 2.3 format (default)\n";
+         std::cout << "  --format spdx-2.3       Generate SPDX 2.3 format\n";
+         std::cout << "  --format spdx-3.0       Generate SPDX 3.0 format\n";
+         std::cout << "  --format spdx-3.0.0     Generate SPDX 3.0.0 format\n";
+         std::cout << "  --format spdx-3.0.1     Generate SPDX 3.0.1 format\n";
+         std::cout << "  --format cyclonedx      Generate CycloneDX 1.6 format\n";
+         std::cout << "  --format cyclonedx-1.4  Generate CycloneDX 1.4 format\n";
+         std::cout << "  --format cyclonedx-1.6  Generate CycloneDX 1.6 format\n\n";
+         std::cout << "Version Options:\n";
+         std::cout << "  --cyclonedx-version <version>  Specify CycloneDX version (1.4, 1.6)\n";
+         std::cout << "  --spdx-version <version>       Specify SPDX version (2.3, 3.0, 3.0.0, 3.0.1)\n\n";
+         std::cout << "Dependency Options:\n";
+         std::cout << "  --no-transitive-dependencies   Include only direct dependencies\n";
+         std::cout << "                                  (default: include all transitive dependencies)\n\n";
+         std::cout << "Signing Options:\n";
+         std::cout << "  --sign-key <key_path>          Path to private key file for signing\n";
+         std::cout << "  --sign-cert <cert_path>        Path to certificate file (optional)\n";
+         std::cout << "  --sign-algorithm <algorithm>   Signature algorithm\n";
+         std::cout << "  --sign-key-id <key_id>         Key identifier for the signature\n\n";
+         std::cout << "Supported Signature Algorithms:\n";
+         std::cout << "  RS256, RS384, RS512            RSA with SHA-256/384/512\n";
+         std::cout << "  ES256, ES384, ES512            ECDSA with SHA-256/384/512\n";
+         std::cout << "  Ed25519                        Ed25519 digital signature\n\n";
+         std::cout << "Ada Language Support:\n";
+         std::cout << "  --ali-file-path <path>         Enable Ada detection and search for .ali files\n\n";
+         std::cout << "Examples:\n";
+         std::cout << "  # Generate unsigned SPDX SBOM\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format spdx --output sbom.spdx\n\n";
+         std::cout << "  # Generate signed CycloneDX SBOM with RSA\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --sign-key private.key --sign-algorithm RS256 --sign-key-id my-key-2025\n\n";
+         std::cout << "  # Generate signed SBOM with certificate\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --sign-key private.key --sign-cert certificate.pem --sign-algorithm ES256\n\n";
+         std::cout << "  # Generate SBOM with Ada support\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --ali-file-path /path/to/ada/source\n\n";
+         std::cout << "  # Generate SBOM with only direct dependencies\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --no-transitive-dependencies\n\n";
+         std::cout << "Notes:\n";
+         std::cout << "  - Signing requires a valid private key file\n";
+         std::cout << "  - Certificate files are optional but recommended for verification\n";
+         std::cout << "  - Key ID is used to identify the signing key in the signature\n";
+         std::cout << "  - Ada detection requires .ali files to be present in the specified path\n";
+         std::cout << "  - Generated SBOMs are compliant with NTIA minimum requirements\n";
+         return 0;
+      }
+   }
+
    if (argc < 5)
    {
       std::cerr << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output "
@@ -220,7 +283,65 @@ int main(int argc, char* argv[])
    // Parse command line arguments
    for (int i = 3; i < argc; i++)
    {
-      if (strcmp(argv[i], "--no-transitive-dependencies") == 0)
+      if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0)
+      {
+         std::cout << "Heimdall SBOM Generator Tool\n\n";
+         std::cout << "Usage: heimdall-sbom <plugin_path> <binary_path> --format <format> --output <output_path> [options]\n\n";
+         std::cout << "Required Arguments:\n";
+         std::cout << "  <plugin_path>           Path to the Heimdall plugin (.so file)\n";
+         std::cout << "  <binary_path>           Path to the binary file to analyze\n";
+         std::cout << "  --format <format>       SBOM format to generate\n";
+         std::cout << "  --output <output_path>  Output file path for the generated SBOM\n\n";
+         std::cout << "Format Options:\n";
+         std::cout << "  --format spdx           Generate SPDX 2.3 format (default)\n";
+         std::cout << "  --format spdx-2.3       Generate SPDX 2.3 format\n";
+         std::cout << "  --format spdx-3.0       Generate SPDX 3.0 format\n";
+         std::cout << "  --format spdx-3.0.0     Generate SPDX 3.0.0 format\n";
+         std::cout << "  --format spdx-3.0.1     Generate SPDX 3.0.1 format\n";
+         std::cout << "  --format cyclonedx      Generate CycloneDX 1.6 format\n";
+         std::cout << "  --format cyclonedx-1.4  Generate CycloneDX 1.4 format\n";
+         std::cout << "  --format cyclonedx-1.6  Generate CycloneDX 1.6 format\n\n";
+         std::cout << "Version Options:\n";
+         std::cout << "  --cyclonedx-version <version>  Specify CycloneDX version (1.4, 1.6)\n";
+         std::cout << "  --spdx-version <version>       Specify SPDX version (2.3, 3.0, 3.0.0, 3.0.1)\n\n";
+         std::cout << "Dependency Options:\n";
+         std::cout << "  --no-transitive-dependencies   Include only direct dependencies\n";
+         std::cout << "                                  (default: include all transitive dependencies)\n\n";
+         std::cout << "Signing Options:\n";
+         std::cout << "  --sign-key <key_path>          Path to private key file for signing\n";
+         std::cout << "  --sign-cert <cert_path>        Path to certificate file (optional)\n";
+         std::cout << "  --sign-algorithm <algorithm>   Signature algorithm\n";
+         std::cout << "  --sign-key-id <key_id>         Key identifier for the signature\n\n";
+         std::cout << "Supported Signature Algorithms:\n";
+         std::cout << "  RS256, RS384, RS512            RSA with SHA-256/384/512\n";
+         std::cout << "  ES256, ES384, ES512            ECDSA with SHA-256/384/512\n";
+         std::cout << "  Ed25519                        Ed25519 digital signature\n\n";
+         std::cout << "Ada Language Support:\n";
+         std::cout << "  --ali-file-path <path>         Enable Ada detection and search for .ali files\n\n";
+         std::cout << "Examples:\n";
+         std::cout << "  # Generate unsigned SPDX SBOM\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format spdx --output sbom.spdx\n\n";
+         std::cout << "  # Generate signed CycloneDX SBOM with RSA\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --sign-key private.key --sign-algorithm RS256 --sign-key-id my-key-2025\n\n";
+         std::cout << "  # Generate signed SBOM with certificate\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --sign-key private.key --sign-cert certificate.pem --sign-algorithm ES256\n\n";
+         std::cout << "  # Generate SBOM with Ada support\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --ali-file-path /path/to/ada/source\n\n";
+         std::cout << "  # Generate SBOM with only direct dependencies\n";
+         std::cout << "  heimdall-sbom ./lib/heimdall-lld.so ./myapp --format cyclonedx --output sbom.cdx.json \\\n";
+         std::cout << "    --no-transitive-dependencies\n\n";
+         std::cout << "Notes:\n";
+         std::cout << "  - Signing requires a valid private key file\n";
+         std::cout << "  - Certificate files are optional but recommended for verification\n";
+         std::cout << "  - Key ID is used to identify the signing key in the signature\n";
+         std::cout << "  - Ada detection requires .ali files to be present in the specified path\n";
+         std::cout << "  - Generated SBOMs are compliant with NTIA minimum requirements\n";
+         return 0;
+      }
+      else if (strcmp(argv[i], "--no-transitive-dependencies") == 0)
       {
          transitive_dependencies = false;
       }
