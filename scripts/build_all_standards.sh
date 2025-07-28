@@ -43,69 +43,68 @@ print_error() {
 # Standards to test
 STANDARDS=("11" "14" "17" "20" "23")
 
+# Log directory
+LOG_DIR="logs"
+
+# Create log directory if it doesn't exist
+if [ ! -d "$LOG_DIR" ]; then
+    mkdir -p "$LOG_DIR"
+fi
+
 print_status "Building and testing all C++ standards: ${STANDARDS[*]}"
+print_status "NOTE: This will take awhile time, go grab a coffee"
+
+declare -A build_results
 
 for standard in "${STANDARDS[@]}"; do
-    print_status "Building C++${standard}..."
-    
-    # Select LLVM version based on C++ standard
-    print_status "Selecting LLVM version for C++${standard}..."
-    LLVM_ENV=$(./scripts/llvm_version_manager.sh --quiet "$standard")
-    if [ $? -ne 0 ] || [ -z "$LLVM_ENV" ]; then
-        print_warning "No compatible LLVM version found for C++${standard}, skipping..."
-        continue
-    fi
-    
-    # Select compiler based on C++ standard
-    print_status "Selecting compiler for C++${standard}..."
-    COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$standard")
-    if [ $? -ne 0 ] || [ -z "$COMPILER_ENV" ]; then
-        print_warning "No compatible compiler found for C++${standard}, skipping..."
-        continue
-    fi
-    
-    # Create build directory
-    BUILD_DIR="build-cpp${standard}"
-    rm -rf "${BUILD_DIR}"
-    mkdir -p "${BUILD_DIR}"
-    cd "${BUILD_DIR}"
-    set -e
-    
-    # Source the LLVM environment variables
-    eval "$LLVM_ENV"
-    
-    # Source the compiler environment variables
-    eval "$COMPILER_ENV"
-    
-    print_status "Using compiler: $CXX_VERSION for C++${standard}"
-    
-    if [[ "${standard}" == "11" || "${standard}" == "14" ]]; then
-        # Use compatibility mode for C++11/14
-        cmake .. -DCMAKE_CXX_STANDARD="${standard}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DHEIMDALL_CXX11_14_MODE=ON -DLLVM_CONFIG="$LLVM_CONFIG" -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX"
-    else
-        # Standard build for C++17+
-        cmake .. -DCMAKE_CXX_STANDARD="${standard}" -DCMAKE_CXX_STANDARD_REQUIRED=ON -DLLVM_CONFIG="$LLVM_CONFIG" -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX"
-    fi
-    
-    make -j$(nproc)
-    
-    # Run tests
-    print_status "Running tests for C++${standard}..."
-    ctest --output-on-failure
-    
-    # Generate SBOMs
-    print_status "Generating SBOMs for C++${standard}..."
-    ../scripts/generate_build_sboms.sh .
-    
-    cd ..
-    set +e
-    
-    print_success "C++${standard} build, test, and SBOM generation completed"
-    echo ""
+    print_status "Building GCC C++${standard} and CLANG C++${standard}..."
+
+    # Create log files for this build
+    LOG_FILE_GCC="${LOG_DIR}/gcc_cpp${standard}.log"
+    LOG_FILE_CLANG="${LOG_DIR}/clang_cpp${standard}.log"
+
+    # Run the build scripts in parallel
+    (
+        if ./scripts/build.sh --standard $standard --compiler gcc --tests > "$LOG_FILE_GCC" 2>&1; then
+            build_results["GCC C++${standard}"]="success"
+            print_success "GCC C++${standard} build, test, and SBOM generation completed"
+        else
+            build_results["GCC C++${standard}"]="failure"
+            print_error "GCC C++${standard} build failed"
+        fi
+    ) &
+    (
+       if ./scripts/build.sh --standard $standard --compiler clang --tests > "$LOG_FILE_CLANG" 2>&1; then
+            build_results["CLANG C++${standard}"]="success"
+            print_success "CLANG C++${standard} build, test, and SBOM generation completed"
+        else
+            build_results["CLANG C++${standard}"]="failure"
+            print_error "CLANG C++${standard} build failed"
+        fi
+    ) &
+    wait
 done
 
-print_success "All C++ standards built and tested successfully!"
+print_status "Build summary:"
+for standard in "${STANDARDS[@]}"; do
+    
+    if cat logs/gcc_cpp$standard.log | grep "Heimdall C++$standard build completed successfully!" > /dev/null; then
+        print_success "GCC C++${standard}"
+    else
+        print_error "GCC C++${standard} build failed"
+    fi
+
+    if cat logs/clang_cpp$standard.log | grep "Heimdall C++$standard build completed successfully!" > /dev/null; then
+        print_success "CLANG C++${standard}"
+    else
+        print_error "CLANG C++${standard} build failed"
+    fi
+
+done
+
 print_status "Build directories:"
 for standard in "${STANDARDS[@]}"; do
     echo "  - build-cpp${standard}/"
-done 
+done
+
+print_status "Log files can be found in the ${LOG_DIR} directory"

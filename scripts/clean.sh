@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2025 The Heimdall Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/bin/bash
+
 
 # Heimdall Clean Script
 # This script removes all build artifacts for a clean checkout
@@ -180,6 +181,13 @@ if [[ -d "tests/temp" ]]; then
     print_status "Removing test output directory"
     rm -rf "tests/temp"
     print_success "Test output directory removed"
+fi
+
+# clean log files
+if [[ -d "logs" ]]; then
+    print_status "Removing build log files"
+    rm -rf "logs/"
+    print_success "Build log files removed"
 fi
 
 # Clean any stray build artifacts
