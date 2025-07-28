@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include "utils.h"
+#include "math.h"
 
 int main()
 {

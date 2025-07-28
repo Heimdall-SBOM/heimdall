@@ -321,7 +321,7 @@ if [ "$EXAMPLES" = true ]; then
     BUILD_DIR_ABS="$(pwd)"
 
     # Go back to project root to find standalone examples
-    cd ../..
+    cd ..
 
     # Define examples that are built as part of the main build (should be skipped)
     MAIN_BUILD_EXAMPLES=(

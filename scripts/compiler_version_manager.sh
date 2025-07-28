@@ -51,6 +51,13 @@ detect_gcc_versions() {
         fi
     fi
     
+    # Check for default gcc first (prioritize default)
+    if command -v "gcc" >/dev/null 2>&1; then
+        local default_version=$(gcc --version | head -n1 | cut -d' ' -f3)
+        echo "[DEBUG] Found default gcc: $default_version" 1>&2
+        versions+=("gcc:${default_version}")
+    fi
+    
     # Check for system-installed GCC versions
     for version in {7..20}; do
         if command -v "gcc-${version}" >/dev/null 2>&1; then
@@ -79,13 +86,7 @@ detect_gcc_versions() {
         fi
     done
     
-    # Check for default gcc
-    if command -v "gcc" >/dev/null 2>&1; then
-        local default_version=$(gcc --version | head -n1 | cut -d' ' -f3 | sed 's/)//')
-        echo "[DEBUG] Found default gcc: $default_version" 1>&2
-        versions+=("gcc:${default_version}")
-    fi
-    
+
     echo "${versions[@]}"
 }
 
@@ -335,16 +336,16 @@ setup_compiler_environment() {
         export CC="gcc"
         export CXX="g++"
     elif [[ "$compiler_type" =~ ^gcc-[0-9]+$ ]]; then
-        # Handle versioned GCC (e.g., gcc-13)
+        # Handle versioned GCC (e.g., gcc-10, gcc-11, gcc-13)
         export CC="$compiler_type"
         export CXX="${compiler_type/gcc/g++}"
     elif [ "$compiler_type" = "clang" ]; then
         export CC="$compiler_name"
         export CXX="${compiler_name/clang/clang++}"
     elif [[ "$compiler_type" =~ ^clang-[0-9]+$ ]]; then
-        # Handle versioned Clang (e.g., clang-19)
+        # Handle versioned Clang (e.g., clang-18, clang-19)
         export CC="$compiler_type"
-        export CXX="${compiler_type/clang/clang++}"
+        export CXX="$compiler_type++"
     elif [[ "$compiler_type" =~ ^scl-gcc-toolset- ]]; then
         # Extract version from compiler type (e.g., scl-gcc-toolset-14 -> 14)
         local version=$(echo "$compiler_type" | sed 's/scl-gcc-toolset-//')
