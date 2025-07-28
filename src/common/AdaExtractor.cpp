@@ -332,12 +332,13 @@ bool AdaExtractor::extractAdaMetadata(ComponentInfo&                  component,
       }
    }
 
-   Utils::infoPrint("Extracted Ada metadata: " + std::to_string(packages.size()) + " packages, "
-               + std::to_string(allFunctions.size()) + " functions");
+   Utils::infoPrint(std::string("Extracted Ada metadata: ") + std::to_string(packages.size()) + std::string(" packages, ")
+               + std::to_string(allFunctions.size()) + std::string(" functions"));
    if (extractEnhancedMetadata)
    {
-      Utils::infoPrint("Enhanced Extracted Metadata: " + std::to_string(allCrossRefs.size()) 
-               + " cross-references, " + std::to_string(allTypes.size()) + "types," + std::to_string(allSecurityFlags.size()) + " security flags");
+      Utils::infoPrint(std::string("Enhanced Extracted Metadata: ") + std::to_string(allCrossRefs.size()) 
+               + std::string(" cross-references, ") + std::to_string(allTypes.size()) + std::string("types,") 
+               + std::to_string(allSecurityFlags.size()) + std::string(" security flags"));
    }
    return hasValidFiles;
 }
@@ -347,7 +348,7 @@ bool AdaExtractor::parseAliFile(const std::string& aliFilePath, AdaPackageInfo& 
    std::ifstream file(aliFilePath);
    if (!file.is_open())
    {
-      Utils::errorPrint("Failed to open ALI file: " + aliFilePath);
+      Utils::errorPrint(std::string("Failed to open ALI file: ") + aliFilePath);
       return false;
    }
 
@@ -503,7 +504,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
    // Skip Ada ALI file search in test environment to avoid hanging
    if (isTestMode())
    {
-      Utils::errorPrint("AdaExtractor: Skipping Ada ALI file search in test mode for: " + directory);
+      Utils::errorPrint(std::string("AdaExtractor: Skipping Ada ALI file search in test mode for: ") + directory);
       return true;
    }
 
@@ -524,7 +525,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
             // Check timeout
             if (time(nullptr) - start_time > timeout_seconds)
             {
-               Utils::errorPrint("AdaExtractor: Timeout searching for ALI files in: " + directory);
+               Utils::errorPrint(std::string("AdaExtractor: Timeout searching for ALI files in: ") + directory);
                return false;
             }
 
@@ -538,14 +539,14 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
                   // Check timeout for each entry
                   if (time(nullptr) - start_time > timeout_seconds)
                   {
-                     Utils::errorPrint("AdaExtractor: Timeout searching for ALI files in: " + directory);
+                     Utils::errorPrint(std::string("AdaExtractor: Timeout searching for ALI files in: ") + directory);
                      return false;
                   }
 
                   if (entry.is_regular_file() && isAliFile(entry.path().string()))
                   {
                      aliFiles.push_back(entry.path().string());
-                     Utils::debugPrint("AdaExtractor: Found ALI file: " + entry.path().string());
+                     Utils::debugPrint(std::string("AdaExtractor: Found ALI file: ") + entry.path().string());
                   }
                   else if (entry.is_directory())
                   {
@@ -557,14 +558,14 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
             catch (const std::filesystem::filesystem_error& e)
             {
                // Skip problematic directories but continue scanning
-               Utils::errorPrint("AdaExtractor: Skipping problematic directory: " + current_dir);
+               Utils::errorPrint(std::string("AdaExtractor: Skipping problematic directory: ") + current_dir);
                continue;
             }
          }
       }
       catch (const std::exception& e)
       {
-         Utils::errorPrint("AdaExtractor: Error searching for ALI files in: " + directory);
+         Utils::errorPrint(std::string("AdaExtractor: Error searching for ALI files in: ") + directory);
          return false;
       }
 #else
@@ -574,7 +575,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
          time_t    start_time      = time(nullptr);
          const int timeout_seconds = 30;
 
-         Utils::debugPrint("AdaExtractor: Starting portable directory scan for: " + directory);
+         Utils::debugPrint(std::string("AdaExtractor: Starting portable directory scan for: ") + directory);
 
          // Use a stack-based approach to avoid recursion depth issues
          std::vector<std::string> dirs_to_scan = {directory};
@@ -584,7 +585,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
             // Check timeout
             if (time(nullptr) - start_time > timeout_seconds)
             {
-               Utils::errorPrint("AdaExtractor: Timeout searching for ALI files in: " + directory);
+               Utils::errorPrint(std::string("AdaExtractor: Timeout searching for ALI files in: ") + directory);
                return false;
             }
 
@@ -597,7 +598,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
                DIR* dir = opendir(current_dir.c_str());
                if (!dir)
                {
-                  Utils::errorPrint("AdaExtractor: Failed to open directory: " + current_dir);
+                  Utils::errorPrint(std::string("AdaExtractor: Failed to open directory: ") + current_dir);
                   continue;
                }
 
@@ -607,7 +608,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
                   // Check timeout for each entry
                   if (time(nullptr) - start_time > timeout_seconds)
                   {
-                     Utils::errorPrint("AdaExtractor: Timeout searching for ALI files in: " + directory);
+                     Utils::errorPrint(std::string("AdaExtractor: Timeout searching for ALI files in: ") + directory);
                      closedir(dir);
                      return false;
                   }
@@ -646,7 +647,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
                      if (isAliFile(full_path))
                      {
                         aliFiles.push_back(full_path);
-                        Utils::debugPrint("AdaExtractor: Found ALI file: " + full_path);
+                        Utils::debugPrint(std::string("AdaExtractor: Found ALI file: ") + full_path);
                      }
                   }
                   // Check if it's a directory
@@ -679,7 +680,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
             catch (const std::exception& e)
             {
                // Skip problematic directories but continue scanning
-               Utils::errorPrint("AdaExtractor: Skipping problematic directory: " + current_dir);
+               Utils::errorPrint(std::string("AdaExtractor: Skipping problematic directory: ") + current_dir);
                continue;
             }
          }
@@ -688,7 +689,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
       }
       catch (const std::exception& e)
       {
-         Utils::errorPrint("AdaExtractor: Error searching for ALI files in: " + directory);
+         Utils::errorPrint(std::string("AdaExtractor: Error searching for ALI files in: ") + directory);
          return false;
       }
 #endif
@@ -697,7 +698,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
    catch (const std::exception& e)
    {
       std::string error_msg = e.what();
-      Utils::errorPrint("AdaExtractor: Error searching for ALI files: " + error_msg);
+      Utils::errorPrint(std::string("AdaExtractor: Error searching for ALI files: ") + error_msg);
       return false;
    }
 }
