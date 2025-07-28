@@ -51,6 +51,7 @@ limitations under the License.
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -140,7 +141,7 @@ class MetadataExtractor::Impl
 {
    public:
    bool verbose          = false;  ///< Enable verbose output for debugging
-   bool extractDebugInfo = true;   ///< Whether to extract debug information
+   bool extractDebugInfo = true;   ///< Whether to extract debug information (enabled by default)
    bool suppressWarnings = false;
 
    /**
@@ -233,17 +234,19 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 
       bool success = true;
 
-      // Extract basic metadata
+      // Extract basic metadata (essential for SBOM generation)
       success &= extractVersionInfo(component);
       success &= extractLicenseInfo(component);
       success &= extractSymbolInfo(component);
       success &= extractSectionInfo(component);
 
+      // Extract debug info only if explicitly requested (expensive operation)
       if (pImpl->extractDebugInfo)
       {
          success &= extractDebugInfo(component);
       }
 
+      // Extract dependency info (essential for SBOM)
       success &= extractDependencyInfo(component);
 
       // Enhanced Mach-O metadata extraction
@@ -254,66 +257,54 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
             component.filePath);
          success &= extractEnhancedMachOMetadata(component);
       }
-      else
-      {
-         heimdall::Utils::debugPrint("MetadataExtractor: File is not Mach-O: " +
-                                     component.filePath);
-      }
 
-      // Enhanced package manager detection and metadata extraction
+      // Optimized package manager detection - use path-based detection first
+      std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
       bool packageManagerDetected = false;
 
-      // Try RPM detection
-      if (heimdall::MetadataHelpers::detectRpmMetadata(component))
+      if (packageManager == "rpm")
       {
-         packageManagerDetected = true;
-         heimdall::Utils::debugPrint("Detected RPM package metadata");
+         if (heimdall::MetadataHelpers::detectRpmMetadata(component))
+         {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected RPM package metadata");
+         }
       }
-
-      // Try Debian detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectDebMetadata(component))
+      else if (packageManager == "deb")
       {
-         packageManagerDetected = true;
-         heimdall::Utils::debugPrint("Detected Debian package metadata");
+         if (heimdall::MetadataHelpers::detectDebMetadata(component))
+         {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Debian package metadata");
+         }
       }
-
-      // Try Conan detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectConanMetadata(component))
+      else if (packageManager == "conan")
       {
+         extractConanMetadata(component);
          packageManagerDetected = true;
          heimdall::Utils::debugPrint("Detected Conan package metadata");
       }
-
-      // Try vcpkg detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectVcpkgMetadata(component))
+      else if (packageManager == "vcpkg")
       {
+         extractVcpkgMetadata(component);
          packageManagerDetected = true;
          heimdall::Utils::debugPrint("Detected vcpkg package metadata");
       }
-
-      // Try Spack detection
-      if (!packageManagerDetected && heimdall::MetadataHelpers::detectSpackMetadata(component))
+      else if (packageManager == "spack")
       {
-         packageManagerDetected = true;
-         heimdall::Utils::debugPrint("Detected Spack package metadata");
+         if (heimdall::MetadataHelpers::detectSpackMetadata(component))
+         {
+            packageManagerDetected = true;
+            heimdall::Utils::debugPrint("Detected Spack package metadata");
+         }
       }
-
-      // Fallback to generic package manager detection
-      if (!packageManagerDetected)
+      else if (packageManager == "system")
       {
-         std::string packageManager = heimdall::Utils::detectPackageManager(component.filePath);
-         if (packageManager == "conan")
-         {
-            extractConanMetadata(component);
-         }
-         else if (packageManager == "vcpkg")
-         {
-            extractVcpkgMetadata(component);
-         }
-         else if (packageManager == "system")
-         {
-            extractSystemMetadata(component);
-         }
+         // For system libraries, just set basic metadata without expensive operations
+         component.setPackageManager("system");
+         component.markAsSystemLibrary();
+         component.setSupplier("system-package-manager");
+         packageManagerDetected = true;
       }
 
       // Try Ada metadata extraction only if Ada files might be present
@@ -464,22 +455,42 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
          }
       }
 
-      component.markAsProcessed();
+      // Enhanced metadata extraction
+      extractEnhancedPackageInfo(component);
+      
+      // Generate description
+      std::string description = generateComponentDescription(component);
+      if (!description.empty()) {
+         component.setDescription(description);
+      }
+      
+      // Determine scope
+      std::string scope = determineComponentScope(component);
+      if (!scope.empty()) {
+         component.setScope(scope);
+      }
+      
+      // Determine MIME type
+      std::string mimeType = determineMimeType(component);
+      if (!mimeType.empty()) {
+         component.setMimeType(mimeType);
+      }
+      
+      // Extract copyright information (optimized - only reads first 1MB for performance)
+      std::string copyright = extractCopyrightInfo(component);
+      if (!copyright.empty()) {
+         component.setCopyright(copyright);
+      }
+      
+      // Add component evidence
+      addComponentEvidence(component);
+
       return success;
-#if defined(HEIMDALL_CPP17_AVAILABLE) || defined(HEIMDALL_CPP20_AVAILABLE) || \
-   defined(HEIMDALL_CPP23_AVAILABLE)
-   }
-   catch (const std::filesystem::filesystem_error& e)
-   {
-      heimdall::Utils::errorPrint(std::string("Filesystem error in extractMetadata: ") + e.what());
-      return false;
-#else
    }
    catch (const std::exception& e)
    {
       heimdall::Utils::errorPrint(std::string("Exception in extractMetadata: ") + e.what());
       return false;
-#endif
    }
 }
 
@@ -959,7 +970,7 @@ bool MetadataExtractor::extractSystemMetadata(heimdall::ComponentInfo& component
          component.setMimeType(mimeType);
       }
       
-      // Extract copyright information
+      // Extract copyright information (optimized - only reads first 1MB for performance)
       std::string copyright = extractCopyrightInfo(component);
       if (!copyright.empty()) {
          component.setCopyright(copyright);
@@ -4422,17 +4433,28 @@ std::string MetadataExtractor::determineMimeType(const ComponentInfo& component)
 
 std::string MetadataExtractor::extractCopyrightInfo(const ComponentInfo& component)
 {
-   // Try to extract copyright from binary strings
+   // Try to extract copyright from binary strings (optimized for performance)
    std::ifstream file(component.filePath, std::ios::binary);
    if (!file.is_open()) {
       return "";
    }
    
-   std::string content;
+   // For large files, only read the first 1MB to avoid performance issues
+   // Copyright information is typically in headers or early in the file
+   const size_t maxReadSize = 1024 * 1024; // 1MB
+   
    file.seekg(0, std::ios::end);
-   content.resize(file.tellg());
+   size_t fileSize = file.tellg();
+   size_t readSize = std::min(fileSize, maxReadSize);
+   
+   if (readSize == 0) {
+      return "";
+   }
+   
+   std::string content;
+   content.resize(readSize);
    file.seekg(0, std::ios::beg);
-   file.read(&content[0], content.size());
+   file.read(&content[0], readSize);
    
    // Look for copyright patterns
    std::regex copyrightPattern(R"((Copyright|©)\s*[0-9]{4}[-\s]*[0-9]{4}?\s*[^\n\r]*?)", std::regex::icase);
@@ -4474,10 +4496,7 @@ void MetadataExtractor::extractEnhancedPackageInfo(ComponentInfo& component)
 
 void MetadataExtractor::addComponentEvidence(ComponentInfo& component)
 {
-   // Add identity evidence
-   if (!component.checksum.empty()) {
-      component.addProperty("evidence:identity:hash", component.checksum);
-   }
+   // Add identity evidence (removed duplicate hash - already in component.checksum)
    component.addProperty("evidence:identity:symbols", std::to_string(component.symbols.size()));
    component.addProperty("evidence:identity:sections", std::to_string(component.sections.size()));
    
