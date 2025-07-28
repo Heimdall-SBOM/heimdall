@@ -483,12 +483,8 @@ llvm::DWARFContext* DWARFExtractor::createDWARFContext(const std::string& filePa
       }
       testFile.close();
 
-      // Create memory buffer from file
-#if LLVM_VERSION_MAJOR >= 12
-      auto bufferOrErr = llvm::MemoryBuffer::getFile(filePath, false, false, false);
-#else
+      // Create memory buffer from file - use simpler API to avoid ABI issues
       auto bufferOrErr = llvm::MemoryBuffer::getFile(filePath);
-#endif
       if (!bufferOrErr)
       {
 #ifdef HEIMDALL_DEBUG_ENABLED

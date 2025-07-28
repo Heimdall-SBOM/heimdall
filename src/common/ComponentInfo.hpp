@@ -148,6 +148,14 @@ struct ComponentInfo
    std::string                        license;                       ///< License information
    std::string                        checksum;                      ///< File checksum
    std::string                        packageManager;                ///< Package manager name
+   std::string                        description;                   ///< Component description
+   std::string                        scope;                         ///< Component scope
+   std::string                        group;                         ///< Component group/organization
+   std::string                        mimeType;                      ///< MIME type of the component
+   std::string                        copyright;                     ///< Copyright information
+   std::string                        cpe;                           ///< Common Platform Enumeration identifier
+   std::string                        manufacturer;                  ///< Organization that created the component
+   std::string                        publisher;                     ///< Organization that published the component
    FileType                           fileType = FileType::Unknown;  ///< File type
    uint64_t                           fileSize = 0;                  ///< File size in bytes
 
@@ -252,6 +260,54 @@ struct ComponentInfo
     * @param pkgMgr The package manager name
     */
    void setPackageManager(const std::string& pkgMgr);
+
+   /**
+    * @brief Set the component description
+    * @param desc The description string
+    */
+   void setDescription(const std::string& desc);
+
+   /**
+    * @brief Set the component scope
+    * @param s The scope string (required/optional/excluded)
+    */
+   void setScope(const std::string& s);
+
+   /**
+    * @brief Set the component group
+    * @param g The group string
+    */
+   void setGroup(const std::string& g);
+
+   /**
+    * @brief Set the MIME type
+    * @param mime The MIME type string
+    */
+   void setMimeType(const std::string& mime);
+
+   /**
+    * @brief Set the copyright information
+    * @param copy The copyright string
+    */
+   void setCopyright(const std::string& copy);
+
+   /**
+    * @brief Set the CPE identifier
+    * @param cpeId The CPE identifier string
+    */
+   void setCPE(const std::string& cpeId);
+
+   /**
+    * @brief Set the manufacturer
+    * @param manu The manufacturer string
+    */
+   void setManufacturer(const std::string& manu);
+
+   /**
+    * @brief Set the publisher
+    * @param pub The publisher string
+    */
+   void setPublisher(const std::string& pub);
 
    /**
     * @brief Mark the component as processed

@@ -49,6 +49,7 @@ show_usage() {
     echo "Options:"
     echo "  --standard <version>    C++ standard to build (11, 14, 17, 20, 23)"
     echo "  --compiler <name>       Compiler to use (gcc, clang). Default: gcc"
+    echo "                          Note: On macOS, only Clang is supported"
     echo "  --build-dir <dir>       Build directory (default: build-<compiler>-cpp<standard>)"
     echo "  --clean                 Clean build directory before building"
     echo "  --tests                 Run tests after building"
@@ -133,6 +134,14 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# On macOS, only support Clang due to LLVM ABI compatibility
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    if [ "$COMPILER" != "clang" ]; then
+        print_warning "macOS detected: Only Clang is supported due to LLVM compatibility. Forcing Clang."
+        COMPILER="clang"
+    fi
+fi
 
 # Validate standard
 if [ -z "$STANDARD" ]; then
@@ -224,6 +233,7 @@ if [ -n "$CC" ] && [ -n "$CXX" ]; then
     export CXX_VERSION
 else
     # Use version manager to detect and configure compiler
+    # Note: COMPILER may have been overridden for macOS compatibility
     if [ "$COMPILER" = "clang" ]; then
         # Force Clang selection
         COMPILER_ENV=$(./scripts/compiler_version_manager.sh --quiet "$STANDARD" clang)

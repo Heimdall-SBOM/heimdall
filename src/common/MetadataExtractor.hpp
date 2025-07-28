@@ -278,6 +278,53 @@ class MetadataExtractor
     */
    bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& aliFiles);
 
+   /**
+    * @brief Generate component description from metadata
+    * @param component The component to generate description for
+    * @return Generated description string
+    */
+   std::string generateComponentDescription(const ComponentInfo& component);
+
+   /**
+    * @brief Determine component scope based on analysis
+    * @param component The component to determine scope for
+    * @return Scope string (required/optional/excluded)
+    */
+   std::string determineComponentScope(const ComponentInfo& component);
+
+   /**
+    * @brief Extract component group from package information
+    * @param component The component to extract group for
+    * @return Group string
+    */
+   std::string extractComponentGroup(const ComponentInfo& component);
+
+   /**
+    * @brief Determine MIME type from file analysis
+    * @param component The component to determine MIME type for
+    * @return MIME type string
+    */
+   std::string determineMimeType(const ComponentInfo& component);
+
+   /**
+    * @brief Extract copyright information from binary
+    * @param component The component to extract copyright for
+    * @return Copyright string
+    */
+   std::string extractCopyrightInfo(const ComponentInfo& component);
+
+   /**
+    * @brief Extract enhanced package manager information
+    * @param component The component to extract enhanced info for
+    */
+   void extractEnhancedPackageInfo(ComponentInfo& component);
+
+   /**
+    * @brief Add component evidence to properties
+    * @param component The component to add evidence to
+    */
+   void addComponentEvidence(ComponentInfo& component);
+
    private:
    class Impl;
    std::unique_ptr<Impl> pImpl;
