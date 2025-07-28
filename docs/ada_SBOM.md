@@ -11,7 +11,7 @@ Heimdall's Ada extractor provides comprehensive SBOM generation for Ada applicat
 - **ALI file parsing** for Ada-specific metadata
 - **Cross-referencing** between binary and source information
 
-> **Note**: Ada detection is disabled by default for performance reasons. To enable Ada detection, use the `--ali-file-path` option or set the `HEIMDALL_ENABLE_ADA_DETECTION=1` environment variable.
+> **Note**: Ada .ali file detection is disabled by default for performance reasons. To enable .ali file detection, use the `--ali-file-path` option or set the `HEIMDALL_ENABLE_ADA_DETECTION=1` environment variable.
 
 ## Data Sources
 
