@@ -3,14 +3,13 @@
   "ignore": [
     "external"
   ],
-  "plugins": ["highlight"],
   "pluginsConfig": {
     "highlight": {
       "init": {
         "tabReplace": "  ",
         "useBR": false,
         "classPrefix": "hljs-",
-        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript", "mermaid"]
+        "languages": ["dot", "spdx", "meson", "graphviz", "json", "ini", "text", "bash", "cpp", "cmake", "yaml", "xml", "html", "css", "javascript"]
       }
     }
   }

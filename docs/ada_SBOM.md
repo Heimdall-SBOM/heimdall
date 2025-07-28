@@ -90,13 +90,29 @@ G r c none [main standard 6 11 none] [read_data_file data_reader 2 13 none]
 ### SPDX 2.3 Format
 
 #### **Package Information:**
-
+```text
+PackageName: heimdall-ada-demo
+PackageVersion: GNAT Lib v11
+PackageManager: GNAT
+PackageDescription: Ada application with GNAT compiler
+```
 
 #### **File Information:**
-
+```text
+FileName: main_static
+SPDXID: SPDXRef-main-static
+FileType: APPLICATION
+FileChecksum: SHA1: 7300c6bc74cd5a8d96f0bdd1032c6ec7d03e1053
+FileChecksum: SHA256: 16ceca22318374aeb4aa41bc76f774bf8cd8d3dc036ab2ff499e29ae6880924f
+FileComment: Source files: string_utils.adb, a-chahan.adb, a-charac.ads, a-tags.adb, a-textio.adb, ada.ads, data_reader.adb, math_lib.adb, s-conca2.adb, s-imgint.ads, s-secsta.adb
+```
 
 #### **Dependencies:**
-
+```text
+Relationship: SPDXRef-Package CONTAINS SPDXRef-libc-so-6
+Relationship: SPDXRef-Package CONTAINS SPDXRef-libgnat-11-so
+Relationship: SPDXRef-Package CONTAINS SPDXRef-main-static
+```
 
 ### CycloneDX Format
 
