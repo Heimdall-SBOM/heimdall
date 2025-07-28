@@ -17,6 +17,9 @@ Makefile
 *.swp
 *.swo
 
+# Ignore logs from build_all_standard.sh
+logs/
+
 # Ignore binary/object/library files
 *.o
 *.obj
