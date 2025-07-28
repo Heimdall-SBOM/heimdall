@@ -870,8 +870,10 @@ std::string escapeJsonString(const std::string& str)
    std::string result;
    result.reserve(str.length());
 
-   for (char c : str)
+   for (size_t i = 0; i < str.length(); ++i)
    {
+      unsigned char c = static_cast<unsigned char>(str[i]);
+      
       switch (c)
       {
          case '"':
@@ -899,11 +901,17 @@ std::string escapeJsonString(const std::string& str)
             if (c < 32)
             {
                char hex[8];
-               snprintf(hex, sizeof(hex), "\\u%04x", (unsigned char)c);
+               snprintf(hex, sizeof(hex), "\\u%04x", c);
                result += hex;
+            }
+            else if (c < 128)
+            {
+               // ASCII character - output as-is
+               result += c;
             }
             else
             {
+               // UTF-8 character - output as-is to preserve encoding
                result += c;
             }
             break;

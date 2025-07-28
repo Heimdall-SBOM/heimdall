@@ -1351,54 +1351,58 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
    ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
    ss << "      \"version\": "
       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version) << ",\n";
-   // Enhanced description
-   std::string description = component.description.empty() ? 
-      component.getFileTypeString() + " component" : component.description;
-   ss << "      \"description\": " << Utils::formatJsonValue(description) << ",\n";
    
-   // Scope
+   // Enhanced description - only include if not empty
+   if (!component.description.empty()) {
+      ss << "      \"description\": " << Utils::formatJsonValue(component.description) << ",\n";
+   }
+   
+   // Scope - only include if not empty
    if (!component.scope.empty()) {
       ss << "      \"scope\": \"" << component.scope << "\",\n";
    }
    
-   // Group
+   // Group - only include if not empty
    if (!component.group.empty()) {
       ss << "      \"group\": " << Utils::formatJsonValue(component.group) << ",\n";
    }
    
-   // MIME type
+   // MIME type - only include if not empty
    if (!component.mimeType.empty()) {
       ss << "      \"mime-type\": " << Utils::formatJsonValue(component.mimeType) << ",\n";
    }
    
-   // Copyright
+   // Copyright - only include if not empty
    if (!component.copyright.empty()) {
       ss << "      \"copyright\": " << Utils::formatJsonValue(component.copyright) << ",\n";
    }
    
-   // CPE
+   // CPE - only include if not empty
    if (!component.cpe.empty()) {
       ss << "      \"cpe\": " << Utils::formatJsonValue(component.cpe) << ",\n";
    }
    
-   // Supplier
+   // Supplier - only include if not empty, and as object with name field
    if (!component.supplier.empty()) {
       ss << "      \"supplier\": {\n";
       ss << "        \"name\": " << Utils::formatJsonValue(component.supplier) << "\n";
       ss << "      },\n";
    }
    
-   // Manufacturer
+   // Manufacturer - only include if not empty, and as object with name field
    if (!component.manufacturer.empty()) {
       ss << "      \"manufacturer\": {\n";
       ss << "        \"name\": " << Utils::formatJsonValue(component.manufacturer) << "\n";
       ss << "      },\n";
    }
    
-   // Publisher
+   // Publisher - only include if not empty, and as object with name field
    if (!component.publisher.empty()) {
-      ss << "      \"publisher\": " << Utils::formatJsonValue(component.publisher) << ",\n";
+      ss << "      \"publisher\": {\n";
+      ss << "        \"name\": " << Utils::formatJsonValue(component.publisher) << "\n";
+      ss << "      },\n";
    }
+   
    // Only include hash if we have a valid checksum
    if (!component.checksum.empty() && component.checksum.length() == 64)
    {
@@ -1409,43 +1413,56 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       ss << "        }\n";
       ss << "      ],\n";
    }
-   ss << "      \"purl\": \"" << generatePURL(component) << "\",\n";
-   // External references
-   ss << "      \"externalReferences\": [\n";
+   ss << "      \"purl\": \"" << generatePURL(component) << "\"";
    
-   // Download location
-   if (!component.downloadLocation.empty()) {
-      ss << "        {\n";
-      ss << "          \"type\": \"distribution\",\n";
-      ss << "          \"url\": " << Utils::formatJsonValue(component.downloadLocation) << "\n";
-      ss << "        }";
-   }
+   // External references - only include if we have any
+   bool hasExternalRefs = !component.downloadLocation.empty() || 
+                         !component.homepage.empty() ||
+                         std::any_of(component.properties.begin(), component.properties.end(),
+                                    [](const auto& prop) { return prop.first.find("external:") == 0; });
    
-   // Homepage
-   if (!component.homepage.empty()) {
+   if (hasExternalRefs) {
+      ss << ",\n      \"externalReferences\": [\n";
+      
+      bool firstRef = true;
+      
+      // Download location
       if (!component.downloadLocation.empty()) {
-         ss << ",\n";
+         ss << "        {\n";
+         ss << "          \"type\": \"distribution\",\n";
+         ss << "          \"url\": " << Utils::formatJsonValue(component.downloadLocation) << "\n";
+         ss << "        }";
+         firstRef = false;
       }
-      ss << "        {\n";
-      ss << "          \"type\": \"website\",\n";
-      ss << "          \"url\": " << Utils::formatJsonValue(component.homepage) << "\n";
-      ss << "        }";
-   }
-   
-   // Additional external references from properties
-   for (const auto& [key, value] : component.properties) {
-      if (key.find("external:") == 0) {
-         if (!component.downloadLocation.empty() || !component.homepage.empty()) {
+      
+      // Homepage
+      if (!component.homepage.empty()) {
+         if (!firstRef) {
             ss << ",\n";
          }
          ss << "        {\n";
-         ss << "          \"type\": \"" << key.substr(9) << "\",\n";
-         ss << "          \"url\": " << Utils::formatJsonValue(value) << "\n";
+         ss << "          \"type\": \"website\",\n";
+         ss << "          \"url\": " << Utils::formatJsonValue(component.homepage) << "\n";
          ss << "        }";
+         firstRef = false;
       }
+      
+      // Additional external references from properties
+      for (const auto& [key, value] : component.properties) {
+         if (key.find("external:") == 0) {
+            if (!firstRef) {
+               ss << ",\n";
+            }
+            ss << "        {\n";
+            ss << "          \"type\": \"" << key.substr(9) << "\",\n";
+            ss << "          \"url\": " << Utils::formatJsonValue(value) << "\n";
+            ss << "        }";
+            firstRef = false;
+         }
+      }
+      
+      ss << "\n      ]";
    }
-   
-   ss << "\n      ]";
 
    // Add all component properties (including enhanced Ada metadata and Mach-O metadata)
    if (!component.properties.empty() || component.containsDebugInfo ||

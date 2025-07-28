@@ -327,6 +327,14 @@ SBOMSigner::~SBOMSigner() = default;
 
 bool SBOMSigner::loadPrivateKey(const std::string& keyPath, const std::string& password)
 {
+   // Ensure OpenSSL is properly initialized (modern API)
+   int init_result = OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS |
+                                        OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+   if (init_result != 1) {
+      pImpl->lastError = "Failed to initialize OpenSSL";
+      return false;
+   }
+   
    std::ifstream keyFile(keyPath);
    if (!keyFile.is_open()) {
       pImpl->lastError = "Failed to open private key file: " + keyPath;
@@ -368,6 +376,14 @@ bool SBOMSigner::loadPrivateKey(const std::string& keyPath, const std::string& p
 
 bool SBOMSigner::loadCertificate(const std::string& certPath)
 {
+   // Ensure OpenSSL is properly initialized (modern API)
+   int init_result = OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS |
+                                        OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+   if (init_result != 1) {
+      pImpl->lastError = "Failed to initialize OpenSSL";
+      return false;
+   }
+   
    std::ifstream certFile(certPath);
    if (!certFile.is_open()) {
       pImpl->lastError = "Failed to open certificate file: " + certPath;
@@ -402,6 +418,14 @@ bool SBOMSigner::loadCertificate(const std::string& certPath)
 
 bool SBOMSigner::loadPublicKey(const std::string& keyPath)
 {
+   // Ensure OpenSSL is properly initialized (modern API)
+   int init_result = OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS |
+                                        OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+   if (init_result != 1) {
+      pImpl->lastError = "Failed to initialize OpenSSL";
+      return false;
+   }
+   
    std::ifstream keyFile(keyPath);
    if (!keyFile.is_open()) {
       pImpl->lastError = "Failed to open public key file: " + keyPath;
@@ -488,6 +512,14 @@ void SBOMSigner::setKeyId(const std::string& keyId)
 
 bool SBOMSigner::signSBOM(const std::string& sbomContent, SignatureInfo& signatureInfo)
 {
+   // Ensure OpenSSL is properly initialized (modern API)
+   int init_result = OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS |
+                                        OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+   if (init_result != 1) {
+      pImpl->lastError = "Failed to initialize OpenSSL";
+      return false;
+   }
+   
    // Create canonical JSON for signing (remove signature field if present)
    nlohmann::json sbomJson;
    try {
@@ -552,9 +584,8 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
       signatureObj["timestamp"] = signatureInfo.timestamp;
    }
    
-   if (!signatureInfo.excludes.empty()) {
-      signatureObj["excludes"] = signatureInfo.excludes;
-   }
+   // Always include excludes field, even if empty, to indicate what was excluded during canonicalization
+   signatureObj["excludes"] = signatureInfo.excludes;
    
    // Add signature to SBOM
    sbomJson["signature"] = signatureObj;
@@ -564,6 +595,14 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
 
 bool SBOMSigner::verifySignature(const std::string& sbomContent)
 {
+   // Ensure OpenSSL is properly initialized (modern API)
+   int init_result = OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CRYPTO_STRINGS | OPENSSL_INIT_ADD_ALL_CIPHERS |
+                                        OPENSSL_INIT_ADD_ALL_DIGESTS, nullptr);
+   if (init_result != 1) {
+      pImpl->lastError = "Failed to initialize OpenSSL";
+      return false;
+   }
+   
    SignatureInfo signatureInfo;
    if (!extractSignature(sbomContent, signatureInfo)) {
       return false;
