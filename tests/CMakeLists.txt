@@ -70,7 +70,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
                filename STREQUAL "test_lld_plugin.cpp" OR
                filename STREQUAL "test_package_manager_and_archive.cpp" OR
                filename STREQUAL "test_plugin_interface.cpp" OR
-               filename STREQUAL "test_utils_extended.cpp")
+               filename STREQUAL "test_utils_extended.cpp" OR
+               filename STREQUAL "test_sbom_signer.cpp")
                 # Skip these files for C++11/14
                 continue()
             endif()

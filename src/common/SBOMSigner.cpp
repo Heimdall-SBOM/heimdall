@@ -548,6 +548,10 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string& sbomContent, 
       signatureObj["keyId"] = signatureInfo.keyId;
    }
    
+   if (!signatureInfo.timestamp.empty()) {
+      signatureObj["timestamp"] = signatureInfo.timestamp;
+   }
+   
    if (!signatureInfo.excludes.empty()) {
       signatureObj["excludes"] = signatureInfo.excludes;
    }
