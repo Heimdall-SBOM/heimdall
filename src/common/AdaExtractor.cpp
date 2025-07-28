@@ -545,7 +545,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
                   if (entry.is_regular_file() && isAliFile(entry.path().string()))
                   {
                      aliFiles.push_back(entry.path().string());
-                     Utils::infoPrint("AdaExtractor: Found ALI file: " + entry.path().string());
+                     Utils::debugPrint("AdaExtractor: Found ALI file: " + entry.path().string());
                   }
                   else if (entry.is_directory())
                   {
@@ -574,7 +574,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
          time_t    start_time      = time(nullptr);
          const int timeout_seconds = 30;
 
-         Utils::infoPrint("AdaExtractor: Starting portable directory scan for: " + directory);
+         Utils::debugPrint("AdaExtractor: Starting portable directory scan for: " + directory);
 
          // Use a stack-based approach to avoid recursion depth issues
          std::vector<std::string> dirs_to_scan = {directory};
@@ -646,7 +646,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
                      if (isAliFile(full_path))
                      {
                         aliFiles.push_back(full_path);
-                        Utils::infoPrint("AdaExtractor: Found ALI file: " + full_path);
+                        Utils::debugPrint("AdaExtractor: Found ALI file: " + full_path);
                      }
                   }
                   // Check if it's a directory
