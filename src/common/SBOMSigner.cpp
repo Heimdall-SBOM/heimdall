@@ -99,16 +99,17 @@ class SBOMSigner::Impl
     */
    std::string getCurrentTimestamp() const
    {
-      auto now=std::chrono::system_clock::now();
-      auto time_t=std::chrono::system_clock::to_time_t(now);
-      auto ms=std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch())%1000;
+      auto now    = std::chrono::system_clock::now();
+      auto time_t = std::chrono::system_clock::to_time_t(now);
+      auto ms =
+         std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
       std::stringstream ss;
-      struct tm utc_tm={};
+      struct tm         utc_tm = {};
 #ifdef _WIN32
-      gmtime_s(&utc_tm,&time_t);
+      gmtime_s(&utc_tm, &time_t);
 #else
-      gmtime_r(&time_t,&utc_tm);
+      gmtime_r(&time_t, &utc_tm);
 #endif
       ss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S");
       ss << '.' << std::setfill('0') << std::setw(3) << ms.count() << 'Z';
