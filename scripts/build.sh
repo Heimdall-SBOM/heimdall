@@ -54,10 +54,11 @@ show_usage() {
     echo "  --clean                 Clean build directory before building"
     echo "  --tests                 Run tests after building"
     echo "  --sboms                 Generate SBOMs after building"
+    echo "  --signed-sbom-validation Generate and validate signed SBOM"
     echo "  --profiling             Enable performance profiling"
     echo "  --benchmarks            Enable performance benchmarks"
     echo "  --examples              Build examples after main build"
-    echo "  --all                   Build, test, and generate SBOMs"
+    echo "  --all                   Build, test, generate SBOMs, and validate signed SBOM"
     echo "  --help                  Show this help message"
     echo ""
     echo "Examples:"
@@ -76,6 +77,7 @@ BUILD_DIR=""
 CLEAN=false
 TESTS=false
 SBOMS=false
+SIGNED_SBOM_VALIDATION=false
 PROFILING=false
 BENCHMARKS=false
 ALL=false
@@ -105,6 +107,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --sboms)
             SBOMS=true
+            shift
+            ;;
+        --signed-sbom-validation)
+            SIGNED_SBOM_VALIDATION=true
             shift
             ;;
         --profiling)
@@ -321,6 +327,13 @@ if [ "$SBOMS" = true ] || [ "$ALL" = true ]; then
     print_status "Generating SBOMs..."
     ../scripts/generate_build_sboms.sh .
     print_success "SBOM generation completed!"
+fi
+
+# Generate and validate signed SBOM if requested
+if [ "$SIGNED_SBOM_VALIDATION" = true ] || [ "$ALL" = true ]; then
+    print_status "Generating and validating signed SBOM..."
+    ../scripts/validate_signed_sbom.sh .
+    print_success "Signed SBOM validation completed!"
 fi
 
 # Build examples if requested
