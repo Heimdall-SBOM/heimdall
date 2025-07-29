@@ -10,14 +10,14 @@ on:
       docker_username:
         description: 'Docker Hub username'
         required: true
-        default: 'your-dockerhub-username'
+        default: 'heimdall-sbom'
       image_tag:
         description: 'Image tag'
         required: false
         default: 'latest'
 
 env:
-  DOCKER_IMAGE: ${{ github.event.inputs.docker_username || 'your-dockerhub-username' }}/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}
+  DOCKER_IMAGE: ${{ github.event.inputs.docker_username || 'heimdall-sbom' }}/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}
 
 jobs:
   build-and-push:
