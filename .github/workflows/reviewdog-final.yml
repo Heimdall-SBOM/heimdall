@@ -1,0 +1,44 @@
+name: Final Reviewdog Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  final-test:
+    name: Final Format Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install reviewdog
+        run: |
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Post multiple format warnings
+        run: |
+          # Post several individual format warnings using the exact same approach that worked
+          echo "src/common/SBOMSigner.cpp:102:10: warning: missing spaces around = operator" | \
+          reviewdog -efm="%f:%l:%c: %tarning: %m" -name="format-issue-1" -reporter=github-pr-review -fail-on-error=false
+          
+          echo "src/common/SBOMSigner.cpp:103:14: warning: missing spaces around = operator" | \
+          reviewdog -efm="%f:%l:%c: %tarning: %m" -name="format-issue-2" -reporter=github-pr-review -fail-on-error=false
+          
+          echo "src/common/SBOMSigner.cpp:104:7: warning: missing spaces around = and % operators" | \
+          reviewdog -efm="%f:%l:%c: %tarning: %m" -name="format-issue-3" -reporter=github-pr-review -fail-on-error=false
+          
+          echo "src/common/SBOMSigner.cpp:107:17: warning: missing spaces around = operator" | \
+          reviewdog -efm="%f:%l:%c: %tarning: %m" -name="format-issue-4" -reporter=github-pr-review -fail-on-error=false
+          
+          echo "src/common/SBOMSigner.cpp:109:17: warning: missing spaces after comma" | \
+          reviewdog -efm="%f:%l:%c: %tarning: %m" -name="format-issue-5" -reporter=github-pr-review -fail-on-error=false
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
