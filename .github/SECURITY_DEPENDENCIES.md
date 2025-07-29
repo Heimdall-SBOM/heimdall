@@ -42,10 +42,10 @@ All GitHub Actions are pinned to specific commit SHAs to prevent supply chain at
 ## Container Images (Pin to SHA256 Digests)
 
 ### Development Container
-- **Current**: `ghcr.io/heimdall-sbom/heimdall-devcontainer:latest` (TODO: Pin to digest)
+- **Current**: `ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e` (TODO: Pin to digest)
 - **Security**: Pin to specific SHA256 digest instead of mutable tags
 - **Update script**: `.github/scripts/update-container-digests.sh` (automated helper)
-- **Manual command**: `docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'`
+- **Manual command**: `docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e --format='{{index .RepoDigests 0}}'`
 - **Used in**: `ci.yml` (4 job definitions)
 
 ## Maintenance Guidelines
@@ -121,7 +121,7 @@ git ls-remote https://github.com/actions/checkout.git 692973e3d937129bcbf40652eb
 curl -s https://raw.githubusercontent.com/reviewdog/reviewdog/fd59714416d6d9a1c0692d872e38e7f8448df4fc/install.sh | sha256sum
 
 # Get container image digest
-docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e --format='{{index .RepoDigests 0}}'
 
 # Verify Dependabot configuration
 gh api repos/OWNER/REPO/dependabot/alerts --paginate

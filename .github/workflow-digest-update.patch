@@ -1,0 +1,22 @@
+# Manual workflow digest update patch
+# Apply this patch to update the container digest in .github/workflows/ci.yml
+# 
+# To apply: patch -p1 < .github/workflow-digest-update.patch
+# 
+# Generated on: Tue Jul 29 06:13:34 PM UTC 2025
+# New digest: sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e
+
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+---
+-image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
++image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e  # Pinned 2025-07-29
+---
+-image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
++image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e  # Pinned 2025-07-29
+---
+-image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
++image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e  # Pinned 2025-07-29
+---
+-image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
++image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e  # Pinned 2025-07-29

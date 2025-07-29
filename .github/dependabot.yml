@@ -20,6 +20,11 @@ updates:
     commit-message:
       prefix: "security(deps):"
       include: "scope"
+    # Exclude workflow files to prevent permission issues
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch", "version-update:semver-minor", "version-update:semver-major"]
+        paths: [".github/workflows/*.yml"]
 
   # Docker containers - Monitor base images and development containers  
   - package-ecosystem: "docker"

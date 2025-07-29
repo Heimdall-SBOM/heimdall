@@ -1,0 +1,11 @@
+{
+  "container_digests": {
+    "heimdall-devcontainer": {
+      "image": "ghcr.io/heimdall-sbom/heimdall-devcontainer",
+      "digest": "sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e",
+      "full_image": "ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:bda816fa47a39f6789d51048c8804e0318124969b55a477c2d4dbf4901bfd21e",
+      "updated_at": "2025-07-29T18:13:34Z",
+      "updated_by": "update-container-digests.sh"
+    }
+  }
+}
