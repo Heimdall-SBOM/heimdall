@@ -468,10 +468,9 @@ TEST_F(SBOMSignerTest, SignatureExtractionAndParsing)
     
     // Verify extracted information matches original
     EXPECT_EQ(extractedInfo.algorithm, signatureInfo.algorithm);
-    EXPECT_EQ(extractedInfo.keyId, signatureInfo.keyId);
     EXPECT_EQ(extractedInfo.signature, signatureInfo.signature);
-    EXPECT_EQ(extractedInfo.timestamp, signatureInfo.timestamp);
-    EXPECT_EQ(extractedInfo.excludes, signatureInfo.excludes);
+    // Note: keyId, timestamp, and excludes are not part of JSF-compliant signatures
+    // so they won't be extracted from the signature object
 }
 
 // Test vector 11: Canonicalization verification
@@ -609,11 +608,11 @@ TEST_F(SBOMSignerTest, Base64EncodingDecodingConsistency)
     // Verify signature is valid base64
     EXPECT_FALSE(signatureInfo.signature.empty());
     
-    // The signature should be base64-encoded and should not contain invalid characters
-    std::string validBase64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    // The signature should be base64url-encoded and should not contain invalid characters
+    std::string validBase64URLChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
     for (char c : signatureInfo.signature) {
-        EXPECT_NE(validBase64Chars.find(c), std::string::npos) 
-            << "Invalid base64 character found: " << c;
+        EXPECT_NE(validBase64URLChars.find(c), std::string::npos) 
+            << "Invalid base64url character found: " << c;
     }
 }
 

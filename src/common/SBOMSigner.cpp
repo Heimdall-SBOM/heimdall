@@ -224,6 +224,77 @@ class SBOMSigner::Impl
    }
 
    /**
+    * @brief Base64URL encode data (Base64 without padding and with URL-safe characters)
+    * @param data Input data
+    * @param length Data length
+    * @return Base64URL encoded string
+    */
+   std::string base64URLEncode(const unsigned char* data, size_t length) const
+   {
+      std::string base64 = base64Encode(data, length);
+      // Remove padding
+      while (!base64.empty() && base64.back() == '=')
+      {
+         base64.pop_back();
+      }
+      // Replace URL-unsafe characters
+      std::replace(base64.begin(), base64.end(), '+', '-');
+      std::replace(base64.begin(), base64.end(), '/', '_');
+      return base64;
+   }
+
+   /**
+    * @brief Base64URL decode string (Base64 without padding and with URL-safe characters)
+    * @param input Base64URL encoded string
+    * @return Decoded data
+    */
+   std::vector<unsigned char> base64URLDecode(const std::string& input) const
+   {
+      std::string base64 = input;
+      // Replace URL-safe characters back to standard Base64
+      std::replace(base64.begin(), base64.end(), '-', '+');
+      std::replace(base64.begin(), base64.end(), '_', '/');
+      
+      // Add padding if needed
+      while (base64.length() % 4 != 0)
+      {
+         base64 += '=';
+      }
+      
+      return base64Decode(base64);
+   }
+
+   /**
+    * @brief Convert BIGNUM to Base64URL string
+    * @param bn BIGNUM to convert
+    * @return Base64URL encoded string
+    */
+   std::string bignumToBase64URL(const BIGNUM* bn) const
+   {
+      if (!bn)
+      {
+         return "";
+      }
+
+      int numBytes = BN_num_bytes(bn);
+      std::vector<unsigned char> buffer(numBytes);
+      BN_bn2bin(bn, buffer.data());
+
+      // Remove leading zeros (JWK requirement)
+      size_t start = 0;
+      while (start < buffer.size() && buffer[start] == 0)
+      {
+         start++;
+      }
+      if (start == buffer.size())
+      {
+         return "";
+      }
+
+      return base64URLEncode(buffer.data() + start, buffer.size() - start);
+   }
+
+   /**
     * @brief Verify data signature using loaded public key
     * @param data Data that was signed
     * @param dataLength Length of data
@@ -240,7 +311,7 @@ class SBOMSigner::Impl
          return false;
       }
 
-      std::vector<unsigned char> sigData = base64Decode(signature);
+      std::vector<unsigned char> sigData = base64URLDecode(signature);
       if (sigData.empty())
       {
          lastError = "Failed to decode signature";
@@ -343,7 +414,7 @@ class SBOMSigner::Impl
                std::vector<unsigned char> sig(sigLen);
                if (EVP_DigestSign(ctx, sig.data(), &sigLen, data, dataLength) == 1)
                {
-                  signature = base64Encode(sig.data(), sigLen);
+                  signature = base64URLEncode(sig.data(), sigLen);
                   success   = true;
                }
                else
@@ -377,7 +448,7 @@ class SBOMSigner::Impl
                std::vector<unsigned char> sig(sigLen);
                if (EVP_DigestSign(ctx, sig.data(), &sigLen, data, dataLength) == 1)
                {
-                  signature = base64Encode(sig.data(), sigLen);
+                  signature = base64URLEncode(sig.data(), sigLen);
                   success   = true;
                }
                else
@@ -457,6 +528,13 @@ bool SBOMSigner::loadPrivateKey(const std::string& keyPath, const std::string& p
       EVP_PKEY_free(pImpl->privateKey);
    }
    pImpl->privateKey = key;
+
+   // Extract public key from private key for JSF compliance
+   if (pImpl->publicKey)
+   {
+      EVP_PKEY_free(pImpl->publicKey);
+   }
+   pImpl->publicKey = EVP_PKEY_dup(key);
 
    return true;
 }
@@ -616,6 +694,104 @@ void SBOMSigner::setKeyId(const std::string& keyId)
    pImpl->keyId = keyId;
 }
 
+nlohmann::json SBOMSigner::getPublicKeyAsJWK() const
+{
+   if (!pImpl->publicKey)
+   {
+      return nlohmann::json();
+   }
+
+   nlohmann::json jwk;
+   int keyType = EVP_PKEY_id(pImpl->publicKey);
+
+   if (keyType == EVP_PKEY_RSA)
+   {
+      // RSA key
+      const RSA* rsa = EVP_PKEY_get0_RSA(pImpl->publicKey);
+      if (!rsa)
+      {
+         return nlohmann::json();
+      }
+
+      const BIGNUM* n = nullptr;
+      const BIGNUM* e = nullptr;
+      RSA_get0_key(rsa, &n, &e, nullptr);
+
+      if (n && e)
+      {
+         jwk["kty"] = "RSA";
+         jwk["n"] = pImpl->bignumToBase64URL(n);
+         jwk["e"] = pImpl->bignumToBase64URL(e);
+      }
+   }
+   else if (keyType == EVP_PKEY_EC)
+   {
+      // EC key
+      const EC_KEY* ec = EVP_PKEY_get0_EC_KEY(pImpl->publicKey);
+      if (!ec)
+      {
+         return nlohmann::json();
+      }
+
+      const EC_POINT* point = EC_KEY_get0_public_key(ec);
+      const EC_GROUP* group = EC_KEY_get0_group(ec);
+      if (!point || !group)
+      {
+         return nlohmann::json();
+      }
+
+      // Get curve name
+      int nid = EC_GROUP_get_curve_name(group);
+      if (nid == NID_X9_62_prime256v1)
+      {
+         jwk["kty"] = "EC";
+         jwk["crv"] = "P-256";
+      }
+      else if (nid == NID_secp384r1)
+      {
+         jwk["kty"] = "EC";
+         jwk["crv"] = "P-384";
+      }
+      else if (nid == NID_secp521r1)
+      {
+         jwk["kty"] = "EC";
+         jwk["crv"] = "P-521";
+      }
+      else
+      {
+         return nlohmann::json();
+      }
+
+      // Get coordinates
+      BIGNUM* x = BN_new();
+      BIGNUM* y = BN_new();
+      if (EC_POINT_get_affine_coordinates(group, point, x, y, nullptr))
+      {
+         jwk["x"] = pImpl->bignumToBase64URL(x);
+         jwk["y"] = pImpl->bignumToBase64URL(y);
+      }
+      BN_free(x);
+      BN_free(y);
+   }
+   else if (keyType == EVP_PKEY_ED25519)
+   {
+      // Ed25519 key
+      size_t keyLen = EVP_PKEY_get_raw_public_key(pImpl->publicKey, nullptr, 0);
+      if (keyLen == 32)
+      {
+         std::vector<unsigned char> keyData(keyLen);
+         if (EVP_PKEY_get_raw_public_key(pImpl->publicKey, keyData.data(), &keyLen))
+         {
+            jwk["kty"] = "OKP";
+            jwk["crv"] = "Ed25519";
+            jwk["x"] = pImpl->base64URLEncode(keyData.data(), keyLen);
+         }
+      }
+   }
+
+   return jwk;
+}
+
 bool SBOMSigner::signSBOM(const std::string& sbomContent, SignatureInfo& signatureInfo)
 {
    // Ensure OpenSSL is properly initialized (modern API)
@@ -659,6 +835,7 @@ bool SBOMSigner::signSBOM(const std::string& sbomContent, SignatureInfo& signatu
    signatureInfo.signature = signature;
    signatureInfo.timestamp = pImpl->getCurrentTimestamp();
    signatureInfo.excludes  = excludes;
+   signatureInfo.publicKey = getPublicKeyAsJWK();
 
    // Add certificate if available
    if (pImpl->certificate)
@@ -698,28 +875,11 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string&   sbomContent
    signatureObj["algorithm"] = signatureInfo.algorithm;
    signatureObj["value"]     = signatureInfo.signature;  // Base64URL-encoded signature
 
-   // Optional public key information (if available)
-   if (!signatureInfo.certificate.empty())
+   // Required public key in JWK format for JSF compliance
+   if (!signatureInfo.publicKey.empty())
    {
-      // TODO: Extract public key from certificate and format as JWK
-      // For now, we'll include the certificate as-is
-      signatureObj["certificate"] = signatureInfo.certificate;
+      signatureObj["publicKey"] = signatureInfo.publicKey;
    }
-
-   // Optional key ID (not part of JSF spec but useful for CycloneDX)
-   if (!signatureInfo.keyId.empty())
-   {
-      signatureObj["keyId"] = signatureInfo.keyId;
-   }
-
-   // Optional timestamp (not part of JSF spec but useful for CycloneDX)
-   if (!signatureInfo.timestamp.empty())
-   {
-      signatureObj["timestamp"] = signatureInfo.timestamp;
-   }
-
-   // Always include excludes field (even if empty) for CycloneDX compatibility
-   signatureObj["excludes"] = signatureInfo.excludes;
 
    // Add signature to SBOM
    sbomJson["signature"] = signatureObj;
