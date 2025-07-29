@@ -105,7 +105,7 @@ class SBOMSigner::Impl
          std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
       std::stringstream ss;
-      struct tm         utc_tm;
+      struct tm         utc_tm = {};
 #ifdef _WIN32
       gmtime_s(&utc_tm, &time_t);
 #else

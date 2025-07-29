@@ -1,9 +1,9 @@
-name: clang-format and clang-tidy reviewdog
+name: reviewdog - clang-format and clang-tidy
 
 on:
   pull_request:
     branches:
-      - main  # Adjust this if needed
+      - main
 
 jobs:
   clang-tools:
@@ -12,12 +12,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
 
-      - name: Set up Python (for run-clang-tidy.py)
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
@@ -34,25 +34,19 @@ jobs:
       ############################################
       - name: Run clang-format with reviewdog
         run: |
-          # Get changed files from GitHub context - only get files from the last few commits
+          # Get changed files
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
           else
-            # For direct commits, only check the last commit
             FILES=$(git diff --name-only HEAD~1..HEAD | grep -E '\.(c|cpp|h|hpp)$' || true)
           fi
+          
           echo "Changed files: $FILES"
           if [ -n "$FILES" ]; then
-            # Limit to first 10 files to prevent hanging
-            FILE_COUNT=$(echo "$FILES" | wc -l)
-            if [ "$FILE_COUNT" -gt 10 ]; then
-              echo "Too many files changed ($FILE_COUNT), limiting to first 10 files"
-              FILES=$(echo "$FILES" | head -10)
-            fi
-            
             for file in $FILES; do
               if [ -f "$file" ]; then
                 echo "Checking format for: $file"
+                # Use github-pr-review reporter to post inline comments
                 clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review
               fi
             done
@@ -66,35 +60,23 @@ jobs:
       # 2. CLANG-TIDY via reviewdog
       ############################################
       - name: Run clang-tidy with reviewdog
-        timeout-minutes: 5
         run: |
+          # Build compile commands
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
-          wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
-          chmod +x run-clang-tidy.py
-          mkdir -p tidy-fixes
           
-          # Get changed files only - limit to recent commits
+          # Get changed files
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
           else
-            # For direct commits, only check the last commit
             FILES=$(git diff --name-only HEAD~1..HEAD | grep -E '\.(c|cpp|h|hpp)$' || true)
           fi
-          echo "Changed files for clang-tidy: $FILES"
           
+          echo "Changed files for clang-tidy: $FILES"
           if [ -n "$FILES" ]; then
-            # Limit to first 10 files to prevent hanging
-            FILE_COUNT=$(echo "$FILES" | wc -l)
-            if [ "$FILE_COUNT" -gt 10 ]; then
-              echo "Too many files changed ($FILE_COUNT), limiting to first 10 files"
-              FILES=$(echo "$FILES" | head -10)
-            fi
-            
-            # Run clang-tidy only on changed files
             for file in $FILES; do
               if [ -f "$file" ]; then
                 echo "Running clang-tidy on: $file"
-                # Capture full clang-tidy output for better context
+                # Use simpler error format and github-pr-review reporter for inline comments
                 clang-tidy -p build "$file" 2>&1 | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-level=any
               fi
             done
