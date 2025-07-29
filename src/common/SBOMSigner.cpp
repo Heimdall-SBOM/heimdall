@@ -437,7 +437,7 @@ bool SBOMSigner::loadPrivateKey(const std::string& keyPath, const std::string& p
       // This is a safe cast as the password string is not modified
       std::string password_copy = password;  // Make a copy to be safe
       key =
-         PEM_read_bio_PrivateKey(bio, nullptr, nullptr, static_cast<void*>(password_copy.data()));
+         PEM_read_bio_PrivateKey(bio, nullptr, nullptr, const_cast<void*>(static_cast<const void*>(password_copy.data())));
    }
    else
    {
