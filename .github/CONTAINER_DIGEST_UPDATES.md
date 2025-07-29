@@ -56,10 +56,19 @@ If you see permission errors like:
 refusing to allow a GitHub App to create or update workflow `.github/workflows/ci.yml` without `workflows` permission
 ```
 
-This is expected behavior. The automated process is designed to work within these constraints by:
+Or push errors like:
+```
+remote: Permission to Heimdall-SBOM/heimdall.git denied to github-actions[bot].
+fatal: unable to access 'https://github.com/Heimdall-SBOM/heimdall/': The requested URL returned error: 403
+```
+
+This is **expected behavior** and part of the security design. The automated process is designed to work within these constraints by:
 - Creating digest files instead of directly modifying workflows
 - Providing patch files for manual application
 - Requiring human review for workflow changes
+- Only updating tracking files, not pushing changes directly
+
+The permission errors indicate that the security measures are working correctly.
 
 ### Manual Digest Updates
 
