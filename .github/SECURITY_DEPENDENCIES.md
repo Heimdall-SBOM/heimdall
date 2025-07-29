@@ -100,6 +100,17 @@ If a dependency is compromised:
 # 5. Show changes made for review
 ```
 
+### Automatic Container Digest Updates
+The `build-devcontainer.yml` workflow automatically runs the digest update script after successful container builds.
+
+**Required Permissions** (already configured):
+- `contents: write` - Push commits with digest updates
+- `actions: write` - Update workflow files  
+- `packages: write` - Push to container registry
+- `pull-requests: write` - Comment on PRs
+
+**Workflow Integration**: Container digest updates are fully automated when the devcontainer image is updated, ensuring CI always uses the latest secure digest.
+
 ## Verification Commands
 
 ```bash

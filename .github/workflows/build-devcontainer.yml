@@ -27,6 +27,13 @@ on:
         required: false
         default: 'latest'
 
+# Permissions needed for automatic container digest updates
+permissions:
+  contents: write      # Push commits with digest updates
+  actions: write       # Update workflow files
+  packages: write      # Push to GHCR
+  pull-requests: write # Comment on PRs
+
 env:
   REGISTRY: ${{ github.event.inputs.registry || 'ghcr.io' }}
   NAMESPACE: ${{ github.event.inputs.namespace || 'heimdall-sbom' }}
