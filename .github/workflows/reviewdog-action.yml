@@ -1,0 +1,66 @@
+name: reviewdog - clang tools (action version)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  clang-format:
+    name: clang-format via reviewdog action
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install clang-format
+        run: |
+          sudo apt update
+          sudo apt install -y clang-format
+
+      - name: Run clang-format with reviewdog action
+        uses: reviewdog/action-clang-format@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          filter_mode: added
+          fail_on_error: false
+          clang_format_flags: '--style=file'
+
+  clang-tidy:
+    name: clang-tidy via reviewdog action  
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y clang-tidy cmake ninja-build curl
+          sudo apt install -y libffi-dev libedit-dev libxml2-dev libzstd-dev zlib1g-dev
+
+      - name: Build compile commands
+        run: |
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
+
+      - uses: reviewdog/action-clang-tidy@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          filter_mode: added
+          fail_on_error: false
+          build_dir: build
