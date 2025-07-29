@@ -1417,19 +1417,15 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       ss << "      \"cpe\": " << Utils::formatJsonValue(component.cpe) << ",\n";
    }
    
-   // Supplier - only include if not empty, and as object with name field
-   if (!component.supplier.empty()) {
-      ss << "      \"supplier\": {\n";
-      ss << "        \"name\": " << Utils::formatJsonValue(component.supplier) << "\n";
-      ss << "      },\n";
-   }
+   // Supplier - always include with a default value if empty
+   ss << "      \"supplier\": {\n";
+   ss << "        \"name\": " << Utils::formatJsonValue(component.supplier.empty() ? "Unknown" : component.supplier) << "\n";
+   ss << "      },\n";
    
-   // Manufacturer - only include if not empty, and as object with name field
-   if (!component.manufacturer.empty()) {
-      ss << "      \"manufacturer\": {\n";
-      ss << "        \"name\": " << Utils::formatJsonValue(component.manufacturer) << "\n";
-      ss << "      },\n";
-   }
+   // Manufacturer - always include with a default value if empty
+   ss << "      \"manufacturer\": {\n";
+   ss << "        \"name\": " << Utils::formatJsonValue(component.manufacturer.empty() ? "Unknown" : component.manufacturer) << "\n";
+   ss << "      },\n";
    
    // Publisher - only include if not empty, and as object with name field
    if (!component.publisher.empty()) {
