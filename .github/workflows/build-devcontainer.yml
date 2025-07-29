@@ -25,6 +25,7 @@ jobs:
 
       - name: Set Docker image name
         run: |
+          # GitHub Container Registry package names must be lowercase
           REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "DOCKER_IMAGE=ghcr.io/$REPO_OWNER_LOWER/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}" >> $GITHUB_ENV
 
