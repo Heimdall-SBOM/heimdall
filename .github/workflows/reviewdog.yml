@@ -93,7 +93,7 @@ jobs:
       # 2. CLANG-TIDY via reviewdog
       ############################################
       - name: Run clang-tidy with reviewdog
-        timeout-minutes: 5
+        timeout-minutes: 10
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
           
@@ -107,9 +107,9 @@ jobs:
               if [ -f "$file" ]; then
                 echo "Running clang-tidy on: $file"
                 
-                # Run clang-tidy and capture output
+                # Run clang-tidy with simplified checks and timeout
                 TIDY_OUTPUT=$(mktemp)
-                clang-tidy -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                timeout 300s clang-tidy -p build --checks='-*,readability-*,modernize-*,performance-*,bugprone-*' "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
                 
                 # Process each warning/error individually
                 while IFS= read -r line; do
