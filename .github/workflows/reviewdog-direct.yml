@@ -1,0 +1,44 @@
+name: Direct Reviewdog Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  direct-format-test:
+    name: Direct Format Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt update
+          sudo apt install -y clang-format
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Test direct formatting feedback
+        run: |
+          # Create a simple test that mimics the working test comment approach
+          echo "src/common/SBOMSigner.cpp:102:15: warning: missing spaces around = operator" | \
+          reviewdog -efm="%f:%l:%c: %tarning: %m" -name="format-direct" -reporter=github-pr-review -fail-on-error=false
+          
+          # Also try with the actual clang-format diff
+          if clang-format src/common/SBOMSigner.cpp | diff -u src/common/SBOMSigner.cpp - > /tmp/format.diff; then
+            echo "No formatting issues found"
+          else
+            echo "Found formatting issues, posting review..."
+            cat /tmp/format.diff
+            echo "--- Sending to reviewdog ---"
+            cat /tmp/format.diff | reviewdog -f=diff -name="clang-format-direct" -reporter=github-pr-review -fail-on-error=false
+          fi
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
