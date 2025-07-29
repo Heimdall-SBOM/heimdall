@@ -38,6 +38,8 @@ logs/
 *.json
 !schema/*.json
 !package.json
+!.github/container-digests.json
+!.github/workflow-digest-update.patch
 *.log
 *.xml
 examples/*/build/

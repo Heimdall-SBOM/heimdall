@@ -1,0 +1,160 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # GitHub Actions - Monitor for security updates and pin to new commit SHAs
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies"
+      - "security"
+      - "github-actions"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+    # Exclude workflow files to prevent permission issues
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch", "version-update:semver-minor", "version-update:semver-major"]
+        paths: [".github/workflows/*.yml"]
+
+  # Docker containers - Monitor base images and development containers  
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly" 
+      day: "tuesday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies"
+      - "security" 
+      - "docker"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+
+  # Dockerfile ecosystem for dockerfiles/ directory
+  - package-ecosystem: "docker"
+    directory: "/dockerfiles"
+    schedule:
+      interval: "weekly"
+      day: "tuesday" 
+      time: "10:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies"
+      - "security"
+      - "docker"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+
+  # .devcontainer Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/.devcontainer"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "11:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies"
+      - "security"
+      - "docker"
+      - "devcontainer"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+
+  # NPM dependencies for documentation build
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies" 
+      - "security"
+      - "npm"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+    # Only security updates for npm to reduce noise
+    versioning-strategy: "increase-if-necessary"
+
+  # Git submodules (external/json, external/json-schema-validator)
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    schedule:
+      interval: "monthly"  # Less frequent for submodules
+      day: "first-monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies"
+      - "security"
+      - "submodules"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+
+  # Python dependencies (if any requirements.txt files exist)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users  
+    labels:
+      - "dependencies"
+      - "security"
+      - "python"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+    # Only security updates for Python to reduce noise
+    versioning-strategy: "increase-if-necessary"
+
+  # Python dependencies in scripts directory
+  - package-ecosystem: "pip"
+    directory: "/scripts"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "10:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "@heimdall-sbom/security-team"  # Replace with actual team/users
+    labels:
+      - "dependencies"
+      - "security"
+      - "python"
+      - "scripts"
+    commit-message:
+      prefix: "security(deps):"
+      include: "scope"
+    versioning-strategy: "increase-if-necessary"
