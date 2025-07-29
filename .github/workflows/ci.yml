@@ -48,7 +48,7 @@ jobs:
     container:
       # Security: Pin to specific digest instead of mutable latest tag
       # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:2ed1cd80197b625ccb28b5f7d45b2ad4f638437c22db0abf04ea7160e695723e  # Pinned 2025-07-29
       options: --user root
     steps:
       - name: Checkout Repository
@@ -81,7 +81,7 @@ jobs:
     container:
       # Security: Pin to specific digest instead of mutable latest tag
       # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:2ed1cd80197b625ccb28b5f7d45b2ad4f638437c22db0abf04ea7160e695723e  # Pinned 2025-07-29
       options: --user root
     steps:
       - name: Checkout Repository
@@ -114,7 +114,7 @@ jobs:
     container:
       # Security: Pin to specific digest instead of mutable latest tag
       # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:2ed1cd80197b625ccb28b5f7d45b2ad4f638437c22db0abf04ea7160e695723e  # Pinned 2025-07-29
       options: --user root
     steps:
       - name: Checkout Repository
@@ -146,7 +146,7 @@ jobs:
     container:
       # Security: Pin to specific digest instead of mutable latest tag
       # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:2ed1cd80197b625ccb28b5f7d45b2ad4f638437c22db0abf04ea7160e695723e  # Pinned 2025-07-29
       options: --user root
     steps:
       - name: Checkout Repository
