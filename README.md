@@ -80,7 +80,8 @@ Heimdall is designed for both embedded software development and regular applicat
 
 3. **Build Heimdall**:
    ```bash
-   # Build with default settings (GCC, C++17)
+   # Build with specific settings and run all unit tests
+   # See build.sh documentation for all options
    ./scripts/build.sh --standard 17 --compiler gcc --tests
    
    # Or build all compatible standards
@@ -111,9 +112,6 @@ Heimdall provides comprehensive build scripts for different scenarios:
 
 # Build with Clang
 ./scripts/build.sh --standard 17 --compiler clang --tests
-
-# Build with tests and SBOM generation
-./scripts/build.sh --standard 20 --all
 ```
 
 #### Advanced Build Options
@@ -191,7 +189,7 @@ include_system_libraries=false
 
 ### heimdall-validate
 
-The `heimdall-validate` tool validates SBOM files for compliance and correctness.
+The `heimdall-validate` tool validates SBOM files for compliance, correctness, and signature verification.
 
 #### Basic Validation
 ```bash
@@ -299,43 +297,17 @@ Heimdall generates CycloneDX compliant documents with:
 
 **Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
 
-## Architecture
-
-### Core Components
-
-- **ComponentInfo**: Represents individual software components with metadata
-- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX)
-- **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives)
-- **Utils**: Utility functions for file operations, path handling, and JSON formatting
-- **PluginInterface**: Common interface for both LLD and Gold plugins
-- **Compatibility Layer**: Multi-standard C++ support with `heimdall::compat` namespace
-
-### Plugin Adapters
-
-- **LLDAdapter**: Interfaces with LLVM LLD linker plugin system
-- **GoldAdapter**: Interfaces with GNU Gold linker plugin system
-
-### File Format Support
-
-- **ELF**: Linux executables and libraries with DWARF debug information
-- **Mach-O**: macOS executables and libraries with debug symbols
-- **PE**: Windows executables and libraries
-- **Archive**: Static libraries (.a, .lib) with component extraction
-
 ## Testing
 
 The project includes a comprehensive test suite with **546 passing tests** across **30 test suites** and **44.4% code coverage**. The test suite validates compatibility across all supported C++ standards and provides extensive error handling and edge case testing.
 
 ### Running Tests
 ```bash
-# Test with default settings
+# Test specific C++ standard with gcc
 ./scripts/build.sh --standard 17 --compiler gcc --tests
 
 # Test specific C++ standard with Clang
 ./scripts/build.sh --standard 20 --compiler clang --tests
-
-# Test all compatible standards
-./scripts/build_all_standards.sh
 
 # Run tests with coverage analysis
 ./tests/coverage.sh
@@ -409,7 +381,6 @@ done
 ## Documentation
 
 For detailed information about:
-- **Linker integration rationale**: [docs/rationale.md](docs/rationale.md)
 - **Multi-standard C++ support**: [docs/multi-standard-support.md](docs/multi-standard-support.md)
 - **Usage examples**: [docs/usage.md](docs/usage.md)
 - **DevContainer updates**: [docs/devcontainer-update-process.md](docs/devcontainer-update-process.md)
