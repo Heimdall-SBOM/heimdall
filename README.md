@@ -12,7 +12,7 @@ A comprehensive Software Bill of Materials (SBOM) generation tool that integrate
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
-![Coverage](https://img.shields.io/badge/coverage-44.4%25-yellow.svg)](build/coverage/html/index.html)
+![Coverage](https://img.shields.io/badge/coverage-44.4%25-yellow.svg)
 
 ## Overview
 
@@ -26,6 +26,7 @@ Heimdall is designed for both embedded software development and regular applicat
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
 - **Cross-Platform**: Native support for macOS and Linux
+- **Flexible Use**: CMake module, Makefile support, Command-line use
 
 ### Binary Analysis
 - **ELF Support**: Complete analysis of Linux executables and libraries
