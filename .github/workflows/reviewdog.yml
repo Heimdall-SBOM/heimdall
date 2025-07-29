@@ -1,5 +1,8 @@
 name: clang-format and clang-tidy reviewdog
 
+# Security: All actions are pinned to specific commit SHAs to prevent supply chain attacks
+# Update SHAs periodically or use tools like Dependabot to manage them automatically
+
 on:
   pull_request:
     branches:
@@ -12,13 +15,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           submodules: true
           fetch-depth: 0
 
       - name: Set up Python (for run-clang-tidy.py)
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
         with:
           python-version: '3.x'
 
