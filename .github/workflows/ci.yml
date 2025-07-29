@@ -31,8 +31,6 @@ env:
   # Test configuration
   CTEST_OUTPUT_ON_FAILURE: 1
   CTEST_PARALLEL_LEVEL: 2
-  # Container image with lowercase repository name
-  CONTAINER_IMAGE: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
 
 jobs:
   # C++11 Build and Test
@@ -45,7 +43,7 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: gcc
     container:
-      image: ${{ env.CONTAINER_IMAGE }}
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -76,7 +74,7 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: clang
     container:
-      image: ${{ env.CONTAINER_IMAGE }}
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -107,7 +105,7 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: gcc
     container:
-      image: ${{ env.CONTAINER_IMAGE }}
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -137,7 +135,7 @@ jobs:
     env:
       BUILD_DIR: build-gcc-cpp23
     container:
-      image: ${{ env.CONTAINER_IMAGE }}
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -181,7 +179,7 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: clang
     container:
-      image: ${{ env.CONTAINER_IMAGE }}
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
