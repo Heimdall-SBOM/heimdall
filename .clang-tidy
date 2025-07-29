@@ -1,64 +1,20 @@
-Checks: >
-  bugprone-*,
-  performance-*,
+---
+Checks: '-*,
   readability-*,
   modernize-*,
+  performance-*,
+  bugprone-*,
   cppcoreguidelines-*,
+  clang-analyzer-*,
   misc-*,
-  -cppcoreguidelines-avoid-magic-numbers,
-  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -cppcoreguidelines-pro-type-vararg,
-  -modernize-use-trailing-return-type,
-  -readability-magic-numbers,
-  -readability-identifier-length,
-  -readability-named-parameter,
-  -misc-use-internal-linkage,
-  -cppcoreguidelines-non-private-member-variables-in-classes,
-  -misc-non-private-member-variables-in-classes,
-  -readability-convert-member-functions-to-static,
-  -readability-braces-around-statements,
-  -cppcoreguidelines-init-variables,
-  -readability-uppercase-literal-suffix,
-  -misc-include-cleaner,
-  -misc-const-correctness,
-  -bugprone-easily-swappable-parameters,
-  -readability-implicit-bool-conversion,
-  -modernize-use-auto,
-  -cppcoreguidelines-pro-type-cstyle-cast,
-  -cppcoreguidelines-pro-type-reinterpret-cast,
-  -cppcoreguidelines-special-member-functions,
-  -cppcoreguidelines-avoid-c-arrays,
-  -modernize-avoid-c-arrays,
-  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-  -cppcoreguidelines-pro-bounds-constant-array-index,
-  -modernize-use-default-member-init,
-  -cppcoreguidelines-use-default-member-init,
-  -readability-else-after-return,
-  -readability-use-anyofallof,
-  -modernize-use-emplace,
-  -performance-inefficient-string-concatenation,
-  -modernize-raw-string-literal,
-  -readability-function-cognitive-complexity,
-  -readability-inconsistent-declaration-parameter-name,
-  -modernize-return-braced-init-list,
-  -readability-static-definition-in-anonymous-namespace,
-  -cppcoreguidelines-avoid-non-const-global-variables,
-  -readability-container-size-empty,
-  -readability-container-data-pointer,
-  -bugprone-narrowing-conversions,
-  -cppcoreguidelines-narrowing-conversions,
-  -bugprone-unused-local-non-trivial-variable,
-  -performance-unnecessary-copy-initialization,
-  -misc-unused-parameters,
-  -performance-enum-size,
-  -modernize-use-nodiscard,
-  -modernize-concat-nested-namespaces,
-  -performance-avoid-endl,
-  -readability-isolate-declaration,
-  -bugprone-implicit-widening-of-multiplication-result,
-  -readability-math-missing-parentheses,
-  -cppcoreguidelines-pro-type-union-access,
-  -readability-make-member-function-const
+  -misc-include-cleaner'
 WarningsAsErrors: ''
-HeaderFilterRegex: '.*'
-FormatStyle: file 
+HeaderFilterRegex: ''
+FormatStyle: none
+CheckOptions:
+  - key: readability-magic-numbers.IgnoredIntegerValues
+    value: '1;2;3;4;8;16;32;100'
+  - key: readability-magic-numbers.IgnoredFloatingPointValues  
+    value: '1.0;2.0'
+  - key: readability-identifier-naming.VariableCase
+    value: 'lower_case'

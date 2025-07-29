@@ -1,0 +1,54 @@
+# Generate signed SBOM with RSA-256
+./build-gcc-cpp23/src/tools/heimdall-sbom \
+  ./build-gcc-cpp23/lib/heimdall-lld.so \
+  ./your-binary \
+  --format cyclonedx \
+  --output signed-sbom.cdx.json \
+  --sign-key private_rsa.key \
+  --sign-algorithm RS256 \
+  --sign-key-id "my-rsa-key-2025"
+
+
+# Generate signed SBOM with ECDSA-256
+./build-gcc-cpp23/src/tools/heimdall-sbom \
+  ./build-gcc-cpp23/lib/heimdall-lld.so \
+  ./your-binary \
+  --format cyclonedx \
+  --output signed-sbom.cdx.json \
+  --sign-key private_ecdsa.key \
+  --sign-cert certificate_ecdsa.pem \
+  --sign-algorithm ES256 \
+  --sign-key-id "my-ecdsa-key-2025"
+
+
+# Generate signed SBOM with Ed25519
+./build-gcc-cpp23/src/tools/heimdall-sbom \
+  ./build-gcc-cpp23/lib/heimdall-lld.so \
+  ./your-binary \
+  --format cyclonedx \
+  --output signed-sbom.cdx.json \
+  --sign-key private_ed25519.key \
+  --sign-algorithm Ed25519 \
+  --sign-key-id "my-ed25519-key-2025"
+
+# Sign the SBOM with the certificate
+./build-gcc-cpp23/src/tools/heimdall-sbom \
+  ./build-gcc-cpp23/lib/heimdall-lld.so \
+  ./build-gcc-cpp23/src/tools/heimdall-sbom \
+  --format cyclonedx \
+  --output signed-sbom-with-cert.cdx.json \
+  --sign-key test_keys/private_key.pem \
+  --sign-cert test_keys/certificate.pem \
+  --sign-algorithm RS256 \
+  --sign-key-id "heimdall-test-cert-2025"
+
+
+# Verify the signature using heimdall-validate
+./build-gcc-cpp23/src/tools/heimdall-validate \
+  verify-signature signed-sbom-with-cert.cdx.json \
+  --cert test_keys/certificate.pem
+
+# Verify the signature using the public key
+./build-gcc-cpp23/src/tools/heimdall-validate \
+  verify-signature signed-sbom-with-cert.cdx.json \
+  --key test_keys/public_key.pem
