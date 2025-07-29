@@ -1,8 +1,19 @@
 ---
-Checks: '-*,readability-magic-numbers,modernize-use-auto,cppcoreguidelines-pro-type-cstyle-cast,cppcoreguidelines-init-variables'
+Checks: '-*,
+  readability-*,
+  modernize-*,
+  performance-*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  clang-analyzer-*,
+  misc-*'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: none
 CheckOptions:
   - key: readability-magic-numbers.IgnoredIntegerValues
-    value: '1;2;3;4;8;16;32;42;100'
+    value: '1;2;3;4;8;16;32;100'
+  - key: readability-magic-numbers.IgnoredFloatingPointValues  
+    value: '1.0;2.0'
+  - key: readability-identifier-naming.VariableCase
+    value: 'lower_case'
