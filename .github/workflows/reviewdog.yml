@@ -29,7 +29,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y clang-format clang-tidy cmake ninja-build curl
-          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /usr/local/bin
+          # Security: Pin reviewdog installer to specific commit SHA to prevent supply chain attacks
+          # Updated after March 2025 reviewdog compromise - use post-incident commit
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/fd59714416d6d9a1c0692d872e38e7f8448df4fc/install.sh | sh -s -- -b /usr/local/bin
           pip install PyYAML
 
       ############################################
@@ -72,7 +74,9 @@ jobs:
         timeout-minutes: 5
         run: |
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
-          wget https://raw.githubusercontent.com/llvm/llvm-project/main/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
+          # Security: Pin clang-tidy script to specific commit SHA to prevent supply chain attacks
+          # Using known stable LLVM commit instead of main branch
+          wget https://raw.githubusercontent.com/llvm/llvm-project/6009708b4367171ccdbf4b5905cb6a803753fe18/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
           chmod +x run-clang-tidy.py
           mkdir -p tidy-fixes
           

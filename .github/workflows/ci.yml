@@ -1,5 +1,8 @@
 name: CI - Build and Test
 
+# Security: All actions are pinned to specific commit SHAs to prevent supply chain attacks
+# Update SHAs periodically or use tools like Dependabot to manage them automatically
+
 on:
   push:
     branches: [ main, develop ]
@@ -43,11 +46,12 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: gcc
     container:
+      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
       image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -74,11 +78,12 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: clang
     container:
+      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
       image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -105,11 +110,12 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: gcc
     container:
+      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
       image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -135,11 +141,12 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: clang
     container:
+      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
       image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -167,7 +174,7 @@ jobs:
       BUILD_DIR: build-clang-cpp17
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -201,7 +208,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Build Status Summary
         run: |
