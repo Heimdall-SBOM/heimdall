@@ -1,5 +1,8 @@
 name: clang-format and clang-tidy reviewdog
 
+# Security: All actions are pinned to specific commit SHAs to prevent supply chain attacks
+# Update SHAs periodically or use tools like Dependabot to manage them automatically
+
 on:
   pull_request:
     branches:
@@ -17,13 +20,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3.6.0
         with:
           submodules: true
           fetch-depth: 0
 
       - name: Set up Python (for run-clang-tidy.py)
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236 # v4.7.1
         with:
           python-version: '3.x'
 
@@ -31,7 +34,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y clang-format clang-tidy cmake ninja-build curl
-          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh | sh -s -- -b /usr/local/bin
+          # Security: Pin reviewdog installer to specific commit SHA to prevent supply chain attacks
+          # Updated after March 2025 reviewdog compromise - use post-incident commit
+          curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/fd59714416d6d9a1c0692d872e38e7f8448df4fc/install.sh | sh -s -- -b /usr/local/bin
           pip install PyYAML
 
       ############################################
@@ -97,6 +102,12 @@ jobs:
         run: |
           # Generate proper compile_commands.json with cmake
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
+
+          # Security: Pin clang-tidy script to specific commit SHA to prevent supply chain attacks
+          # Using known stable LLVM commit instead of main branch
+          wget https://raw.githubusercontent.com/llvm/llvm-project/6009708b4367171ccdbf4b5905cb6a803753fe18/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
+          chmod +x run-clang-tidy.py
+          mkdir -p tidy-fixes
           
           # Get changed files
           FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)

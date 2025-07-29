@@ -1,5 +1,8 @@
 name: CI - Build and Test
 
+# Security: All actions are pinned to specific commit SHAs to prevent supply chain attacks
+# Update SHAs periodically or use tools like Dependabot to manage them automatically
+
 on:
   push:
     branches: [ main, develop ]
@@ -43,11 +46,13 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: gcc
     container:
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:55cd5b51c04b53e8d17f29411753e74ff11e387db21665107f808ecc2af68262  # Pinned 2025-07-29T18:30:00Z
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -74,11 +79,13 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: clang
     container:
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:55cd5b51c04b53e8d17f29411753e74ff11e387db21665107f808ecc2af68262  # Pinned 2025-07-29T18:30:00Z
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -105,11 +112,13 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: gcc
     container:
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:55cd5b51c04b53e8d17f29411753e74ff11e387db21665107f808ecc2af68262  # Pinned 2025-07-29T18:30:00Z
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -186,11 +195,13 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: clang
     container:
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:55cd5b51c04b53e8d17f29411753e74ff11e387db21665107f808ecc2af68262  # Pinned 2025-07-29T18:30:00Z
       options: --user root
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -218,7 +229,7 @@ jobs:
       BUILD_DIR: build-clang-cpp17
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           submodules: recursive
 
@@ -252,7 +263,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Build Status Summary
         run: |
