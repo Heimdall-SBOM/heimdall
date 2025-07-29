@@ -90,9 +90,40 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       ############################################
-      # 2. CLANG-TIDY via reviewdog (temporarily disabled)
+      # 2. CLANG-TIDY via reviewdog
       ############################################
-      # - name: Run clang-tidy with reviewdog
-      #   timeout-minutes: 5
-      #   run: |
-      #     echo "Clang-tidy temporarily disabled to focus on clang-format"
+      - name: Run clang-tidy with reviewdog
+        timeout-minutes: 5
+        run: |
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
+          
+          # Get changed files
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
+          echo "Changed files for clang-tidy: $FILES"
+          
+          if [ -n "$FILES" ]; then
+            ISSUE_COUNT=0
+            for file in $FILES; do
+              if [ -f "$file" ]; then
+                echo "Running clang-tidy on: $file"
+                
+                # Run clang-tidy and capture output
+                TIDY_OUTPUT=$(mktemp)
+                clang-tidy -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                
+                # Process each warning/error individually
+                while IFS= read -r line; do
+                  if [ -n "$line" ]; then
+                    ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                    echo "$line" | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -name="clang-tidy-$ISSUE_COUNT" -reporter=github-pr-review -fail-on-error=false
+                  fi
+                done < "$TIDY_OUTPUT"
+                
+                rm -f "$TIDY_OUTPUT"
+              fi
+            done
+          else
+            echo "No C++ files changed, skipping clang-tidy"
+          fi
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
