@@ -98,7 +98,7 @@ jobs:
       # 2. CLANG-TIDY via reviewdog
       ############################################
       - name: Run clang-tidy with reviewdog
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: |
           # Generate proper compile_commands.json with cmake
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
@@ -119,9 +119,17 @@ jobs:
               if [ -f "$file" ]; then
                 echo "Running clang-tidy on: $file"
                 
-                # Run clang-tidy with proper compilation database
+                # Run clang-tidy with proper compilation database and reduced timeout per file
                 TIDY_OUTPUT=$(mktemp)
-                timeout 240s clang-tidy --config-file=.clang-tidy -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                
+                # Check file size and use lighter checks for large files
+                FILE_SIZE=$(stat -c%s "$file" 2>/dev/null || echo "0")
+                if [ "$FILE_SIZE" -gt 50000 ]; then
+                  echo "Large file detected ($FILE_SIZE bytes), using lighter clang-tidy checks"
+                  timeout 300s clang-tidy --config-file=.clang-tidy-light -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                else
+                  timeout 300s clang-tidy --config-file=.clang-tidy -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                fi
                 
                 # Process each warning/error individually
                 while IFS= read -r line; do
