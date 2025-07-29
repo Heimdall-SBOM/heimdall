@@ -2,7 +2,8 @@
 
 <center><img src="https://github.com/Heimdall-SBOM/heimdall/blob/main/docs/images/logo_w_text.png?raw=true" alt="Heimdall Logo" width="50%"></center>
 
-A comprehensive Software Bill of Materials (SBOM) generation tool that integrates with LLVM LLD and GNU Gold linkers to automatically generate accurate SBOMs during the linking process. Heimdall captures all components that actually make it into your final binaries, providing complete visibility into your software supply chain.
+## Overview
+Heimdall is designed for both embedded software development and regular applications on Linux and macOS. It provides comprehensive SBOM generation capabilities with support for digital signatures, Mach-O and ELF binary analysis, and DWARF debug information extraction.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Linux-green.svg)](#supported-platforms)
@@ -13,10 +14,6 @@ A comprehensive Software Bill of Materials (SBOM) generation tool that integrate
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 ![Coverage](https://img.shields.io/badge/coverage-44.4%25-yellow.svg)](build/coverage/html/index.html)
-
-## Overview
-
-Heimdall is designed for both embedded software development and regular applications on Linux and macOS. It provides comprehensive SBOM generation capabilities with support for digital signatures, Mach-O and ELF binary analysis, and DWARF debug information extraction.
 
 ## Features
 
@@ -113,9 +110,6 @@ Heimdall provides comprehensive build scripts for different scenarios:
 
 # Build with Clang
 ./scripts/build.sh --standard 17 --compiler clang --tests
-
-# Build with tests and SBOM generation
-./scripts/build.sh --standard 20 --all
 ```
 
 #### Advanced Build Options
@@ -193,7 +187,7 @@ include_system_libraries=false
 
 ### heimdall-validate
 
-The `heimdall-validate` tool validates SBOM files for compliance and correctness.
+The `heimdall-validate` tool validates SBOM files for compliance, correctness, and signature verification.
 
 #### Basic Validation
 ```bash
@@ -301,43 +295,17 @@ Heimdall generates CycloneDX compliant documents with:
 
 **Note**: GNU Gold linker is primarily designed for Linux systems and is not available on macOS. The Gold plugin will not be built on macOS systems.
 
-## Architecture
-
-### Core Components
-
-- **ComponentInfo**: Represents individual software components with metadata
-- **SBOMGenerator**: Generates SBOMs in multiple formats (SPDX, CycloneDX)
-- **MetadataExtractor**: Extracts metadata from binary files (ELF, Mach-O, PE, archives)
-- **Utils**: Utility functions for file operations, path handling, and JSON formatting
-- **PluginInterface**: Common interface for both LLD and Gold plugins
-- **Compatibility Layer**: Multi-standard C++ support with `heimdall::compat` namespace
-
-### Plugin Adapters
-
-- **LLDAdapter**: Interfaces with LLVM LLD linker plugin system
-- **GoldAdapter**: Interfaces with GNU Gold linker plugin system
-
-### File Format Support
-
-- **ELF**: Linux executables and libraries with DWARF debug information
-- **Mach-O**: macOS executables and libraries with debug symbols
-- **PE**: Windows executables and libraries
-- **Archive**: Static libraries (.a, .lib) with component extraction
-
 ## Testing
 
 The project includes a comprehensive test suite with **546 passing tests** across **30 test suites** and **44.4% code coverage**. The test suite validates compatibility across all supported C++ standards and provides extensive error handling and edge case testing.
 
 ### Running Tests
 ```bash
-# Test with default settings
+# Test specific C++ standard with gcc
 ./scripts/build.sh --standard 17 --compiler gcc --tests
 
 # Test specific C++ standard with Clang
 ./scripts/build.sh --standard 20 --compiler clang --tests
-
-# Test all compatible standards
-./scripts/build_all_standards.sh
 
 # Run tests with coverage analysis
 ./tests/coverage.sh
@@ -411,7 +379,6 @@ done
 ## Documentation
 
 For detailed information about:
-- **Linker integration rationale**: [docs/rationale.md](docs/rationale.md)
 - **Multi-standard C++ support**: [docs/multi-standard-support.md](docs/multi-standard-support.md)
 - **Usage examples**: [docs/usage.md](docs/usage.md)
 - **DevContainer updates**: [docs/devcontainer-update-process.md](docs/devcontainer-update-process.md)
