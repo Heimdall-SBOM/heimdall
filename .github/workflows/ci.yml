@@ -46,8 +46,9 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: gcc
     container:
-      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -78,8 +79,9 @@ jobs:
       CPP_STANDARD: 11
       COMPILER: clang
     container:
-      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -110,8 +112,9 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: gcc
     container:
-      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
       options: --user root
     steps:
       - name: Checkout Repository
@@ -141,8 +144,9 @@ jobs:
       CPP_STANDARD: 23
       COMPILER: clang
     container:
-      # TODO: Pin to specific digest for security - run: docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256
-      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
+      # Security: Pin to specific digest instead of mutable latest tag
+      # To update: docker pull ghcr.io/heimdall-sbom/heimdall-devcontainer:latest && docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+      image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest  # TODO: Replace with @sha256:digest
       options: --user root
     steps:
       - name: Checkout Repository

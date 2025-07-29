@@ -32,21 +32,32 @@ All GitHub Actions are pinned to specific commit SHAs to prevent supply chain at
 - **Reason**: Pinned to stable LLVM commit instead of main branch
 - **Used in**: `reviewdog.yml`
 
-## Container Images (TODO: Pin to Digests)
+## Container Images (Pin to SHA256 Digests)
 
 ### Development Container
-- **Current**: `ghcr.io/heimdall-sbom/heimdall-devcontainer:latest`
-- **TODO**: Pin to specific SHA256 digest  
-- **Command to get digest**: `docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest | grep -i sha256`
-- **Used in**: `ci.yml`
+- **Current**: `ghcr.io/heimdall-sbom/heimdall-devcontainer:latest` (TODO: Pin to digest)
+- **Security**: Pin to specific SHA256 digest instead of mutable tags
+- **Update script**: `.github/scripts/update-container-digests.sh` (automated helper)
+- **Manual command**: `docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'`
+- **Used in**: `ci.yml` (4 job definitions)
 
 ## Maintenance Guidelines
 
 ### Automated Dependency Management
-Consider using these tools to automate SHA updates:
-- **Dependabot**: Built into GitHub, can manage GitHub Actions
-- **Renovate**: Comprehensive dependency management  
-- **StepSecurity Secure Workflow**: Automated security hardening
+This repository uses **Dependabot** for automated security updates:
+
+#### ✅ **Dependabot Configuration** (`.github/dependabot.yml`)
+- **GitHub Actions**: Weekly updates (Mondays) - monitors for new commit SHAs
+- **Docker Images**: Weekly updates (Tuesdays) - monitors base images and containers
+- **NPM Dependencies**: Weekly updates (Wednesdays) - documentation build dependencies  
+- **Python Dependencies**: Weekly updates (Thursdays) - script requirements
+- **Git Submodules**: Monthly updates (First Monday) - external/json, external/json-schema-validator
+- **Security-focused**: Prioritizes security updates with proper labeling and reviews
+
+#### 📋 **Manual Update Tools**
+- **Container Digest Script**: `.github/scripts/update-container-digests.sh`
+- **Renovate**: Alternative comprehensive dependency management
+- **StepSecurity Secure Workflow**: Additional automated security hardening
 
 ### Manual Update Process
 1. Check for new releases/security updates quarterly
@@ -67,6 +78,21 @@ If a dependency is compromised:
 3. Rotate any secrets that may have been exposed
 4. Update this documentation with new safe commit SHA
 
+## Automation Scripts
+
+### Container Digest Update Script
+```bash
+# Update all container images to latest digests
+./.github/scripts/update-container-digests.sh
+
+# This script will:
+# 1. Pull the latest container image
+# 2. Extract the current SHA256 digest  
+# 3. Update CI workflow files with pinned digest
+# 4. Update security documentation
+# 5. Show changes made for review
+```
+
 ## Verification Commands
 
 ```bash
@@ -78,6 +104,9 @@ curl -s https://raw.githubusercontent.com/reviewdog/reviewdog/fd59714416d6d9a1c0
 
 # Get container image digest
 docker inspect ghcr.io/heimdall-sbom/heimdall-devcontainer:latest --format='{{index .RepoDigests 0}}'
+
+# Verify Dependabot configuration
+gh api repos/OWNER/REPO/dependabot/alerts --paginate
 ```
 
 ---
