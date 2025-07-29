@@ -7,34 +7,37 @@ on:
       - '.github/workflows/build-devcontainer.yml'
   workflow_dispatch:
     inputs:
-      docker_username:
-        description: 'Docker Hub username'
-        required: true
-        default: 'your-dockerhub-username'
       image_tag:
         description: 'Image tag'
         required: false
         default: 'latest'
 
-env:
-  DOCKER_IMAGE: ${{ github.event.inputs.docker_username || 'your-dockerhub-username' }}/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set Docker image name
+        run: |
+          # GitHub Container Registry package names must be lowercase
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "DOCKER_IMAGE=ghcr.io/$REPO_OWNER_LOWER/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -47,16 +50,16 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Update devcontainer.json
-        if: github.event.inputs.docker_username
+        if: github.event.inputs.image_tag
         run: |
           # Update the image reference in devcontainer.json
-          sed -i "s|your-dockerhub-username|${{ github.event.inputs.docker_username }}|g" .devcontainer/devcontainer.json
+          sed -i "s|:latest|:${{ github.event.inputs.image_tag }}|g" .devcontainer/devcontainer.json
           
           # Commit and push the changes
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .devcontainer/devcontainer.json
-          git commit -m "Update devcontainer image reference" || exit 0
+          git commit -m "Update devcontainer image reference to tag: ${{ github.event.inputs.image_tag }}" || exit 0
           git push
 
       - name: Comment on PR
@@ -68,7 +71,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 DevContainer image built and pushed: \`${{ env.DOCKER_IMAGE }}\`
+              body: `🚀 DevContainer image built and pushed to GitHub Container Registry: \`${{ env.DOCKER_IMAGE }}\`
               
               The devcontainer will now use the pre-built image instead of building locally.`
             }) 

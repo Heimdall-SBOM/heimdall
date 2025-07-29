@@ -584,22 +584,12 @@ TEST_F(SignatureIntegrationTest, SignatureStructureValidation)
         EXPECT_TRUE(signature.contains("value"));
         EXPECT_EQ(signature["algorithm"], "RS256");
         
-        // Check optional fields
-        EXPECT_TRUE(signature.contains("keyId"));
-        EXPECT_EQ(signature["keyId"], "test-structure-key");
-        EXPECT_TRUE(signature.contains("timestamp"));
+        // Check JSF-compliant fields
+        EXPECT_TRUE(signature.contains("publicKey"));
+        EXPECT_TRUE(signature["publicKey"].contains("kty"));
         
-        // The excludes field should be present even if empty, as it tracks what was excluded during canonicalization
-        // The SBOMSigner should always include the excludes field to indicate what was excluded
-        EXPECT_TRUE(signature.contains("excludes"));
-        
-        // Verify timestamp format (ISO 8601)
-        std::string timestamp = signature["timestamp"];
-        EXPECT_TRUE(timestamp.find("T") != std::string::npos);
-        EXPECT_TRUE(timestamp.find("Z") != std::string::npos);
-        
-        // Verify excludes is an array (even if empty)
-        EXPECT_TRUE(signature["excludes"].is_array());
+        // Note: keyId, timestamp, and excludes are not part of JSF-compliant signatures
+        // The new format only includes algorithm, value, and publicKey
         
     } catch (const std::exception& e) {
         FAIL() << "Failed to parse signed SBOM: " << e.what();
