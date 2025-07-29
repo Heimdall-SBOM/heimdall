@@ -166,7 +166,7 @@ class SBOMSigner
     * @param excludes Output vector of excluded field paths
     * @return Canonical JSON string ready for signing
     */
-   std::string createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes);
+   std::string createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes) const;
 
    /**
     * @brief Verify that canonical JSON excludes all signature fields
