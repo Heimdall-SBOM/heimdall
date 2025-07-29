@@ -93,6 +93,8 @@ fatal: unable to access 'https://github.com/Heimdall-SBOM/heimdall/': The reques
 
 **This is expected behavior** and indicates that the security measures are working correctly. The automated process cannot push changes directly to protect against unauthorized modifications.
 
+**Note:** The build workflow has been updated to handle these permission errors gracefully, so the workflow will show as successful even when permission errors occur. This is the correct behavior.
+
 ### Step 4: Apply the Workflow Updates
 
 After the build completes, you need to manually apply the workflow updates:
