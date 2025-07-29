@@ -1,5 +1,6 @@
 name: Build DevContainer Image
 
+
 # Security: All actions are pinned to specific commit SHAs to prevent supply chain attacks
 # Update SHAs periodically or use tools like Dependabot to manage them automatically
 
@@ -40,12 +41,17 @@ env:
   IMAGE_TAG: ${{ github.event.inputs.image_tag || 'latest' }}
   DOCKER_IMAGE: ${{ github.event.inputs.registry || 'ghcr.io' }}/${{ github.event.inputs.namespace || 'heimdall-sbom' }}/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}
 
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     
     steps:
       - name: Checkout code
+
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
       - name: Set up Docker Buildx
@@ -67,18 +73,18 @@ jobs:
           tags: ${{ env.DOCKER_IMAGE }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
+          
       - name: Update devcontainer.json
-        if: github.event.inputs.docker_username
+        if: github.event.inputs.image_tag
         run: |
           # Update the image reference in devcontainer.json
-          sed -i "s|your-dockerhub-username|${{ github.event.inputs.docker_username }}|g" .devcontainer/devcontainer.json
+          sed -i "s|ghcr.io/heimdall-sbom/heimdall-devcontainer:.*|ghcr.io/heimdall-sbom/heimdall-devcontainer:${{ github.event.inputs.image_tag }}|g" .devcontainer/devcontainer.json
           
           # Commit and push the changes
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .devcontainer/devcontainer.json
-          git commit -m "Update devcontainer image reference" || exit 0
+          git commit -m "Update devcontainer image reference to tag ${{ github.event.inputs.image_tag }}" || exit 0
           git push
 
       - name: Update CI workflows with new container digest
@@ -138,4 +144,4 @@ jobs:
               - All workflows will use the latest secure container image
               
               The devcontainer will now use the pre-built image instead of building locally.`
-            }) 
+            })

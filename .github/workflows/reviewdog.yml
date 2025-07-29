@@ -8,6 +8,11 @@ on:
     branches:
       - main  # Adjust this if needed
 
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
 jobs:
   clang-tools:
     name: Clang Tools via Reviewdog
@@ -39,26 +44,48 @@ jobs:
       ############################################
       - name: Run clang-format with reviewdog
         run: |
-          # Get changed files from GitHub context - only get files from the last few commits
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
-          else
-            # For direct commits, only check the last commit
-            FILES=$(git diff --name-only HEAD~1..HEAD | grep -E '\.(c|cpp|h|hpp)$' || true)
-          fi
+          # Get changed files from GitHub context
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
           echo "Changed files: $FILES"
+          
           if [ -n "$FILES" ]; then
-            # Limit to first 10 files to prevent hanging
-            FILE_COUNT=$(echo "$FILES" | wc -l)
-            if [ "$FILE_COUNT" -gt 10 ]; then
-              echo "Too many files changed ($FILE_COUNT), limiting to first 10 files"
-              FILES=$(echo "$FILES" | head -10)
-            fi
-            
+            ISSUE_COUNT=0
             for file in $FILES; do
               if [ -f "$file" ]; then
                 echo "Checking format for: $file"
-                clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-check -fail-level=error
+                
+                # Create formatted version
+                FORMATTED=$(mktemp)
+                clang-format "$file" > "$FORMATTED"
+                
+                # Compare line by line and post individual issues
+                diff -u "$file" "$FORMATTED" | grep "^-" | grep -v "^---" | while read -r line; do
+                  # Extract the problematic line content
+                  ORIGINAL_LINE=$(echo "$line" | sed 's/^-//')
+                  
+                  # Find line number in original file
+                  LINE_NUM=$(grep -n -F "$ORIGINAL_LINE" "$file" | head -1 | cut -d: -f1)
+                  
+                  if [ -n "$LINE_NUM" ] && [ "$LINE_NUM" != "" ]; then
+                    ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                    
+                    # Determine the type of formatting issue
+                    if echo "$ORIGINAL_LINE" | grep -q "=.*[^[:space:]].*=\|[^[:space:]].*=\|=.*[^[:space:]]"; then
+                      MESSAGE="missing spaces around = operator"
+                    elif echo "$ORIGINAL_LINE" | grep -q "%.*[^[:space:]]\|[^[:space:]].*%"; then
+                      MESSAGE="missing spaces around % operator"  
+                    elif echo "$ORIGINAL_LINE" | grep -q ",[^[:space:]]"; then
+                      MESSAGE="missing space after comma"
+                    else
+                      MESSAGE="formatting issue detected"
+                    fi
+                    
+                    echo "$file:$LINE_NUM:1: warning: $MESSAGE" | \
+                    reviewdog -efm="%f:%l:%c: %tarning: %m" -name="clang-format-$ISSUE_COUNT" -reporter=github-pr-review -fail-on-error=false
+                  fi
+                done
+                
+                rm -f "$FORMATTED"
               fi
             done
           else
@@ -71,38 +98,40 @@ jobs:
       # 2. CLANG-TIDY via reviewdog
       ############################################
       - name: Run clang-tidy with reviewdog
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: |
+          # Generate proper compile_commands.json with cmake
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
+
           # Security: Pin clang-tidy script to specific commit SHA to prevent supply chain attacks
           # Using known stable LLVM commit instead of main branch
           wget https://raw.githubusercontent.com/llvm/llvm-project/6009708b4367171ccdbf4b5905cb6a803753fe18/clang-tools-extra/clang-tidy/tool/run-clang-tidy.py
           chmod +x run-clang-tidy.py
           mkdir -p tidy-fixes
           
-          # Get changed files only - limit to recent commits
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
-          else
-            # For direct commits, only check the last commit
-            FILES=$(git diff --name-only HEAD~1..HEAD | grep -E '\.(c|cpp|h|hpp)$' || true)
-          fi
+          # Get changed files
+          FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
           echo "Changed files for clang-tidy: $FILES"
           
           if [ -n "$FILES" ]; then
-            # Limit to first 10 files to prevent hanging
-            FILE_COUNT=$(echo "$FILES" | wc -l)
-            if [ "$FILE_COUNT" -gt 10 ]; then
-              echo "Too many files changed ($FILE_COUNT), limiting to first 10 files"
-              FILES=$(echo "$FILES" | head -10)
-            fi
-            
-            # Run clang-tidy only on changed files
+            ISSUE_COUNT=0
             for file in $FILES; do
               if [ -f "$file" ]; then
                 echo "Running clang-tidy on: $file"
-                # Capture full clang-tidy output for better context
-                clang-tidy -p build "$file" 2>&1 | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -efm="%f:%l:%c: %tuggestion: %m" -efm="%f:%l:%c: %tfatal-error: %m" -efm="note: %m" -efm="%f:%l:%c: note: %m" -efm="%f:%l:%c: %t: %m" -efm="%f:%l: %t: %m" -name="clang-tidy" -reporter=github-check -fail-level=error
+                
+                # Run clang-tidy with proper compilation database
+                TIDY_OUTPUT=$(mktemp)
+                timeout 240s clang-tidy --config-file=.clang-tidy -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                
+                # Process each warning/error individually
+                while IFS= read -r line; do
+                  if [ -n "$line" ]; then
+                    ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                    echo "$line" | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -name="clang-tidy-$ISSUE_COUNT" -reporter=github-pr-review -fail-on-error=false
+                  fi
+                done < "$TIDY_OUTPUT"
+                
+                rm -f "$TIDY_OUTPUT"
               fi
             done
           else

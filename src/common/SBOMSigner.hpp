@@ -60,10 +60,11 @@ struct SignatureInfo
 {
    std::string algorithm;     ///< Signature algorithm (e.g., "RS256")
    std::string keyId;         ///< Key identifier
-   std::string signature;     ///< Base64-encoded signature
+   std::string signature;     ///< Base64URL-encoded signature
    std::string certificate;   ///< Base64-encoded certificate (optional)
    std::string timestamp;     ///< ISO 8601 timestamp
    std::vector<std::string> excludes; ///< Fields excluded during canonicalization
+   nlohmann::json publicKey;  ///< Public key in JWK format (required for JSF)
 };
 
 /**
@@ -124,6 +125,12 @@ class SBOMSigner
    void setKeyId(const std::string& keyId);
 
    /**
+    * @brief Convert loaded public key to JWK format
+    * @return JWK object containing the public key
+    */
+   nlohmann::json getPublicKeyAsJWK() const;
+
+   /**
     * @brief Sign an SBOM document
     * @param sbomContent The SBOM content to sign
     * @param signatureInfo Output signature information
@@ -166,7 +173,7 @@ class SBOMSigner
     * @param excludes Output vector of excluded field paths
     * @return Canonical JSON string ready for signing
     */
-   std::string createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes);
+   std::string createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes) const;
 
    /**
     * @brief Verify that canonical JSON excludes all signature fields
