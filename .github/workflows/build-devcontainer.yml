@@ -12,9 +12,6 @@ on:
         required: false
         default: 'latest'
 
-env:
-  DOCKER_IMAGE: ghcr.io/${{ github.repository_owner }}/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -25,6 +22,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set Docker image name
+        run: |
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "DOCKER_IMAGE=ghcr.io/$REPO_OWNER_LOWER/heimdall-devcontainer:${{ github.event.inputs.image_tag || 'latest' }}" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
