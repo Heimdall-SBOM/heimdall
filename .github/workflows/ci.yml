@@ -156,6 +156,13 @@ jobs:
         run: |
           ./scripts/build.sh --standard 23 --compiler gcc --clean
 
+      - name: Ensure Hoppr is Available
+        run: |
+          # Ensure Hoppr is available for SBOM validation
+          python3 -m pip install --user hoppr
+          export PATH="$HOME/.local/bin:$PATH"
+          hopctl version
+
       - name: Generate and Validate Signed SBOM
         run: |
           ./scripts/validate_signed_sbom.sh ${{ env.BUILD_DIR }}
