@@ -497,7 +497,7 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
    }
    catch (const std::exception& e)
    {
-      std::string error_msg = e.what();
+      const std::string error_msg = e.what();
       heimdall::Utils::errorPrint(std::string("Exception in extractMetadata: ") + error_msg);
       return false;
    }
@@ -1091,7 +1091,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
             catch (const std::filesystem::filesystem_error& e)
             {
                // Skip problematic directories but continue scanning
-               std::string error_msg = e.what();
+               const std::string error_msg = e.what();
                Utils::debugPrint("Skipping problematic directory: " + current_dir + ": " + error_msg);
                continue;
             }
@@ -1230,7 +1230,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
                // Skip problematic directories but continue scanning
                if (pImpl->verbose)
                {
-                  std::string error_msg = e.what();
+                  const std::string error_msg = e.what();
                   Utils::warningPrint(std::string("Skipping problematic directory: ") + current_dir + std::string(": ") + error_msg);
                }
                continue;
@@ -1243,7 +1243,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
       {
          if (pImpl->verbose)
          {
-            std::string error_msg = e.what();
+            const std::string error_msg = e.what();
             Utils::errorPrint(std::string("Error searching for ALI files in: ") + directory + std::string(": ") + error_msg );
          }
          return false;
@@ -1255,7 +1255,7 @@ bool MetadataExtractor::findAdaAliFiles(const std::string&        directory,
    {
       if (pImpl->verbose)
       {
-         std::string error_msg = e.what();
+         const std::string error_msg = e.what();
          Utils::errorPrint(std::string("Error searching for ALI files: ") + error_msg );
       }
       return false;
@@ -1284,7 +1284,7 @@ bool MetadataExtractor::extractMetadataBatched(const std::vector<std::string>& f
    }
    catch (const std::exception& e)
    {
-      std::string error_msg = e.what();
+      const std::string error_msg = e.what();
       heimdall::Utils::errorPrint(std::string("Batched metadata extraction failed: ") + error_msg);
       return false;
    }
@@ -2758,7 +2758,8 @@ bool extractArchiveSymbols(const std::string& filePath, std::vector<heimdall::Sy
          }
          catch (const std::exception& e)
          {
-            Utils::debugPrint("Exception parsing symbol table: " + std::string(e.what()));
+            const std::string error_msg = e.what();
+            Utils::debugPrint(std::string("Exception parsing symbol table: ") + error_msg);
             break;
          }
          break;
@@ -3418,7 +3419,7 @@ bool findAdaAliFiles(const std::string& directory, std::vector<std::string>& ali
    }
    catch (const std::exception& e)
    {
-      std::string error_msg = e.what(); 
+      const std::string error_msg = e.what(); 
       Utils::errorPrint(std::string("Error searching for ALI files: ") + error_msg );
       return false;
    }

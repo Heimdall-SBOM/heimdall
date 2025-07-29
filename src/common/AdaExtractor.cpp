@@ -697,7 +697,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
    }
    catch (const std::exception& e)
    {
-      std::string error_msg = e.what();
+      const std::string error_msg = e.what();
       Utils::errorPrint(std::string("AdaExtractor: Error searching for ALI files: ") + error_msg);
       return false;
    }
