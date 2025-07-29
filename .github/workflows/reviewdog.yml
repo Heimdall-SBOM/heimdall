@@ -44,18 +44,43 @@ jobs:
           echo "Changed files: $FILES"
           
           if [ -n "$FILES" ]; then
-            echo "$FILES" | while read -r file; do
+            ISSUE_COUNT=0
+            for file in $FILES; do
               if [ -f "$file" ]; then
                 echo "Checking format for: $file"
-                # Create a temporary file for the diff
-                TEMP_DIFF=$(mktemp)
-                if clang-format "$file" | diff -u "$file" - > "$TEMP_DIFF"; then
-                  echo "No formatting issues in $file"
-                else
-                  echo "Found formatting issues in $file, posting review..."
-                  cat "$TEMP_DIFF" | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -filter-mode=added -fail-on-error=false
-                fi
-                rm -f "$TEMP_DIFF"
+                
+                # Create formatted version
+                FORMATTED=$(mktemp)
+                clang-format "$file" > "$FORMATTED"
+                
+                # Compare line by line and post individual issues
+                diff -u "$file" "$FORMATTED" | grep "^-" | grep -v "^---" | while read -r line; do
+                  # Extract the problematic line content
+                  ORIGINAL_LINE=$(echo "$line" | sed 's/^-//')
+                  
+                  # Find line number in original file
+                  LINE_NUM=$(grep -n -F "$ORIGINAL_LINE" "$file" | head -1 | cut -d: -f1)
+                  
+                  if [ -n "$LINE_NUM" ] && [ "$LINE_NUM" != "" ]; then
+                    ISSUE_COUNT=$((ISSUE_COUNT + 1))
+                    
+                    # Determine the type of formatting issue
+                    if echo "$ORIGINAL_LINE" | grep -q "=.*[^[:space:]].*=\|[^[:space:]].*=\|=.*[^[:space:]]"; then
+                      MESSAGE="missing spaces around = operator"
+                    elif echo "$ORIGINAL_LINE" | grep -q "%.*[^[:space:]]\|[^[:space:]].*%"; then
+                      MESSAGE="missing spaces around % operator"  
+                    elif echo "$ORIGINAL_LINE" | grep -q ",[^[:space:]]"; then
+                      MESSAGE="missing space after comma"
+                    else
+                      MESSAGE="formatting issue detected"
+                    fi
+                    
+                    echo "$file:$LINE_NUM:1: warning: $MESSAGE" | \
+                    reviewdog -efm="%f:%l:%c: %tarning: %m" -name="clang-format-$ISSUE_COUNT" -reporter=github-pr-review -fail-on-error=false
+                  fi
+                done
+                
+                rm -f "$FORMATTED"
               fi
             done
           else
