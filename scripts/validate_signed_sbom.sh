@@ -166,10 +166,17 @@ fi
 print_status "hopctl found: $(which hopctl)"
 print_status "hopctl version: $(hopctl version 2>&1 | head -1)"
 
-if hopctl validate sbom -s "${OUTPUT_FILE}"; then
-    print_success "Hoppr validation PASSED"
-else
-    print_error "Hoppr validation FAILED"
+# Run Hoppr validation and capture output
+print_status "Running Hoppr validation..."
+hoppr_output=$(hopctl validate sbom -s "${OUTPUT_FILE}" 2>&1)
+hoppr_exit_code=$?
+
+# Check for missing NTIA fields in the output
+# Look for patterns like "X out of Y components missing minimum NTIA fields" where X > 0
+if echo "$hoppr_output" | grep -q "[1-9][0-9]* out of [0-9]* components missing minimum NTIA fields"; then
+    print_error "Hoppr validation FAILED: Missing NTIA fields detected"
+    print_status "Hoppr output:"
+    echo "$hoppr_output"
     print_status "Checking Hoppr log file..."
     if ls hoppr_*.log 1> /dev/null 2>&1; then
         print_status "Latest Hoppr log:"
@@ -179,6 +186,23 @@ else
     fi
     exit 1
 fi
+
+# Check for other validation failures
+if [ $hoppr_exit_code -ne 0 ]; then
+    print_error "Hoppr validation FAILED with exit code: $hoppr_exit_code"
+    print_status "Hoppr output:"
+    echo "$hoppr_output"
+    print_status "Checking Hoppr log file..."
+    if ls hoppr_*.log 1> /dev/null 2>&1; then
+        print_status "Latest Hoppr log:"
+        ls -la hoppr_*.log | tail -1
+        print_status "Log contents:"
+        cat $(ls -t hoppr_*.log | head -1)
+    fi
+    exit 1
+fi
+
+print_success "Hoppr validation PASSED"
 
 print_success "All validations passed!"
 print_status "Signed SBOM file: ${OUTPUT_FILE}"
