@@ -122,7 +122,21 @@ detect_clang_versions() {
 # Function to get compiler major version from version string
 get_compiler_major_version() {
     local version_string="$1"
-    echo "$version_string" | cut -d'.' -f1
+    
+    # Handle different version string formats
+    if [[ "$version_string" =~ ^[0-9]+\.[0-9]+ ]]; then
+        # Simple version format like "13.3.1"
+        echo "$version_string" | cut -d'.' -f1
+    elif [[ "$version_string" =~ \(GCC\)[[:space:]]+([0-9]+\.[0-9]+) ]]; then
+        # GCC format like "gcc (GCC) 13.3.1 20240611 (Red Hat 13.3.1-2)"
+        echo "$version_string" | sed -n 's/.*(GCC)[[:space:]]\+\([0-9]\+\.[0-9]\+\).*/\1/p' | cut -d'.' -f1
+    elif [[ "$version_string" =~ ^[0-9]+ ]]; then
+        # Just a number like "19"
+        echo "$version_string"
+    else
+        # Fallback: try to extract any number at the beginning
+        echo "$version_string" | sed -n 's/^\([0-9]\+\).*/\1/p'
+    fi
 }
 
 # Function to select appropriate compiler for C++ standard
