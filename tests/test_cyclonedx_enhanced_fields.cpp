@@ -439,8 +439,11 @@ TEST_F(CycloneDXEnhancedFieldsTest, EmptyEnhancedFields)
     EXPECT_FALSE(componentJson.contains("mime-type"));
     EXPECT_FALSE(componentJson.contains("copyright"));
     EXPECT_FALSE(componentJson.contains("cpe"));
-    EXPECT_FALSE(componentJson.contains("supplier"));
-    EXPECT_FALSE(componentJson.contains("manufacturer"));
+    // NTIA fields (supplier and manufacturer) are always included with default values
+    EXPECT_TRUE(componentJson.contains("supplier"));
+    EXPECT_EQ(componentJson["supplier"]["name"], "Unknown");
+    EXPECT_TRUE(componentJson.contains("manufacturer"));
+    EXPECT_EQ(componentJson["manufacturer"]["name"], "Unknown");
     EXPECT_FALSE(componentJson.contains("publisher"));
 }
 
