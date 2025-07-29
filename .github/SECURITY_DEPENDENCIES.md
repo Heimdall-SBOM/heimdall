@@ -20,6 +20,13 @@ All GitHub Actions are pinned to specific commit SHAs to prevent supply chain at
 - `actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744` # v3.6.0
 - `actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236` # v4.7.1
 
+### DevContainer Build Workflow (`build-devcontainer.yml`)
+- `actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332` # v4.1.7
+- `docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db` # v3.6.1
+- `docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567` # v3.3.0
+- `docker/build-push-action@16ebe778df0e7752d2cfcbd924afdbbd89c1a755` # v6.6.1
+- `actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea` # v7.0.1
+
 ## External Scripts (Pinned to Commit SHAs)
 
 ### Reviewdog Installer
