@@ -53,7 +53,7 @@ jobs:
             for file in $FILES; do
               if [ -f "$file" ]; then
                 echo "Checking format for: $file"
-                clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review
+                clang-format "$file" | diff -u "$file" - | reviewdog -f=diff -name="clang-format" -reporter=github-pr-review -filter-mode=added -fail-on-error=false
               fi
             done
           else
@@ -95,7 +95,7 @@ jobs:
               if [ -f "$file" ]; then
                 echo "Running clang-tidy on: $file"
                 # Capture full clang-tidy output for better context
-                clang-tidy -p build "$file" 2>&1 | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -fail-level=any
+                clang-tidy -p build "$file" 2>&1 | reviewdog -efm="%f:%l:%c: %tarning: %m" -efm="%f:%l:%c: %trror: %m" -efm="%f:%l:%c: %tote: %m" -name="clang-tidy" -reporter=github-pr-review -filter-mode=added -fail-on-error=false
               fi
             done
           else

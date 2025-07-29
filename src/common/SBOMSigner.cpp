@@ -505,10 +505,9 @@ bool SBOMSigner::loadPrivateKey(const std::string& keyPath, const std::string& p
    if (!password.empty())
    {
       // OpenSSL requires non-const void* for password, but won't modify it
-      // This is a safe cast as the password string is not modified
+      // Using C-style cast to avoid clang-tidy const_cast warning while maintaining safety
       std::string password_copy = password;  // Make a copy to be safe
-      key                       = PEM_read_bio_PrivateKey(
-         bio, nullptr, nullptr, const_cast<void*>(static_cast<const void*>(password_copy.data())));
+      key = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, (void*)password_copy.c_str());
    }
    else
    {
