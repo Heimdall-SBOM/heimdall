@@ -1,160 +1,267 @@
-# Heimdall Distribution-Specific Setup Scripts
+# Heimdall Setup Scripts
 
-This directory contains individual setup scripts for each supported Linux distribution. These scripts are based on the corresponding Dockerfiles in the `dockerfiles/` directory and provide a more targeted approach to dependency installation.
+This directory contains OS-specific setup scripts for installing Heimdall dependencies on different operating systems.
 
-## Available Setup Scripts
+## Main Setup Script
 
-| Distribution | Script | GCC Versions | LLVM Version | Notes |
-|--------------|--------|--------------|--------------|-------|
-| Ubuntu 22.04+ | `setup-ubuntu.sh` | 11, 13 | 18 | Uses Ubuntu Toolchain PPA |
-| Debian Bookworm | `setup-debian.sh` | 11, 12 | 18 | Uses Debian backports |
-| Debian Testing | `setup-debian-testing.sh` | 12, 13, 14 | 18 | Latest GCC versions |
-| Fedora Latest | `setup-fedora.sh` | 15 | 18 | Uses default Fedora GCC |
-| CentOS Stream 9 | `setup-centos.sh` | 11, 13, 14 | 20 | Uses SCL for newer GCC |
-| Rocky Linux 9 | `setup-rocky.sh` | 11, 13 | 16 | Uses SCL for newer GCC |
-| OpenSUSE Tumbleweed | `setup-opensuse.sh` | Latest | 18 | Uses latest available |
-| Arch Linux | `setup-arch.sh` | 14, 15 | 18 | Uses latest available |
+### `setup.sh` - Interactive Menu Interface
 
-## Usage
+The main setup script provides a user-friendly menu interface to select your operating system and install dependencies.
 
-Each script follows the same interface and can be used as follows:
+#### Usage
 
 ```bash
-# Basic usage
-sudo ./setup-<distro>.sh
+# Interactive menu (recommended)
+sudo ./scripts/setup.sh
 
-# With options
-sudo ./setup-<distro>.sh --verbose --dry-run
+# Auto-detect OS and install
+sudo ./scripts/setup.sh --auto-detect
 
-# Skip certain components
-sudo ./setup-<distro>.sh --skip-llvm --skip-gcc
+# Show menu with specific options
+sudo ./scripts/setup.sh --verbose
+sudo ./scripts/setup.sh --dry-run
+sudo ./scripts/setup.sh --skip-llvm
+sudo ./scripts/setup.sh --skip-gcc
 ```
 
-## Common Options
+#### Features
 
-All scripts support the following options:
+- **Interactive Menu**: Select your OS from a numbered list
+- **Auto-Detection**: Automatically detect your OS and run the appropriate script
+- **OS Information**: Shows supported compiler versions and C++ standards for each OS
+- **Confirmation**: Confirms your selection before proceeding
+- **Help System**: Built-in help and documentation
+- **Argument Passing**: Passes all arguments to the OS-specific scripts
 
-- `-h, --help`: Show help message
-- `-v, --verbose`: Enable verbose output
-- `-d, --dry-run`: Show what would be installed without actually installing
-- `--skip-llvm`: Skip LLVM installation (use system LLVM if available)
-- `--skip-gcc`: Skip GCC installation (use system GCC)
-- `--llvm-version VERSION`: Set LLVM version to install
-- `--version`: Show version information
+#### Supported Operating Systems
 
-## Distribution-Specific Features
+| Menu Option | OS | Script | GCC Versions | LLVM Version |
+|-------------|----|--------|--------------|--------------|
+| 1 | Ubuntu 22.04+ | `setup-ubuntu.sh` | 11, 13 | 18, 19 |
+| 2 | Debian Bookworm | `setup-debian.sh` | 11, 12 | 18 |
+| 3 | Debian Testing | `setup-debian-testing.sh` | 12, 13, 14 | 18 |
+| 4 | CentOS Stream 9 | `setup-centos.sh` | 11, 13, 14 | 20 |
+| 5 | Fedora Latest | `setup-fedora.sh` | 15 | 18 |
+| 6 | Arch Linux | `setup-arch.sh` | 14, 15 | 18 |
+| 7 | OpenSUSE Tumbleweed | `setup-opensuse.sh` | 11, 13 | 18 |
+| 8 | Rocky Linux 9 | `setup-rocky.sh` | 11, 13 | 16 |
+| 9 | macOS | `setup-macos.sh` | Xcode | Homebrew LLVM |
 
-### Ubuntu
-- Adds Ubuntu Toolchain PPA for GCC 11 and 13
-- Downloads LLVM installation script from apt.llvm.org
-- Creates symlinks for LLVM tools
+## OS-Specific Setup Scripts
 
-### Debian (Bookworm)
-- Adds Debian backports repository for newer GCC versions
-- Uses apt.llvm.org for LLVM installation
-- Creates symlinks for LLVM tools
+### Direct Usage
 
-### Debian Testing
-- Has access to latest GCC versions (12, 13, 14)
-- Uses system LLVM packages
-- Sets up GCC alternatives for multiple versions
+You can also run OS-specific scripts directly:
 
-### Fedora
-- Uses default Fedora GCC (currently 15)
-- Installs Ninja manually (not in repos)
-- Uses system LLVM packages
+```bash
+# Ubuntu
+sudo ./scripts/setup-ubuntu.sh
 
-### CentOS Stream 9
-- Enables CRB repository for newer GCC versions
-- Uses Software Collections (SCL) for GCC 13 and 14
-- Installs Ninja manually (not in repos)
+# Debian
+sudo ./scripts/setup-debian.sh
 
-### Rocky Linux 9
-- Enables CRB repository for newer GCC versions
-- Uses Software Collections (SCL) for GCC 13
-- Installs Ninja manually (not in repos)
+# CentOS
+sudo ./scripts/setup-centos.sh
 
-### OpenSUSE Tumbleweed
-- Uses latest available GCC version
-- Uses system LLVM packages
-- Creates LLD symlinks if needed
+# Fedora
+sudo ./scripts/setup-fedora.sh
 
-### Arch Linux
-- Uses latest available GCC version
-- Installs specific GCC versions if needed
-- Creates comprehensive symlinks for LLVM
+# Arch Linux
+sudo ./scripts/setup-arch.sh
+
+# OpenSUSE
+sudo ./scripts/setup-opensuse.sh
+
+# Rocky Linux
+sudo ./scripts/setup-rocky.sh
+
+# macOS
+./scripts/setup-macos.sh  # No sudo needed on macOS
+```
+
+### Common Options
+
+All OS-specific scripts support these common options:
+
+```bash
+-h, --help              Show help message
+-v, --verbose           Enable verbose output
+-d, --dry-run          Show what would be installed without actually installing
+--skip-llvm            Skip LLVM installation (use system LLVM if available)
+--skip-gcc             Skip GCC installation (use system GCC)
+--version              Show version information
+```
+
+### OS-Specific Options
+
+Some scripts have additional OS-specific options:
+
+```bash
+# Ubuntu/Debian
+--llvm-version VERSION  Set LLVM version to install (default: 18/19)
+
+# Debian Testing
+--gcc-version VERSION   Use specific GCC version (12, 13, 14)
+
+# CentOS/Rocky
+--enable-scl           Enable Software Collections for newer GCC versions
+```
 
 ## C++ Standards Support
 
-All scripts support building with multiple C++ standards:
+All setup scripts install dependencies for multiple C++ standards:
 
-- **C++11**: Requires GCC 4.8+ or Clang 3.3+
-- **C++14**: Requires GCC 5+ or Clang 3.4+
-- **C++17**: Requires GCC 7+ or Clang 5+
-- **C++20**: Requires GCC 10+ or Clang 10+
-- **C++23**: Requires GCC 11+ or Clang 14+
+| C++ Standard | GCC Version | Clang Version | Status |
+|--------------|-------------|---------------|--------|
+| C++11 | 4.8+ | 3.3+ | ✅ Supported |
+| C++14 | 5+ | 3.4+ | ✅ Supported |
+| C++17 | 7+ | 5+ | ✅ Supported |
+| C++20 | 10+ | 10+ | ✅ Supported |
+| C++23 | 11+ | 14+ | ✅ Supported |
 
 ## Dependencies Installed
 
-Each script installs the following components:
+All scripts install the following core dependencies:
 
-- **Build tools**: make, cmake, ninja
-- **GCC compilers**: Multiple versions as appropriate for the distribution
-- **LLVM/Clang toolchain**: Version specified for each distribution
-- **Development libraries**: OpenSSL, ELF, Boost
-- **Python 3 and pip**: For build scripts and tools
-- **Git**: For version control
-
-## Verification
-
-Each script includes a verification step that checks:
-- GCC version availability
-- LLVM/Clang installation
-- Build tools (cmake, ninja)
-- Python installation
+- **Build Tools**: make, cmake, ninja
+- **Compilers**: GCC (multiple versions), LLVM/Clang
+- **Development Libraries**: OpenSSL, ELF, Boost
+- **Development Tools**: Python 3, pip, Git
+- **Linker Support**: binutils-gold (Linux), LLD headers
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Permission denied**: Run scripts with `sudo`
-2. **Package not found**: Update your package manager first
-3. **LLVM installation fails**: Try using `--skip-llvm` and use system LLVM
-4. **GCC version not available**: Use `--skip-gcc` and use system GCC
+1. **Permission Denied**
+   ```bash
+   # Linux: Run with sudo
+   sudo ./scripts/setup.sh
+   
+   # macOS: No sudo needed
+   ./scripts/setup.sh
+   ```
 
-### Distribution-Specific Issues
+2. **OS Not Detected**
+   ```bash
+   # Use manual selection
+   ./scripts/setup.sh
+   # Then select your OS from the menu
+   ```
 
-- **CentOS/Rocky**: Use `scl enable gcc-toolset-<version> bash` to access newer GCC versions
-- **Ubuntu**: If PPA fails, try updating GPG keys: `sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys <key>`
-- **Arch**: If packages are not found, update first: `sudo pacman -Syu`
+3. **Setup Script Not Found**
+   ```bash
+   # Check available scripts
+   ls -la scripts/setup-*.sh
+   
+   # Run OS-specific script directly
+   ./scripts/setup-[your-os].sh
+   ```
 
-## Migration from Monolithic Script
+4. **Package Manager Issues**
+   ```bash
+   # Update package lists first
+   sudo apt update  # Ubuntu/Debian
+   sudo dnf update  # CentOS/Rocky/Fedora
+   sudo pacman -Syu # Arch Linux
+   ```
 
-If you were previously using the monolithic `setup.sh` script, you can now use the distribution-specific scripts for better reliability and faster installation. The new scripts:
+### Platform-Specific Notes
 
-- Are more targeted and efficient
-- Have better error handling
-- Include distribution-specific optimizations
-- Provide clearer feedback and verification
+#### Linux Distributions
+- **Ubuntu/Debian**: Uses APT package manager
+- **CentOS/Rocky/Fedora**: Uses DNF package manager
+- **Arch Linux**: Uses Pacman package manager
+- **OpenSUSE**: Uses Zypper package manager
+
+#### macOS
+- Requires Xcode Command Line Tools
+- Uses Homebrew for LLVM installation
+- No root privileges required
+
+#### SCL (Software Collections)
+- **CentOS/Rocky**: SCL provides newer GCC versions
+- **Activation**: `scl enable gcc-toolset-14 bash`
+- **Automatic**: Setup scripts handle SCL configuration
+
+## Examples
+
+### Quick Start (Recommended)
+```bash
+# Clone repository
+git clone --recurse-submodules https://github.com/Heimdall-SBOM/heimdall.git
+cd heimdall
+
+# Run interactive setup
+sudo ./scripts/setup.sh
+
+# Select your OS from the menu
+# Confirm installation
+# Wait for completion
+```
+
+### Auto-Detection
+```bash
+# Auto-detect and install
+sudo ./scripts/setup.sh --auto-detect
+```
+
+### Dry Run (Preview)
+```bash
+# See what would be installed
+sudo ./scripts/setup.sh --dry-run
+```
+
+### Verbose Installation
+```bash
+# Detailed output during installation
+sudo ./scripts/setup.sh --verbose
+```
+
+### Skip Components
+```bash
+# Skip LLVM installation
+sudo ./scripts/setup.sh --skip-llvm
+
+# Skip GCC installation
+sudo ./scripts/setup.sh --skip-gcc
+```
+
+## Next Steps
+
+After running the setup script:
+
+1. **Build Heimdall**:
+   ```bash
+   ./scripts/build.sh --standard 17 --compiler gcc --tests
+   ```
+
+2. **Test Installation**:
+   ```bash
+   ./scripts/build_all_standards.sh
+   ```
+
+3. **Run Examples**:
+   ```bash
+   cd examples/heimdall-usage-example
+   ./run_example.sh
+   ```
 
 ## Contributing
 
-When adding support for new distributions:
+To add support for a new operating system:
 
-1. Create a corresponding Dockerfile in `dockerfiles/`
-2. Create a setup script based on the Dockerfile
-3. Update this README with the new distribution
-4. Test the script on the target distribution
+1. Create `setup-[os].sh` script
+2. Follow the pattern of existing scripts
+3. Add OS detection to `setup.sh`
+4. Update this documentation
+5. Test on the target platform
 
-## Comparison with Monolithic Script
+## Support
 
-| Feature | Monolithic Script | Distribution-Specific Scripts |
-|---------|-------------------|------------------------------|
-| Complexity | High (740 lines) | Low (200-300 lines each) |
-| Maintenance | Difficult | Easy |
-| Reliability | Lower | Higher |
-| Speed | Slower | Faster |
-| Error handling | Generic | Specific |
-| Testing | Complex | Simple |
+For issues with setup scripts:
 
-The distribution-specific scripts provide a more maintainable and reliable approach to dependency installation. 
+1. Check the troubleshooting section above
+2. Review OS-specific script help: `./scripts/setup-[os].sh --help`
+3. Check system requirements and dependencies
+4. Report issues on the project's GitHub page 

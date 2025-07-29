@@ -12,7 +12,7 @@ A comprehensive Software Bill of Materials (SBOM) generation tool that integrate
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
-![Coverage](https://img.shields.io/badge/coverage-44.4%25-yellow.svg)
+![Coverage](https://img.shields.io/badge/coverage-44.4%25-yellow.svg)](build/coverage/html/index.html)
 
 ## Overview
 
@@ -26,30 +26,28 @@ Heimdall is designed for both embedded software development and regular applicat
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
 - **Cross-Platform**: Native support for macOS and Linux
-- **Flexible Use**: CMake module, Makefile support, Command-line use
+- **Digital Signatures**: Generate digtially signed SBOM with embedded signature using all algorithms permitted by CycloneDX 1.5+ 
 
 ### Binary Analysis
 - **ELF Support**: Complete analysis of Linux executables and libraries
 - **Mach-O Support**: Full analysis of macOS executables and libraries
 - **DWARF Integration**: Extracts debug information for detailed component analysis
-- **Digital Signatures**: Supports analysis of digitally signed binaries
 - **Archive Analysis**: Processes static libraries (.a, .lib)
 
 ### Embedded Software Support
-- **Minimal Overhead**: Optimized for embedded systems with limited resources
 - **Cross-Compilation**: Supports cross-compiled binaries for embedded targets
 - **Static Analysis**: Works with statically linked embedded applications
-- **Resource Efficiency**: Designed for systems with memory and storage constraints
 
 ### Security and Compliance
 - **Supply Chain Security**: Enables vulnerability scanning and compliance tracking
 - **Digital Signature Verification**: Validates signed components
 - **License Compliance**: Comprehensive license information extraction
 - **Vulnerability Assessment**: Integrates with security scanning tools
+- **SBOM Validation**: Validates both SDPX and CycloneDX SBOM
 
 ### Performance and Integration
 - **Performance Optimized**: Minimal overhead during linking process
-- **CI/CD Ready**: Seamless integration with modern build systems
+- **CI/CD Ready**: Seamless integration with modern build systems using a provided CMake module
 - **Multi-Standard C++ Support**: Robust compatibility with C++11, C++14, C++17, C++20, and C++23
 - **Multi-Compiler Support**: Automatic detection and selection of GCC and Clang versions
 
@@ -71,16 +69,20 @@ Heimdall is designed for both embedded software development and regular applicat
 
 2. **Install dependencies using the setup script**:
    ```bash
-   # Run the automated setup script
-   sudo ./setup.sh
+   # Run the interactive setup script (recommended)
+   sudo ./scripts/setup.sh
    
-   # Or install dependencies manually
-   ./scripts/install_dependencies.sh
+   # Or auto-detect OS and install
+   sudo ./scripts/setup.sh --auto-detect
+   
+   # Or run OS-specific script directly
+   sudo ./scripts/setup-ubuntu.sh    # For Ubuntu
+   sudo ./scripts/setup-macos.sh     # For macOS
    ```
 
 3. **Build Heimdall**:
    ```bash
-   # Build with default settings (GCC, C++17)
+   # Build with specific settings (GCC, C++17)
    ./scripts/build.sh --standard 17 --compiler gcc --tests
    
    # Or build all compatible standards
