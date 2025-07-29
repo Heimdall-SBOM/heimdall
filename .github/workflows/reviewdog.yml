@@ -95,10 +95,8 @@ jobs:
       - name: Run clang-tidy with reviewdog
         timeout-minutes: 8
         run: |
-          # Simple cmake config without full build
-          mkdir -p build
-          echo 'set(CMAKE_C_COMPILER gcc)' > build/compile_commands.json
-          echo 'set(CMAKE_CXX_COMPILER g++)' >> build/compile_commands.json
+          # Generate proper compile_commands.json with cmake
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -S . -B build
           
           # Get changed files
           FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} | grep -E '\.(c|cpp|h|hpp)$' || true)
@@ -110,9 +108,9 @@ jobs:
               if [ -f "$file" ]; then
                 echo "Running clang-tidy on: $file"
                 
-                # Run clang-tidy with comprehensive checks and reasonable timeout  
+                # Run clang-tidy with proper compilation database
                 TIDY_OUTPUT=$(mktemp)
-                timeout 240s clang-tidy --config-file=.clang-tidy "$file" -- -std=c++17 -I./src/common -I./external/json/include 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
+                timeout 240s clang-tidy --config-file=.clang-tidy -p build "$file" 2>&1 | grep "warning:\|error:" > "$TIDY_OUTPUT" || true
                 
                 # Process each warning/error individually
                 while IFS= read -r line; do

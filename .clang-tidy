@@ -6,7 +6,8 @@ Checks: '-*,
   bugprone-*,
   cppcoreguidelines-*,
   clang-analyzer-*,
-  misc-*'
+  misc-*,
+  -misc-include-cleaner'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: none
