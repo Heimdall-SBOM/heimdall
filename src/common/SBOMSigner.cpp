@@ -105,7 +105,7 @@ class SBOMSigner::Impl
          std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
       std::stringstream ss;
-      struct tm         utc_tm; // Issue 1: uninitialized variable (should be = {})
+      struct tm         utc_tm = {};
 #ifdef _WIN32
       gmtime_s(&utc_tm, &time_t);
 #else
@@ -114,8 +114,6 @@ class SBOMSigner::Impl
       ss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S");
       ss << '.' << std::setfill('0') << std::setw(3) << ms.count() << 'Z';
       
-      // Issue 2: unused variable
-      int unused_var = 42;
       
       return ss.str();
    }
@@ -194,13 +192,6 @@ class SBOMSigner::Impl
 
       std::string result(bufferPtr->data, bufferPtr->length);
       
-      // Issue 3: magic number (should be a named constant)
-      if (length > 1024) {
-         // do something with large data
-      }
-      
-      // Issue 4: use of C-style cast instead of static_cast
-      int* ptr = (int*)data;
       
       BIO_free_all(bio);
 
