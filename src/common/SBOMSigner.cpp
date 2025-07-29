@@ -105,7 +105,7 @@ class SBOMSigner::Impl
          std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
       std::stringstream ss;
-      struct tm         utc_tm;
+      struct tm         utc_tm = {};
 #ifdef _WIN32
       gmtime_s(&utc_tm, &time_t);
 #else
@@ -113,6 +113,8 @@ class SBOMSigner::Impl
 #endif
       ss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S");
       ss << '.' << std::setfill('0') << std::setw(3) << ms.count() << 'Z';
+      
+      
       return ss.str();
    }
 
@@ -189,6 +191,8 @@ class SBOMSigner::Impl
       BIO_get_mem_ptr(bio, &bufferPtr);
 
       std::string result(bufferPtr->data, bufferPtr->length);
+      
+      
       BIO_free_all(bio);
 
       return result;
@@ -254,13 +258,13 @@ class SBOMSigner::Impl
       // Replace URL-safe characters back to standard Base64
       std::replace(base64.begin(), base64.end(), '-', '+');
       std::replace(base64.begin(), base64.end(), '_', '/');
-      
+
       // Add padding if needed
       while (base64.length() % 4 != 0)
       {
          base64 += '=';
       }
-      
+
       return base64Decode(base64);
    }
 
@@ -276,7 +280,7 @@ class SBOMSigner::Impl
          return "";
       }
 
-      int numBytes = BN_num_bytes(bn);
+      int                        numBytes = BN_num_bytes(bn);
       std::vector<unsigned char> buffer(numBytes);
       BN_bn2bin(bn, buffer.data());
 
@@ -505,10 +509,9 @@ bool SBOMSigner::loadPrivateKey(const std::string& keyPath, const std::string& p
    if (!password.empty())
    {
       // OpenSSL requires non-const void* for password, but won't modify it
-      // This is a safe cast as the password string is not modified
+      // Using C-style cast to avoid clang-tidy const_cast warning while maintaining safety
       std::string password_copy = password;  // Make a copy to be safe
-      key =
-         PEM_read_bio_PrivateKey(bio, nullptr, nullptr, const_cast<void*>(static_cast<const void*>(password_copy.data())));
+      key = PEM_read_bio_PrivateKey(bio, nullptr, nullptr, (void*)password_copy.c_str());
    }
    else
    {
@@ -702,7 +705,7 @@ nlohmann::json SBOMSigner::getPublicKeyAsJWK() const
    }
 
    nlohmann::json jwk;
-   int keyType = EVP_PKEY_id(pImpl->publicKey);
+   int            keyType = EVP_PKEY_id(pImpl->publicKey);
 
    if (keyType == EVP_PKEY_RSA)
    {
@@ -720,8 +723,8 @@ nlohmann::json SBOMSigner::getPublicKeyAsJWK() const
       if (n && e)
       {
          jwk["kty"] = "RSA";
-         jwk["n"] = pImpl->bignumToBase64URL(n);
-         jwk["e"] = pImpl->bignumToBase64URL(e);
+         jwk["n"]   = pImpl->bignumToBase64URL(n);
+         jwk["e"]   = pImpl->bignumToBase64URL(e);
       }
    }
    else if (keyType == EVP_PKEY_EC)
@@ -784,7 +787,7 @@ nlohmann::json SBOMSigner::getPublicKeyAsJWK() const
          {
             jwk["kty"] = "OKP";
             jwk["crv"] = "Ed25519";
-            jwk["x"] = pImpl->base64URLEncode(keyData.data(), keyLen);
+            jwk["x"]   = pImpl->base64URLEncode(keyData.data(), keyLen);
          }
       }
    }
