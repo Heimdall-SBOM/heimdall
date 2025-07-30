@@ -139,23 +139,23 @@ struct ArchitectureInfo
  */
 struct ComponentInfo
 {
-   std::string                        name;                          ///< Component name
-   std::string                        filePath;                      ///< File path
-   std::string                        version;                       ///< Component version
-   std::string                        supplier;                      ///< Component supplier/vendor
-   std::string                        downloadLocation;              ///< Download location URL
-   std::string                        homepage;                      ///< Homepage URL
-   std::string                        license;                       ///< License information
-   std::string                        checksum;                      ///< File checksum
-   std::string                        packageManager;                ///< Package manager name
-   std::string                        description;                   ///< Component description
-   std::string                        scope;                         ///< Component scope
-   std::string                        group;                         ///< Component group/organization
-   std::string                        mimeType;                      ///< MIME type of the component
-   std::string                        copyright;                     ///< Copyright information
-   std::string                        cpe;                           ///< Common Platform Enumeration identifier
-   std::string                        manufacturer;                  ///< Organization that created the component
-   std::string                        publisher;                     ///< Organization that published the component
+   std::string                        name;              ///< Component name
+   std::string                        filePath;          ///< File path
+   std::string                        version;           ///< Component version
+   std::string                        supplier;          ///< Component supplier/vendor
+   std::string                        downloadLocation;  ///< Download location URL
+   std::string                        homepage;          ///< Homepage URL
+   std::string                        license;           ///< License information
+   std::string                        checksum;          ///< File checksum
+   std::string                        packageManager;    ///< Package manager name
+   std::string                        description;       ///< Component description
+   std::string                        scope;             ///< Component scope
+   std::string                        group;             ///< Component group/organization
+   std::string                        mimeType;          ///< MIME type of the component
+   std::string                        copyright;         ///< Copyright information
+   std::string                        cpe;               ///< Common Platform Enumeration identifier
+   std::string                        manufacturer;  ///< Organization that created the component
+   std::string                        publisher;     ///< Organization that published the component
    FileType                           fileType = FileType::Unknown;  ///< File type
    uint64_t                           fileSize = 0;                  ///< File size in bytes
 
@@ -168,9 +168,9 @@ struct ComponentInfo
    std::map<std::string, std::string> properties{};    ///< Additional properties/metadata
 
    // Enhanced Mach-O metadata
-   CodeSignInfo                  codeSignInfo;   ///< Code signing information
-   BuildConfigInfo               buildConfig;    ///< Build configuration information
-   PlatformInfo                  platformInfo;   ///< Platform information
+   CodeSignInfo                  codeSignInfo;     ///< Code signing information
+   BuildConfigInfo               buildConfig;      ///< Build configuration information
+   PlatformInfo                  platformInfo;     ///< Platform information
    std::vector<std::string>      entitlements{};   ///< List of entitlements
    std::vector<ArchitectureInfo> architectures{};  ///< List of architectures
    std::vector<std::string>      frameworks{};     ///< List of framework dependencies
@@ -400,6 +400,32 @@ struct ComponentInfo
    [[nodiscard]] size_t getSectionCount() const
    {
       return sections.size();
+   }
+
+   /**
+    * @brief Equality operator
+    * @param other The other ComponentInfo to compare with
+    * @return true if components are equal
+    */
+   bool operator==(const ComponentInfo& other) const
+   {
+      return name == other.name && version == other.version && supplier == other.supplier &&
+             license == other.license && description == other.description && scope == other.scope &&
+             group == other.group && mimeType == other.mimeType && copyright == other.copyright &&
+             cpe == other.cpe && manufacturer == other.manufacturer &&
+             publisher == other.publisher && fileType == other.fileType &&
+             packageManager == other.packageManager && dependencies == other.dependencies &&
+             properties == other.properties;
+   }
+
+   /**
+    * @brief Inequality operator
+    * @param other The other ComponentInfo to compare with
+    * @return true if components are not equal
+    */
+   bool operator!=(const ComponentInfo& other) const
+   {
+      return !(*this == other);
    }
 };
 

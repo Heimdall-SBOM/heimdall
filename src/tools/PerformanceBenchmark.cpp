@@ -1,3 +1,19 @@
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -31,10 +47,10 @@ class SBOMGenerationBenchmark
    int         iterations_;
 
    public:
-       SBOMGenerationBenchmark(std::string binary_path, int iterations = 5)
-          : test_binary_path_(std::move(binary_path)), iterations_(iterations)
-       {
-       }
+   SBOMGenerationBenchmark(std::string binary_path, int iterations = 5)
+      : test_binary_path_(std::move(binary_path)), iterations_(iterations)
+   {
+   }
 
    void run()
    {
@@ -87,10 +103,10 @@ class MetadataExtractionBenchmark
    int         iterations_;
 
    public:
-       MetadataExtractionBenchmark(std::string binary_path, int iterations = 5)
-          : test_binary_path_(std::move(binary_path)), iterations_(iterations)
-       {
-       }
+   MetadataExtractionBenchmark(std::string binary_path, int iterations = 5)
+      : test_binary_path_(std::move(binary_path)), iterations_(iterations)
+   {
+   }
 
    void run()
    {
@@ -140,10 +156,10 @@ class DWARFExtractionBenchmark
    int         iterations_;
 
    public:
-       DWARFExtractionBenchmark(std::string binary_path, int iterations = 5)
-          : test_binary_path_(std::move(binary_path)), iterations_(iterations)
-       {
-       }
+   DWARFExtractionBenchmark(std::string binary_path, int iterations = 5)
+      : test_binary_path_(std::move(binary_path)), iterations_(iterations)
+   {
+   }
 
    void run()
    {
@@ -192,10 +208,10 @@ class MemoryUsageBenchmark
    int         iterations_;
 
    public:
-       MemoryUsageBenchmark(std::string binary_path, int iterations = 3)
-          : test_binary_path_(std::move(binary_path)), iterations_(iterations)
-       {
-       }
+   MemoryUsageBenchmark(std::string binary_path, int iterations = 3)
+      : test_binary_path_(std::move(binary_path)), iterations_(iterations)
+   {
+   }
 
    void run()
    {
@@ -253,10 +269,10 @@ class SystemResourceBenchmark
    int         iterations_;
 
    public:
-       SystemResourceBenchmark(std::string binary_path, int iterations = 3)
-          : test_binary_path_(std::move(binary_path)), iterations_(iterations)
-       {
-       }
+   SystemResourceBenchmark(std::string binary_path, int iterations = 3)
+      : test_binary_path_(std::move(binary_path)), iterations_(iterations)
+   {
+   }
 
    void run()
    {
@@ -308,13 +324,12 @@ class PerformanceTestSuite
    std::string output_file_;
 
    public:
-       PerformanceTestSuite(std::string binary_path, bool profiling = true,
-                            bool memory_tracking = true)
-          : test_binary_path_(std::move(binary_path)),
-            enable_profiling_(profiling),
-            enable_memory_tracking_(memory_tracking)
-       {
-       }
+   PerformanceTestSuite(std::string binary_path, bool profiling = true, bool memory_tracking = true)
+      : test_binary_path_(std::move(binary_path)),
+        enable_profiling_(profiling),
+        enable_memory_tracking_(memory_tracking)
+   {
+   }
 
    void set_output_file(const std::string& filename)
    {

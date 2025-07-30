@@ -25,6 +25,7 @@ limitations under the License.
 #include "common/Utils.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
+#include "factories/BinaryFormatFactory.hpp"
 
 using namespace heimdall;
 
@@ -818,4 +819,143 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSpecialCharactersInPath
 
    // Should fail because our test file is not a real ELF file
    EXPECT_FALSE(result);
+}
+
+TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithEnhancedProperties)
+{
+   auto extractor = std::make_unique<MetadataExtractor>();
+   ASSERT_NE(extractor, nullptr);
+
+   // Create a simple test file
+   heimdall::compat::fs::path test_file = test_dir / "test_enhanced.o";
+   std::ofstream file(test_file);
+   file << "ELF object file content";
+   file.close();
+
+   ComponentInfo component("test_enhanced.o", test_file.string());
+   bool result = extractor->extractMetadata(component);
+
+   // The result may be false for dummy files, but we should still have evidence properties
+   EXPECT_TRUE(component.wasProcessed);
+
+   // Check that evidence properties are being extracted
+   EXPECT_FALSE(component.properties.empty());
+   
+   // Check for specific evidence properties that should be present
+   EXPECT_TRUE(component.properties.find("evidence_extractor_version") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence_extraction_date") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence_confidence_threshold") != component.properties.end());
+   
+   // Check for identity evidence properties
+   EXPECT_TRUE(component.properties.find("evidence:identity:symbols") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:sections") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:occurrence:location") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:occurrence:size") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:fileType") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:hasDebugInfo") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:isStripped") != component.properties.end());
+
+   // Verify the evidence values
+   EXPECT_EQ(component.properties["evidence_extractor_version"], "2.0");
+   EXPECT_EQ(component.properties["evidence:identity:symbols"], "0");  // No symbols in dummy file
+   EXPECT_EQ(component.properties["evidence:identity:sections"], "0"); // No sections in dummy file
+   EXPECT_EQ(component.properties["evidence:occurrence:location"], test_file.string());
+}
+
+TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedProperties)
+{
+   auto extractor = std::make_unique<MetadataExtractor>();
+   ASSERT_NE(extractor, nullptr);
+
+   // Create a simple test file
+   heimdall::compat::fs::path test_file = test_dir / "test_demo.o";
+   std::ofstream file(test_file);
+   file << "ELF object file content";
+   file.close();
+
+   ComponentInfo component("test_demo.o", test_file.string());
+   bool result = extractor->extractMetadata(component);
+
+   // Print out the evidence properties to demonstrate they are being extracted
+   std::cout << "\n=== Enhanced Properties Demonstration ===" << std::endl;
+   std::cout << "Component was processed: " << (component.wasProcessed ? "true" : "false") << std::endl;
+   std::cout << "Number of properties: " << component.properties.size() << std::endl;
+   
+   for (const auto& [key, value] : component.properties)
+   {
+      if (key.find("evidence") != std::string::npos)
+      {
+         std::cout << "  " << key << ": " << value << std::endl;
+      }
+   }
+   std::cout << "==========================================\n" << std::endl;
+
+   // Verify that evidence properties are present
+   EXPECT_TRUE(component.wasProcessed);
+   EXPECT_FALSE(component.properties.empty());
+   EXPECT_TRUE(component.properties.find("evidence_extractor_version") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:symbols") != component.properties.end());
+}
+
+TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedPropertiesWithRealELF)
+{
+   auto extractor = std::make_unique<MetadataExtractor>();
+   ASSERT_NE(extractor, nullptr);
+
+   // Create a real ELF file by compiling a simple C program
+   heimdall::compat::fs::path test_source = test_dir / "test_real.c";
+   heimdall::compat::fs::path test_elf = test_dir / "test_real.so";
+   
+   // Create a simple C source file
+   std::ofstream source_file(test_source);
+   source_file << "#include <stdio.h>\n";
+   source_file << "int main() { printf(\"Hello, World!\\n\"); return 0; }\n";
+   source_file.close();
+
+   // Compile it to create a real ELF file
+   std::string compile_cmd = "gcc -shared -fPIC -g " + test_source.string() + " -o " + test_elf.string();
+   int compile_result = system(compile_cmd.c_str());
+   
+   if (compile_result == 0 && heimdall::compat::fs::exists(test_elf))
+   {
+      ComponentInfo component("test_real.so", test_elf.string());
+      bool result = extractor->extractMetadata(component);
+
+      // Print out the evidence properties to demonstrate they are being extracted
+      std::cout << "\n=== Enhanced Properties with Real ELF File ===" << std::endl;
+      std::cout << "Component was processed: " << (component.wasProcessed ? "true" : "false") << std::endl;
+      std::cout << "Number of properties: " << component.properties.size() << std::endl;
+      
+      for (const auto& [key, value] : component.properties)
+      {
+         if (key.find("evidence") != std::string::npos)
+         {
+            std::cout << "  " << key << ": " << value << std::endl;
+         }
+      }
+      std::cout << "===============================================\n" << std::endl;
+
+      // Verify that evidence properties are present and meaningful
+      EXPECT_TRUE(component.wasProcessed);
+      EXPECT_FALSE(component.properties.empty());
+      EXPECT_TRUE(component.properties.find("evidence_extractor_version") != component.properties.end());
+      EXPECT_TRUE(component.properties.find("evidence:identity:symbols") != component.properties.end());
+      
+      // With a real ELF file, we should have some symbols and sections
+      if (component.properties.find("evidence:identity:symbols") != component.properties.end())
+      {
+         int symbol_count = std::stoi(component.properties["evidence:identity:symbols"]);
+         EXPECT_GT(symbol_count, 0);  // Should have some symbols
+      }
+      
+      if (component.properties.find("evidence:identity:sections") != component.properties.end())
+      {
+         int section_count = std::stoi(component.properties["evidence:identity:sections"]);
+         EXPECT_GT(section_count, 0);  // Should have some sections
+      }
+   }
+   else
+   {
+      GTEST_SKIP() << "Could not compile test ELF file, skipping real ELF test";
+   }
 }

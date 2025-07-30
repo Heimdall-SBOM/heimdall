@@ -19,15 +19,14 @@ limitations under the License.
  * @brief Implementation of lightweight DWARF parser for C++11/14 compatibility
  * @author Trevor Bakker
  * @date 2025
+ * @version 2.0.0
  *
  * This file implements a lightweight DWARF parser that extracts debug information
  * without using LLVM's problematic template features. It's designed for C++11/14
  * compatibility and provides the same interface as the LLVM-based DWARFExtractor.
  *
- * C++11 Support:
- * - Uses C++11-compatible features only
- * - No dependency on LLVM headers for C++11 builds
- * - Custom implementations of C++14/17 features when needed
+ * The parser implements the IBinaryExtractor interface and specializes in
+ * extracting debug information from ELF files.
  */
 
 #include "LightweightDWARFParser.hpp"
@@ -37,7 +36,6 @@ limitations under the License.
 #include <iostream>
 #include <set>
 #include <sstream>
-#include "Utils.hpp"
 
 #ifdef __linux__
 #include <elf.h>
@@ -200,43 +198,140 @@ constexpr uint32_t DW_FORM_addrx2         = 0x2a;
 constexpr uint32_t DW_FORM_addrx3         = 0x2b;
 constexpr uint32_t DW_FORM_addrx4         = 0x2c;
 
-LightweightDWARFParser::LightweightDWARFParser()
+// PIMPL implementation
+class LightweightDWARFParser::Impl
+{
+   public:
+   Impl()  = default;
+   ~Impl() = default;
+
+   // C++11 compatibility: Use std::set instead of std::unordered_set for better C++11 support
+   std::set<std::string> uniqueSourceFiles;
+   std::set<std::string> uniqueCompileUnits;
+   std::set<std::string> uniqueFunctions;
+};
+
+LightweightDWARFParser::LightweightDWARFParser() : pImpl(std::make_unique<Impl>())
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser constructor called");
+   std::cout << "LightweightDWARFParser constructor called" << std::endl;
 #endif
 }
 
-LightweightDWARFParser::~LightweightDWARFParser()
+LightweightDWARFParser::~LightweightDWARFParser() = default;
+
+LightweightDWARFParser::LightweightDWARFParser(const LightweightDWARFParser& other)
+   : pImpl(std::make_unique<Impl>(*other.pImpl))
 {
-#ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser destructor called");
-#endif
 }
 
+LightweightDWARFParser::LightweightDWARFParser(LightweightDWARFParser&& other) noexcept
+   : pImpl(std::move(other.pImpl))
+{
+}
+
+LightweightDWARFParser& LightweightDWARFParser::operator=(const LightweightDWARFParser& other)
+{
+   if (this != &other)
+   {
+      pImpl = std::make_unique<Impl>(*other.pImpl);
+   }
+   return *this;
+}
+
+LightweightDWARFParser& LightweightDWARFParser::operator=(LightweightDWARFParser&& other) noexcept
+{
+   if (this != &other)
+   {
+      pImpl = std::move(other.pImpl);
+   }
+   return *this;
+}
+
+// IBinaryExtractor interface implementation
+bool LightweightDWARFParser::extractSymbols(const std::string&       filePath,
+                                            std::vector<SymbolInfo>& symbols)
+{
+   std::vector<std::string> functions;
+   if (extractFunctions(filePath, functions))
+   {
+      // Convert function names to SymbolInfo
+      for (const auto& funcName : functions)
+      {
+         SymbolInfo symbol;
+         symbol.name      = funcName;
+         symbol.isDefined = true;
+         symbol.isGlobal  = true;
+         symbols.push_back(symbol);
+      }
+      return true;
+   }
+   return false;
+}
+
+bool LightweightDWARFParser::extractSections(const std::string&        filePath,
+                                             std::vector<SectionInfo>& sections)
+{
+   // This extractor specializes in debug information, not section extraction
+   // Delegate to a more appropriate extractor if available
+   return false;
+}
+
+bool LightweightDWARFParser::extractVersion(const std::string& filePath, std::string& version)
+{
+   // This extractor specializes in debug information, not version extraction
+   // Delegate to a more appropriate extractor if available
+   return false;
+}
+
+std::vector<std::string> LightweightDWARFParser::extractDependencies(const std::string& filePath)
+{
+   // This extractor specializes in debug information, not dependency extraction
+   // Delegate to a more appropriate extractor if available
+   return {};
+}
+
+bool LightweightDWARFParser::canHandle(const std::string& filePath) const
+{
+   // Can handle ELF files with DWARF debug information
+   return hasDWARFInfo(filePath);
+}
+
+std::string LightweightDWARFParser::getFormatName() const
+{
+   return "Lightweight DWARF Parser";
+}
+
+int LightweightDWARFParser::getPriority() const
+{
+   return 20;  // Lower priority than specific format extractors, higher than generic ones
+}
+
+// Legacy interface methods for backward compatibility
 bool LightweightDWARFParser::extractSourceFiles(const std::string&        filePath,
                                                 std::vector<std::string>& sourceFiles)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractSourceFiles called for " + filePath);
+   std::cout << "LightweightDWARFParser: extractSourceFiles called for " << filePath << std::endl;
 #endif
 
    // Clear previous results
-   uniqueSourceFiles.clear();
+   pImpl->uniqueSourceFiles.clear();
    sourceFiles.clear();
 
    // Try DWARF debug line section first
    if (parseDWARFDebugLine(filePath, sourceFiles))
    {
 #ifdef HEIMDALL_DEBUG_ENABLED
-      Utils::debugPrint("LightweightDWARFParser: DWARF debug line parsing succeeded");
+      std::cout << "LightweightDWARFParser: DWARF debug line parsing succeeded" << std::endl;
 #endif
       return true;
    }
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint(
-      "LightweightDWARFParser: DWARF debug line parsing failed, trying heuristic extraction");
+   std::cout
+      << "LightweightDWARFParser: DWARF debug line parsing failed, trying heuristic extraction"
+      << std::endl;
 #endif
 
    // Fallback to heuristic extraction
@@ -248,11 +343,11 @@ bool LightweightDWARFParser::extractCompileUnits(const std::string&        fileP
                                                  std::vector<std::string>& compileUnits)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractCompileUnits called for " + filePath);
+   std::cout << "LightweightDWARFParser: extractCompileUnits called for " << filePath << std::endl;
 #endif
 
    // Clear previous results
-   uniqueCompileUnits.clear();
+   pImpl->uniqueCompileUnits.clear();
    compileUnits.clear();
 
    // Try DWARF debug info section
@@ -270,11 +365,11 @@ bool LightweightDWARFParser::extractFunctions(const std::string&        filePath
                                               std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractFunctions called for " + filePath);
+   std::cout << "LightweightDWARFParser: extractFunctions called for " << filePath << std::endl;
 #endif
 
    // Clear previous results
-   uniqueFunctions.clear();
+   pImpl->uniqueFunctions.clear();
    functions.clear();
 
    // Try DWARF debug info section first
@@ -294,13 +389,13 @@ bool LightweightDWARFParser::extractAllDebugInfo(const std::string&        fileP
                                                  std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractAllDebugInfo called for " + filePath);
+   std::cout << "LightweightDWARFParser: extractAllDebugInfo called for " << filePath << std::endl;
 #endif
 
    // Clear previous results
-   uniqueSourceFiles.clear();
-   uniqueCompileUnits.clear();
-   uniqueFunctions.clear();
+   pImpl->uniqueSourceFiles.clear();
+   pImpl->uniqueCompileUnits.clear();
+   pImpl->uniqueFunctions.clear();
    sourceFiles.clear();
    compileUnits.clear();
    functions.clear();
@@ -332,19 +427,20 @@ bool LightweightDWARFParser::extractAllDebugInfo(const std::string&        fileP
    return success;
 }
 
-bool LightweightDWARFParser::hasDWARFInfo(const std::string& filePath)
+bool LightweightDWARFParser::hasDWARFInfo(const std::string& filePath) const
 {
    uint64_t debugInfoOffset, debugLineOffset, debugAbbrevOffset;
    return findDWARFSections(filePath, debugInfoOffset, debugLineOffset, debugAbbrevOffset);
 }
 
+// Private methods
 bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string&        filePath,
                                                  std::vector<std::string>& sourceFiles,
                                                  std::vector<std::string>& compileUnits,
                                                  std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: parseDWARFDebugInfo called for " + filePath);
+   std::cout << "LightweightDWARFParser: parseDWARFDebugInfo called for " << filePath << std::endl;
 #endif
 
    uint64_t debugInfoOffset, debugLineOffset, debugAbbrevOffset;
@@ -419,7 +515,7 @@ bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string&        fileP
             std::string name = readDWARFString(debugInfoData.data(), offset);
             if (!name.empty())
             {
-               uniqueCompileUnits.insert(name);
+               pImpl->uniqueCompileUnits.insert(name);
             }
          }
       }
@@ -431,7 +527,7 @@ bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string&        fileP
             std::string name = readDWARFString(debugInfoData.data(), offset);
             if (!name.empty())
             {
-               uniqueFunctions.insert(name);
+               pImpl->uniqueFunctions.insert(name);
             }
          }
       }
@@ -450,9 +546,9 @@ bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string&        fileP
    }
 
    // Convert sets to vectors
-   sourceFiles.assign(uniqueSourceFiles.begin(), uniqueSourceFiles.end());
-   compileUnits.assign(uniqueCompileUnits.begin(), uniqueCompileUnits.end());
-   functions.assign(uniqueFunctions.begin(), uniqueFunctions.end());
+   sourceFiles.assign(pImpl->uniqueSourceFiles.begin(), pImpl->uniqueSourceFiles.end());
+   compileUnits.assign(pImpl->uniqueCompileUnits.begin(), pImpl->uniqueCompileUnits.end());
+   functions.assign(pImpl->uniqueFunctions.begin(), pImpl->uniqueFunctions.end());
 
    return !sourceFiles.empty() || !compileUnits.empty() || !functions.empty();
 }
@@ -461,7 +557,7 @@ bool LightweightDWARFParser::parseDWARFDebugLine(const std::string&        fileP
                                                  std::vector<std::string>& sourceFiles)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: parseDWARFDebugLine called for " + filePath);
+   std::cout << "LightweightDWARFParser: parseDWARFDebugLine called for " << filePath << std::endl;
 #endif
 
    uint64_t debugInfoOffset, debugLineOffset, debugAbbrevOffset;
@@ -620,7 +716,7 @@ bool LightweightDWARFParser::parseDWARFDebugLine(const std::string&        fileP
 
       if (!fileName.empty())
       {
-         uniqueSourceFiles.insert(fileName);
+         pImpl->uniqueSourceFiles.insert(fileName);
       }
    }
    if (offset < debugLineData.size())
@@ -635,7 +731,7 @@ bool LightweightDWARFParser::parseDWARFDebugLine(const std::string&        fileP
       offset += 4;  // Simplified skip
    }
 
-   sourceFiles.assign(uniqueSourceFiles.begin(), uniqueSourceFiles.end());
+   sourceFiles.assign(pImpl->uniqueSourceFiles.begin(), pImpl->uniqueSourceFiles.end());
    return !sourceFiles.empty();
 }
 
@@ -651,8 +747,8 @@ bool LightweightDWARFParser::extractFunctionsFromSymbolTable(const std::string& 
                                                              std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractFunctionsFromSymbolTable called for " +
-                     filePath);
+   std::cout << "LightweightDWARFParser: extractFunctionsFromSymbolTable called for " << filePath
+             << std::endl;
 #endif
 
    // This is a simplified implementation that extracts function names from the symbol table
@@ -719,7 +815,8 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
                                                          std::vector<std::string>& sourceFiles)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractSourceFilesHeuristic called for " + filePath);
+   std::cout << "LightweightDWARFParser: extractSourceFilesHeuristic called for " << filePath
+             << std::endl;
 #endif
 
    // This is a heuristic approach that tries to extract source file information
@@ -732,7 +829,8 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
    if (!file.is_open())
    {
 #ifdef HEIMDALL_DEBUG_ENABLED
-      Utils::debugPrint("LightweightDWARFParser: Failed to open file for heuristic extraction");
+      std::cout << "LightweightDWARFParser: Failed to open file for heuristic extraction"
+                << std::endl;
 #endif
       return false;
    }
@@ -743,7 +841,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
    if (fileSize <= 0)
    {
 #ifdef HEIMDALL_DEBUG_ENABLED
-      Utils::debugPrint("LightweightDWARFParser: File is empty for heuristic extraction");
+      std::cout << "LightweightDWARFParser: File is empty for heuristic extraction" << std::endl;
 #endif
       return false;
    }
@@ -756,17 +854,17 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
    if (file.gcount() != fileSize)
    {
 #ifdef HEIMDALL_DEBUG_ENABLED
-      Utils::debugPrint(
-         "LightweightDWARFParser: Failed to read file data for heuristic extraction");
+      std::cout << "LightweightDWARFParser: Failed to read file data for heuristic extraction"
+                << std::endl;
 #endif
       return false;
    }
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: File size for heuristic extraction: " +
-                     std::to_string(fileSize));
+   std::cout << "LightweightDWARFParser: File size for heuristic extraction: " << fileSize
+             << std::endl;
    std::string fileContent(fileData.begin(), fileData.end());
-   Utils::debugPrint("LightweightDWARFParser: File content: " + fileContent);
+   std::cout << "LightweightDWARFParser: File content: " << fileContent << std::endl;
 #endif
 
    // Look for common source file patterns
@@ -824,7 +922,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
                   std::cout << "DEBUG: Extracted filename: '" << filename << "'" << std::endl;
                   if (filename.find('.') != std::string::npos)
                   {
-                     uniqueSourceFiles.insert(filename);
+                     pImpl->uniqueSourceFiles.insert(filename);
                      std::cout << "DEBUG: Added source file: " << filename << std::endl;
                   }
                }
@@ -833,13 +931,13 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
       }
    }
 
-   sourceFiles.assign(uniqueSourceFiles.begin(), uniqueSourceFiles.end());
+   sourceFiles.assign(pImpl->uniqueSourceFiles.begin(), pImpl->uniqueSourceFiles.end());
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: Heuristic extraction found " +
-                     std::to_string(sourceFiles.size()) + " source files");
+   std::cout << "LightweightDWARFParser: Heuristic extraction found " << sourceFiles.size()
+             << " source files" << std::endl;
    for (const auto& file : sourceFiles)
    {
-      Utils::debugPrint("LightweightDWARFParser: Source file: " + file);
+      std::cout << "LightweightDWARFParser: Source file: " << file << std::endl;
    }
 #endif
    return !sourceFiles.empty();
@@ -847,7 +945,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
 
 bool LightweightDWARFParser::findDWARFSections(const std::string& filePath,
                                                uint64_t& debugInfoOffset, uint64_t& debugLineOffset,
-                                               uint64_t& debugAbbrevOffset)
+                                               uint64_t& debugAbbrevOffset) const
 {
    std::ifstream file(filePath, std::ios::binary);
    if (!file.is_open())

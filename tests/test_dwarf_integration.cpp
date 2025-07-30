@@ -25,7 +25,7 @@ limitations under the License.
 #include <random>
 #include <thread>
 #include "common/ComponentInfo.hpp"
-#include "common/DWARFExtractor.hpp"
+#include "extractors/DWARFExtractor.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/PluginInterface.hpp"
 #include "common/Utils.hpp"
@@ -69,9 +69,6 @@ class DWARFIntegrationTest : public ::testing::Test
 
    void createTestFiles()
    {
-      // Enable test mode to avoid hanging on directory operations
-      heimdall::MetadataHelpers::setTestMode(true);
-
       // Create complex multi-file project
       createTestProject();
       compileTestProject();

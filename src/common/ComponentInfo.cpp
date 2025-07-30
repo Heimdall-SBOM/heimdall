@@ -105,14 +105,14 @@ FileType detectElfFileType(const std::string& filePath)
 
    switch (e_type)
    {
-   case 1: // ET_RELOC
-      return FileType::Object;
-   case 2: // ET_EXEC
-      return FileType::Executable;
-   case 3: // ET_DYN
-      return FileType::SharedLibrary;
-   default:
-      return FileType::Unknown;
+      case 1:  // ET_RELOC
+         return FileType::Object;
+      case 2:  // ET_EXEC
+         return FileType::Executable;
+      case 3:  // ET_DYN
+         return FileType::SharedLibrary;
+      default:
+         return FileType::Unknown;
    }
 }
 
@@ -142,8 +142,7 @@ FileType detectMachOFileType(const std::string& filePath)
    // MH_MAGIC_64 = 0xfeedfacf (64-bit)
    // MH_CIGAM = 0xcefaedfe (32-bit, swapped)
    // MH_CIGAM_64 = 0xcffaedfe (64-bit, swapped)
-   if (magic != 0xfeedface && magic != 0xfeedfacf && 
-       magic != 0xcefaedfe && magic != 0xcffaedfe)
+   if (magic != 0xfeedface && magic != 0xfeedfacf && magic != 0xcefaedfe && magic != 0xcffaedfe)
    {
       return FileType::Unknown;
    }
@@ -170,16 +169,16 @@ FileType detectMachOFileType(const std::string& filePath)
 
    switch (filetype)
    {
-   case 1: // MH_OBJECT
-      return FileType::Object;
-   case 2: // MH_EXECUTE
-      return FileType::Executable;
-   case 6: // MH_DYLIB
-      return FileType::SharedLibrary;
-   case 8: // MH_BUNDLE
-      return FileType::SharedLibrary; // Treat bundles as shared libraries
-   default:
-      return FileType::Unknown;
+      case 1:  // MH_OBJECT
+         return FileType::Object;
+      case 2:  // MH_EXECUTE
+         return FileType::Executable;
+      case 6:  // MH_DYLIB
+         return FileType::SharedLibrary;
+      case 8:                             // MH_BUNDLE
+         return FileType::SharedLibrary;  // Treat bundles as shared libraries
+      default:
+         return FileType::Unknown;
    }
 }
 
@@ -228,14 +227,14 @@ FileType determineFileType(const std::string& filePath)
       FileType elfType = detectElfFileType(filePath);
       if (elfType != FileType::Unknown)
       {
-               return elfType;
+         return elfType;
       }
 
       // Try to detect Mach-O file type by examining the file header
       FileType machoType = detectMachOFileType(filePath);
       if (machoType != FileType::Unknown)
       {
-               return machoType;
+         return machoType;
       }
    }
 

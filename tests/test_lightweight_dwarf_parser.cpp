@@ -9,7 +9,7 @@
 #include <thread>
 #include <vector>
 #include "src/common/ComponentInfo.hpp"
-#include "src/common/LightweightDWARFParser.hpp"
+#include "src/extractors/LightweightDWARFParser.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
 

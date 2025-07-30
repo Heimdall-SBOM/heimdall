@@ -51,13 +51,15 @@ limitations under the License.
 /**
  * @brief Function pointer types for plugin interface
  */
-using init_func_t                  = int (*)(void*);
-using set_format_func_t            = int (*)(const char*);
-using set_cyclonedx_version_func_t = int (*)(const char*);
-using set_spdx_version_func_t      = int (*)(const char*);
-using set_output_path_func_t       = int (*)(const char*);
-using process_input_file_func_t    = int (*)(const char*);
-using finalize_func_t              = void (*)();
+using init_func_t                         = int (*)(void*);
+using set_format_func_t                   = int (*)(const char*);
+using set_cyclonedx_version_func_t        = int (*)(const char*);
+using set_spdx_version_func_t             = int (*)(const char*);
+using set_output_path_func_t              = int (*)(const char*);
+using process_input_file_func_t           = int (*)(const char*);
+using finalize_func_t                     = void (*)();
+using set_include_system_libraries_func_t = int (*)(int);
+using set_verbose_func_t                  = void (*)(bool);
 
 /**
  * @brief Generate SBOM from binary file using a dynamic plugin
@@ -171,6 +173,7 @@ struct SBOMConfig
    const char* cyclonedx_version       = "1.6";
    const char* spdx_version            = "2.3";
    bool        transitive_dependencies = true;
+   bool        verbose                 = false;
 
    // Signing options
    const char* sign_key_path  = nullptr;
@@ -316,6 +319,10 @@ bool parse_arguments(int argc, char* argv[], SBOMConfig& config)
          print_help();
          return false;
       }
+      else if (strcmp(argv[i], "--verbose") == 0)
+      {
+         config.verbose = true;
+      }
       else if (strcmp(argv[i], "--no-transitive-dependencies") == 0)
       {
          config.transitive_dependencies = false;
@@ -401,7 +408,9 @@ int load_plugin_functions(const char* plugin_path, void*& handle, init_func_t& o
                           set_spdx_version_func_t&      set_spdx_version,
                           set_output_path_func_t&       set_output_path,
                           process_input_file_func_t& process_input_file, finalize_func_t& finalize,
-                          int (*&set_transitive)(int), int (*&set_ali_file_path)(const char*))
+                          int (*&set_transitive)(int), int (*&set_ali_file_path)(const char*),
+                          set_include_system_libraries_func_t& set_include_system_libraries,
+                          set_verbose_func_t&                  set_verbose)
 {
    // Load the plugin shared library
    handle = dlopen(plugin_path, RTLD_LAZY);
@@ -423,6 +432,9 @@ int load_plugin_functions(const char* plugin_path, void*& handle, init_func_t& o
 
    set_transitive    = (int (*)(int))dlsym(handle, "heimdall_set_transitive_dependencies");
    set_ali_file_path = (int (*)(const char*))dlsym(handle, "heimdall_set_ali_file_path");
+   set_include_system_libraries =
+      (set_include_system_libraries_func_t)dlsym(handle, "heimdall_set_include_system_libraries");
+   set_verbose = (set_verbose_func_t)dlsym(handle, "heimdall_set_verbose");
 
    // Check that all required functions are available
    if (!onload || !set_format || !set_output_path || !process_input_file || !finalize)
@@ -430,6 +442,18 @@ int load_plugin_functions(const char* plugin_path, void*& handle, init_func_t& o
       std::cerr << "Failed to get function symbols: " << dlerror() << std::endl;
       dlclose(handle);
       return 1;
+   }
+
+   // Debug: Check if optional functions are available
+   if (!set_include_system_libraries)
+   {
+      std::cerr << "Warning: heimdall_set_include_system_libraries function not found in plugin"
+                << std::endl;
+   }
+   else
+   {
+      std::cerr << "Debug: heimdall_set_include_system_libraries function loaded successfully"
+                << std::endl;
    }
 
    return 0;
@@ -450,13 +474,12 @@ int load_plugin_functions(const char* plugin_path, void*& handle, init_func_t& o
  * @param set_ali_file_path set_ali_file_path function pointer
  * @return 0 on success, 1 on failure
  */
-int configure_and_run_plugin(const SBOMConfig& config, void* handle, init_func_t onload,
-                             set_format_func_t            set_format,
-                             set_cyclonedx_version_func_t set_cyclonedx_version,
-                             set_spdx_version_func_t      set_spdx_version,
-                             set_output_path_func_t       set_output_path,
-                             process_input_file_func_t process_input_file, finalize_func_t finalize,
-                             int (*set_transitive)(int), int (*set_ali_file_path)(const char*))
+int configure_and_run_plugin(
+   const SBOMConfig& config, void* handle, init_func_t onload, set_format_func_t set_format,
+   set_cyclonedx_version_func_t set_cyclonedx_version, set_spdx_version_func_t set_spdx_version,
+   set_output_path_func_t set_output_path, process_input_file_func_t process_input_file,
+   finalize_func_t finalize, int (*set_transitive)(int), int (*set_ali_file_path)(const char*),
+   set_include_system_libraries_func_t set_include_system_libraries, set_verbose_func_t set_verbose)
 {
    // Initialize the plugin
    if (onload(nullptr) != 0)
@@ -464,6 +487,12 @@ int configure_and_run_plugin(const SBOMConfig& config, void* handle, init_func_t
       std::cerr << "Failed to initialize plugin" << std::endl;
       dlclose(handle);
       return 1;
+   }
+
+   // Set verbose flag if supported
+   if (set_verbose)
+   {
+      set_verbose(config.verbose);
    }
 
    // Set transitive dependencies flag after plugin is initialized
@@ -478,6 +507,13 @@ int configure_and_run_plugin(const SBOMConfig& config, void* handle, init_func_t
       std::cerr << "Failed to set Ada file path" << std::endl;
       dlclose(handle);
       return 1;
+   }
+
+   // Set include system libraries flag if specified
+   if (set_include_system_libraries)
+   {
+      std::cerr << "Debug: Calling set_include_system_libraries(1)" << std::endl;
+      set_include_system_libraries(1);  // Enable system libraries
    }
 
    // Set the output format
@@ -517,7 +553,7 @@ int configure_and_run_plugin(const SBOMConfig& config, void* handle, init_func_t
    // Process the binary file
    if (process_input_file(config.binary_path) != 0)
    {
-      std::cerr << "Failed to process binary" << std::endl;
+      std::cerr << "Failed to process binary: " << config.binary_path << std::endl;
       dlclose(handle);
       return 1;
    }
@@ -653,10 +689,13 @@ int main(int argc, char* argv[])
    finalize_func_t              finalize;
    int (*set_transitive)(int);
    int (*set_ali_file_path)(const char*);
+   set_include_system_libraries_func_t set_include_system_libraries;
+   set_verbose_func_t                  set_verbose;
 
    if (load_plugin_functions(config.plugin_path, handle, onload, set_format, set_cyclonedx_version,
                              set_spdx_version, set_output_path, process_input_file, finalize,
-                             set_transitive, set_ali_file_path) != 0)
+                             set_transitive, set_ali_file_path, set_include_system_libraries,
+                             set_verbose) != 0)
    {
       return 1;
    }
@@ -664,7 +703,8 @@ int main(int argc, char* argv[])
    // Configure and run the plugin
    if (configure_and_run_plugin(config, handle, onload, set_format, set_cyclonedx_version,
                                 set_spdx_version, set_output_path, process_input_file, finalize,
-                                set_transitive, set_ali_file_path) != 0)
+                                set_transitive, set_ali_file_path, set_include_system_libraries,
+                                set_verbose) != 0)
    {
       dlclose(handle);
       return 1;

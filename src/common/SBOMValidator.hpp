@@ -16,19 +16,19 @@ limitations under the License.
 
 /**
  * @file SBOMValidator.hpp
- * @brief SBOM validation framework for SPDX and CycloneDX formats
+ * @brief SBOM validation framework using format handlers
  * @author Trevor Bakker
  * @date 2025
  *
  * This file provides a comprehensive validation framework for Software Bill of Materials (SBOM)
- * documents in both SPDX and CycloneDX formats. It includes:
+ * documents using the new modular format handlers. It includes:
  * - Abstract base class for SBOM validators
- * - Concrete implementations for SPDX and CycloneDX
+ * - Unified validator that uses format handlers
  * - Factory pattern for creating validators
  * - Validation result structure with error handling
  *
  * Supported formats:
- * - SPDX 2.3 and 3.0
+ * - SPDX 2.3, 3.0.0, and 3.0.1
  * - CycloneDX 1.4, 1.5, and 1.6
  */
 
@@ -38,6 +38,7 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <vector>
+#include "SBOMFormats.hpp"
 
 namespace heimdall
 {
@@ -121,8 +122,8 @@ struct ValidationResult
 /**
  * @brief Abstract base class for SBOM validators
  *
- * This class defines the interface for SBOM validators. Concrete implementations
- * should inherit from this class and implement the pure virtual methods.
+ * This class defines the interface for SBOM validators. The unified validator
+ * uses format handlers to perform validation.
  */
 class SBOMValidator
 {
@@ -140,233 +141,152 @@ class SBOMValidator
    virtual ValidationResult validate(const std::string& filePath) = 0;
 
    /**
-    * @brief Validate SBOM content from string
-    * @param content SBOM content as string to validate
+    * @brief Validate SBOM content
+    * @param content SBOM content to validate
     * @return ValidationResult containing validation status and any errors/warnings
     */
    virtual ValidationResult validateContent(const std::string& content) = 0;
 
    /**
-    * @brief Get the name of this validator
-    * @return String containing the validator name
+    * @brief Get the name of the validator
+    * @return Validator name
     */
    virtual std::string getName() const = 0;
 };
 
 /**
- * @brief SPDX validator implementation
+ * @brief Unified SBOM validator that uses format handlers
  *
- * Validates SPDX (Software Package Data Exchange) documents according to
- * the SPDX specification. Supports both SPDX 2.3 and 3.0 formats.
+ * This validator uses the SBOMFormatFactory to create appropriate format handlers
+ * and delegates validation to them. It automatically detects the format and version
+ * from the content.
  */
-class SPDXValidator : public SBOMValidator
+class UnifiedSBOMValidator : public SBOMValidator
 {
    public:
    /**
-    * @brief Validate an SPDX file
-    * @param filePath Path to the SPDX file
-    * @return ValidationResult with validation status
+    * @brief Default constructor
+    */
+   UnifiedSBOMValidator() = default;
+
+   /**
+    * @brief Constructor with format specification
+    * @param format The format this validator handles (spdx, cyclonedx)
+    */
+   UnifiedSBOMValidator(const std::string& format) : format_(format) {}
+
+   /**
+    * @brief Destructor
+    */
+   ~UnifiedSBOMValidator() override = default;
+
+   /**
+    * @brief Validate an SBOM file
+    * @param filePath Path to the SBOM file to validate
+    * @return ValidationResult containing validation status and any errors/warnings
     */
    ValidationResult validate(const std::string& filePath) override;
 
    /**
-    * @brief Validate SPDX content from string
-    * @param content SPDX content as string
-    * @return ValidationResult with validation status
+    * @brief Validate SBOM content
+    * @param content SBOM content to validate
+    * @return ValidationResult containing validation status and any errors/warnings
     */
    ValidationResult validateContent(const std::string& content) override;
 
    /**
-    * @brief Get the validator name
-    * @return "SPDX Validator"
+    * @brief Validate SBOM content with specific format and version
+    * @param content SBOM content to validate
+    * @param format Format name (spdx, cyclonedx)
+    * @param version Format version
+    * @return ValidationResult containing validation status and any errors/warnings
+    */
+   ValidationResult validateContent(const std::string& content, const std::string& format,
+                                    const std::string& version);
+
+   /**
+    * @brief Get the name of the validator
+    * @return Validator name
     */
    std::string getName() const override
    {
-      return "SPDX Validator";
+      if (format_ == "spdx")
+      {
+         return "SPDX Validator";
+      }
+      else if (format_ == "cyclonedx")
+      {
+         return "CycloneDX Validator";
+      }
+      else
+      {
+         return "UnifiedSBOMValidator";
+      }
    }
 
-   /**
-    * @brief Validate an SPDX file with specific version
-    * @param filePath Path to the SPDX file
-    * @param version SPDX version to validate against
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validate(const std::string& filePath, const std::string& version);
-
-   /**
-    * @brief Validate SPDX content with specific version
-    * @param content SPDX content as string
-    * @param version SPDX version to validate against
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validateContent(const std::string& content, const std::string& version);
-
    private:
-   /**
-    * @brief Trim whitespace from a string
-    * @param str The string to trim
-    * @return Trimmed string
-    */
-   std::string trimWhitespace(const std::string& str);
+   std::string format_;  ///< The format this validator handles
 
    /**
-    * @brief Validate required fields in SPDX document
-    * @param result ValidationResult to update
-    * @param fields Map of field names to their presence status
+    * @brief Detect format from content
+    * @param content SBOM content to analyze
+    * @return Detected format name
     */
-   void validateRequiredFields(ValidationResult& result, const std::map<std::string, bool>& fields);
+   std::string detectFormat(const std::string& content) const;
 
    /**
-    * @brief Process a single SPDX line
-    * @param line The SPDX line to process
-    * @param result ValidationResult to update
-    * @param fields Map of field names to their presence status
+    * @brief Extract version from content
+    * @param content SBOM content to analyze
+    * @param format Detected format
+    * @return Extracted version
     */
-   void processSPDXLine(const std::string& line, ValidationResult& result,
-                        std::map<std::string, bool>& fields);
+   std::string extractVersion(const std::string& content, const std::string& format) const;
 
    /**
-    * @brief Validate SPDX 2.3 content
-    * @param content SPDX 2.3 content as string
-    * @return ValidationResult with validation status
+    * @brief Validate SPDX content
+    * @param content SPDX content to validate
+    * @param version SPDX version
+    * @return ValidationResult
     */
-   ValidationResult validateSPDX2_3(const std::string& content);
+   ValidationResult validateSPDX(const std::string& content, const std::string& version);
 
    /**
-    * @brief Validate SPDX 3.0 content
-    * @param content SPDX 3.0 content as string
-    * @return ValidationResult with validation status
+    * @brief Validate CycloneDX content
+    * @param content CycloneDX content to validate
+    * @param version CycloneDX version
+    * @return ValidationResult
     */
-   ValidationResult validateSPDX3_0(const std::string& content);
-
-   /**
-    * @brief Check if a string is a valid SPDX identifier
-    * @param identifier The identifier to validate
-    * @return true if valid, false otherwise
-    */
-   bool isValidSPDXIdentifier(const std::string& identifier);
-
-   /**
-    * @brief Check if a string is a valid SPDX license expression
-    * @param license The license expression to validate
-    * @return true if valid, false otherwise
-    */
-   bool isValidSPDXLicenseExpression(const std::string& license);
+   ValidationResult validateCycloneDX(const std::string& content, const std::string& version);
 };
 
 /**
- * @brief CycloneDX validator implementation
+ * @brief Factory for creating SBOM validators
  *
- * Validates CycloneDX documents according to the CycloneDX specification.
- * Supports versions 1.4, 1.5, and 1.6.
- */
-class CycloneDXValidator : public SBOMValidator
-{
-   public:
-   /**
-    * @brief Validate a CycloneDX file
-    * @param filePath Path to the CycloneDX file
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validate(const std::string& filePath) override;
-
-   /**
-    * @brief Validate CycloneDX content from string
-    * @param content CycloneDX content as string
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validateContent(const std::string& content) override;
-
-   /**
-    * @brief Get the validator name
-    * @return "CycloneDX Validator"
-    */
-   std::string getName() const override
-   {
-      return "CycloneDX Validator";
-   }
-
-   /**
-    * @brief Validate a CycloneDX file with specific version
-    * @param filePath Path to the CycloneDX file
-    * @param version CycloneDX version to validate against
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validate(const std::string& filePath, const std::string& version);
-
-   /**
-    * @brief Validate CycloneDX content with specific version
-    * @param content CycloneDX content as string
-    * @param version CycloneDX version to validate against
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validateContent(const std::string& content, const std::string& version);
-
-   private:
-   /**
-    * @brief Extract version from CycloneDX content
-    * @param content CycloneDX content as string
-    * @return Version string
-    */
-   std::string extractVersion(const std::string& content);
-
-   /**
-    * @brief Validate CycloneDX 1.4 content
-    * @param content CycloneDX 1.4 content as string
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validateCycloneDX1_4(const std::string& content);
-
-   /**
-    * @brief Validate CycloneDX 1.5 content
-    * @param content CycloneDX 1.5 content as string
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validateCycloneDX1_5(const std::string& content);
-
-   /**
-    * @brief Validate CycloneDX 1.6 content
-    * @param content CycloneDX 1.6 content as string
-    * @return ValidationResult with validation status
-    */
-   ValidationResult validateCycloneDX1_6(const std::string& content);
-
-   /**
-    * @brief Check if a string is a valid CycloneDX version
-    * @param version The version string to validate
-    * @return true if valid, false otherwise
-    */
-   bool isValidCycloneDXVersion(const std::string& version);
-
-   /**
-    * @brief Check if a string is a valid UUID
-    * @param uuid The UUID string to validate
-    * @return true if valid, false otherwise
-    */
-   bool isValidUUID(const std::string& uuid);
-};
-
-/**
- * @brief Factory class for creating SBOM validators
- *
- * This class provides a factory pattern for creating appropriate validators
- * based on the SBOM format. It supports SPDX and CycloneDX formats.
+ * This factory provides a unified interface for creating validators.
+ * Currently, it creates UnifiedSBOMValidator instances.
  */
 class SBOMValidatorFactory
 {
    public:
    /**
-    * @brief Create a validator for the given format
-    * @param format SBOM format ("spdx" or "cyclonedx")
-    * @return Unique pointer to the created validator, or nullptr if format is not supported
+    * @brief Create a validator for the specified format
+    * @param format Format name (spdx, cyclonedx, or empty for auto-detection)
+    * @return Unique pointer to the created validator
     */
-   static std::unique_ptr<SBOMValidator> createValidator(const std::string& format);
+   static std::unique_ptr<SBOMValidator> createValidator(const std::string& format = "");
 
    /**
-    * @brief Get list of supported SBOM formats
+    * @brief Get supported formats
     * @return Vector of supported format names
     */
    static std::vector<std::string> getSupportedFormats();
+
+   /**
+    * @brief Get supported versions for a format
+    * @param format Format name
+    * @return Vector of supported versions
+    */
+   static std::vector<std::string> getSupportedVersions(const std::string& format);
 };
 
 }  // namespace heimdall

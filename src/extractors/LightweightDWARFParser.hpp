@@ -19,15 +19,25 @@ limitations under the License.
  * @brief Lightweight DWARF parser for C++11/14 compatibility
  * @author Trevor Bakker
  * @date 2025
+ * @version 2.0.0
  *
- * This file provides a lightweight DWARF parser that extracts debug information
- * without using LLVM's problematic template features. It's designed for C++11/14
- * compatibility and provides the same interface as the LLVM-based DWARFExtractor.
+ * This file provides the LightweightDWARFParser class which implements the IBinaryExtractor
+ * interface for extracting DWARF debug information from ELF files without using LLVM's
+ * problematic template features.
  *
- * C++11 Support:
- * - Uses C++11-compatible features only
- * - No dependency on LLVM headers for C++11 builds
- * - Custom implementations of C++14/17 features when needed
+ * Features:
+ * - Extract source files from DWARF debug information
+ * - Extract compile units from DWARF debug information
+ * - Extract function names from DWARF debug information
+ * - Fallback to symbol table extraction when DWARF is not available
+ * - Thread-safe implementation
+ * - C++11 compatible (no LLVM dependency for C++11 builds)
+ * - Integration with binary format factory
+ *
+ * Dependencies:
+ * - IBinaryExtractor interface
+ * - ComponentInfo structures
+ * - ELF headers (Linux only)
  */
 
 #pragma once
@@ -40,8 +50,12 @@ limitations under the License.
 #include <string>
 #include <vector>
 
-// C++11 compatibility includes
-#include "../compat/compatibility.hpp"
+#include "../common/ComponentInfo.hpp"
+#include "../interfaces/IBinaryExtractor.hpp"
+
+#ifdef __linux__
+#include <elf.h>
+#endif
 
 namespace heimdall
 {
@@ -53,6 +67,9 @@ namespace heimdall
  * problematic template features. It implements a subset of DWARF parsing
  * that covers the most common use cases for SBOM generation.
  *
+ * The parser implements the IBinaryExtractor interface and specializes in
+ * extracting debug information from ELF files.
+ *
  * Features:
  * - Extract source files from DWARF debug information
  * - Extract compile units from DWARF debug information
@@ -61,7 +78,7 @@ namespace heimdall
  * - Thread-safe implementation
  * - C++11 compatible (no LLVM dependency for C++11 builds)
  */
-class LightweightDWARFParser
+class LightweightDWARFParser : public IBinaryExtractor
 {
    public:
    /**
@@ -72,8 +89,97 @@ class LightweightDWARFParser
    /**
     * @brief Destructor
     */
-   ~LightweightDWARFParser();
+   ~LightweightDWARFParser() override;
 
+   /**
+    * @brief Copy constructor
+    * @param other The LightweightDWARFParser to copy from
+    */
+   LightweightDWARFParser(const LightweightDWARFParser& other);
+
+   /**
+    * @brief Move constructor
+    * @param other The LightweightDWARFParser to move from
+    */
+   LightweightDWARFParser(LightweightDWARFParser&& other) noexcept;
+
+   /**
+    * @brief Copy assignment operator
+    * @param other The LightweightDWARFParser to copy from
+    * @return Reference to this LightweightDWARFParser
+    */
+   LightweightDWARFParser& operator=(const LightweightDWARFParser& other);
+
+   /**
+    * @brief Move assignment operator
+    * @param other The LightweightDWARFParser to move from
+    * @return Reference to this LightweightDWARFParser
+    */
+   LightweightDWARFParser& operator=(LightweightDWARFParser&& other) noexcept;
+
+   // IBinaryExtractor interface implementation
+   /**
+    * @brief Extract symbol information from ELF file (functions from DWARF)
+    *
+    * @param filePath Path to the ELF file
+    * @param symbols Output vector to store extracted symbols
+    * @return true if symbols were successfully extracted
+    * @return false if extraction failed or no symbols found
+    */
+   bool extractSymbols(const std::string& filePath, std::vector<SymbolInfo>& symbols) override;
+
+   /**
+    * @brief Extract section information from ELF file
+    *
+    * @param filePath Path to the ELF file
+    * @param sections Output vector to store extracted sections
+    * @return true if sections were successfully extracted
+    * @return false if extraction failed or no sections found
+    */
+   bool extractSections(const std::string& filePath, std::vector<SectionInfo>& sections) override;
+
+   /**
+    * @brief Extract version information from ELF file
+    *
+    * @param filePath Path to the ELF file
+    * @param version Output string to store version information
+    * @return true if version was successfully extracted
+    * @return false if extraction failed or no version found
+    */
+   bool extractVersion(const std::string& filePath, std::string& version) override;
+
+   /**
+    * @brief Extract dependency information from ELF file
+    *
+    * @param filePath Path to the ELF file
+    * @return Vector of dependency strings (library names, etc.)
+    */
+   std::vector<std::string> extractDependencies(const std::string& filePath) override;
+
+   /**
+    * @brief Check if the extractor can handle the given file format
+    *
+    * @param filePath Path to the ELF file
+    * @return true if this extractor can process the file
+    * @return false if the file format is not supported
+    */
+   bool canHandle(const std::string& filePath) const override;
+
+   /**
+    * @brief Get the name of the binary format this extractor handles
+    *
+    * @return String identifier for the binary format
+    */
+   std::string getFormatName() const override;
+
+   /**
+    * @brief Get the priority of this extractor (lower numbers = higher priority)
+    *
+    * @return Priority value (0 = highest priority)
+    */
+   int getPriority() const override;
+
+   // Legacy interface methods for backward compatibility
    /**
     * @brief Extract source files from DWARF debug information
     *
@@ -124,9 +230,12 @@ class LightweightDWARFParser
     * @param filePath Path to the ELF file to check
     * @return true if DWARF info is present, false otherwise
     */
-   bool hasDWARFInfo(const std::string& filePath);
+   bool hasDWARFInfo(const std::string& filePath) const;
 
    private:
+   class Impl;
+   std::unique_ptr<Impl> pImpl;
+
    /**
     * @brief Parse DWARF debug info section
     *
@@ -190,7 +299,7 @@ class LightweightDWARFParser
     * @return true if sections were found, false otherwise
     */
    bool findDWARFSections(const std::string& filePath, uint64_t& debugInfoOffset,
-                          uint64_t& debugLineOffset, uint64_t& debugAbbrevOffset);
+                          uint64_t& debugLineOffset, uint64_t& debugAbbrevOffset) const;
 
    /**
     * @brief Read DWARF string from string table
@@ -251,28 +360,6 @@ class LightweightDWARFParser
       uint64_t sh_addralign;
       uint64_t sh_entsize;
    };
-
-   // DWARF parsing helpers
-   struct DWARFAbbrevEntry
-   {
-      uint32_t                                   code;
-      uint32_t                                   tag;
-      bool                                       has_children;
-      std::vector<std::pair<uint32_t, uint32_t>> attributes;  // form, name
-   };
-
-   struct DWARFDie
-   {
-      uint32_t                                      offset;
-      uint32_t                                      tag;
-      bool                                          has_children;
-      std::vector<std::pair<uint32_t, std::string>> attributes;  // name, value
-   };
-
-   // C++11 compatibility: Use std::set instead of std::unordered_set for better C++11 support
-   std::set<std::string> uniqueSourceFiles;
-   std::set<std::string> uniqueCompileUnits;
-   std::set<std::string> uniqueFunctions;
 };
 
 }  // namespace heimdall

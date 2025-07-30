@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../../src/common/AdaExtractor.hpp"
+#include "../../src/extractors/AdaExtractor.hpp"
 
 void showAliFileContent(const std::string& aliFile)
 {

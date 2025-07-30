@@ -838,8 +838,8 @@ class string_view
    {
       if (pos > size_)
          return string_view();
-    size_t actual_count =
-      (count == std::string::npos) ? (size_ - pos) : std::min(count, size_ - pos);
+      size_t actual_count = (count == std::string::npos) ? (size_ - pos)
+                                                         : std::min(count, size_ - pos);
       return string_view(data_ + pos, actual_count);
    }
 

@@ -169,10 +169,11 @@ bool PluginInterface::shouldProcessFile(const std::string& filePath) const
    // Only process known file types
    std::vector<std::string> validExtensions = {".o",  ".obj",   ".a",   ".lib",
                                                ".so", ".dylib", ".dll", ".exe"};
-  
+
    // Accept files with valid extensions OR files with no extension (executables on macOS/Linux)
    return std::find(validExtensions.begin(), validExtensions.end(), extension) !=
-          validExtensions.end() || extension.empty();
+             validExtensions.end() ||
+          extension.empty();
 }
 
 /**
@@ -467,10 +468,7 @@ void logError(const std::string& message)
    std::cerr << "[ERROR] " << message << std::endl;
 }
 
-void logDebug(const std::string& message)
-{
-
-}
+void logDebug(const std::string& message) {}
 
 }  // namespace PluginUtils
 

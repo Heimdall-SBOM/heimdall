@@ -18,29 +18,59 @@ message(STATUS "LLVM_LIBRARIES: ${LLVM_LIBRARIES}")
 set(HEIMDALL_CORE_SOURCES
     common/SBOMGenerator.cpp
     common/ComponentInfo.cpp
-    common/MetadataExtractor.cpp
-    common/AdaExtractor.cpp
-    common/LazySymbolExtractor.cpp
-    common/LightweightDWARFParser.cpp
+    extractors/AdaExtractor.cpp
+               extractors/LazySymbolExtractor.cpp
+   extractors/LightweightDWARFParser.cpp
+   extractors/DWARFExtractor.cpp
     common/Utils.cpp
     common/PluginInterface.cpp
     common/SBOMValidator.cpp
     common/SBOMComparator.cpp
     common/SBOMSigner.cpp
+    common/SBOMFormatFactory.cpp
+    common/CycloneDXHandler.cpp
+    common/SPDX2_3Handler.cpp
+    common/SPDX3_0_0Handler.cpp
+    common/SPDX3_0_1Handler.cpp
     common/Profiler.cpp
+    # New foundation components
+    interfaces/IBinaryExtractor.hpp
+    factories/BinaryFormatFactory.cpp
+    factories/BinaryFormatFactory.hpp
+    utils/BinaryReader.cpp
+    utils/BinaryReader.hpp
+    utils/FileUtils.cpp
+    utils/FileUtils.hpp
+    # New extractors
+    extractors/ELFExtractor.cpp
+    extractors/ELFExtractor.hpp
+    extractors/MachOExtractor.cpp
+    extractors/MachOExtractor.hpp
+    extractors/PEExtractor.cpp
+    extractors/PEExtractor.hpp
+    extractors/ArchiveExtractor.cpp
+    extractors/ArchiveExtractor.hpp
+    # New detectors
+    detectors/PackageManagerDetector.cpp
+    detectors/PackageManagerDetector.hpp
+    detectors/LicenseDetector.cpp
+    detectors/LicenseDetector.hpp
+    detectors/VersionDetector.cpp
+    detectors/VersionDetector.hpp
+    # New integrated MetadataExtractor
+    common/MetadataExtractor.cpp
+    common/MetadataExtractor.hpp
+    common/MetadataHelpers.cpp
+    common/MetadataHelpers.hpp
+    # Performance optimization components
+    common/PerformanceMonitor.cpp
+    common/PerformanceMonitor.hpp
+    common/MetadataCache.hpp
 )
 
-# Conditionally add DWARFExtractor.cpp
-if(HEIMDALL_FULL_DWARF)
-    list(APPEND HEIMDALL_CORE_SOURCES common/DWARFExtractor.cpp)
-elseif(HEIMDALL_BASIC_DWARF)
-    # For C++11/14, don't include DWARFExtractor.cpp (use lightweight parser instead)
-    # The lightweight parser is always included and provides DWARF functionality
-    message(STATUS "Using lightweight DWARF parser for C++${CMAKE_CXX_STANDARD} compatibility")
-else()
-    # No DWARF support
-    message(STATUS "DWARF support disabled")
-endif()
+# DWARF support is now handled by LightweightDWARFParser in extractors/
+# The old DWARFExtractor.cpp has been moved to archive/
+message(STATUS "Using lightweight DWARF parser for DWARF functionality")
 
 add_library(heimdall-core SHARED ${HEIMDALL_CORE_SOURCES})
 

@@ -1,4 +1,5 @@
 # Ignore build artifacts and CMake files
+backup/
 build/
 build-cpp11/
 build-cpp14/

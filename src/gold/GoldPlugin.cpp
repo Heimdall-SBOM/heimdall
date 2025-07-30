@@ -22,7 +22,7 @@ limitations under the License.
 #include <sstream>
 #include <string>
 #include <vector>
-#include "../common/MetadataExtractor.hpp"
+// MetadataExtractor.hpp no longer needed - GoldAdapter uses MetadataExtractor
 #include "../common/Utils.hpp"
 #include "../compat/compatibility.hpp"
 #include "GoldAdapter.hpp"
@@ -379,35 +379,8 @@ extern "C"
          std::cout << "Heimdall: Processing input file: " << path << "\n";
       }
 
-      // Process the file through the adapter
+      // Process the file through the adapter (includes dependency detection)
       globalAdapter->processInputFile(path);
-
-      // --- NEW: Detect and process dependencies ---
-      std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(path);
-      for (const auto& dep : deps)
-      {
-         // Use the comprehensive library resolver like LLD adapter
-         std::string depPath = heimdall::Utils::resolveLibraryPath(dep);
-         if (!depPath.empty() && heimdall::Utils::fileExists(depPath))
-         {
-            // Avoid duplicate processing
-            if (std::find(processedLibraries.begin(), processedLibraries.end(), depPath) ==
-                processedLibraries.end())
-            {
-               processedLibraries.push_back(depPath);
-               if (verbose)
-               {
-                  std::cout << "Heimdall: Auto-processing dependency library: " << depPath << "\n";
-               }
-               globalAdapter->processLibrary(depPath);
-            }
-         }
-         else if (verbose)
-         {
-            std::cout << "Heimdall: Could not resolve dependency: " << dep << "\n";
-         }
-      }
-      // --- END NEW ---
 
       // Generate a simple SBOM entry
       std::string fileName = getFileName(path);
@@ -498,6 +471,21 @@ extern "C"
          {
             std::cout << "Heimdall: Transitive dependencies "
                       << (transitive ? "enabled" : "disabled") << "\n";
+         }
+         return 0;
+      }
+      return -1;
+   }
+
+   int heimdall_set_include_system_libraries(int include)
+   {
+      if (globalAdapter)
+      {
+         globalAdapter->setIncludeSystemLibraries(include != 0);
+         if (verbose)
+         {
+            std::cout << "Heimdall: System libraries " << (include ? "enabled" : "disabled")
+                      << "\n";
          }
          return 0;
       }

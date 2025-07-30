@@ -10,7 +10,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-#include "../../src/common/AdaExtractor.hpp"
+#include "../../src/extractors/AdaExtractor.hpp"
 
 struct EnhancedAliInfo
 {

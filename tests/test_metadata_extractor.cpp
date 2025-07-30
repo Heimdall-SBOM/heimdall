@@ -22,6 +22,7 @@ limitations under the License.
 #include "common/MetadataExtractor.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
+#include "factories/BinaryFormatFactory.hpp"
 
 using namespace heimdall;
 

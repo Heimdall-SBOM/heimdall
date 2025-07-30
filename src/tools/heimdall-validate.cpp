@@ -1,3 +1,19 @@
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 /**
  * @file heimdall-validate.cpp
  * @brief Command-line tool for validating, comparing, merging, and diffing SBOM files (SPDX,
@@ -16,8 +32,8 @@
 #include <string>
 #include <vector>
 #include "../common/SBOMComparator.hpp"
-#include "../common/SBOMValidator.hpp"
 #include "../common/SBOMSigner.hpp"
+#include "../common/SBOMValidator.hpp"
 
 using namespace heimdall;
 
@@ -44,7 +60,8 @@ void printUsage(const char* programName)
    std::cout << "Signature Verification:\n";
    std::cout << "  --key <key>          Path to public key file for signature verification\n";
    std::cout << "  --cert <cert>        Path to certificate file for signature verification\n";
-   std::cout << "                       Either --key or --cert must be specified for verify-signature\n\n";
+   std::cout
+      << "                       Either --key or --cert must be specified for verify-signature\n\n";
    std::cout << "Examples:\n";
    std::cout << "  # Validate SBOM format and content\n";
    std::cout << "  " << programName << " validate sbom.spdx\n";
@@ -62,11 +79,14 @@ void printUsage(const char* programName)
    std::cout << "  " << programName << " diff old.spdx new.spdx --report-format json\n";
    std::cout << "  " << programName << " diff old.cdx.json new.cdx.json --report-format csv\n\n";
    std::cout << "Notes:\n";
-   std::cout << "  - Signature verification supports JSF (JSON Signature Format) compliant signatures\n";
-   std::cout << "  - Supported signature algorithms: RS256, RS384, RS512, ES256, ES384, ES512, Ed25519\n";
+   std::cout
+      << "  - Signature verification supports JSF (JSON Signature Format) compliant signatures\n";
+   std::cout
+      << "  - Supported signature algorithms: RS256, RS384, RS512, ES256, ES384, ES512, Ed25519\n";
    std::cout << "  - Public key files should be in PEM format\n";
    std::cout << "  - Certificate files should be in PEM format\n";
-   std::cout << "  - Format auto-detection works for common file extensions (.spdx, .cdx.json, .json)\n";
+   std::cout
+      << "  - Format auto-detection works for common file extensions (.spdx, .cdx.json, .json)\n";
 }
 
 /**
@@ -178,10 +198,10 @@ int validateCommand(const std::vector<std::string>& args)
       // Only CycloneDXValidator and SPDXValidator support this
       if (format == "cyclonedx" || format == "cyclone")
       {
-         auto* cyclonedx = dynamic_cast<heimdall::CycloneDXValidator*>(validator.get());
+         auto* cyclonedx = dynamic_cast<heimdall::UnifiedSBOMValidator*>(validator.get());
          if (cyclonedx)
          {
-            result = cyclonedx->validate(filePath, version);
+            result = cyclonedx->validate(filePath);
          }
          else
          {
@@ -190,10 +210,10 @@ int validateCommand(const std::vector<std::string>& args)
       }
       else if (format == "spdx")
       {
-         auto* spdx = dynamic_cast<heimdall::SPDXValidator*>(validator.get());
+         auto* spdx = dynamic_cast<heimdall::UnifiedSBOMValidator*>(validator.get());
          if (spdx)
          {
-            result = spdx->validate(filePath, version);
+            result = spdx->validate(filePath);
          }
          else
          {
@@ -291,12 +311,12 @@ int verifySignatureCommand(const std::vector<std::string>& args)
    }
 
    std::string sbomContent((std::istreambuf_iterator<char>(file)),
-                          std::istreambuf_iterator<char>());
+                           std::istreambuf_iterator<char>());
    file.close();
 
    // Create signer and load public key
    SBOMSigner signer;
-   bool keyLoaded = false;
+   bool       keyLoaded = false;
 
    if (!keyPath.empty())
    {
@@ -358,7 +378,8 @@ int verifySignatureCommand(const std::vector<std::string>& args)
             std::cout << "  Excluded fields: ";
             for (size_t i = 0; i < signatureInfo.excludes.size(); ++i)
             {
-               if (i > 0) std::cout << ", ";
+               if (i > 0)
+                  std::cout << ", ";
                std::cout << signatureInfo.excludes[i];
             }
             std::cout << "\n";
@@ -478,7 +499,7 @@ int compareCommand(const std::vector<std::string>& args)
    }
 
    // Create comparator
-   SBOMComparator comparator;
+   UnifiedSBOMComparator comparator;
 
    // Compare
    std::cout << "Comparing " << oldFile << " and " << newFile << " (" << format << " format)...\n";
@@ -548,7 +569,7 @@ int diffCommand(const std::vector<std::string>& args)
    }
 
    // Create comparator
-   SBOMComparator comparator;
+   UnifiedSBOMComparator comparator;
 
    // Compare
    std::cout << "Generating diff report for " << oldFile << " and " << newFile << "...\n";
@@ -618,7 +639,7 @@ int mergeCommand(const std::vector<std::string>& args)
    }
 
    // Create comparator
-   SBOMComparator comparator;
+   UnifiedSBOMComparator comparator;
 
    // Merge
    std::cout << "Merging " << inputFiles.size() << " SBOM files...\n";

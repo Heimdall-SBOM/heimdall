@@ -49,7 +49,7 @@ class SBOMGenerator::Impl
    std::string spdxVersion =
       "2.3";  ///< SPDX specification version (default to 2.3 for compatibility)
    std::unique_ptr<MetadataExtractor> metadataExtractor;  ///< Metadata extractor instance
-   BuildInfo                          buildInfo;          ///< Build information
+   BuildInfo                            buildInfo;          ///< Build information
    bool transitiveDependencies = true;  ///< Whether to include transitive dependencies
 
    /**
@@ -1041,11 +1041,13 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
    if (appName.empty() && !components.empty())
    {
-      // Find the main executable - prioritize executables, then any component with a good name
+      // First, try to find the main executable by looking for the one that matches the tool name
       for (const auto& pair : components)
       {
          const auto& component = pair.second;
-         if (component.fileType == FileType::Executable)
+         if (component.fileType == FileType::Executable &&
+             (component.name == "heimdall-sbom" ||
+              component.name.find("heimdall") != std::string::npos))
          {
             appName = component.name;
             if (!component.version.empty())
@@ -1055,44 +1057,12 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
             break;
          }
       }
-      
-      // If no executable found, look for app bundle executables (macOS)
-      if (appName.empty())
-      {
-         for (const auto& pair : components)
-         {
-            const auto& component = pair.second;
-            if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos &&
-                (component.fileType == FileType::Executable ||
-                 component.fileType == FileType::Unknown))
-            {
-               appName = component.name;
-               if (!component.version.empty())
-               {
-                  appVersion = component.version;
-               }
-               break;
-            }
-         }
-      }
-      
-      // If still no executable found, use the first component with a non-empty name
-      if (appName.empty())
-      {
-         for (const auto& pair : components)
-         {
-            const auto& component = pair.second;
-            if (!component.name.empty() && component.name != "Unknown")
-            {
-               appName = component.name;
-               if (!component.version.empty())
-               {
-                  appVersion = component.version;
-               }
-               break;
-            }
-         }
-      }
+   }
+
+   // If no real version is available, use 'unknown'
+   if (appVersion.empty() || appVersion == "ELF64-v1-x86_64")
+   {
+      appVersion = "Unknown";
    }
 
    ss << Utils::formatJsonValue(appName.empty() ? "Unknown" : appName) << ",\n";
@@ -1101,7 +1071,8 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
    ss << "      \"supplier\": {\n";
    ss << "        \"name\": \"Heimdall Project\"\n";
    ss << "      },\n";
-   ss << "      \"copyright\": \"Copyright 2025 Heimdall Project. Licensed under Apache License 2.0.\",\n";
+   ss << "      \"copyright\": \"Copyright 2025 Heimdall Project. Licensed under Apache License "
+         "2.0.\",\n";
    ss << "      \"licenses\": [\n";
    ss << "        {\n";
    ss << "          \"license\": {\n";
@@ -1149,7 +1120,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
             break;
          }
       }
-      
+
       // If no executable found, look for app bundle executables (macOS)
       if (mainAppName.empty())
       {
@@ -1166,7 +1137,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
             }
          }
       }
-      
+
       // If still no executable found, use the first component with a non-empty name
       if (mainAppName.empty())
       {
@@ -1189,10 +1160,10 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
 
       if (!first)
          ss << ",\n";
-      
-     ss << generateCycloneDXComponent(component);
 
-     first = false;
+      ss << generateCycloneDXComponent(component);
+
+      first = false;
    }
 
    ss << "\n  ]";
@@ -1222,28 +1193,29 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
             {
                ss << ",\n";
             }
-            
+
             // Generate BOM reference for this component
             std::string bomRef = component.name;
             if (!component.version.empty() && component.version != "UNKNOWN")
             {
                bomRef += "-" + component.version;
             }
-            
+
             ss << "    {\n";
             ss << "      \"ref\": \"" << bomRef << "\",\n";
             ss << "      \"dependsOn\": [\n";
-            
+
             for (size_t j = 0; j < component.dependencies.size(); ++j)
             {
                const auto& dep = component.dependencies[j];
-               
+
                // Try to find the dependency component to get its BOM reference
                std::string depBomRef = dep;  // Default to dependency path
                for (const auto& depPair : components)
                {
                   const auto& depComponent = depPair.second;
-                  if (depComponent.filePath == dep || Utils::getFileName(depComponent.filePath) == Utils::getFileName(dep))
+                  if (depComponent.filePath == dep ||
+                      Utils::getFileName(depComponent.filePath) == Utils::getFileName(dep))
                   {
                      depBomRef = depComponent.name;
                      if (!depComponent.version.empty() && depComponent.version != "UNKNOWN")
@@ -1253,7 +1225,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXDocument()
                      break;
                   }
                }
-               
+
                ss << "        \"" << depBomRef << "\"";
                if (j < component.dependencies.size() - 1)
                {
@@ -1353,16 +1325,16 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
 {
    std::stringstream ss;
    ss << "    {\n";
-   
+
    // Generate BOM reference based on component name and version
    std::string bomRef = component.name;
    if (!component.version.empty() && component.version != "UNKNOWN")
    {
       bomRef += "-" + component.version;
    }
-   
+
    ss << "      \"bom-ref\": \"" << bomRef << "\",\n";
-   
+
    // Determine the correct component type based on file type
    std::string componentType = "library";
    if (component.fileType == FileType::Executable)
@@ -1381,59 +1353,70 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
    {
       componentType = "library";
    }
-   
+
    ss << "      \"type\": \"" << componentType << "\",\n";
    ss << "      \"name\": " << Utils::formatJsonValue(component.name) << ",\n";
    ss << "      \"version\": "
       << Utils::formatJsonValue(component.version.empty() ? "UNKNOWN" : component.version) << ",\n";
-   
+
    // Enhanced description - only include if not empty
-   if (!component.description.empty()) {
+   if (!component.description.empty())
+   {
       ss << "      \"description\": " << Utils::formatJsonValue(component.description) << ",\n";
    }
-   
+
    // Scope - only include if not empty
-   if (!component.scope.empty()) {
+   if (!component.scope.empty())
+   {
       ss << "      \"scope\": \"" << component.scope << "\",\n";
    }
-   
+
    // Group - only include if not empty
-   if (!component.group.empty()) {
+   if (!component.group.empty())
+   {
       ss << "      \"group\": " << Utils::formatJsonValue(component.group) << ",\n";
    }
-   
+
    // MIME type - only include if not empty
-   if (!component.mimeType.empty()) {
+   if (!component.mimeType.empty())
+   {
       ss << "      \"mime-type\": " << Utils::formatJsonValue(component.mimeType) << ",\n";
    }
-   
+
    // Copyright - only include if not empty
-   if (!component.copyright.empty()) {
+   if (!component.copyright.empty())
+   {
       ss << "      \"copyright\": " << Utils::formatJsonValue(component.copyright) << ",\n";
    }
-   
+
    // CPE - only include if not empty
-   if (!component.cpe.empty()) {
+   if (!component.cpe.empty())
+   {
       ss << "      \"cpe\": " << Utils::formatJsonValue(component.cpe) << ",\n";
    }
-   
+
    // Supplier - always include with a default value if empty
    ss << "      \"supplier\": {\n";
-   ss << "        \"name\": " << Utils::formatJsonValue(component.supplier.empty() ? "Unknown" : component.supplier) << "\n";
+   ss << "        \"name\": "
+      << Utils::formatJsonValue(component.supplier.empty() ? "Unknown" : component.supplier)
+      << "\n";
    ss << "      },\n";
-   
+
    // Manufacturer - always include with a default value if empty
    ss << "      \"manufacturer\": {\n";
-   ss << "        \"name\": " << Utils::formatJsonValue(component.manufacturer.empty() ? "Unknown" : component.manufacturer) << "\n";
+   ss << "        \"name\": "
+      << Utils::formatJsonValue(component.manufacturer.empty() ? "Unknown" : component.manufacturer)
+      << "\n";
    ss << "      },\n";
-   
+
    // Publisher - only include if not empty, and as object with name field
-   if (!component.publisher.empty()) {
+   if (!component.publisher.empty())
+   {
       ss << "      \"publisher\": {\n";
       ss << "        \"name\": " << Utils::formatJsonValue(component.publisher) << "\n";
       ss << "      },\n";
    }
-   
+
    // Only include hash if we have a valid checksum
    if (!component.checksum.empty() && component.checksum.length() == 64)
    {
@@ -1445,30 +1428,34 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
       ss << "      ],\n";
    }
    ss << "      \"purl\": \"" << generatePURL(component) << "\"";
-   
+
    // External references - only include if we have any
-   bool hasExternalRefs = !component.downloadLocation.empty() || 
-                         !component.homepage.empty() ||
-                         std::any_of(component.properties.begin(), component.properties.end(),
-                                    [](const std::pair<const std::string, std::string>& prop) { return prop.first.find("external:") == 0; });
-   
-   if (hasExternalRefs) {
+   bool hasExternalRefs = !component.downloadLocation.empty() || !component.homepage.empty() ||
+                          std::any_of(component.properties.begin(), component.properties.end(),
+                                      [](const std::pair<const std::string, std::string>& prop)
+                                      { return prop.first.find("external:") == 0; });
+
+   if (hasExternalRefs)
+   {
       ss << ",\n      \"externalReferences\": [\n";
-      
+
       bool firstRef = true;
-      
+
       // Download location
-      if (!component.downloadLocation.empty()) {
+      if (!component.downloadLocation.empty())
+      {
          ss << "        {\n";
          ss << "          \"type\": \"distribution\",\n";
          ss << "          \"url\": " << Utils::formatJsonValue(component.downloadLocation) << "\n";
          ss << "        }";
          firstRef = false;
       }
-      
+
       // Homepage
-      if (!component.homepage.empty()) {
-         if (!firstRef) {
+      if (!component.homepage.empty())
+      {
+         if (!firstRef)
+         {
             ss << ",\n";
          }
          ss << "        {\n";
@@ -1477,13 +1464,16 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
          ss << "        }";
          firstRef = false;
       }
-      
+
       // Additional external references from properties
-      for (const auto& property : component.properties) {
-         const std::string& key = property.first;
+      for (const auto& property : component.properties)
+      {
+         const std::string& key   = property.first;
          const std::string& value = property.second;
-         if (key.find("external:") == 0) {
-            if (!firstRef) {
+         if (key.find("external:") == 0)
+         {
+            if (!firstRef)
+            {
                ss << ",\n";
             }
             ss << "        {\n";
@@ -1493,7 +1483,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
             firstRef = false;
          }
       }
-      
+
       ss << "\n      ]";
    }
 
@@ -1560,7 +1550,9 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
    else
    {
       // Default to NOASSERTION for unknown licenses (NTIA compliance)
-      ss << "        {\n          \"license\": {\n            \"name\": \"NOASSERTION\",\n            \"licensing\": {\n              \"licenseTypes\": [\"perpetual\"]\n            }\n          }\n        }";
+      ss << "        {\n          \"license\": {\n            \"name\": \"NOASSERTION\",\n         "
+            "   \"licensing\": {\n              \"licenseTypes\": [\"perpetual\"]\n            }\n "
+            "         }\n        }";
    }
    ss << "\n      ]";
 
@@ -1753,16 +1745,20 @@ std::string SBOMGenerator::Impl::generateAllProperties(const ComponentInfo& comp
       ss << "        {\n";
       ss << "          \"name\": \"debug_info\",\n";
       ss << "          \"value\": \"" << (component.containsDebugInfo ? "true" : "false") << "\"\n";
-      ss << "        },\n";
+      ss << "        }";
+      firstProperty = false;
+
+      ss << ",\n";
       ss << "        {\n";
       ss << "          \"name\": \"stripped\",\n";
       ss << "          \"value\": \"" << (component.isStripped ? "true" : "false") << "\"\n";
-      ss << "        },\n";
+      ss << "        }";
+
+      ss << ",\n";
       ss << "        {\n";
       ss << "          \"name\": \"system_library\",\n";
       ss << "          \"value\": \"" << (component.isSystemLibrary ? "true" : "false") << "\"\n";
       ss << "        }";
-      firstProperty = false;
    }
 
    // Add enhanced Mach-O metadata if available
@@ -2169,7 +2165,7 @@ std::string SBOMGenerator::Impl::generateCycloneDXLicense(const std::string& lic
    // Basic SPDX license validation and mapping to CycloneDX format
    std::string upperLicense = Utils::toUpper(license);
    std::string spdxId;
-   
+
    if (upperLicense.find("APACHE") != std::string::npos)
    {
       spdxId = "Apache-2.0";
@@ -2207,11 +2203,15 @@ std::string SBOMGenerator::Impl::generateCycloneDXLicense(const std::string& lic
    else
    {
       // For unknown licenses, use the original license string as name
-      return "{\n        \"license\": {\n          \"name\": " + Utils::formatJsonValue(license) + ",\n          \"licensing\": {\n            \"licenseTypes\": [\"perpetual\"]\n          }\n        }\n      }";
+      return "{\n        \"license\": {\n          \"name\": " + Utils::formatJsonValue(license) +
+             ",\n          \"licensing\": {\n            \"licenseTypes\": [\"perpetual\"]\n       "
+             "   }\n        }\n      }";
    }
 
    // Return CycloneDX license format with SPDX ID and basic licensing info
-   return "{\n        \"license\": {\n          \"id\": \"" + spdxId + "\",\n          \"licensing\": {\n            \"licenseTypes\": [\"perpetual\"]\n          }\n        }\n      }";
+   return "{\n        \"license\": {\n          \"id\": \"" + spdxId +
+          "\",\n          \"licensing\": {\n            \"licenseTypes\": [\"perpetual\"]\n        "
+          "  }\n        }\n      }";
 }
 
 /**

@@ -135,6 +135,12 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
    extractor.setExtractDebugInfo(extractDebugInfo);
    extractor.setVerbose(verbose);
 
+   if (verbose)
+   {
+      logProcessing("Debug: extractDebugInfo = " +
+                    std::string(extractDebugInfo ? "true" : "false"));
+   }
+
    extractor.extractMetadata(component);
 
    // Always restore the checksum if it was lost during metadata extraction
@@ -143,12 +149,21 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
       component.checksum = originalChecksum;
    }
 
+   if (verbose)
+   {
+      logProcessing("Debug: Extracted " + std::to_string(component.functions.size()) +
+                    " functions");
+      logProcessing("Debug: Extracted " + std::to_string(component.compileUnits.size()) +
+                    " compile units");
+      logProcessing("Debug: Extracted " + std::to_string(component.sourceFiles.size()) +
+                    " source files");
+   }
+
    // Add to SBOM generator
    sbomGenerator->processComponent(component);
 
-   // Detect and process dependencies (linked libraries)
-   std::vector<std::string> deps = heimdall::MetadataHelpers::detectDependencies(filePath);
-   for (const auto& dep : deps)
+   // Process dependencies from the extracted component
+   for (const auto& dep : component.dependencies)
    {
       // Try to resolve the library path using the improved resolver
       std::string depPath = Utils::resolveLibraryPath(dep);
@@ -213,7 +228,7 @@ void LLDAdapter::Impl::processFilesParallel(const std::vector<std::string>& file
       component.setDetectedBy(LinkerType::LLD);
 
       // Preserve the checksum that was calculated in the constructor
-      std::string       originalChecksum = component.checksum;
+      std::string         originalChecksum = component.checksum;
 
       MetadataExtractor extractor;
       extractor.setSuppressWarnings(false);  // Use default for now
@@ -228,7 +243,7 @@ void LLDAdapter::Impl::processFilesParallel(const std::vector<std::string>& file
 
       return component;
    };
-  
+
    auto results = ParallelProcessor::process(filePaths, processFile);
    for (auto& component : results)
    {
@@ -283,6 +298,12 @@ void LLDAdapter::Impl::setSPDXVersion(const std::string& version)
 void LLDAdapter::Impl::setVerbose(bool v)
 {
    verbose = v;
+   if (verbose)
+   {
+      logProcessing("Debug: LLDAdapter verbose mode enabled");
+      logProcessing("Debug: extractDebugInfo = " +
+                    std::string(extractDebugInfo ? "true" : "false"));
+   }
 }
 
 void LLDAdapter::Impl::setExtractDebugInfo(bool extract)
@@ -310,7 +331,7 @@ void LLDAdapter::Impl::setAliFilePath(const std::string& path)
    // Set environment variable to enable Ada detection and specify the path
    setenv("HEIMDALL_ENABLE_ADA_DETECTION", "1", 1);
    setenv("HEIMDALL_ALI_FILE_PATH", path.c_str(), 1);
-   
+
    if (verbose)
    {
       logProcessing("Ada ALI file path set to: " + path);

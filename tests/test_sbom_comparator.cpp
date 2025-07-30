@@ -5,10 +5,13 @@
 #include <thread>
 #include <vector>
 #include "common/SBOMComparator.hpp"
+#include "common/CycloneDXHandler.hpp"
+#include "common/SPDXHandler.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
 
 using namespace heimdall;
+using heimdall::SBOMComparator;
 
 class SBOMComparatorTest : public ::testing::Test
 {
@@ -179,68 +182,64 @@ TEST_F(SBOMComparatorTest, AssignmentOperator)
    EXPECT_TRUE(true);  // Assignment should not throw
 }
 
-// SPDX Parser tests
-TEST_F(SBOMComparatorTest, SPDXParserCreation)
+// SPDX Handler tests
+TEST_F(SBOMComparatorTest, SPDXHandlerCreation)
 {
-   SPDXParser parser;
+   SPDX2_3Handler handler;
    EXPECT_TRUE(true);  // Constructor should not throw
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseFile)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseFile)
 {
-   SPDXParser parser;
-   auto       components = parser.parse(test_spdx1);
+   SPDX2_3Handler handler;
+   auto       components = handler.parseFile(test_spdx1);
    EXPECT_FALSE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseContent)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseContent)
 {
-   SPDXParser        parser;
-   std::ifstream     file(test_spdx1);
+   SPDX2_3Handler handler;
+   std::ifstream file(test_spdx1);
    std::stringstream buffer;
    buffer << file.rdbuf();
-
-   auto components = parser.parseContent(buffer.str());
+   auto components = handler.parseContent(buffer.str());
    EXPECT_FALSE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseEmptyFile)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseEmptyFile)
 {
-   SPDXParser  parser;
+   SPDX2_3Handler handler;
    std::string empty_file = (test_dir / "empty.spdx").string();
    std::ofstream(empty_file).close();
-
-   auto components = parser.parse(empty_file);
+   auto components = handler.parseFile(empty_file);
    EXPECT_TRUE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseNonExistentFile)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseNonExistentFile)
 {
-   SPDXParser parser;
-   auto       components = parser.parse("/nonexistent/file.spdx");
+   SPDX2_3Handler handler;
+   auto components = handler.parseFile("/nonexistent/file.spdx");
    EXPECT_TRUE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseInvalidContent)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseInvalidContent)
 {
-   SPDXParser parser;
-   auto       components = parser.parseContent("invalid spdx content");
+   SPDX2_3Handler handler;
+   auto components = handler.parseContent("invalid spdx content");
    EXPECT_TRUE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseMalformedContent)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseMalformedContent)
 {
-   SPDXParser parser;
-   auto       components = parser.parseContent("SPDXVersion: SPDX-2.3\nPackageName: test\n");
+   SPDX2_3Handler handler;
+   auto components = handler.parseContent("SPDXVersion: SPDX-2.3\nPackageName: test\n");
    // Should handle malformed content gracefully
-   EXPECT_NO_THROW(parser.parseContent("SPDXVersion: SPDX-2.3\nPackageName: test\n"));
+   EXPECT_NO_THROW(handler.parseContent("SPDXVersion: SPDX-2.3\nPackageName: test\n"));
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseLargeContent)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseLargeContent)
 {
-   SPDXParser parser;
-
-   // Create large SPDX content
+   SPDX2_3Handler handler;
    std::string large_content = "SPDXVersion: SPDX-2.3\nDataLicense: CC0-1.0\n";
    for (int i = 0; i < 1000; ++i)
    {
@@ -248,197 +247,109 @@ TEST_F(SBOMComparatorTest, SPDXParserParseLargeContent)
       large_content += "PackageVersion: 1.0.0\n";
       large_content += "PackageSPDXID: SPDXRef-Package-lib" + std::to_string(i) + "\n";
    }
-
-   auto components = parser.parseContent(large_content);
-   EXPECT_NO_THROW(parser.parseContent(large_content));
+   auto components = handler.parseContent(large_content);
+   EXPECT_NO_THROW(handler.parseContent(large_content));
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseWithSpecialCharacters)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseWithSpecialCharacters)
 {
-   SPDXParser  parser;
-   std::string special_content = R"(SPDXVersion: SPDX-2.3
-DataLicense: CC0-1.0
-PackageName: lib-special@test
-PackageVersion: 1.0.0
-PackageSPDXID: SPDXRef-Package-lib-special
-PackageLicenseConcluded: MIT
-PackageDownloadLocation: https://example.com/lib-special@test
-)";
-
-   auto        components = parser.parseContent(special_content);
-   EXPECT_NO_THROW(parser.parseContent(special_content));
+   SPDX2_3Handler handler;
+   std::string special_content = R"(SPDXVersion: SPDX-2.3\nDataLicense: CC0-1.0\nPackageName: lib-special@test\nPackageVersion: 1.0.0\nPackageSPDXID: SPDXRef-Package-lib-special\nPackageLicenseConcluded: MIT\nPackageDownloadLocation: https://example.com/lib-special@test\n)";
+   auto components = handler.parseContent(special_content);
+   EXPECT_NO_THROW(handler.parseContent(special_content));
 }
 
-TEST_F(SBOMComparatorTest, SPDXParserParseWithUnicode)
+TEST_F(SBOMComparatorTest, SPDXHandlerParseWithUnicode)
 {
-   SPDXParser  parser;
-   std::string unicode_content = R"(SPDXVersion: SPDX-2.3
-DataLicense: CC0-1.0
-PackageName: 测试库
-PackageVersion: 1.0.0
-PackageSPDXID: SPDXRef-Package-测试库
-PackageLicenseConcluded: MIT
-PackageDownloadLocation: https://example.com/测试库
-)";
-
-   auto        components = parser.parseContent(unicode_content);
-   EXPECT_NO_THROW(parser.parseContent(unicode_content));
+   SPDX2_3Handler handler;
+   std::string unicode_content = R"(SPDXVersion: SPDX-2.3\nDataLicense: CC0-1.0\nPackageName: 测试库\nPackageVersion: 1.0.0\nPackageSPDXID: SPDXRef-Package-测试库\nPackageLicenseConcluded: MIT\nPackageDownloadLocation: https://example.com/测试库\n)";
+   auto components = handler.parseContent(unicode_content);
+   EXPECT_NO_THROW(handler.parseContent(unicode_content));
 }
 
-// CycloneDX Parser tests
-TEST_F(SBOMComparatorTest, CycloneDXParserCreation)
+// CycloneDX Handler tests
+TEST_F(SBOMComparatorTest, CycloneDXHandlerCreation)
 {
-   CycloneDXParser parser;
+   CycloneDX1_6Handler handler;
    EXPECT_TRUE(true);  // Constructor should not throw
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseFile)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseFile)
 {
-   CycloneDXParser parser;
-   auto            components = parser.parse(test_cdx1);
+   CycloneDX1_6Handler handler;
+   auto components = handler.parseFile(test_cdx1);
    EXPECT_FALSE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseContent)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseContent)
 {
-   CycloneDXParser   parser;
-   std::ifstream     file(test_cdx1);
+   CycloneDX1_6Handler handler;
+   std::ifstream file(test_cdx1);
    std::stringstream buffer;
    buffer << file.rdbuf();
-
-   auto components = parser.parseContent(buffer.str());
+   auto components = handler.parseContent(buffer.str());
    EXPECT_FALSE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseEmptyFile)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseEmptyFile)
 {
-   CycloneDXParser parser;
-   std::string     empty_file = (test_dir / "empty.cdx.json").string();
+   CycloneDX1_6Handler handler;
+   std::string empty_file = (test_dir / "empty.cdx.json").string();
    std::ofstream(empty_file).close();
-
-   auto components = parser.parse(empty_file);
+   auto components = handler.parseFile(empty_file);
    EXPECT_TRUE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseNonExistentFile)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseNonExistentFile)
 {
-   CycloneDXParser parser;
-   auto            components = parser.parse("/nonexistent/file.cdx.json");
+   CycloneDX1_6Handler handler;
+   auto components = handler.parseFile("/nonexistent/file.cdx.json");
    EXPECT_TRUE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseInvalidContent)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseInvalidContent)
 {
-   CycloneDXParser parser;
-   auto            components = parser.parseContent("invalid json content");
+   CycloneDX1_6Handler handler;
+   auto components = handler.parseContent("invalid json content");
    EXPECT_TRUE(components.empty());
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseMalformedJSON)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseMalformedJSON)
 {
-   CycloneDXParser parser;
-   auto            components = parser.parseContent(R"({
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.6",
-  "components": [
-    {
-      "type": "library",
-      "name": "test"
-      // Missing closing brace
-)");
-   EXPECT_NO_THROW(parser.parseContent(R"({
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.6",
-  "components": [
-    {
-      "type": "library",
-      "name": "test"
-)"));
+    CycloneDX1_6Handler handler;
+    // Minimal malformed JSON (missing closing brace)
+    std::string malformed = "{\n  \"bomFormat\": \"CycloneDX\",\n  \"specVersion\": \"1.6\",\n  \"components\": [ { \"type\": \"library\", \"name\": \"test\" ";
+    auto components = handler.parseContent(malformed);
+    EXPECT_NO_THROW(handler.parseContent(malformed));
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseLargeContent)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseLargeContent)
 {
-   CycloneDXParser parser;
-
-   // Create large CycloneDX content
-   std::string large_content = R"({
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.6",
-  "version": 1,
-  "metadata": {
-    "timestamp": "2024-01-01T00:00:00Z"
-  },
-  "components": [)";
-
-   for (int i = 0; i < 1000; ++i)
-   {
-      large_content += R"({
-      "type": "library",
-      "name": "lib)" + std::to_string(i) +
-                       R"(",
-      "version": "1.0.0",
-      "bom-ref": "lib)" +
-                       std::to_string(i) + R"(-1.0.0"
-    },)";
-   }
-   large_content += R"({
-      "type": "library",
-      "name": "final",
-      "version": "1.0.0",
-      "bom-ref": "final-1.0.0"
-    }]
-})";
-
-   auto components = parser.parseContent(large_content);
-   EXPECT_NO_THROW(parser.parseContent(large_content));
-}
-
-TEST_F(SBOMComparatorTest, CycloneDXParserParseWithSpecialCharacters)
-{
-   CycloneDXParser parser;
-   std::string     special_content = R"({
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.6",
-  "version": 1,
-  "metadata": {
-    "timestamp": "2024-01-01T00:00:00Z"
-  },
-  "components": [
+    CycloneDX1_6Handler handler;
+    std::string large_content = "{\n  \"bomFormat\": \"CycloneDX\",\n  \"specVersion\": \"1.6\",\n  \"version\": 1,\n  \"metadata\": {\n    \"timestamp\": \"2024-01-01T00:00:00Z\"\n  },\n  \"components\": [";
+    for (int i = 0; i < 1000; ++i)
     {
-      "type": "library",
-      "name": "lib-special@test",
-      "version": "1.0.0",
-      "bom-ref": "lib-special@test-1.0.0"
+        large_content += "{\n      \"type\": \"library\",\n      \"name\": \"lib" + std::to_string(i) + "\",\n      \"version\": \"1.0.0\",\n      \"bom-ref\": \"lib" + std::to_string(i) + "-1.0.0\"\n    },";
     }
-  ]
-})";
-
-   auto            components = parser.parseContent(special_content);
-   EXPECT_NO_THROW(parser.parseContent(special_content));
+    large_content += "{\n      \"type\": \"library\",\n      \"name\": \"lib1000\",\n      \"version\": \"1.0.0\",\n      \"bom-ref\": \"lib1000-1.0.0\"\n    }\n  ]\n}";
+    auto components = handler.parseContent(large_content);
+    EXPECT_NO_THROW(handler.parseContent(large_content));
 }
 
-TEST_F(SBOMComparatorTest, CycloneDXParserParseWithUnicode)
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseWithSpecialCharacters)
 {
-   CycloneDXParser parser;
-   std::string     unicode_content = R"({
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.6",
-  "version": 1,
-  "metadata": {
-    "timestamp": "2024-01-01T00:00:00Z"
-  },
-  "components": [
-    {
-      "type": "library",
-      "name": "测试库",
-      "version": "1.0.0",
-      "bom-ref": "测试库-1.0.0"
-    }
-  ]
-})";
+   CycloneDX1_6Handler handler;
+   std::string special_content = R"({\n  \"bomFormat\": \"CycloneDX\",\n  \"specVersion\": \"1.6\",\n  \"version\": 1,\n  \"metadata\": {\n    \"timestamp\": \"2024-01-01T00:00:00Z\"\n  },\n  \"components\": [\n    {\n      \"type\": \"library\",\n      \"name\": \"lib-special@test\",\n      \"version\": \"1.0.0\",\n      \"bom-ref\": \"lib-special@test-1.0.0\",\n      \"license\": \"MIT\",\n      \"description\": \"A special character test\"\n    }\n  ]\n})";
+   auto components = handler.parseContent(special_content);
+   EXPECT_NO_THROW(handler.parseContent(special_content));
+}
 
-   auto            components = parser.parseContent(unicode_content);
-   EXPECT_NO_THROW(parser.parseContent(unicode_content));
+TEST_F(SBOMComparatorTest, CycloneDXHandlerParseWithUnicode)
+{
+   CycloneDX1_6Handler handler;
+   std::string unicode_content = R"({\n  \"bomFormat\": \"CycloneDX\",\n  \"specVersion\": \"1.6\",\n  \"version\": 1,\n  \"metadata\": {\n    \"timestamp\": \"2024-01-01T00:00:00Z\"\n  },\n  \"components\": [\n    {\n      \"type\": \"library\",\n      \"name\": \"测试库\",\n      \"version\": \"1.0.0\",\n      \"bom-ref\": \"测试库-1.0.0\",\n      \"license\": \"MIT\",\n      \"description\": \"A unicode test\"\n    }\n  ]\n})";
+   auto components = handler.parseContent(unicode_content);
+   EXPECT_NO_THROW(handler.parseContent(unicode_content));
 }
 
 // Comparison tests
@@ -1080,7 +991,7 @@ TEST_F(SBOMComparatorTest, ErrorRecoveryAfterFailure)
 
 TEST_F(SBOMComparatorTest, MixedValidAndInvalidFiles)
 {
-   SBOMComparator           comparator;
+   heimdall::SBOMComparator           comparator;
 
    std::vector<std::string> test_files = {
       "/nonexistent1", test_cdx1, "/nonexistent2", test_spdx1, "/another/nonexistent", test_cdx2};

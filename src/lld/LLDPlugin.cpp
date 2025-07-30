@@ -18,7 +18,7 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <vector>
-#include "../common/MetadataExtractor.hpp"
+// MetadataExtractor.hpp no longer needed - LLDAdapter uses MetadataExtractor
 #include "../common/SBOMGenerator.hpp"
 #include "../common/Utils.hpp"
 #include "../compat/compatibility.hpp"
@@ -146,6 +146,14 @@ extern "C"
    void heimdall_set_verbose(bool v)
    {
       verbose = v;
+      if (verbose)
+      {
+         std::cout << "Heimdall: Verbose mode enabled" << std::endl;
+      }
+      if (globalAdapter)
+      {
+         globalAdapter->setVerbose(verbose);
+      }
    }
 
    // File processing functions
@@ -279,6 +287,21 @@ extern "C"
          if (verbose)
          {
             std::cout << "Heimdall: Ada ALI file path set to: " << path << "\n";
+         }
+         return 0;
+      }
+      return -1;
+   }
+
+   int heimdall_set_include_system_libraries(int include)
+   {
+      if (globalAdapter)
+      {
+         globalAdapter->setIncludeSystemLibraries(include != 0);
+         if (verbose)
+         {
+            std::cout << "Heimdall: System libraries " << (include ? "enabled" : "disabled")
+                      << "\n";
          }
          return 0;
       }

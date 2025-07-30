@@ -22,7 +22,7 @@ limitations under the License.
  *
  * This file provides functionality for signing SBOM documents using the
  * JSON Signature Format (JSF) as specified in CycloneDX 1.6+.
- * 
+ *
  * Supported signing methods:
  * - RSA signatures
  * - ECDSA signatures
@@ -31,9 +31,9 @@ limitations under the License.
 
 #pragma once
 
-#include <string>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <string>
 #include "../compat/compatibility.hpp"
 
 namespace heimdall
@@ -44,13 +44,13 @@ namespace heimdall
  */
 enum class SignatureAlgorithm
 {
-   RS256,    ///< RSA with SHA-256
-   RS384,    ///< RSA with SHA-384
-   RS512,    ///< RSA with SHA-512
-   ES256,    ///< ECDSA with SHA-256
-   ES384,    ///< ECDSA with SHA-384
-   ES512,    ///< ECDSA with SHA-512
-   Ed25519   ///< Ed25519 signature
+   RS256,   ///< RSA with SHA-256
+   RS384,   ///< RSA with SHA-384
+   RS512,   ///< RSA with SHA-512
+   ES256,   ///< ECDSA with SHA-256
+   ES384,   ///< ECDSA with SHA-384
+   ES512,   ///< ECDSA with SHA-512
+   Ed25519  ///< Ed25519 signature
 };
 
 /**
@@ -58,13 +58,13 @@ enum class SignatureAlgorithm
  */
 struct SignatureInfo
 {
-   std::string algorithm;     ///< Signature algorithm (e.g., "RS256")
-   std::string keyId;         ///< Key identifier
-   std::string signature;     ///< Base64URL-encoded signature
-   std::string certificate;   ///< Base64-encoded certificate (optional)
-   std::string timestamp;     ///< ISO 8601 timestamp
-   std::vector<std::string> excludes; ///< Fields excluded during canonicalization
-   nlohmann::json publicKey;  ///< Public key in JWK format (required for JSF)
+   std::string              algorithm;    ///< Signature algorithm (e.g., "RS256")
+   std::string              keyId;        ///< Key identifier
+   std::string              signature;    ///< Base64URL-encoded signature
+   std::string              certificate;  ///< Base64-encoded certificate (optional)
+   std::string              timestamp;    ///< ISO 8601 timestamp
+   std::vector<std::string> excludes;     ///< Fields excluded during canonicalization
+   nlohmann::json           publicKey;    ///< Public key in JWK format (required for JSF)
 };
 
 /**
@@ -144,7 +144,8 @@ class SBOMSigner
     * @param signatureInfo The signature information
     * @return Signed SBOM content
     */
-   std::string addSignatureToCycloneDX(const std::string& sbomContent, const SignatureInfo& signatureInfo);
+   std::string addSignatureToCycloneDX(const std::string&   sbomContent,
+                                       const SignatureInfo& signatureInfo);
 
    /**
     * @brief Verify signature in SBOM
@@ -173,7 +174,8 @@ class SBOMSigner
     * @param excludes Output vector of excluded field paths
     * @return Canonical JSON string ready for signing
     */
-   std::string createCanonicalJSON(const nlohmann::json& sbomJson, std::vector<std::string>& excludes) const;
+   std::string createCanonicalJSON(const nlohmann::json&     sbomJson,
+                                   std::vector<std::string>& excludes) const;
 
    /**
     * @brief Verify that canonical JSON excludes all signature fields
@@ -181,11 +183,12 @@ class SBOMSigner
     * @param canonicalJson The canonical JSON string
     * @return true if canonicalization is correct
     */
-   bool verifyCanonicalization(const nlohmann::json& originalJson, const std::string& canonicalJson);
+   bool verifyCanonicalization(const nlohmann::json& originalJson,
+                               const std::string&    canonicalJson);
 
    private:
    class Impl;
    std::unique_ptr<Impl> pImpl;
 };
 
-}  // namespace heimdall 
+}  // namespace heimdall

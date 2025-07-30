@@ -1,14 +1,32 @@
+/*
+Copyright 2025 The Heimdall Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 #include "SBOMComparator.hpp"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <map>
 #include <regex>
 #include <set>
 #include <sstream>
 #include "../compat/compatibility.hpp"
+#include "Utils.hpp"
 
 namespace heimdall
 {
@@ -32,413 +50,157 @@ bool SBOMComponent::operator!=(const SBOMComponent& other) const
    return !(*this == other);
 }
 
-// SPDX Parser Implementation
+// UnifiedSBOMComparator Implementation
 
-std::vector<SBOMComponent> SPDXParser::parse(const std::string& filePath)
+std::vector<SBOMDifference> UnifiedSBOMComparator::compare(const std::string& oldSBOM,
+                                                           const std::string& newSBOM)
 {
-   std::ifstream file(filePath);
-   if (!file.is_open())
-   {
-      return {};
-   }
+   std::vector<SBOMDifference> differences;
 
-   std::stringstream buffer;
-   buffer << file.rdbuf();
-   std::string content = buffer.str();
-
-   return parseContent(content);
-}
-
-std::vector<SBOMComponent> SPDXParser::parseContent(const std::string& content)
-{
-   // Detect SPDX version and format
-   if (content.find("SPDXVersion:") != std::string::npos)
+   try
    {
-      return parseSPDX2_3(content);
-   }
-   else if (content.find("\"spdxVersion\"") != std::string::npos)
-   {
-      return parseSPDX3_0(content);
-   }
-
-   return {};
-}
-
-bool SPDXParser::processSPDXLine(const std::string& line, SBOMComponent& component)
-{
-   if (line.find("PackageVersion:") != std::string::npos)
-   {
-      component.version = line.substr(line.find(':') + 1);
-      component.version.erase(0, component.version.find_first_not_of(" \t"));
-      component.version.erase(component.version.find_last_not_of(" \t") + 1);
-      return false;
-   }
-   else if (line.find("PackageSPDXID:") != std::string::npos)
-   {
-      component.id = line.substr(line.find(':') + 1);
-      component.id.erase(0, component.id.find_first_not_of(" \t"));
-      component.id.erase(component.id.find_last_not_of(" \t") + 1);
-      component.bomRef = component.id;  // Use SPDXID as BOM reference
-      return false;
-   }
-   else if (line.find("PackageLicenseConcluded:") != std::string::npos)
-   {
-      component.license = line.substr(line.find(':') + 1);
-      component.license.erase(0, component.license.find_first_not_of(" \t"));
-      component.license.erase(component.license.find_last_not_of(" \t") + 1);
-      return false;
-   }
-   else if (line.find("PackageDownloadLocation:") != std::string::npos)
-   {
-      component.purl = line.substr(line.find(':') + 1);
-      component.purl.erase(0, component.purl.find_first_not_of(" \t"));
-      component.purl.erase(component.purl.find_last_not_of(" \t") + 1);
-      return false;
-   }
-   else if (line.find("PackageName:") != std::string::npos)
-   {
-      // Next package starts
-      return true;
-   }
-   return false;
-}
-
-std::vector<SBOMComponent> SPDXParser::parseSPDX2_3(const std::string& content)
-{
-   std::vector<SBOMComponent> components;
-   std::istringstream         iss(content);
-   std::string                line;
-
-   while (std::getline(iss, line))
-   {
-      if (line.find("PackageName:") != std::string::npos)
+      // Read old SBOM file
+      std::ifstream oldFile(oldSBOM);
+      if (!oldFile.is_open())
       {
-         SBOMComponent component;
-         component.name = line.substr(line.find(':') + 1);
-         // Trim whitespace
-         component.name.erase(0, component.name.find_first_not_of(" \t"));
-         component.name.erase(component.name.find_last_not_of(" \t") + 1);
+         std::cerr << "Cannot open old SBOM file: " << oldSBOM << std::endl;
+         return differences;
+      }
 
-         // Look for version, id, and other fields in next few lines
-         std::streampos pos = iss.tellg();
-         for (int i = 0; i < 10; ++i)
+      std::stringstream oldBuffer;
+      oldBuffer << oldFile.rdbuf();
+      std::string oldContent = oldBuffer.str();
+
+      // Read new SBOM file
+      std::ifstream newFile(newSBOM);
+      if (!newFile.is_open())
+      {
+         std::cerr << "Cannot open new SBOM file: " << newSBOM << std::endl;
+         return differences;
+      }
+
+      std::stringstream newBuffer;
+      newBuffer << newFile.rdbuf();
+      std::string newContent = newBuffer.str();
+
+      return compareContent(oldContent, newContent);
+   }
+   catch (const std::exception& e)
+   {
+      std::cerr << "Error comparing SBOM files: " << e.what() << std::endl;
+   }
+
+   return differences;
+}
+
+std::vector<SBOMDifference> UnifiedSBOMComparator::compareContent(const std::string& oldContent,
+                                                                  const std::string& newContent)
+{
+   std::vector<SBOMDifference> differences;
+
+   try
+   {
+      // Detect format from content
+      std::string format = detectFormatFromContent(oldContent);
+      if (format.empty())
+      {
+         std::cerr << "Unable to detect format from old SBOM content" << std::endl;
+         return differences;
+      }
+
+      // Create format handler
+      auto handler = createHandler(format);
+      if (!handler)
+      {
+         std::cerr << "Failed to create handler for format: " << format << std::endl;
+         return differences;
+      }
+
+      // Parse components from both SBOMs
+      std::vector<ComponentInfo> oldComponents = handler->parseContent(oldContent);
+      std::vector<ComponentInfo> newComponents = handler->parseContent(newContent);
+
+      // Compare components
+      return compareComponents(oldComponents, newComponents);
+   }
+   catch (const std::exception& e)
+   {
+      std::cerr << "Error comparing SBOM content: " << e.what() << std::endl;
+   }
+
+   return differences;
+}
+
+std::string UnifiedSBOMComparator::merge(const std::vector<std::string>& sbomFiles,
+                                         const std::string&              outputFormat,
+                                         const std::string&              outputVersion)
+{
+   try
+   {
+      std::vector<std::vector<ComponentInfo>> allComponents;
+
+      // Parse all SBOM files
+      for (const auto& filePath : sbomFiles)
+      {
+         std::ifstream file(filePath);
+         if (!file.is_open())
          {
-            std::string nextLine;
-            if (!std::getline(iss, nextLine))
-               break;
-
-            bool shouldBreak = processSPDXLine(nextLine, component);
-            if (shouldBreak)
-            {
-               iss.seekg(pos);
-               break;
-            }
-
-            pos = iss.tellg();
+            std::cerr << "Cannot open SBOM file: " << filePath << std::endl;
+            continue;
          }
-         iss.seekg(pos);
-         component.type = "package";
-         components.push_back(component);
-      }
-   }
 
-   return components;
-}
+         std::stringstream buffer;
+         buffer << file.rdbuf();
+         std::string content = buffer.str();
 
-std::vector<SBOMComponent> SPDXParser::parseSPDX3_0(const std::string& content)
-{
-   std::vector<SBOMComponent> components;
-
-   // Basic regex-based extraction for demonstration
-   std::regex packageRegex(
-      "\"name\"\\s*:\\s*\"([^\"]+)\"[^}]*\"versionInfo\"\\s*:\\s*\"([^\"]*)\"[^}]*\"SPDXID\"\\s*:"
-      "\\s*\"([^\"]+)\"");
-   std::sregex_iterator iter(content.begin(), content.end(), packageRegex);
-   std::sregex_iterator end;
-
-   for (; iter != end; ++iter)
-   {
-      SBOMComponent component;
-      component.name    = (*iter)[1];
-      component.version = (*iter)[2];
-      component.id      = (*iter)[3];
-      component.bomRef  = (*iter)[3];  // Use SPDXID as BOM reference
-      component.type    = "package";
-      components.push_back(component);
-   }
-
-   return components;
-}
-
-// CycloneDX Parser Implementation
-
-std::vector<SBOMComponent> CycloneDXParser::parse(const std::string& filePath)
-{
-   std::ifstream file(filePath);
-   if (!file.is_open())
-   {
-      return {};
-   }
-
-   std::stringstream buffer;
-   buffer << file.rdbuf();
-   std::string content = buffer.str();
-
-   return parseContent(content);
-}
-
-std::string CycloneDXParser::extractVersion(const std::string& content) const
-{
-   size_t pos = content.find("\"specVersion\"");
-   if (pos == std::string::npos)
-   {
-      return "";
-   }
-
-   size_t start = content.find('\"', pos + 13) + 1;
-   if (start == std::string::npos)
-   {
-      return "";
-   }
-
-   size_t end = content.find('\"', start);
-   if (end == std::string::npos)
-   {
-      return "";
-   }
-
-   return content.substr(start, end - start);
-}
-
-std::vector<SBOMComponent> CycloneDXParser::parseContent(const std::string& content)
-{
-   // Detect CycloneDX version
-   if (content.find("\"specVersion\"") == std::string::npos)
-   {
-      return {};
-   }
-
-   std::string version = extractVersion(content);
-   if (version.empty())
-   {
-      return {};
-   }
-
-   if (version == "1.4")
-   {
-      return parseCycloneDX1_4(content);
-   }
-   else if (version == "1.5")
-   {
-      return parseCycloneDX1_5(content);
-   }
-   else if (version == "1.6")
-   {
-      return parseCycloneDX1_6(content);
-   }
-
-   return {};
-}
-
-std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_4(const std::string& content) const
-{
-   return parseCycloneDX1_6(content);  // Use 1.6 parser for now
-}
-
-std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_5(const std::string& content) const
-{
-   return parseCycloneDX1_6(content);  // Use 1.6 parser for now
-}
-
-std::vector<SBOMComponent> CycloneDXParser::parseCycloneDX1_6(const std::string& content) const
-{
-   std::vector<SBOMComponent> components;
-   std::map<std::string, std::vector<std::string>> componentDependencies;
-
-   // Extract components using a simpler regex that matches the test data
-   std::regex componentRegex(
-      "\"type\"\\s*:\\s*\"([^\"]*)\"[^}]*\"name\"\\s*:\\s*\"([^\"]+)\"[^}]*\"version\"\\s*:\\s*\"([^\"]*)\"[^}]*\"bom-ref\"\\s*:\\s*\"([^\"]+)\"");
-   std::sregex_iterator iter(content.begin(), content.end(), componentRegex);
-   std::sregex_iterator end;
-
-   for (; iter != end; ++iter)
-   {
-      SBOMComponent component;
-      component.type    = (*iter)[1].str().empty() ? "library" : (*iter)[1].str();
-      component.name    = (*iter)[2];
-      component.version = (*iter)[3];
-      component.bomRef  = (*iter)[4];
-      component.id      = (*iter)[4];  // Use bom-ref as id for consistency
-      components.push_back(component);
-   }
-
-   // If no components found with the first pattern, try a simpler pattern
-   if (components.empty())
-   {
-      std::regex simpleComponentRegex(
-         "\"name\"\\s*:\\s*\"([^\"]+)\"[^}]*\"version\"\\s*:\\s*\"([^\"]*)\"[^}]*\"bom-ref\"\\s*:\\s*\"([^\"]+)\"");
-      std::sregex_iterator simpleIter(content.begin(), content.end(), simpleComponentRegex);
-      
-      for (; simpleIter != end; ++simpleIter)
-      {
-         SBOMComponent component;
-         component.name    = (*simpleIter)[1];
-         component.version = (*simpleIter)[2];
-         component.bomRef  = (*simpleIter)[3];
-         component.id      = (*simpleIter)[3];  // Use bom-ref as id for consistency
-         component.type    = "library";  // Default type
-         components.push_back(component);
-      }
-   }
-
-   // Extract dependencies section if present
-   std::regex dependenciesRegex(
-      "\"dependencies\"\\s*:\\s*\\[([^\\]]*)\\]");
-   std::sregex_iterator depIter(content.begin(), content.end(), dependenciesRegex);
-   
-   for (; depIter != end; ++depIter)
-   {
-      std::string dependenciesSection = (*depIter)[1];
-      
-      // Extract individual dependency objects
-      std::regex dependencyRegex(
-         "\\{\\s*\"ref\"\\s*:\\s*\"([^\"]+)\"[^}]*\"dependsOn\"\\s*:\\s*\\[([^\\]]*)\\]");
-      std::sregex_iterator depObjIter(dependenciesSection.begin(), dependenciesSection.end(), dependencyRegex);
-      
-      std::sregex_iterator depObjEnd;
-      for (; depObjIter != depObjEnd; ++depObjIter)
-      {
-         std::string ref = (*depObjIter)[1];
-         std::string dependsOn = (*depObjIter)[2];
-         
-         // Extract individual dependsOn references
-         std::regex dependsOnRegex("\"([^\"]+)\"");
-         std::sregex_iterator dependsIter(dependsOn.begin(), dependsOn.end(), dependsOnRegex);
-         
-         std::vector<std::string> deps;
-         std::sregex_iterator dependsEnd;
-         for (; dependsIter != dependsEnd; ++dependsIter)
+         // Detect format and create handler
+         std::string format = detectFormatFromContent(content);
+         if (format.empty())
          {
-            deps.push_back((*dependsIter)[1]);
+            std::cerr << "Unable to detect format from file: " << filePath << std::endl;
+            continue;
          }
-         
-         componentDependencies[ref] = deps;
-      }
-   }
 
-   // Assign dependencies to components
-   for (auto& component : components)
-   {
-      auto it = componentDependencies.find(component.bomRef);
-      if (it != componentDependencies.end())
+         auto handler = createHandler(format);
+         if (!handler)
+         {
+            std::cerr << "Failed to create handler for format: " << format << std::endl;
+            continue;
+         }
+
+         // Parse components
+         std::vector<ComponentInfo> components = handler->parseContent(content);
+         allComponents.push_back(components);
+      }
+
+      // Merge components
+      std::vector<ComponentInfo> mergedComponents = mergeComponents(allComponents);
+
+      // Generate output
+      if (outputFormat == "spdx")
       {
-         component.dependencies = it->second;
+         return generateSPDXOutput(mergedComponents, outputFormat, outputVersion);
       }
-   }
-
-   return components;
-}
-
-// SBOM Comparator Implementation
-
-std::string SBOMComparator::detectFormatFromFile(const std::string& filePath)
-{
-   std::ifstream file(filePath);
-   if (!file.is_open())
-   {
-      return "";
-   }
-
-   std::string firstLine;
-   std::getline(file, firstLine);
-   if (firstLine.find("SPDXVersion:") != std::string::npos)
-   {
-      return "spdx";
-   }
-   else if (firstLine.find('{') != std::string::npos)
-   {
-      std::string content;
-      file.seekg(0);
-      std::stringstream buffer;
-      buffer << file.rdbuf();
-      content = buffer.str();
-
-      if (content.find("\"spdxVersion\"") != std::string::npos)
+      else if (outputFormat == "cyclonedx")
       {
-         return "spdx";
+         return generateCycloneDXOutput(mergedComponents, outputFormat, outputVersion);
       }
-      else if (content.find("\"bomFormat\"") != std::string::npos)
+      else
       {
-         return "cyclonedx";
+         std::cerr << "Unsupported output format: " << outputFormat << std::endl;
+         return "";
       }
+   }
+   catch (const std::exception& e)
+   {
+      std::cerr << "Error merging SBOM files: " << e.what() << std::endl;
    }
 
    return "";
 }
 
-std::vector<SBOMDifference> SBOMComparator::compare(const std::string& oldSBOM,
-                                                    const std::string& newSBOM)
-{
-   // Auto-detect format
-   std::string format = detectFormatFromFile(oldSBOM);
-
-   if (format.empty())
-   {
-      return {};
-   }
-
-   auto parser = createParser(format);
-   if (!parser)
-   {
-      return {};
-   }
-
-   auto oldComponents = parser->parse(oldSBOM);
-   auto newComponents = parser->parse(newSBOM);
-
-   return compareComponents(oldComponents, newComponents);
-}
-
-std::vector<SBOMDifference> SBOMComparator::compareContent(const std::string& oldContent,
-                                                           const std::string& newContent,
-                                                           const std::string& format)
-{
-   auto parser = createParser(format);
-   if (!parser)
-   {
-      return {};
-   }
-
-   auto oldComponents = parser->parseContent(oldContent);
-   auto newComponents = parser->parseContent(newContent);
-
-   return compareComponents(oldComponents, newComponents);
-}
-
-std::string SBOMComparator::merge(const std::vector<std::string>& sbomFiles,
-                                  const std::string& outputFormat, const std::string& outputVersion)
-{
-   std::vector<std::vector<SBOMComponent>> componentLists;
-
-   for (const auto& file : sbomFiles)
-   {
-      std::string format = detectFormatFromFile(file);
-
-      if (!format.empty())
-      {
-         auto parser = createParser(format);
-         if (parser)
-         {
-            componentLists.push_back(parser->parse(file));
-         }
-      }
-   }
-
-   return mergeComponents(componentLists, outputFormat, outputVersion);
-}
-
-std::string SBOMComparator::generateDiffReport(const std::vector<SBOMDifference>& differences,
-                                               const std::string&                 format)
+std::string UnifiedSBOMComparator::generateDiffReport(
+   const std::vector<SBOMDifference>& differences, const std::string& format)
 {
    if (format == "json")
    {
@@ -454,7 +216,7 @@ std::string SBOMComparator::generateDiffReport(const std::vector<SBOMDifference>
    }
 }
 
-std::map<std::string, int> SBOMComparator::getDiffStatistics(
+std::map<std::string, int> UnifiedSBOMComparator::getDiffStatistics(
    const std::vector<SBOMDifference>& differences)
 {
    std::map<std::string, int> stats;
@@ -487,86 +249,130 @@ std::map<std::string, int> SBOMComparator::getDiffStatistics(
 
 // Private helper methods
 
-std::unique_ptr<SBOMParser> SBOMComparator::createParser(const std::string& format)
+std::string UnifiedSBOMComparator::detectFormatFromFile(const std::string& filePath) const
 {
-   if (format == "spdx" || format == "spdx-2.3" || format == "spdx-3.0" || format == "spdx-3.0.0" ||
-       format == "spdx-3.0.1")
+   try
    {
-      return heimdall::compat::make_unique<SPDXParser>();
+      std::ifstream file(filePath);
+      if (!file.is_open())
+      {
+         return "";
+      }
+
+      std::stringstream buffer;
+      buffer << file.rdbuf();
+      std::string content = buffer.str();
+
+      return detectFormatFromContent(content);
    }
-   else if (format == "cyclonedx" || format == "cyclonedx-1.4" || format == "cyclonedx-1.5" ||
-            format == "cyclonedx-1.6")
+   catch (const std::exception& e)
    {
-      return heimdall::compat::make_unique<CycloneDXParser>();
+      std::cerr << "Error detecting format from file: " << e.what() << std::endl;
    }
-   else
-   {
-      return nullptr;
-   }
+
+   return "";
 }
 
-std::vector<SBOMDifference> SBOMComparator::compareComponents(
-   const std::vector<SBOMComponent>& oldComponents, const std::vector<SBOMComponent>& newComponents)
+std::string UnifiedSBOMComparator::detectFormatFromContent(const std::string& content) const
 {
-   std::vector<SBOMDifference>          differences;
-   std::map<std::string, SBOMComponent> oldMap, newMap;
+   // Convert to lowercase for case-insensitive comparison
+   std::string lowerContent = content;
+   std::transform(lowerContent.begin(), lowerContent.end(), lowerContent.begin(), ::tolower);
 
-   // Create maps for efficient lookup
-   for (const auto& comp : oldComponents)
+   // Check for CycloneDX format (handle whitespace variations)
+   if (lowerContent.find("\"bomformat\":") != std::string::npos ||
+       lowerContent.find("\"bomformat\": ") != std::string::npos)
    {
-      oldMap[comp.id] = comp;
-   }
-   for (const auto& comp : newComponents)
-   {
-      newMap[comp.id] = comp;
-   }
-
-   // Find added components
-   for (const auto& comp : newComponents)
-   {
-      if (oldMap.find(comp.id) == oldMap.end())
+      // Check if it's followed by "cyclonedx" (case insensitive)
+      size_t pos = lowerContent.find("\"bomformat\":");
+      if (pos != std::string::npos)
       {
-         SBOMDifference diff;
-         diff.type      = SBOMDifference::Type::ADDED;
-         diff.component = comp;
-         differences.push_back(diff);
-      }
-   }
-
-   // Find removed components
-   for (const auto& comp : oldComponents)
-   {
-      if (newMap.find(comp.id) == newMap.end())
-      {
-         SBOMDifference diff;
-         diff.type      = SBOMDifference::Type::REMOVED;
-         diff.component = comp;
-         differences.push_back(diff);
-      }
-   }
-
-   // Find modified components
-   for (const auto& comp : newComponents)
-   {
-      auto it = oldMap.find(comp.id);
-      if (it != oldMap.end())
-      {
-         const auto& oldComp = it->second;
-         if (oldComp.name != comp.name || oldComp.version != comp.version ||
-             oldComp.type != comp.type)
+         std::string afterColon = lowerContent.substr(pos + 12); // length of "bomformat":
+         if (afterColon.find("cyclonedx") != std::string::npos)
          {
-            SBOMDifference diff;
-            diff.type         = SBOMDifference::Type::MODIFIED;
-            diff.component    = comp;
-            diff.oldComponent = oldComp;
-            differences.push_back(diff);
+            return "cyclonedx";
+         }
+      }
+   }
+
+   // Check for SPDX format (handle whitespace variations)
+   if (lowerContent.find("spdxversion:") != std::string::npos ||
+       lowerContent.find("spdxversion: ") != std::string::npos ||
+       lowerContent.find("\"spdxversion\"") != std::string::npos ||
+       lowerContent.find("\"spdxVersion\"") != std::string::npos ||
+       lowerContent.find("@context") != std::string::npos)
+   {
+      return "spdx";
+   }
+
+   return "";
+}
+
+std::unique_ptr<ISBOMFormatHandler> UnifiedSBOMComparator::createHandler(
+   const std::string& format) const
+{
+   return SBOMFormatFactory::createHandler(format);
+}
+
+std::vector<SBOMDifference> UnifiedSBOMComparator::compareComponents(
+   const std::vector<ComponentInfo>& oldComponents, const std::vector<ComponentInfo>& newComponents)
+{
+   std::vector<SBOMDifference> differences;
+
+   // Create maps for efficient lookup by name
+   std::map<std::string, ComponentInfo> oldComponentMap;
+   std::map<std::string, ComponentInfo> newComponentMap;
+
+   for (const auto& component : oldComponents)
+   {
+      oldComponentMap[component.name] = component;
+   }
+
+   for (const auto& component : newComponents)
+   {
+      newComponentMap[component.name] = component;
+   }
+
+   // Find added components (components in new but not in old)
+   for (const auto& [name, newComponent] : newComponentMap)
+   {
+      if (oldComponentMap.find(name) == oldComponentMap.end())
+      {
+         SBOMComponent sbomComponent = convertToSBOMComponent(newComponent);
+         differences.emplace_back(SBOMDifference::Type::ADDED, sbomComponent);
+      }
+   }
+
+   // Find removed components (components in old but not in new)
+   for (const auto& [name, oldComponent] : oldComponentMap)
+   {
+      if (newComponentMap.find(name) == newComponentMap.end())
+      {
+         SBOMComponent sbomComponent = convertToSBOMComponent(oldComponent);
+         differences.emplace_back(SBOMDifference::Type::REMOVED, sbomComponent);
+      }
+   }
+
+   // Find modified components (components with same name but different versions)
+   for (const auto& [name, newComponent] : newComponentMap)
+   {
+      auto oldIt = oldComponentMap.find(name);
+      if (oldIt != oldComponentMap.end())
+      {
+         const auto& oldComponent = oldIt->second;
+
+         // Check if component was modified (different version or other properties)
+         if (oldComponent.version != newComponent.version || oldComponent != newComponent)
+         {
+            SBOMComponent newSBOMComponent = convertToSBOMComponent(newComponent);
+            SBOMComponent oldSBOMComponent = convertToSBOMComponent(oldComponent);
+            differences.emplace_back(SBOMDifference::Type::MODIFIED, newSBOMComponent,
+                                     oldSBOMComponent);
          }
          else
          {
-            SBOMDifference diff;
-            diff.type      = SBOMDifference::Type::UNCHANGED;
-            diff.component = comp;
-            differences.push_back(diff);
+            SBOMComponent sbomComponent = convertToSBOMComponent(newComponent);
+            differences.emplace_back(SBOMDifference::Type::UNCHANGED, sbomComponent);
          }
       }
    }
@@ -574,309 +380,185 @@ std::vector<SBOMDifference> SBOMComparator::compareComponents(
    return differences;
 }
 
-std::string SBOMComparator::mergeComponents(
-   const std::vector<std::vector<SBOMComponent>>& componentLists, const std::string& outputFormat,
-   const std::string& outputVersion)
+std::vector<ComponentInfo> UnifiedSBOMComparator::mergeComponents(
+   const std::vector<std::vector<ComponentInfo>>& componentLists)
 {
-   std::map<std::string, SBOMComponent> mergedComponents;
+   std::vector<ComponentInfo> mergedComponents;
+   std::set<std::string>      seenComponents;
 
-   // Merge all components, keeping the latest version of each
    for (const auto& componentList : componentLists)
    {
       for (const auto& component : componentList)
       {
-         auto it = mergedComponents.find(component.id);
-         if (it == mergedComponents.end() || it->second.version < component.version)
+         std::string key = component.name + ":" + component.version;
+
+         if (seenComponents.find(key) == seenComponents.end())
          {
-            mergedComponents[component.id] = component;
+            mergedComponents.push_back(component);
+            seenComponents.insert(key);
          }
       }
    }
 
-   // Convert to vector
-   std::vector<SBOMComponent> result;
-   result.reserve(mergedComponents.size());
-   for (const auto& pair : mergedComponents)
+   return mergedComponents;
+}
+
+SBOMComponent UnifiedSBOMComparator::convertToSBOMComponent(const ComponentInfo& component) const
+{
+   return SBOMComponent(
+      component.name,                                                          // id
+      component.name + "-" + component.version,                                // bomRef
+      component.name,                                                          // name
+      component.version,                                                       // version
+      component.fileType == FileType::Executable ? "application" : "library",  // type
+      component.packageManager.empty() ? ""
+                                       : "pkg:" + component.packageManager + "/" + component.name +
+                                            "@" + component.version,  // purl
+      component.license,                                              // license
+      component.description,                                          // description
+      component.scope,                                                // scope
+      component.group,                                                // group
+      component.mimeType,                                             // mimeType
+      component.copyright,                                            // copyright
+      component.cpe,                                                  // cpe
+      component.supplier,                                             // supplier
+      component.manufacturer,                                         // manufacturer
+      component.publisher,                                            // publisher
+      component.properties,                                           // properties
+      component.dependencies,                                         // dependencies
+      {}  // externalReferences (not directly mapped)
+   );
+}
+
+ComponentInfo UnifiedSBOMComparator::convertToComponentInfo(const SBOMComponent& component) const
+{
+   ComponentInfo info;
+   info.name         = component.name;
+   info.version      = component.version;
+   info.description  = component.description;
+   info.scope        = component.scope;
+   info.group        = component.group;
+   info.mimeType     = component.mimeType;
+   info.copyright    = component.copyright;
+   info.cpe          = component.cpe;
+   info.supplier     = component.supplier;
+   info.manufacturer = component.manufacturer;
+   info.publisher    = component.publisher;
+   info.license      = component.license;
+   info.properties   = component.properties;
+   info.dependencies = component.dependencies;
+
+   // Set file type based on component type
+   if (component.type == "application")
    {
-      result.push_back(pair.second);
+      info.fileType = FileType::Executable;
+   }
+   else
+   {
+      info.fileType = FileType::SharedLibrary;
    }
 
-   // Generate output in requested format
-   if (outputFormat == "spdx")
+   // Extract package manager from PURL
+   if (!component.purl.empty() && component.purl.find("pkg:") == 0)
    {
-      return generateSPDXOutput(result, outputVersion);
+      size_t start = 4;  // Skip "pkg:"
+      size_t end   = component.purl.find('/', start);
+      if (end != std::string::npos)
+      {
+         info.packageManager = component.purl.substr(start, end - start);
+      }
    }
-   else if (outputFormat == "cyclonedx")
+
+   return info;
+}
+
+std::string UnifiedSBOMComparator::generateSPDXOutput(const std::vector<ComponentInfo>& components,
+                                                      const std::string&                format,
+                                                      const std::string&                version)
+{
+   try
    {
-      return generateCycloneDXOutput(result, outputVersion);
+      auto handler = SBOMFormatFactory::createSPDXHandler(version);
+      if (!handler)
+      {
+         std::cerr << "Failed to create SPDX handler for version: " << version << std::endl;
+         return "";
+      }
+
+      std::unordered_map<std::string, ComponentInfo> componentMap;
+      for (const auto& component : components)
+      {
+         componentMap[component.name] = component;
+      }
+
+      std::map<std::string, std::string> metadata;
+      metadata["document_name"] = "Merged SBOM";
+      metadata["creator"]       = "Heimdall SBOM Comparator";
+
+      return handler->generateSBOM(componentMap, metadata);
+   }
+   catch (const std::exception& e)
+   {
+      std::cerr << "Error generating SPDX output: " << e.what() << std::endl;
    }
 
    return "";
 }
 
-std::string SBOMComparator::generateSPDXOutput(const std::vector<SBOMComponent>& components,
-                                               const std::string&                version)
+std::string UnifiedSBOMComparator::generateCycloneDXOutput(
+   const std::vector<ComponentInfo>& components, const std::string& format,
+   const std::string& version)
 {
-   std::stringstream ss;
-
-   if (version == "2.3")
+   try
    {
-      ss << "SPDXVersion: SPDX-2.3\n";
-      ss << "DataLicense: CC0-1.0\n";
-      ss << "SPDXID: SPDXRef-DOCUMENT\n";
-      ss << "DocumentName: Merged SBOM\n";
-      ss << "DocumentNamespace: https://spdx.org/spdxdocs/merged-sbom\n";
-      ss << "Creator: Organization: Heimdall SBOM Generator\n";
-      ss << "Created: " << getCurrentTimestamp() << "\n\n";
-
-      for (const auto& comp : components)
+      auto handler = SBOMFormatFactory::createCycloneDXHandler(version);
+      if (!handler)
       {
-         ss << "PackageName: " << comp.name << "\n";
-         ss << "SPDXID: " << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\n";
-         if (!comp.version.empty())
-         {
-            ss << "PackageVersion: " << comp.version << "\n";
-         }
-         if (!comp.purl.empty())
-         {
-            ss << "PackageDownloadLocation: " << comp.purl << "\n";
-         }
-         else
-         {
-            ss << "PackageDownloadLocation: NOASSERTION\n";
-         }
-         if (!comp.license.empty())
-         {
-            ss << "PackageLicenseConcluded: " << comp.license << "\n";
-         }
-         else
-         {
-            ss << "PackageLicenseConcluded: NOASSERTION\n";
-         }
-         ss << "PackageSupplier: NOASSERTION\n";
-         ss << "FilesAnalyzed: false\n";
-         ss << "PackageLicenseDeclared: NOASSERTION\n";
-         ss << "PackageCopyrightText: NOASSERTION\n\n";
+         std::cerr << "Failed to create CycloneDX handler for version: " << version << std::endl;
+         return "";
       }
 
-      // Add relationships for dependencies
-      for (const auto& comp : components)
+      std::unordered_map<std::string, ComponentInfo> componentMap;
+      for (const auto& component : components)
       {
-         for (const auto& dep : comp.dependencies)
-         {
-            ss << "Relationship: " << (comp.bomRef.empty() ? comp.id : comp.bomRef) 
-               << " DEPENDS_ON " << dep << "\n";
-         }
+         componentMap[component.name] = component;
       }
+
+      std::map<std::string, std::string> metadata;
+      metadata["document_name"] = "Merged SBOM";
+      metadata["creator"]       = "Heimdall SBOM Comparator";
+
+      return handler->generateSBOM(componentMap, metadata);
    }
-   else
+   catch (const std::exception& e)
    {
-      // SPDX 3.0 JSON format
-      ss << "{\n";
-      ss << "  \"spdxVersion\": \"SPDX-3.0\",\n";
-      ss << "  \"creationInfo\": {\n";
-      ss << "    \"creators\": [\"Organization: Heimdall SBOM Generator\"],\n";
-      ss << "    \"created\": \"" << getCurrentTimestamp() << "\"\n";
-      ss << "  },\n";
-      ss << "  \"packages\": [\n";
-
-      for (size_t i = 0; i < components.size(); ++i)
-      {
-         const auto& comp = components[i];
-         ss << "    {\n";
-         ss << "      \"SPDXID\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
-         ss << "      \"name\": \"" << comp.name << "\"";
-         if (!comp.version.empty())
-         {
-            ss << ",\n      \"versionInfo\": \"" << comp.version << "\"";
-         }
-         if (!comp.purl.empty())
-         {
-            ss << ",\n      \"downloadLocation\": \"" << comp.purl << "\"";
-         }
-         if (!comp.license.empty())
-         {
-            ss << ",\n      \"licenseConcluded\": \"" << comp.license << "\"";
-         }
-         ss << "\n    }";
-         if (i < components.size() - 1)
-         {
-            ss << ",";
-         }
-         ss << "\n";
-      }
-
-      ss << "  ]";
-
-      // Add relationships for dependencies
-      bool hasDependencies = false;
-      for (const auto& comp : components)
-      {
-         if (!comp.dependencies.empty())
-         {
-            hasDependencies = true;
-            break;
-         }
-      }
-
-      if (hasDependencies)
-      {
-         ss << ",\n  \"relationships\": [\n";
-         bool firstRel = true;
-         for (const auto& comp : components)
-         {
-            for (const auto& dep : comp.dependencies)
-            {
-               if (!firstRel)
-               {
-                  ss << ",\n";
-               }
-               ss << "    {\n";
-               ss << "      \"spdxElementId\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
-               ss << "      \"relatedSpdxElement\": \"" << dep << "\",\n";
-               ss << "      \"relationshipType\": \"DEPENDS_ON\"\n";
-               ss << "    }";
-               firstRel = false;
-            }
-         }
-         ss << "\n  ]";
-      }
-
-      ss << "\n}\n";
+      std::cerr << "Error generating CycloneDX output: " << e.what() << std::endl;
    }
 
-   return ss.str();
+   return "";
 }
 
-std::string SBOMComparator::generateCycloneDXOutput(const std::vector<SBOMComponent>& components,
-                                                    const std::string&                version)
-{
-   std::stringstream ss;
-
-   ss << "{\n";
-   ss << "  \"bomFormat\": \"CycloneDX\",\n";
-   ss << "  \"specVersion\": \"" << version << "\",\n";
-   ss << "  \"metadata\": {\n";
-   ss << "    \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
-   ss << "    \"tools\": [{\n";
-   ss << "      \"vendor\": \"Heimdall\",\n";
-   ss << "      \"name\": \"SBOM Generator\",\n";
-   ss << "      \"version\": \"1.0.0\"\n";
-   ss << "    }]\n";
-   ss << "  },\n";
-   ss << "  \"components\": [\n";
-
-   for (size_t i = 0; i < components.size(); ++i)
-   {
-      const auto& comp = components[i];
-      ss << "    {\n";
-      ss << "      \"bom-ref\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
-      ss << "      \"type\": \"" << comp.type << "\",\n";
-      ss << "      \"name\": \"" << comp.name << "\"";
-      if (!comp.version.empty())
-      {
-         ss << ",\n      \"version\": \"" << comp.version << "\"";
-      }
-      if (!comp.purl.empty())
-      {
-         ss << ",\n      \"purl\": \"" << comp.purl << "\"";
-      }
-      if (!comp.license.empty())
-      {
-         ss << ",\n      \"licenses\": [{\n";
-         ss << "        \"license\": {\n";
-         ss << "          \"id\": \"" << comp.license << "\"\n";
-         ss << "        }\n";
-         ss << "      }]";
-      }
-      ss << "\n    }";
-      if (i < components.size() - 1)
-      {
-         ss << ",";
-      }
-      ss << "\n";
-   }
-
-   ss << "  ]";
-
-   // Add dependencies section if any component has dependencies
-   bool hasDependencies = false;
-   for (const auto& comp : components)
-   {
-      if (!comp.dependencies.empty())
-      {
-         hasDependencies = true;
-         break;
-      }
-   }
-
-   if (hasDependencies)
-   {
-      ss << ",\n  \"dependencies\": [\n";
-      bool firstDep = true;
-      for (const auto& comp : components)
-      {
-         if (!comp.dependencies.empty())
-         {
-            if (!firstDep)
-            {
-               ss << ",\n";
-            }
-            ss << "    {\n";
-            ss << "      \"ref\": \"" << (comp.bomRef.empty() ? comp.id : comp.bomRef) << "\",\n";
-            ss << "      \"dependsOn\": [\n";
-            for (size_t j = 0; j < comp.dependencies.size(); ++j)
-            {
-               ss << "        \"" << comp.dependencies[j] << "\"";
-               if (j < comp.dependencies.size() - 1)
-               {
-                  ss << ",";
-               }
-               ss << "\n";
-            }
-            ss << "      ]\n";
-            ss << "    }";
-            firstDep = false;
-         }
-      }
-      ss << "\n  ]";
-   }
-
-   ss << "\n}\n";
-
-   return ss.str();
-}
-
-std::string SBOMComparator::generateJSONReport(const std::vector<SBOMDifference>& differences)
+std::string UnifiedSBOMComparator::generateJSONReport(
+   const std::vector<SBOMDifference>& differences)
 {
    std::stringstream ss;
    ss << "{\n";
+   ss << "  \"timestamp\": \"" << getCurrentTimestamp() << "\",\n";
    ss << "  \"differences\": [\n";
 
    for (size_t i = 0; i < differences.size(); ++i)
    {
       const auto& diff = differences[i];
       ss << "    {\n";
-      ss << "      \"type\": \"" << getDifferenceTypeString(diff.type) << "\",\n";
+      ss << "      \"type\": \"" << getDifferenceTypeStringLowercase(diff.type) << "\",\n";
       ss << "      \"component\": {\n";
-      ss << "        \"id\": \"" << diff.component.id << "\",\n";
       ss << "        \"name\": \"" << diff.component.name << "\",\n";
       ss << "        \"version\": \"" << diff.component.version << "\",\n";
       ss << "        \"type\": \"" << diff.component.type << "\"\n";
-      ss << "      }";
+      ss << "      }\n";
+      ss << "    }";
 
-      if (diff.type == SBOMDifference::Type::MODIFIED && diff.oldComponent.has_value())
-      {
-         ss << ",\n      \"oldComponent\": {\n";
-         ss << "        \"id\": \"" << diff.oldComponent->id << "\",\n";
-         ss << "        \"name\": \"" << diff.oldComponent->name << "\",\n";
-         ss << "        \"version\": \"" << diff.oldComponent->version << "\",\n";
-         ss << "        \"type\": \"" << diff.oldComponent->type << "\"\n";
-         ss << "      }";
-      }
-
-      ss << "\n    }";
-      if (i < differences.size() - 1)
+      if (i + 1 < differences.size())
       {
          ss << ",";
       }
@@ -884,89 +566,78 @@ std::string SBOMComparator::generateJSONReport(const std::vector<SBOMDifference>
    }
 
    ss << "  ]\n";
-   ss << "}\n";
+   ss << "}";
 
    return ss.str();
 }
 
-std::string SBOMComparator::generateCSVReport(const std::vector<SBOMDifference>& differences)
+std::string UnifiedSBOMComparator::generateCSVReport(const std::vector<SBOMDifference>& differences)
 {
    std::stringstream ss;
-   ss << "Type,ID,Name,Version,Type,OldName,OldVersion,OldType\n";
+   ss << "Type,Name,Version,Type,License,Description\n";
 
    for (const auto& diff : differences)
    {
-      ss << getDifferenceTypeString(diff.type) << "," << diff.component.id << ","
-         << diff.component.name << "," << diff.component.version << "," << diff.component.type;
-
-      if (diff.type == SBOMDifference::Type::MODIFIED && diff.oldComponent.has_value())
-      {
-         ss << "," << diff.oldComponent->name << "," << diff.oldComponent->version << ","
-            << diff.oldComponent->type;
-      }
-      else
-      {
-         ss << ",,,";
-      }
-      ss << "\n";
+      ss << getDifferenceTypeStringLowercase(diff.type) << ","
+         << "\"" << diff.component.name << "\","
+         << "\"" << diff.component.version << "\","
+         << "\"" << diff.component.type << "\","
+         << "\"" << diff.component.license << "\","
+         << "\"" << diff.component.description << "\"\n";
    }
 
    return ss.str();
 }
 
-std::string SBOMComparator::generateTextReport(const std::vector<SBOMDifference>& differences)
+std::string UnifiedSBOMComparator::generateTextReport(
+   const std::vector<SBOMDifference>& differences)
 {
    std::stringstream ss;
    ss << "SBOM Comparison Report\n";
-   ss << "=====================\n\n";
+   ss << "Generated: " << getCurrentTimestamp() << "\n\n";
 
-   auto stats = getDiffStatistics(differences);
+   std::map<std::string, int> stats = getDiffStatistics(differences);
    ss << "Summary:\n";
    ss << "  Added: " << stats["added"] << "\n";
    ss << "  Removed: " << stats["removed"] << "\n";
    ss << "  Modified: " << stats["modified"] << "\n";
    ss << "  Unchanged: " << stats["unchanged"] << "\n\n";
 
+   ss << "Details:\n";
    if (differences.empty())
    {
       ss << "No differences found\n";
    }
    else
    {
-      ss << "Details:\n";
       for (const auto& diff : differences)
       {
-         switch (diff.type)
-         {
-            case SBOMDifference::Type::ADDED:
-               ss << "[ADDED] " << diff.component.name << " " << diff.component.version << " ("
-                  << diff.component.id << ")\n";
-               break;
-            case SBOMDifference::Type::REMOVED:
-               ss << "[REMOVED] " << diff.component.name << " " << diff.component.version << " ("
-                  << diff.component.id << ")\n";
-               break;
-            case SBOMDifference::Type::MODIFIED:
-               ss << "[MODIFIED] " << diff.component.name << " " << diff.component.version << " ("
-                  << diff.component.id << ")\n";
-               if (diff.oldComponent.has_value())
-               {
-                  ss << "  Previous: " << diff.oldComponent->name << " "
-                     << diff.oldComponent->version << "\n";
-               }
-               break;
-            case SBOMDifference::Type::UNCHANGED:
-               ss << "[UNCHANGED] " << diff.component.name << " " << diff.component.version << " ("
-                  << diff.component.id << ")\n";
-               break;
-         }
+         ss << "[" << getDifferenceTypeString(diff.type) << "] " << diff.component.name << " "
+            << diff.component.version << " (" << diff.component.type << ")\n";
       }
    }
 
    return ss.str();
 }
 
-std::string SBOMComparator::getDifferenceTypeString(SBOMDifference::Type type)
+std::string UnifiedSBOMComparator::getDifferenceTypeString(SBOMDifference::Type type)
+{
+   switch (type)
+   {
+      case SBOMDifference::Type::ADDED:
+         return "ADDED";
+      case SBOMDifference::Type::REMOVED:
+         return "REMOVED";
+      case SBOMDifference::Type::MODIFIED:
+         return "MODIFIED";
+      case SBOMDifference::Type::UNCHANGED:
+         return "UNCHANGED";
+      default:
+         return "UNKNOWN";
+   }
+}
+
+std::string UnifiedSBOMComparator::getDifferenceTypeStringLowercase(SBOMDifference::Type type)
 {
    switch (type)
    {
@@ -983,46 +654,47 @@ std::string SBOMComparator::getDifferenceTypeString(SBOMDifference::Type type)
    }
 }
 
-std::string SBOMComparator::getCurrentTimestamp()
+std::string UnifiedSBOMComparator::getCurrentTimestamp()
 {
    auto              now    = std::chrono::system_clock::now();
    auto              time_t = std::chrono::system_clock::to_time_t(now);
+
    std::stringstream ss;
-#if defined(_POSIX_VERSION)
-   struct tm tm_buf{};
-   gmtime_r(&time_t, &tm_buf);
-   ss << std::put_time(&tm_buf, "%Y-%m-%dT%H:%M:%SZ");
-#else
-   // Fallback: not thread-safe
    ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
-#endif
+
    return ss.str();
 }
 
-std::unique_ptr<SBOMParser> SBOMParserFactory::createParser(const std::string& format)
-{
-   std::string lowerFormat = format;
-   std::transform(lowerFormat.begin(), lowerFormat.end(), lowerFormat.begin(), ::tolower);
+// SBOMComparatorFactory Implementation
 
-   if (lowerFormat == "spdx" || lowerFormat == "spdx-2.3" || lowerFormat == "spdx-3.0" ||
-       lowerFormat == "spdx-3.0.0" || lowerFormat == "spdx-3.0.1")
+std::unique_ptr<UnifiedSBOMComparator> SBOMComparatorFactory::createComparator(
+   const std::string& format)
+{
+   // Currently, we always return a UnifiedSBOMComparator
+   // The format parameter is kept for future extensibility
+   (void)format;  // Suppress unused parameter warning
+   return std::make_unique<UnifiedSBOMComparator>();
+}
+
+std::vector<std::string> SBOMComparatorFactory::getSupportedFormats()
+{
+   return {"spdx", "cyclonedx"};
+}
+
+std::vector<std::string> SBOMComparatorFactory::getSupportedVersions(const std::string& format)
+{
+   if (format == "spdx")
    {
-      return heimdall::compat::make_unique<SPDXParser>();
+      return {"2.3", "3.0.0", "3.0.1"};
    }
-   else if (lowerFormat == "cyclonedx" || lowerFormat == "cyclonedx-1.4" ||
-            lowerFormat == "cyclonedx-1.5" || lowerFormat == "cyclonedx-1.6")
+   else if (format == "cyclonedx")
    {
-      return heimdall::compat::make_unique<CycloneDXParser>();
+      return {"1.4", "1.5", "1.6"};
    }
    else
    {
-      return nullptr;
+      return {};
    }
-}
-
-std::vector<std::string> SBOMParserFactory::getSupportedFormats()
-{
-   return {"spdx", "cyclonedx"};
 }
 
 }  // namespace heimdall

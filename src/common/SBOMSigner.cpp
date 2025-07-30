@@ -113,8 +113,7 @@ class SBOMSigner::Impl
 #endif
       ss << std::put_time(&utc_tm, "%Y-%m-%dT%H:%M:%S");
       ss << '.' << std::setfill('0') << std::setw(3) << ms.count() << 'Z';
-      
-      
+
       return ss.str();
    }
 
@@ -191,8 +190,7 @@ class SBOMSigner::Impl
       BIO_get_mem_ptr(bio, &bufferPtr);
 
       std::string result(bufferPtr->data, bufferPtr->length);
-      
-      
+
       BIO_free_all(bio);
 
       return result;
@@ -859,17 +857,6 @@ bool SBOMSigner::signSBOM(const std::string& sbomContent, SignatureInfo& signatu
 std::string SBOMSigner::addSignatureToCycloneDX(const std::string&   sbomContent,
                                                 const SignatureInfo& signatureInfo)
 {
-   nlohmann::json sbomJson;
-   try
-   {
-      sbomJson = nlohmann::json::parse(sbomContent);
-   }
-   catch (const std::exception& e)
-   {
-      pImpl->lastError = "Failed to parse SBOM JSON: " + std::string(e.what());
-      return sbomContent;
-   }
-
    // Create signature object according to JSON Signature Format (JSF) specification
    // JSF format: https://cyberphone.github.io/doc/security/jsf.html
    nlohmann::json signatureObj;
@@ -884,10 +871,38 @@ std::string SBOMSigner::addSignatureToCycloneDX(const std::string&   sbomContent
       signatureObj["publicKey"] = signatureInfo.publicKey;
    }
 
-   // Add signature to SBOM
-   sbomJson["signature"] = signatureObj;
+   // Convert signature object to string
+   std::string signatureStr = signatureObj.dump(2);
 
-   return sbomJson.dump(2);
+   // Insert signature at the end of the SBOM, before the closing brace
+   // Find the last closing brace
+   size_t lastBrace = sbomContent.rfind('}');
+   if (lastBrace == std::string::npos)
+   {
+      pImpl->lastError = "Invalid JSON format: no closing brace found";
+      return sbomContent;
+   }
+
+   // Insert signature before the last closing brace
+   std::string result = sbomContent.substr(0, lastBrace);
+
+   // Remove trailing whitespace and newlines
+   while (!result.empty() &&
+          (result.back() == ' ' || result.back() == '\n' || result.back() == '\r'))
+   {
+      result.pop_back();
+   }
+
+   // Add comma if the content doesn't end with a comma
+   if (!result.empty() && result.back() != ',')
+   {
+      result += ",";
+   }
+
+   result += "\n  \"signature\": " + signatureStr + "\n";
+   result += "}";
+
+   return result;
 }
 
 bool SBOMSigner::verifySignature(const std::string& sbomContent)

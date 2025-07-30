@@ -18,7 +18,7 @@ limitations under the License.
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include "common/DWARFExtractor.hpp"
+#include "extractors/DWARFExtractor.hpp"
 #include "common/Utils.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
