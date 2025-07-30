@@ -21,7 +21,7 @@ class LLDPluginTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_lld_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create test files
       createTestFiles();
@@ -32,10 +32,10 @@ class LLDPluginTest : public ::testing::Test
       test_utils::safeRemoveDirectory(test_dir);
    }
 
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_object_file;
-   heimdall::compat::fs::path test_library_file;
-   heimdall::compat::fs::path test_executable;
+   fs::path test_dir;
+   fs::path test_object_file;
+   fs::path test_library_file;
+   fs::path test_executable;
 
    void                       createTestFiles()
    {

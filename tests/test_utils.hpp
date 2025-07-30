@@ -13,10 +13,10 @@ namespace test_utils
  * @param base_name The base name for the test directory
  * @return A unique path for the test directory
  */
-inline heimdall::compat::fs::path getUniqueTestDirectory(const std::string& base_name)
+inline fs::path getUniqueTestDirectory(const std::string& base_name)
 {
    auto pid = std::to_string(getpid());
-   return heimdall::compat::fs::temp_directory_path() / (base_name + "_" + pid);
+   return fs::temp_directory_path() / (base_name + "_" + pid);
 }
 
 /**
@@ -27,17 +27,17 @@ inline heimdall::compat::fs::path getUniqueTestDirectory(const std::string& base
  * @param path The path to remove
  * @return true if removal was successful or directory didn't exist, false on error
  */
-inline bool safeRemoveDirectory(const heimdall::compat::fs::path& path)
+inline bool safeRemoveDirectory(const fs::path& path)
 {
    try
    {
-      if (heimdall::compat::fs::exists(path))
+      if (fs::exists(path))
       {
-         heimdall::compat::fs::remove_all(path);
+         fs::remove_all(path);
       }
       return true;
    }
-   catch (const heimdall::compat::fs::filesystem_error& e)
+   catch (const fs::filesystem_error& e)
    {
       // Ignore filesystem errors during cleanup - this is common in CI
       // where files might be cleaned up by other processes or have timing issues
@@ -58,18 +58,18 @@ inline bool safeRemoveDirectory(const heimdall::compat::fs::path& path)
  * @param context Optional context string for logging
  * @return true if removal was successful or directory didn't exist, false on error
  */
-inline bool safeRemoveDirectoryWithLogging(const heimdall::compat::fs::path& path,
+inline bool safeRemoveDirectoryWithLogging(const fs::path& path,
                                            const std::string&                context = "")
 {
    try
    {
-      if (heimdall::compat::fs::exists(path))
+      if (fs::exists(path))
       {
-         heimdall::compat::fs::remove_all(path);
+         fs::remove_all(path);
       }
       return true;
    }
-   catch (const heimdall::compat::fs::filesystem_error& e)
+   catch (const fs::filesystem_error& e)
    {
       // Log the error but don't throw - this is expected in CI environments
       if (!context.empty())

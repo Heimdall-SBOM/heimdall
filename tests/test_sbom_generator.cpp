@@ -30,14 +30,14 @@ class SBOMGeneratorTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_sbom_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
    }
    void TearDown() override
    {
       test_utils::safeRemoveDirectory(test_dir);
    }
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_file;
+   fs::path test_dir;
+   fs::path test_file;
 };
 
 TEST_F(SBOMGeneratorTest, ProcessComponentAndCount)

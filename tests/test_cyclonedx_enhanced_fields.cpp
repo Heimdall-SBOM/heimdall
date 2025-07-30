@@ -47,7 +47,7 @@ protected:
         std::cout << "DEBUG: SetUp() called" << std::endl;
         test_dir = test_utils::getUniqueTestDirectory("heimdall_cyclonedx_enhanced_test");
         std::cout << "DEBUG: Test directory: " << test_dir.string() << std::endl;
-        heimdall::compat::fs::create_directories(test_dir);
+        fs::create_directories(test_dir);
         std::cout << "DEBUG: SetUp() completed" << std::endl;
     }
     
@@ -56,7 +56,7 @@ protected:
         test_utils::safeRemoveDirectory(test_dir);
     }
     
-    heimdall::compat::fs::path test_dir;
+    fs::path test_dir;
     
     // Helper method to create a component with enhanced fields
     SBOMComponent createEnhancedComponent()
@@ -95,7 +95,7 @@ protected:
         
         // Verify file was created
         std::cout << "DEBUG: Created test file at: " << testFilePath << std::endl;
-        std::cout << "DEBUG: File exists: " << (heimdall::compat::fs::exists(testFilePath) ? "YES" : "NO") << std::endl;
+        std::cout << "DEBUG: File exists: " << (fs::exists(testFilePath) ? "YES" : "NO") << std::endl;
         
         // Use default constructor to avoid file access during construction
         ComponentInfo info;
@@ -173,7 +173,7 @@ TEST_F(CycloneDXEnhancedFieldsTest, CycloneDXGenerationWithEnhancedFields)
     testFile.close();
     
     std::cout << "DEBUG: Created test file at: " << testFilePath << std::endl;
-    std::cout << "DEBUG: File exists: " << (heimdall::compat::fs::exists(testFilePath) ? "YES" : "NO") << std::endl;
+    std::cout << "DEBUG: File exists: " << (fs::exists(testFilePath) ? "YES" : "NO") << std::endl;
     
     // Create a minimal component without file access
     ComponentInfo component;

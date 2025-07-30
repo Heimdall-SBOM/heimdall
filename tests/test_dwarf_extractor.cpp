@@ -31,7 +31,7 @@ class DWARFExtractorTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create test files
       createTestFiles();
@@ -78,20 +78,20 @@ static int internal_function() {
       (void)obj_compile_result;  // Suppress unused variable warning
 
       // Fallback to dummy files if compilation fails
-      if (!heimdall::compat::fs::exists(test_executable))
+      if (!fs::exists(test_executable))
       {
          std::ofstream(test_executable) << "dummy executable";
       }
-      if (!heimdall::compat::fs::exists(test_object))
+      if (!fs::exists(test_object))
       {
          std::ofstream(test_object) << "dummy object";
       }
    }
 
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_source;
-   heimdall::compat::fs::path test_executable;
-   heimdall::compat::fs::path test_object;
+   fs::path test_dir;
+   fs::path test_source;
+   fs::path test_executable;
+   fs::path test_object;
 };
 
 TEST_F(DWARFExtractorTest, Constructor)
@@ -111,7 +111,7 @@ TEST_F(DWARFExtractorTest, ExtractSourceFiles)
    std::vector<std::string> sourceFiles;
 
    // Test with executable that has debug info
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool result = extractor.extractSourceFiles(test_executable.string(), sourceFiles);
 
@@ -141,7 +141,7 @@ TEST_F(DWARFExtractorTest, ExtractSourceFiles)
 
    // Test with file that has no debug info
    sourceFiles.clear();
-   heimdall::compat::fs::path no_debug_file = test_dir / "no_debug.txt";
+   fs::path no_debug_file = test_dir / "no_debug.txt";
    std::ofstream(no_debug_file) << "no debug info";
    EXPECT_FALSE(extractor.extractSourceFiles(no_debug_file.string(), sourceFiles));
    EXPECT_TRUE(sourceFiles.empty());
@@ -153,7 +153,7 @@ TEST_F(DWARFExtractorTest, ExtractCompileUnits)
    std::vector<std::string> compileUnits;
 
    // Test with executable that has debug info
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool result = extractor.extractCompileUnits(test_executable.string(), compileUnits);
 
@@ -177,7 +177,7 @@ TEST_F(DWARFExtractorTest, ExtractFunctions)
    std::vector<std::string> functions;
 
    // Test with executable that has debug info
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool result = extractor.extractFunctions(test_executable.string(), functions);
 
@@ -211,7 +211,7 @@ TEST_F(DWARFExtractorTest, ExtractLineInfo)
    std::vector<std::string> lineInfo;
 
    // Test with executable that has debug info
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool result = extractor.extractLineInfo(test_executable.string(), lineInfo);
 
@@ -233,7 +233,7 @@ TEST_F(DWARFExtractorTest, HasDWARFInfo)
    DWARFExtractor extractor;
 
    // Test with executable that has debug info
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool has_dwarf = extractor.hasDWARFInfo(test_executable.string());
       // This might be true or false depending on LLVM support and debug info
@@ -244,7 +244,7 @@ TEST_F(DWARFExtractorTest, HasDWARFInfo)
    EXPECT_FALSE(extractor.hasDWARFInfo("nonexistent_file"));
 
    // Test with file that has no debug info
-   heimdall::compat::fs::path no_debug_file = test_dir / "no_debug.txt";
+   fs::path no_debug_file = test_dir / "no_debug.txt";
    std::ofstream(no_debug_file) << "no debug info";
    EXPECT_FALSE(extractor.hasDWARFInfo(no_debug_file.string()));
 }
@@ -257,7 +257,7 @@ TEST_F(DWARFExtractorTest, ObjectFileExtraction)
    std::vector<std::string> compileUnits;
 
    // Test with object file that has debug info
-   if (heimdall::compat::fs::file_size(test_object) > 100)
+   if (fs::file_size(test_object) > 100)
    {
       // Test source files extraction
       bool source_result = extractor.extractSourceFiles(test_object.string(), sourceFiles);
@@ -317,7 +317,7 @@ TEST_F(DWARFExtractorTest, MultipleExtractions)
    std::vector<std::string> functions1, functions2;
 
    // Test multiple extractions on same file
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool result1 = extractor.extractSourceFiles(test_executable.string(), sourceFiles1);
       bool result2 = extractor.extractSourceFiles(test_executable.string(), sourceFiles2);
@@ -346,7 +346,7 @@ TEST_F(DWARFExtractorTest, HeuristicExtraction)
 
    // Test heuristic extraction when LLVM DWARF fails
    // This is mostly testing that it doesn't crash
-   if (heimdall::compat::fs::file_size(test_executable) > 100)
+   if (fs::file_size(test_executable) > 100)
    {
       bool result = extractor.extractSourceFiles(test_executable.string(), sourceFiles);
       // Should either succeed or fail gracefully

@@ -19,7 +19,7 @@ class SBOMComparatorTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_comparator_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create test SBOM files
       createTestSBOMs();
@@ -156,7 +156,7 @@ PackageDownloadLocation: https://example.com/libbaz
       test_cdx2  = cdx_file2;
    }
 
-   heimdall::compat::fs::path test_dir;
+   fs::path test_dir;
    std::string                test_spdx1, test_spdx2, test_cdx1, test_cdx2;
 };
 
@@ -951,7 +951,7 @@ TEST_F(SBOMComparatorTest, BoundaryConditions)
    {  // Reduced from 50 to 10
       long_path += "/very/deep/nested/directory/structure/";
    }
-   heimdall::compat::fs::create_directories(long_path);
+   fs::create_directories(long_path);
 
    std::string   long_file = long_path + "/test.json";
    std::ofstream long_out(long_file);

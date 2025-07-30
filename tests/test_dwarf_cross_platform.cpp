@@ -37,7 +37,7 @@ class DWARFCrossPlatformTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_cross_platform_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create test files
       createTestFiles();
@@ -132,29 +132,29 @@ int main() {
       std::ofstream(test_pe_library) << "dummy PE library";
 
       // Fallback to dummy files if compilation fails
-      if (!heimdall::compat::fs::exists(test_elf_executable))
+      if (!fs::exists(test_elf_executable))
       {
          std::ofstream(test_elf_executable) << "dummy ELF executable";
       }
-      if (!heimdall::compat::fs::exists(test_elf_library))
+      if (!fs::exists(test_elf_library))
       {
          std::ofstream(test_elf_library) << "dummy ELF library";
       }
-      if (!heimdall::compat::fs::exists(test_elf_object))
+      if (!fs::exists(test_elf_object))
       {
          std::ofstream(test_elf_object) << "dummy ELF object";
       }
    }
 
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_source;
-   heimdall::compat::fs::path test_elf_executable;
-   heimdall::compat::fs::path test_elf_library;
-   heimdall::compat::fs::path test_elf_object;
-   heimdall::compat::fs::path test_macho_executable;
-   heimdall::compat::fs::path test_macho_library;
-   heimdall::compat::fs::path test_pe_executable;
-   heimdall::compat::fs::path test_pe_library;
+   fs::path test_dir;
+   fs::path test_source;
+   fs::path test_elf_executable;
+   fs::path test_elf_library;
+   fs::path test_elf_object;
+   fs::path test_macho_executable;
+   fs::path test_macho_library;
+   fs::path test_pe_executable;
+   fs::path test_pe_library;
 };
 
 // Platform Detection Tests
@@ -163,7 +163,7 @@ TEST_F(DWARFCrossPlatformTest, PlatformDetection)
    MetadataExtractor extractor;
 
    // Test format detection based on platform
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
 #ifdef __linux__
       // On Linux, should detect ELF format
@@ -229,7 +229,7 @@ TEST_F(DWARFCrossPlatformTest, LinuxELFExecutableDWARF)
    DWARFExtractor           extractor;
    std::vector<std::string> sourceFiles, functions, compileUnits, lineInfo;
 
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
       // Test source file extraction
       bool source_result = extractor.extractSourceFiles(test_elf_executable.string(), sourceFiles);
@@ -301,7 +301,7 @@ TEST_F(DWARFCrossPlatformTest, LinuxELFSharedLibraryDWARF)
    DWARFExtractor           extractor;
    std::vector<std::string> sourceFiles, functions, compileUnits;
 
-   if (heimdall::compat::fs::file_size(test_elf_library) > 100)
+   if (fs::file_size(test_elf_library) > 100)
    {
       // Test source file extraction
       bool source_result = extractor.extractSourceFiles(test_elf_library.string(), sourceFiles);
@@ -360,7 +360,7 @@ TEST_F(DWARFCrossPlatformTest, LinuxELFObjectFileDWARF)
    DWARFExtractor           extractor;
    std::vector<std::string> sourceFiles, functions, compileUnits;
 
-   if (heimdall::compat::fs::file_size(test_elf_object) > 100)
+   if (fs::file_size(test_elf_object) > 100)
    {
       // Test source file extraction
       bool source_result = extractor.extractSourceFiles(test_elf_object.string(), sourceFiles);
@@ -463,7 +463,7 @@ TEST_F(DWARFCrossPlatformTest, ArchitectureDetection)
 {
    MetadataExtractor extractor;
 
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
       ComponentInfo component("test_elf", test_elf_executable.string());
 
@@ -517,7 +517,7 @@ TEST_F(DWARFCrossPlatformTest, LinuxIntegration)
 {
    MetadataExtractor extractor;
 
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
       ComponentInfo component("test_elf", test_elf_executable.string());
 
@@ -550,11 +550,11 @@ TEST_F(DWARFCrossPlatformTest, LinuxIntegration)
 TEST_F(DWARFCrossPlatformTest, MetadataHelpersCrossPlatform)
 {
    // Debug: Check if test executable exists and has proper size
-   bool   executable_exists = heimdall::compat::fs::exists(test_elf_executable);
+   bool   executable_exists = fs::exists(test_elf_executable);
    size_t executable_size   = 0;
    if (executable_exists)
    {
-      executable_size = heimdall::compat::fs::file_size(test_elf_executable);
+      executable_size = fs::file_size(test_elf_executable);
    }
 
    // Debug: Check if it's a real executable (not dummy)
@@ -647,7 +647,7 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
    MetadataExtractor extractor;
 
    // Test format detection based on platform
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
 #ifdef __linux__
       // On Linux, should detect ELF format
@@ -684,7 +684,7 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
 #endif
    }
 
-   if (heimdall::compat::fs::file_size(test_elf_library) > 100)
+   if (fs::file_size(test_elf_library) > 100)
    {
 #ifdef __linux__
       auto elfExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::ELF);
@@ -710,7 +710,7 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
 #endif
    }
 
-   if (heimdall::compat::fs::file_size(test_elf_object) > 100)
+   if (fs::file_size(test_elf_object) > 100)
    {
 #ifdef __linux__
       auto elfExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::ELF);
@@ -764,7 +764,7 @@ TEST_F(DWARFCrossPlatformTest, CrossPlatformPerformance)
    DWARFExtractor           extractor;
    std::vector<std::string> result;
 
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
       auto start = std::chrono::high_resolution_clock::now();
 
@@ -789,7 +789,7 @@ TEST_F(DWARFCrossPlatformTest, CrossPlatformMemoryManagement)
 {
    const int num_iterations = 20;
 
-   if (heimdall::compat::fs::file_size(test_elf_executable) > 100)
+   if (fs::file_size(test_elf_executable) > 100)
    {
       for (int i = 0; i < num_iterations; ++i)
       {

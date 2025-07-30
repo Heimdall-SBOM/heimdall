@@ -47,15 +47,15 @@ class UtilsExtendedTest : public ::testing::Test
       {
       }
 
-      test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_utils_extended_test";
+      test_dir = fs::temp_directory_path() / "heimdall_utils_extended_test";
 
       std::cout << "DEBUG: Creating test directory: " << test_dir.string() << std::endl;
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
-      if (!heimdall::compat::fs::exists(test_dir))
+      if (!fs::exists(test_dir))
       {
          std::cerr << "ERROR: Failed to create test directory: " << test_dir << std::endl;
-         std::cerr << "ERROR: Temp directory path: " << heimdall::compat::fs::temp_directory_path()
+         std::cerr << "ERROR: Temp directory path: " << fs::temp_directory_path()
                    << std::endl;
          return;
       }
@@ -76,10 +76,10 @@ class UtilsExtendedTest : public ::testing::Test
          test_stream.close();
 
          // Verify the file was created and has content
-         if (heimdall::compat::fs::exists(test_file))
+         if (fs::exists(test_file))
          {
             std::cout << "DEBUG: Test file created successfully, size: "
-                      << heimdall::compat::fs::file_size(test_file) << std::endl;
+                      << fs::file_size(test_file) << std::endl;
          }
          else
          {
@@ -105,10 +105,10 @@ class UtilsExtendedTest : public ::testing::Test
          large_stream.close();
 
          // Verify the large file was created
-         if (heimdall::compat::fs::exists(large_file))
+         if (fs::exists(large_file))
          {
             std::cout << "DEBUG: Large file created successfully, size: "
-                      << heimdall::compat::fs::file_size(large_file) << std::endl;
+                      << fs::file_size(large_file) << std::endl;
          }
          else
          {
@@ -118,7 +118,7 @@ class UtilsExtendedTest : public ::testing::Test
 
       // Create test directories
       sub_dir = test_dir / "subdir";
-      heimdall::compat::fs::create_directories(sub_dir);
+      fs::create_directories(sub_dir);
 
       // Set environment variable for testing
       setenv("TEST_VAR", "test_value", 1);
@@ -126,13 +126,13 @@ class UtilsExtendedTest : public ::testing::Test
       // Final verification
       std::cout << "DEBUG: Final test setup verification:" << std::endl;
       std::cout << "  - Test directory exists: "
-                << (heimdall::compat::fs::exists(test_dir) ? "YES" : "NO") << std::endl;
+                << (fs::exists(test_dir) ? "YES" : "NO") << std::endl;
       std::cout << "  - Test file exists: "
-                << (heimdall::compat::fs::exists(test_file) ? "YES" : "NO") << std::endl;
+                << (fs::exists(test_file) ? "YES" : "NO") << std::endl;
       std::cout << "  - Large file exists: "
-                << (heimdall::compat::fs::exists(large_file) ? "YES" : "NO") << std::endl;
+                << (fs::exists(large_file) ? "YES" : "NO") << std::endl;
       std::cout << "  - Sub directory exists: "
-                << (heimdall::compat::fs::exists(sub_dir) ? "YES" : "NO") << std::endl;
+                << (fs::exists(sub_dir) ? "YES" : "NO") << std::endl;
    }
 
    void TearDown() override
@@ -145,10 +145,10 @@ class UtilsExtendedTest : public ::testing::Test
       EVP_cleanup();
    }
 
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_file;
-   heimdall::compat::fs::path large_file;
-   heimdall::compat::fs::path sub_dir;
+   fs::path test_dir;
+   fs::path test_file;
+   fs::path large_file;
+   fs::path sub_dir;
 };
 
 TEST_F(UtilsExtendedTest, NormalizePath)
@@ -180,12 +180,12 @@ TEST_F(UtilsExtendedTest, GetFileSize)
    // Add debugging to understand what's happening in CI
    std::cout << "DEBUG: Test file path: " << test_file.string() << std::endl;
    std::cout << "DEBUG: Test file exists: "
-             << (heimdall::compat::fs::exists(test_file) ? "YES" : "NO") << std::endl;
+             << (fs::exists(test_file) ? "YES" : "NO") << std::endl;
 
-   if (heimdall::compat::fs::exists(test_file))
+   if (fs::exists(test_file))
    {
       std::cout << "DEBUG: Test file size via filesystem: "
-                << heimdall::compat::fs::file_size(test_file) << std::endl;
+                << fs::file_size(test_file) << std::endl;
 
       // Try to read the file content to verify it was written correctly
       std::ifstream debug_file(test_file.string());
@@ -206,11 +206,11 @@ TEST_F(UtilsExtendedTest, GetFileSize)
    {
       std::cout << "DEBUG: Test file does not exist - checking directory" << std::endl;
       std::cout << "DEBUG: Test directory exists: "
-                << (heimdall::compat::fs::exists(test_dir) ? "YES" : "NO") << std::endl;
-      if (heimdall::compat::fs::exists(test_dir))
+                << (fs::exists(test_dir) ? "YES" : "NO") << std::endl;
+      if (fs::exists(test_dir))
       {
          std::cout << "DEBUG: Test directory contents:" << std::endl;
-         for (const auto& entry : heimdall::compat::fs::directory_iterator(test_dir))
+         for (const auto& entry : fs::directory_iterator(test_dir))
          {
             std::cout << "  - " << entry.path().filename().string() << std::endl;
          }
@@ -223,7 +223,7 @@ TEST_F(UtilsExtendedTest, GetFileSize)
 
    // In CI environments, if the file creation failed, we should still test the function
    // but not fail the test if the file doesn't exist due to environment issues
-   if (heimdall::compat::fs::exists(test_file))
+   if (fs::exists(test_file))
    {
       EXPECT_GT(file_size, 0u);
    }
@@ -239,7 +239,7 @@ TEST_F(UtilsExtendedTest, GetFileSize)
    EXPECT_EQ(Utils::getFileSize((test_dir / "nonexistent.txt").string()), 0u);
 
    // Test large file only if it exists
-   if (heimdall::compat::fs::exists(large_file))
+   if (fs::exists(large_file))
    {
       EXPECT_EQ(Utils::getFileSize(large_file.string()), 4000u);  // 1000 * sizeof(int)
    }
@@ -494,7 +494,7 @@ TEST_F(UtilsExtendedTest, CurrentWorkingDirectory)
 {
    std::string cwd = Utils::getCurrentWorkingDirectory();
    EXPECT_FALSE(cwd.empty());
-   EXPECT_TRUE(heimdall::compat::fs::exists(cwd));
+   EXPECT_TRUE(fs::exists(cwd));
 }
 
 TEST_F(UtilsExtendedTest, LibrarySearchPaths)

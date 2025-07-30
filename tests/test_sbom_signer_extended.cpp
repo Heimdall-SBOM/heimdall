@@ -46,7 +46,7 @@ protected:
     void SetUp() override
     {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_sbom_signer_extended_test");
-        heimdall::compat::fs::create_directories(test_dir);
+        fs::create_directories(test_dir);
         
         // Generate test keys
         generateTestKeys();
@@ -57,7 +57,7 @@ protected:
         test_utils::safeRemoveDirectory(test_dir);
     }
     
-    heimdall::compat::fs::path test_dir;
+    fs::path test_dir;
     
     // Test key paths
     std::string rsa_private_key;

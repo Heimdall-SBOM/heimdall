@@ -43,7 +43,7 @@ protected:
     void SetUp() override
     {
         test_dir = test_utils::getUniqueTestDirectory("heimdall_signature_integration_test");
-        heimdall::compat::fs::create_directories(test_dir);
+        fs::create_directories(test_dir);
         
         // Generate test keys for all algorithms
         generateTestKeys();
@@ -58,7 +58,7 @@ protected:
         test_utils::safeRemoveDirectory(test_dir);
     }
     
-    heimdall::compat::fs::path test_dir;
+    fs::path test_dir;
     
     // Test key paths
     std::string rsa_private_key;
@@ -145,15 +145,15 @@ protected:
         for (const auto& path : searchPaths)
         {
             std::string fullPath = path + pluginName;
-            if (heimdall::compat::fs::exists(fullPath))
+            if (fs::exists(fullPath))
             {
-                return heimdall::compat::fs::absolute(fullPath).string();
+                return fs::absolute(fullPath).string();
             }
         }
 
         // Also try to find plugins in the current directory tree
-        heimdall::compat::fs::path currentDir = heimdall::compat::fs::current_path();
-        for (const auto& entry : heimdall::compat::fs::recursive_directory_iterator(currentDir))
+        fs::path currentDir = fs::current_path();
+        for (const auto& entry : fs::recursive_directory_iterator(currentDir))
         {
             if (entry.is_regular_file() && entry.path().filename() == pluginName)
             {
@@ -221,7 +221,7 @@ protected:
         
         std::string heimdallSbomPath;
         for (const auto& path : possiblePaths) {
-            if (heimdall::compat::fs::exists(path)) {
+            if (fs::exists(path)) {
                 heimdallSbomPath = path;
                 break;
             }
@@ -257,7 +257,7 @@ protected:
         
         std::string heimdallValidatePath;
         for (const auto& path : possiblePaths) {
-            if (heimdall::compat::fs::exists(path)) {
+            if (fs::exists(path)) {
                 heimdallValidatePath = path;
                 break;
             }

@@ -38,17 +38,17 @@ class AdaExtractorTest : public ::testing::Test
       // Create a temporary test directory and change to it (same approach as PluginInterfaceTest)
       // Use process ID to make directory unique and avoid test interference
       auto pid = std::to_string(getpid());
-      test_dir = heimdall::compat::fs::temp_directory_path() / ("heimdall_ada_test_" + pid);
+      test_dir = fs::temp_directory_path() / ("heimdall_ada_test_" + pid);
 
       // Clean up any existing test directory first
-      if (heimdall::compat::fs::exists(test_dir))
+      if (fs::exists(test_dir))
       {
-         heimdall::compat::fs::remove_all(test_dir);
+         fs::remove_all(test_dir);
       }
 
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
-      heimdall::compat::fs::current_path(test_dir);
+      fs::current_path(test_dir);
 
       // Create a dummy ali file named my_package.ali in test directory
       std::ofstream ali_file("my_package.ali");
@@ -70,7 +70,7 @@ class AdaExtractorTest : public ::testing::Test
       test_utils::safeRemoveDirectory(test_dir);
    }
 
-   heimdall::compat::fs::path test_dir;
+   fs::path test_dir;
 };
 
 TEST_F(AdaExtractorTest, FindAliFiles)
@@ -79,7 +79,7 @@ TEST_F(AdaExtractorTest, FindAliFiles)
    std::vector<std::string> aliFiles;
    extractor.findAliFiles(test_dir.string(), aliFiles);
    ASSERT_EQ(aliFiles.size(), 1);
-   EXPECT_EQ(heimdall::compat::fs::path(aliFiles[0]).filename(), "my_package.ali");
+       EXPECT_EQ(fs::path(aliFiles[0]).filename(), "my_package.ali");
 }
 
 TEST_F(AdaExtractorTest, ExtractAdaMetadata)
@@ -201,7 +201,7 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles)
       file1.close();
 
       // Check if file exists immediately after creation
-      bool file_exists_immediately = heimdall::compat::fs::exists(ali1);
+      bool file_exists_immediately = fs::exists(ali1);
       if (file_exists_immediately)
       {
          try
@@ -223,8 +223,8 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles)
       file2.close();
 
       // Check if both files exist after second file creation
-      bool ali1_exists_after_second = heimdall::compat::fs::exists(ali1);
-      bool ali2_exists_after_second = heimdall::compat::fs::exists(ali2);
+      bool ali1_exists_after_second = fs::exists(ali1);
+      bool ali2_exists_after_second = fs::exists(ali2);
 
       // Ensure files are written to disk and synchronized
 
@@ -246,12 +246,12 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_MultipleAliFiles)
       {
          if (!ali1_exists)
          {
-            ali1_exists = heimdall::compat::fs::exists(ali1);
+            ali1_exists = fs::exists(ali1);
          }
 
          if (!ali2_exists)
          {
-            ali2_exists = heimdall::compat::fs::exists(ali2);
+            ali2_exists = fs::exists(ali2);
          }
 
          if (!ali1_exists || !ali2_exists)

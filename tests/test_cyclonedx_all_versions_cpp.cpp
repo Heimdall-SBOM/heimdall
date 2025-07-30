@@ -7,7 +7,10 @@
 #include "src/compat/compatibility.hpp"
 
 using namespace heimdall::llvm;
-using namespace heimdall::compat;  // Use compatibility types
+// Use standard library types for C++17+
+using std::optional;
+using std::string_view;
+using std::variant;
 
 // Variable template for C++14 testing
 template <typename T>

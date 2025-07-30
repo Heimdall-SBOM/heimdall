@@ -21,7 +21,7 @@ class LightweightDWARFParserTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_dwarf_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create a simple test ELF file with DWARF data
       createTestELF();
@@ -69,7 +69,7 @@ class LightweightDWARFParserTest : public ::testing::Test
       test_elf_path = elf_path;
    }
 
-   heimdall::compat::fs::path test_dir;
+   fs::path test_dir;
    std::string                test_elf_path;
 };
 
@@ -411,7 +411,7 @@ TEST_F(LightweightDWARFParserTest, VeryLongFilePaths)
    {
       long_path += "/very/deep/nested/directory/structure/";
    }
-   heimdall::compat::fs::create_directories(long_path);
+   fs::create_directories(long_path);
 
    std::string          long_file = long_path + "/test_binary";
    std::ofstream        long_test(long_file, std::ios::binary);
@@ -636,7 +636,7 @@ TEST_F(LightweightDWARFParserTest, BoundaryConditions)
    {
       long_path += "/very/deep/nested/directory/structure/";
    }
-   heimdall::compat::fs::create_directories(long_path);
+   fs::create_directories(long_path);
 
    std::string          long_file = long_path + "/test_binary";
    std::ofstream        long_test(long_file, std::ios::binary);

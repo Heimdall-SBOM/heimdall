@@ -28,8 +28,8 @@ class UtilsTest : public ::testing::Test
    protected:
    void SetUp() override
    {
-      test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_utils_test";
-      heimdall::compat::fs::create_directories(test_dir);
+      test_dir = fs::temp_directory_path() / "heimdall_utils_test";
+      fs::create_directories(test_dir);
       test_file = test_dir / "file.txt";
       std::ofstream(test_file) << "test content";
    }
@@ -37,8 +37,8 @@ class UtilsTest : public ::testing::Test
    {
       test_utils::safeRemoveDirectory(test_dir);
    }
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_file;
+   fs::path test_dir;
+   fs::path test_file;
 };
 
 TEST_F(UtilsTest, GetDirectory)

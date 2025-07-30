@@ -34,7 +34,7 @@ class LinuxSupportTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_linux_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create test files
       createTestFiles();
@@ -73,14 +73,14 @@ const char* test_license = "MIT";
       (void)compile_result;  // Suppress unused variable warning
 
       // Fallback to dummy file if compilation fails
-      if (!heimdall::compat::fs::exists(test_lib))
+      if (!fs::exists(test_lib))
       {
          std::ofstream(test_lib) << "dummy content";
       }
    }
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_source;
-   heimdall::compat::fs::path test_lib;
+   fs::path test_dir;
+   fs::path test_source;
+   fs::path test_lib;
 };
 
 TEST_F(LinuxSupportTest, ELFSymbolExtraction)
@@ -92,7 +92,7 @@ TEST_F(LinuxSupportTest, ELFSymbolExtraction)
    MetadataExtractor extractor;
    ComponentInfo     component("testlib", test_lib.string());
 
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
       bool result = extractor.extractSymbolInfo(component);
       EXPECT_TRUE(result);
@@ -128,7 +128,7 @@ TEST_F(LinuxSupportTest, ELFSectionExtraction)
    MetadataExtractor extractor;
    ComponentInfo     component("testlib", test_lib.string());
 
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
       bool result = extractor.extractSectionInfo(component);
       EXPECT_TRUE(result);
@@ -163,7 +163,7 @@ TEST_F(LinuxSupportTest, ELFDependencyExtraction)
    MetadataExtractor extractor;
    ComponentInfo     component("testlib", test_lib.string());
 
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
       bool result = extractor.extractDependencyInfo(component);
       // May or may not have dependencies, but should not crash
@@ -181,7 +181,7 @@ TEST_F(LinuxSupportTest, ELFBuildIdExtraction)
    MetadataExtractor extractor;
    ComponentInfo     component("testlib", test_lib.string());
 
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
       // Test build ID extraction directly
       std::string buildId;
@@ -207,7 +207,7 @@ TEST_F(LinuxSupportTest, FileFormatDetection)
    MetadataExtractor extractor;
 
    // Test ELF detection
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
       EXPECT_TRUE(extractor.isELF(test_lib.string()));
    }
@@ -223,11 +223,11 @@ TEST_F(LinuxSupportTest, DWARFSourceFileExtraction)
 #endif
 
    // Debug: Check if test library exists and has proper size
-   bool   library_exists = heimdall::compat::fs::exists(test_lib);
+   bool   library_exists = fs::exists(test_lib);
    size_t library_size   = 0;
    if (library_exists)
    {
-      library_size = heimdall::compat::fs::file_size(test_lib);
+      library_size = fs::file_size(test_lib);
    }
 
    // Debug: Check if it's a real library (not dummy)
@@ -254,11 +254,11 @@ TEST_F(LinuxSupportTest, DWARFCompileUnitExtraction)
 #endif
 
    // Debug: Check if test library exists and has proper size
-   bool   library_exists = heimdall::compat::fs::exists(test_lib);
+   bool   library_exists = fs::exists(test_lib);
    size_t library_size   = 0;
    if (library_exists)
    {
-      library_size = heimdall::compat::fs::file_size(test_lib);
+      library_size = fs::file_size(test_lib);
    }
 
    // Debug: Check if it's a real library (not dummy)

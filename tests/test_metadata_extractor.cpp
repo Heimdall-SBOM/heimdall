@@ -32,7 +32,7 @@ class MetadataExtractorTest : public ::testing::Test
    void SetUp() override
    {
       test_dir = test_utils::getUniqueTestDirectory("heimdall_metadata_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
 
       // Create test files
       createTestFiles();
@@ -70,14 +70,14 @@ const char* test_license = "MIT";
       (void)compile_result;  // Suppress unused variable warning
 
       // Fallback to dummy file if compilation fails
-      if (!heimdall::compat::fs::exists(test_lib))
+      if (!fs::exists(test_lib))
       {
          std::ofstream(test_lib) << "dummy content";
       }
    }
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_source;
-   heimdall::compat::fs::path test_lib;
+   fs::path test_dir;
+   fs::path test_source;
+   fs::path test_lib;
 };
 
 TEST_F(MetadataExtractorTest, ExtractMetadataBasic)
@@ -87,14 +87,14 @@ TEST_F(MetadataExtractorTest, ExtractMetadataBasic)
 
    // Debug: Check if the library exists and its size
    std::cout << "Test library path: " << test_lib.string() << std::endl;
-   std::cout << "Test library exists: " << heimdall::compat::fs::exists(test_lib) << std::endl;
-   std::cout << "Test library size: " << heimdall::compat::fs::file_size(test_lib) << std::endl;
+   std::cout << "Test library exists: " << fs::exists(test_lib) << std::endl;
+   std::cout << "Test library size: " << fs::file_size(test_lib) << std::endl;
 
    // Debug: Check if it's recognized as ELF
    std::cout << "Is ELF: " << extractor.isELF(test_lib.string()) << std::endl;
 
    // Test individual extraction methods
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
       // Real library - should extract symbols and sections
       std::cout << "Testing symbol extraction..." << std::endl;
@@ -135,7 +135,7 @@ TEST_F(MetadataExtractorTest, FileFormatDetection)
    EXPECT_FALSE(extractor.isArchive(test_source.string()));
 
    // Test with the actual library
-   if (heimdall::compat::fs::file_size(test_lib) > 100)
+   if (fs::file_size(test_lib) > 100)
    {
 // Platform-specific format detection
 #ifdef __linux__

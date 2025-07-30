@@ -172,7 +172,7 @@ struct SBOMDifference
 
    Type                                      type;
    SBOMComponent                             component;
-   heimdall::compat::optional<SBOMComponent> oldComponent;
+   std::optional<SBOMComponent>              oldComponent;
 
    // Default constructor
    SBOMDifference() = default;

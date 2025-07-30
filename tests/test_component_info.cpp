@@ -33,8 +33,8 @@ class ComponentInfoTest : public ::testing::Test
       SSL_library_init();
       OpenSSL_add_all_algorithms();
 
-      test_dir = heimdall::compat::fs::temp_directory_path() / "heimdall_component_test";
-      heimdall::compat::fs::create_directories(test_dir);
+      test_dir = fs::temp_directory_path() / "heimdall_component_test";
+      fs::create_directories(test_dir);
       test_file = test_dir / "libtest.so";
       std::ofstream(test_file) << "dummy content";
    }
@@ -42,8 +42,8 @@ class ComponentInfoTest : public ::testing::Test
    {
       test_utils::safeRemoveDirectory(test_dir);
    }
-   heimdall::compat::fs::path test_dir;
-   heimdall::compat::fs::path test_file;
+   fs::path test_dir;
+   fs::path test_file;
 };
 
 TEST_F(ComponentInfoTest, DefaultConstructor)

@@ -81,7 +81,7 @@ PackageDownloadLocation: https://example.com/test
 })";
 
       test_dir = test_utils::getUniqueTestDirectory("heimdall_test");
-      heimdall::compat::fs::create_directories(test_dir);
+      fs::create_directories(test_dir);
    }
 
    void TearDown() override
@@ -92,7 +92,7 @@ PackageDownloadLocation: https://example.com/test
    std::string                spdx2_3_content;
    std::string                spdx3_0_content;
    std::string                cyclonedx_content;
-   heimdall::compat::fs::path test_dir;
+   fs::path test_dir;
 };
 
 // Enhanced SBOMValidator Tests
