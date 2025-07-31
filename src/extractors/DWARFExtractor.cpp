@@ -31,6 +31,7 @@ limitations under the License.
 #include <algorithm>
 #include <atomic>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -378,7 +379,10 @@ bool DWARFExtractor::extractSourceFiles(const std::string&        filePath,
       // Ensure LLVM is initialized
       ensureLLVMInitialized();
       
-      auto buffer = llvm::MemoryBuffer::getFile(filePath);
+      // Get the actual DWARF file path (handles .dSYM files on macOS)
+      std::string dwarfFilePath = getDWARFFilePath(filePath);
+      
+      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return extractSourceFilesHeuristic(filePath, sourceFiles);
@@ -423,7 +427,10 @@ bool DWARFExtractor::extractCompileUnits(const std::string&        filePath,
 #ifdef LLVM_DWARF_AVAILABLE
    try
    {
-      auto buffer = llvm::MemoryBuffer::getFile(filePath);
+      // Get the actual DWARF file path (handles .dSYM files on macOS)
+      std::string dwarfFilePath = getDWARFFilePath(filePath);
+      
+      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return false;
@@ -468,7 +475,10 @@ bool DWARFExtractor::extractFunctions(const std::string&        filePath,
 #ifdef LLVM_DWARF_AVAILABLE
    try
    {
-      auto buffer = llvm::MemoryBuffer::getFile(filePath);
+      // Get the actual DWARF file path (handles .dSYM files on macOS)
+      std::string dwarfFilePath = getDWARFFilePath(filePath);
+      
+      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return extractFunctionsFromSymbolTable(filePath, functions);
@@ -513,7 +523,10 @@ bool DWARFExtractor::extractLineInfo(const std::string&        filePath,
 #ifdef LLVM_DWARF_AVAILABLE
    try
    {
-      auto buffer = llvm::MemoryBuffer::getFile(filePath);
+      // Get the actual DWARF file path (handles .dSYM files on macOS)
+      std::string dwarfFilePath = getDWARFFilePath(filePath);
+      
+      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return false;
@@ -556,6 +569,26 @@ bool DWARFExtractor::extractLineInfo(const std::string&        filePath,
 #else
    return false;
 #endif
+}
+
+// Helper method to get the actual DWARF file path (handles .dSYM files on macOS)
+std::string DWARFExtractor::getDWARFFilePath(const std::string& filePath) const
+{
+   // Check for .dSYM file first (macOS)
+   std::string dsymPath = filePath + ".dSYM";
+   if (std::filesystem::exists(dsymPath))
+   {
+      // Check if the .dSYM file contains a DWARF file
+      std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" + 
+                              std::filesystem::path(filePath).filename().string();
+      if (std::filesystem::exists(dwarfPath))
+      {
+         return dwarfPath;
+      }
+   }
+
+   // Fallback to the original file
+   return filePath;
 }
 
 bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) const
@@ -619,7 +652,20 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) const
    close(fd);
    return hasDWARF;
 #else
-   // For non-Linux systems, try to detect DWARF sections heuristically
+   // For non-Linux systems (including macOS), check for .dSYM files first
+   std::string dsymPath = filePath + ".dSYM";
+   if (std::filesystem::exists(dsymPath))
+   {
+      // Check if the .dSYM file contains a DWARF file
+      std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" + 
+                              std::filesystem::path(filePath).filename().string();
+      if (std::filesystem::exists(dwarfPath))
+      {
+         return true;
+      }
+   }
+
+   // Fallback: try to detect DWARF sections heuristically in the binary itself
    std::vector<char> buffer(1024);
    testFile.read(buffer.data(), buffer.size());
    std::streamsize bytesRead = testFile.gcount();

@@ -187,7 +187,7 @@ class LightweightDWARFParser : public IBinaryExtractor
     * @param sourceFiles Output vector to store extracted source file paths
     * @return true if extraction was successful, false otherwise
     */
-   bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles);
+   bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) override;
 
    /**
     * @brief Extract compile units from DWARF debug information
@@ -196,7 +196,7 @@ class LightweightDWARFParser : public IBinaryExtractor
     * @param compileUnits Output vector to store extracted compile unit names
     * @return true if extraction was successful, false otherwise
     */
-   bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
+   bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) override;
 
    /**
     * @brief Extract function names from DWARF debug information
@@ -205,7 +205,7 @@ class LightweightDWARFParser : public IBinaryExtractor
     * @param functions Output vector to store extracted function names
     * @return true if extraction was successful, false otherwise
     */
-   bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
+   bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions) override;
 
    /**
     * @brief Extract all debug information using a single pass

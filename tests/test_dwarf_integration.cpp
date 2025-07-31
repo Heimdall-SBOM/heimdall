@@ -187,15 +187,24 @@ char* concatenate_strings(const char* str1, const char* str2) {
 
    void compileTestProject()
    {
+      // Choose compiler based on platform
+#ifdef __APPLE__
+      std::string compiler = "clang";
+      std::string lib_ext = ".dylib";
+#else
+      std::string compiler = "gcc";
+      std::string lib_ext = ".so";
+#endif
+
       // Compile object files
       math_object              = test_dir / "math_utils.o";
-      std::string math_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+      std::string math_obj_cmd = compiler + " -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                  math_object.string() + " " + math_source.string() + " 2>/dev/null";
       int math_obj_result = system(math_obj_cmd.c_str());
       (void)math_obj_result;  // Suppress unused variable warning
 
       string_object              = test_dir / "string_utils.o";
-      std::string string_obj_cmd = "gcc -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+      std::string string_obj_cmd = compiler + " -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                                    string_object.string() + " " + string_source.string() +
                                    " 2>/dev/null";
       int string_obj_result = system(string_obj_cmd.c_str());
@@ -203,24 +212,36 @@ char* concatenate_strings(const char* str1, const char* str2) {
 
       // Compile main executable
       main_executable      = test_dir / "integration_test";
-      std::string main_cmd = "gcc -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+      std::string main_cmd = compiler + " -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                              main_executable.string() + " " + main_source.string() + " " +
                              math_object.string() + " " + string_object.string() + " 2>/dev/null";
       int main_result = system(main_cmd.c_str());
       (void)main_result;  // Suppress unused variable warning
 
       // Create shared library
-      math_library = test_dir / "libmath_utils.so";
+      math_library = test_dir / ("libmath_utils" + lib_ext);
+#ifdef __APPLE__
       std::string math_lib_cmd =
-         "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+         compiler + " -dynamiclib -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
          math_library.string() + " " + math_source.string() + " 2>/dev/null";
+#else
+      std::string math_lib_cmd =
+         compiler + " -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+         math_library.string() + " " + math_source.string() + " 2>/dev/null";
+#endif
       int math_lib_result = system(math_lib_cmd.c_str());
       (void)math_lib_result;  // Suppress unused variable warning
 
-      string_library = test_dir / "libstring_utils.so";
+      string_library = test_dir / ("libstring_utils" + lib_ext);
+#ifdef __APPLE__
       std::string string_lib_cmd =
-         "gcc -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+         compiler + " -dynamiclib -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
          string_library.string() + " " + string_source.string() + " 2>/dev/null";
+#else
+      std::string string_lib_cmd =
+         compiler + " -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+         string_library.string() + " " + string_source.string() + " 2>/dev/null";
+#endif
       int string_lib_result = system(string_lib_cmd.c_str());
       (void)string_lib_result;  // Suppress unused variable warning
 

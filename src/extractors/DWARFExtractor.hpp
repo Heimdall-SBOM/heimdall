@@ -181,7 +181,7 @@ class DWARFExtractor : public IBinaryExtractor
     * @param sourceFiles Vector to populate with source file paths
     * @return true if extraction was successful, false otherwise
     */
-   bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles);
+   bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) override;
 
    /**
     * @brief Extract compile units from DWARF debug information
@@ -189,7 +189,7 @@ class DWARFExtractor : public IBinaryExtractor
     * @param compileUnits Vector to populate with compile unit names
     * @return true if extraction was successful, false otherwise
     */
-   bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits);
+   bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) override;
 
    /**
     * @brief Extract function names from DWARF debug information
@@ -197,7 +197,7 @@ class DWARFExtractor : public IBinaryExtractor
     * @param functions Vector to populate with function names
     * @return true if extraction was successful, false otherwise
     */
-   bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions);
+   bool extractFunctions(const std::string& filePath, std::vector<std::string>& functions) override;
 
    /**
     * @brief Extract line information from DWARF debug information
@@ -213,6 +213,13 @@ class DWARFExtractor : public IBinaryExtractor
     * @return true if DWARF debug information is present, false otherwise
     */
    bool hasDWARFInfo(const std::string& filePath) const;
+
+   /**
+    * @brief Get the actual DWARF file path (handles .dSYM files on macOS)
+    * @param filePath Path to the binary file
+    * @return Path to the actual DWARF file (may be in .dSYM bundle)
+    */
+   std::string getDWARFFilePath(const std::string& filePath) const;
 
    /**
     * @brief Extract all debug information from DWARF

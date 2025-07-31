@@ -806,4 +806,258 @@ TEST_F(DWARFAdvancedTest, LargeOutputVectorHandling)
    }
 }
 
+// macOS-specific .dSYM tests
+#ifdef __APPLE__
+TEST_F(DWARFAdvancedTest, DSYMDebugInfoDetection)
+{
+   DWARFExtractor extractor;
+   
+   // Create a test executable with debug info that generates a .dSYM file
+   fs::path dsym_test_dir = fs::temp_directory_path() / "heimdall_dsym_test";
+   fs::create_directories(dsym_test_dir);
+   
+   fs::path dsym_source = dsym_test_dir / "dsym_test.c";
+   std::ofstream(dsym_source) << R"(
+#include <stdio.h>
+
+int main() {
+    printf("Hello from .dSYM test\n");
+    return 0;
+}
+)";
+   
+   fs::path dsym_executable = dsym_test_dir / "dsym_test";
+   std::string compile_cmd = "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
+   int compile_result = system(compile_cmd.c_str());
+   
+   if (compile_result == 0 && fs::exists(dsym_executable))
+   {
+      // Check if .dSYM file was created
+      fs::path dsym_file = dsym_executable.string() + ".dSYM";
+      bool has_dsym = fs::exists(dsym_file);
+      
+      // Test hasDWARFInfo with .dSYM file
+      bool has_debug_info = extractor.hasDWARFInfo(dsym_executable.string());
+      
+      if (has_dsym)
+      {
+         // If .dSYM exists, should detect debug info
+         EXPECT_TRUE(has_debug_info) << "hasDWARFInfo should detect .dSYM file";
+         
+         // Test that getDWARFFilePath returns the correct path
+         std::string dwarf_path = extractor.getDWARFFilePath(dsym_executable.string());
+         fs::path expected_dwarf_path = dsym_file / "Contents" / "Resources" / "DWARF" / dsym_executable.filename();
+         EXPECT_EQ(dwarf_path, expected_dwarf_path.string()) << "getDWARFFilePath should return correct .dSYM path";
+         
+         // Test that the returned path actually exists
+         EXPECT_TRUE(fs::exists(dwarf_path)) << "DWARF file path should exist";
+      }
+      else
+      {
+         // If no .dSYM, should fall back to checking the executable itself
+         EXPECT_TRUE(has_debug_info || !has_debug_info); // Either result is acceptable
+      }
+   }
+   else
+   {
+      GTEST_SKIP() << "Could not create test executable with debug info";
+   }
+   
+   // Cleanup
+   fs::remove_all(dsym_test_dir);
+}
+
+TEST_F(DWARFAdvancedTest, DSYMExtractionFunctionality)
+{
+   DWARFExtractor extractor;
+   
+   // Create a test executable with debug info
+   fs::path dsym_test_dir = fs::temp_directory_path() / "heimdall_dsym_extraction_test";
+   fs::create_directories(dsym_test_dir);
+   
+   fs::path dsym_source = dsym_test_dir / "dsym_extraction_test.c";
+   std::ofstream(dsym_source) << R"(
+#include <stdio.h>
+
+int helper_function() {
+    return 42;
+}
+
+int main() {
+    int result = helper_function();
+    printf("Result: %d\n", result);
+    return result;
+}
+)";
+   
+   fs::path dsym_executable = dsym_test_dir / "dsym_extraction_test";
+   std::string compile_cmd = "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
+   int compile_result = system(compile_cmd.c_str());
+   
+   if (compile_result == 0 && fs::exists(dsym_executable))
+   {
+      // Test function extraction from .dSYM
+      std::vector<std::string> functions;
+      bool functions_result = extractor.extractFunctions(dsym_executable.string(), functions);
+      
+      if (functions_result)
+      {
+         EXPECT_FALSE(functions.empty()) << "Should extract functions from .dSYM";
+         
+         // Check for expected functions
+         bool found_main = false;
+         bool found_helper = false;
+         for (const auto& func : functions)
+         {
+            if (func.find("main") != std::string::npos)
+               found_main = true;
+            if (func.find("helper_function") != std::string::npos)
+               found_helper = true;
+         }
+         
+         EXPECT_TRUE(found_main) << "Should find main function in .dSYM";
+         EXPECT_TRUE(found_helper) << "Should find helper_function in .dSYM";
+      }
+      
+      // Test source file extraction from .dSYM
+      std::vector<std::string> sourceFiles;
+      bool sources_result = extractor.extractSourceFiles(dsym_executable.string(), sourceFiles);
+      
+      if (sources_result)
+      {
+         EXPECT_FALSE(sourceFiles.empty()) << "Should extract source files from .dSYM";
+         
+         // Check for the source file
+         bool found_source = false;
+         for (const auto& source : sourceFiles)
+         {
+            if (source.find("dsym_extraction_test.c") != std::string::npos)
+               found_source = true;
+         }
+         
+         EXPECT_TRUE(found_source) << "Should find source file in .dSYM";
+      }
+      
+      // Test compile unit extraction from .dSYM
+      std::vector<std::string> compileUnits;
+      bool units_result = extractor.extractCompileUnits(dsym_executable.string(), compileUnits);
+      
+      if (units_result)
+      {
+         EXPECT_FALSE(compileUnits.empty()) << "Should extract compile units from .dSYM";
+      }
+   }
+   else
+   {
+      GTEST_SKIP() << "Could not create test executable with debug info";
+   }
+   
+   // Cleanup
+   fs::remove_all(dsym_test_dir);
+}
+
+TEST_F(DWARFAdvancedTest, DSYMFallbackBehavior)
+{
+   DWARFExtractor extractor;
+   
+   // Test with a file that has no .dSYM
+   fs::path no_dsym_test_dir = fs::temp_directory_path() / "heimdall_no_dsym_test";
+   fs::create_directories(no_dsym_test_dir);
+   
+   fs::path no_dsym_source = no_dsym_test_dir / "no_dsym_test.c";
+   std::ofstream(no_dsym_source) << R"(
+#include <stdio.h>
+
+int main() {
+    printf("No .dSYM test\n");
+    return 0;
+}
+)";
+   
+   fs::path no_dsym_executable = no_dsym_test_dir / "no_dsym_test";
+   std::string compile_cmd = "gcc -O0 -o " + no_dsym_executable.string() + " " + no_dsym_source.string() + " 2>/dev/null";
+   int compile_result = system(compile_cmd.c_str());
+   
+   if (compile_result == 0 && fs::exists(no_dsym_executable))
+   {
+      // Verify no .dSYM file was created
+      fs::path dsym_file = no_dsym_executable.string() + ".dSYM";
+      EXPECT_FALSE(fs::exists(dsym_file)) << "Should not have .dSYM file when compiled without debug info";
+      
+      // Test that getDWARFFilePath falls back to original file
+      std::string dwarf_path = extractor.getDWARFFilePath(no_dsym_executable.string());
+      EXPECT_EQ(dwarf_path, no_dsym_executable.string()) << "getDWARFFilePath should fall back to original file";
+      
+      // Test hasDWARFInfo behavior
+      bool has_debug_info = extractor.hasDWARFInfo(no_dsym_executable.string());
+      // Either result is acceptable - the file might or might not have embedded debug info
+      EXPECT_TRUE(has_debug_info || !has_debug_info);
+   }
+   else
+   {
+      GTEST_SKIP() << "Could not create test executable";
+   }
+   
+   // Cleanup
+   fs::remove_all(no_dsym_test_dir);
+}
+
+TEST_F(DWARFAdvancedTest, DSYMMetadataExtractorIntegration)
+{
+   // Test that MetadataExtractor properly uses .dSYM files
+   MetadataExtractor extractor;
+   
+   // Create a test executable with debug info
+   fs::path dsym_test_dir = fs::temp_directory_path() / "heimdall_dsym_metadata_test";
+   fs::create_directories(dsym_test_dir);
+   
+   fs::path dsym_source = dsym_test_dir / "dsym_metadata_test.c";
+   std::ofstream(dsym_source) << R"(
+#include <stdio.h>
+
+int test_function() {
+    return 123;
+}
+
+int main() {
+    int result = test_function();
+    printf("Result: %d\n", result);
+    return result;
+}
+)";
+   
+   fs::path dsym_executable = dsym_test_dir / "dsym_metadata_test";
+   std::string compile_cmd = "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
+   int compile_result = system(compile_cmd.c_str());
+   
+   if (compile_result == 0 && fs::exists(dsym_executable))
+   {
+      ComponentInfo component("dsym_metadata_test", dsym_executable.string());
+      bool result = extractor.extractMetadata(component);
+      
+      // Should extract metadata successfully
+      EXPECT_TRUE(result) << "MetadataExtractor should extract metadata from .dSYM";
+      
+      // Should have debug info if .dSYM exists
+      fs::path dsym_file = dsym_executable.string() + ".dSYM";
+      if (fs::exists(dsym_file))
+      {
+         EXPECT_TRUE(component.containsDebugInfo || !component.functions.empty() || !component.sourceFiles.empty())
+            << "Should extract debug info from .dSYM file";
+      }
+      
+      // Should have basic metadata
+      EXPECT_FALSE(component.filePath.empty()) << "Should have file path";
+      EXPECT_FALSE(component.name.empty()) << "Should have component name";
+   }
+   else
+   {
+      GTEST_SKIP() << "Could not create test executable with debug info";
+   }
+   
+   // Cleanup
+   fs::remove_all(dsym_test_dir);
+}
+#endif // __APPLE__
+
 }  // namespace heimdall

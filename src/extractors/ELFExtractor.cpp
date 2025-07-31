@@ -41,6 +41,24 @@ limitations under the License.
 #ifdef __linux__
 #include <fcntl.h>
 #include <unistd.h>
+#include <elf.h>
+#include <libelf.h>
+#else
+// Define ELF constants for non-Linux platforms
+#define ELFCLASS64 2
+#define EM_X86_64 62
+#define EM_386 3
+#define EM_AARCH64 183
+#define EM_ARM 40
+#define EM_MIPS 8
+#define EM_PPC64 21
+#define EM_S390 22
+#define EM_RISCV 243
+#define ET_NONE 0
+#define ET_REL 1
+#define ET_EXEC 2
+#define ET_DYN 3
+#define ET_CORE 4
 #endif
 
 namespace heimdall

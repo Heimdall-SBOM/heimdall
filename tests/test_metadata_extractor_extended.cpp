@@ -912,8 +912,12 @@ TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedPropertiesWithRealELF)
    source_file << "int main() { printf(\"Hello, World!\\n\"); return 0; }\n";
    source_file.close();
 
-   // Compile it to create a real ELF file
+   // Compile it to create a real binary file
+#ifdef __APPLE__
+   std::string compile_cmd = "clang -dynamiclib -g " + test_source.string() + " -o " + test_elf.string();
+#else
    std::string compile_cmd = "gcc -shared -fPIC -g " + test_source.string() + " -o " + test_elf.string();
+#endif
    int compile_result = system(compile_cmd.c_str());
    
    if (compile_result == 0 && fs::exists(test_elf))

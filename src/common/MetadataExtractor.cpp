@@ -35,8 +35,19 @@ limitations under the License.
 #include "../interfaces/IBinaryExtractor.hpp"
 #include "../utils/FileUtils.hpp"
 #include "Utils.hpp"
+
+#ifdef __APPLE__
+#include <mach-o/fat.h>
+#include <mach-o/loader.h>
+#include <libkern/OSByteOrder.h>
+#endif
+
 namespace heimdall
 {
+
+// Forward declarations
+std::string getArchitectureString(uint32_t cputype, uint32_t cpusubtype);
+std::string extractComponentName(const std::string& filePath);
 
 class MetadataExtractor::Impl
 {
@@ -178,14 +189,57 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 
 bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
 {
-   auto extractor = createExtractor(component.filePath);
-   if (!extractor)
+   // Get all available extractors for this file
+   auto availableExtractors = BinaryFormatFactory::getAvailableExtractors(component.filePath);
+   if (availableExtractors.empty())
    {
       pImpl->setLastError("No suitable extractor found for file: " + component.filePath);
       return false;
    }
 
-   if (!extractor->canHandle(component.filePath))
+   // Find the format-specific extractor (ELF, Mach-O, PE, etc.) and DWARF extractor
+   std::unique_ptr<IBinaryExtractor> primaryExtractor;
+   std::unique_ptr<IBinaryExtractor> dwarfExtractor;
+   
+   for (auto& extractor : availableExtractors)
+   {
+      // Select format-specific extractor as primary (ELF, Mach-O, PE, etc.)
+      if (!primaryExtractor && extractor->getFormatName() != "DWARF" && extractor->getFormatName() != "Lazy Symbol Extractor")
+      {
+         primaryExtractor = std::move(extractor);
+      }
+      else if (extractor->getFormatName() == "DWARF")
+      {
+         dwarfExtractor = std::move(extractor);
+      }
+   }
+   
+   // If no format-specific extractor found, use the first available one
+   if (!primaryExtractor && !availableExtractors.empty())
+   {
+      for (auto& extractor : availableExtractors)
+      {
+         if (extractor)
+         {
+            primaryExtractor = std::move(extractor);
+            break;
+         }
+      }
+   }
+   
+   // If no primary extractor found, use the first available one
+   if (!primaryExtractor && !availableExtractors.empty())
+   {
+      primaryExtractor = std::move(availableExtractors[0]);
+   }
+   
+   if (!primaryExtractor)
+   {
+      pImpl->setLastError("No suitable extractor found for file: " + component.filePath);
+      return false;
+   }
+
+   if (!primaryExtractor->canHandle(component.filePath))
    {
       pImpl->setLastError("Extractor cannot handle file: " + component.filePath);
       return false;
@@ -195,7 +249,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
 
    // Extract symbols
    std::vector<SymbolInfo> symbols;
-   if (extractor->extractSymbols(component.filePath, symbols))
+   if (primaryExtractor->extractSymbols(component.filePath, symbols))
    {
       component.symbols = symbols;
       success = true;  // At least one extraction succeeded
@@ -203,7 +257,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
 
    // Extract sections
    std::vector<SectionInfo> sections;
-   if (extractor->extractSections(component.filePath, sections))
+   if (primaryExtractor->extractSections(component.filePath, sections))
    {
       component.sections = sections;
       success = true;  // At least one extraction succeeded
@@ -211,7 +265,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
 
    // Extract version
    std::string version;
-   if (extractor->extractVersion(component.filePath, version))
+   if (primaryExtractor->extractVersion(component.filePath, version))
    {
       // Don't set ELF version string for the main application component
       // This is just binary format info, not a real version
@@ -228,7 +282,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
    }
 
    // Extract dependencies
-   std::vector<std::string> dependencies = extractor->extractDependencies(component.filePath);
+   std::vector<std::string> dependencies = primaryExtractor->extractDependencies(component.filePath);
    if (!dependencies.empty())
    {
       component.dependencies = dependencies;
@@ -238,28 +292,73 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
    // Extract DWARF debug information if enabled
    if (pImpl->extractDebugInfo)
    {
-      // Extract functions from DWARF
-      std::vector<std::string> functions;
-      if (extractor->extractFunctions(component.filePath, functions))
+      bool debugInfoFound = false;
+
+      // Try DWARF extractor first if available
+      if (dwarfExtractor)
       {
-         component.functions = functions;
-         success = true;  // At least one extraction succeeded
+         // Extract functions from DWARF
+         std::vector<std::string> functions;
+         if (dwarfExtractor->extractFunctions(component.filePath, functions))
+         {
+            component.functions = functions;
+            debugInfoFound = true;
+            success = true;  // At least one extraction succeeded
+         }
+
+         // Extract compile units from DWARF
+         std::vector<std::string> compileUnits;
+         if (dwarfExtractor->extractCompileUnits(component.filePath, compileUnits))
+         {
+            component.compileUnits = compileUnits;
+            debugInfoFound = true;
+            success = true;  // At least one extraction succeeded
+         }
+
+         // Extract source files from DWARF
+         std::vector<std::string> sourceFiles;
+         if (dwarfExtractor->extractSourceFiles(component.filePath, sourceFiles))
+         {
+            component.sourceFiles = sourceFiles;
+            debugInfoFound = true;
+            success = true;  // At least one extraction succeeded
+         }
+      }
+      else
+      {
+         // Fallback to primary extractor for DWARF extraction
+         // Extract functions from DWARF
+         std::vector<std::string> functions;
+         if (primaryExtractor->extractFunctions(component.filePath, functions))
+         {
+            component.functions = functions;
+            debugInfoFound = true;
+            success = true;  // At least one extraction succeeded
+         }
+
+         // Extract compile units from DWARF
+         std::vector<std::string> compileUnits;
+         if (primaryExtractor->extractCompileUnits(component.filePath, compileUnits))
+         {
+            component.compileUnits = compileUnits;
+            debugInfoFound = true;
+            success = true;  // At least one extraction succeeded
+         }
+
+         // Extract source files from DWARF
+         std::vector<std::string> sourceFiles;
+         if (primaryExtractor->extractSourceFiles(component.filePath, sourceFiles))
+         {
+            component.sourceFiles = sourceFiles;
+            debugInfoFound = true;
+            success = true;  // At least one extraction succeeded
+         }
       }
 
-      // Extract compile units from DWARF
-      std::vector<std::string> compileUnits;
-      if (extractor->extractCompileUnits(component.filePath, compileUnits))
+      // Set the containsDebugInfo flag if any debug info was found
+      if (debugInfoFound)
       {
-         component.compileUnits = compileUnits;
-         success = true;  // At least one extraction succeeded
-      }
-
-      // Extract source files from DWARF
-      std::vector<std::string> sourceFiles;
-      if (extractor->extractSourceFiles(component.filePath, sourceFiles))
-      {
-         component.sourceFiles = sourceFiles;
-         success = true;  // At least one extraction succeeded
+         component.containsDebugInfo = true;
       }
    }
 
@@ -786,7 +885,7 @@ void MetadataExtractor::Impl::postProcessMetadataImpl(ComponentInfo& component)
    // Post-process extracted metadata
    if (component.name.empty())
    {
-      component.name = heimdall::FileUtils::getFileName(component.filePath);
+      component.name = extractComponentName(component.filePath);
    }
 
    // Only set component file type based on file extension if it's currently Unknown
@@ -951,6 +1050,66 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
    bool appBundleSuccess = extractMacOSAppBundleMetadata(component);
    anySuccess |= appBundleSuccess;
 
+   // Update component name and version from enhanced Mach-O metadata
+   if (anySuccess)
+   {
+      // Try to get a better name from the file path (for macOS apps)
+      std::string fileName = heimdall::FileUtils::getFileName(component.filePath);
+      if (!fileName.empty() && fileName != component.name)
+      {
+         // For macOS apps, try to extract the app name from the bundle path
+         std::string filePath = component.filePath;
+         if (filePath.find(".app/Contents/MacOS/") != std::string::npos)
+         {
+            // Extract app name from bundle path
+            size_t appPos = filePath.find(".app/");
+            if (appPos != std::string::npos)
+            {
+               size_t lastSlash = filePath.rfind('/', appPos);
+               if (lastSlash != std::string::npos)
+               {
+                  std::string appName = filePath.substr(lastSlash + 1, appPos - lastSlash - 1);
+                  if (!appName.empty())
+                  {
+                     component.name = appName;
+                  }
+               }
+            }
+         }
+      }
+
+      // First priority: Try to extract version from Info.plist for macOS apps
+      std::string originalVersion = component.version;
+
+      bool versionSetFromInfoPlist = false;
+
+      // If Info.plist parsing was successful and returned a non-empty version, consider it set from
+      // Info.plist
+      if (appBundleSuccess && !component.version.empty())
+      {
+         versionSetFromInfoPlist = true;
+      }
+
+      // Only use fallback versions if Info.plist didn't provide one
+      if (!versionSetFromInfoPlist)
+      {
+         // Fallback: Try to set version from build config if Info.plist didn't provide one
+         if (!component.buildConfig.sourceVersion.empty())
+         {
+            component.version = component.buildConfig.sourceVersion;
+         }
+         else if (!component.buildConfig.buildVersion.empty())
+         {
+            component.version = component.buildConfig.buildVersion;
+         }
+         else if (!component.buildConfig.minOSVersion.empty())
+         {
+            // Use minOSVersion as a fallback version only if no Info.plist version was found
+            component.version = component.buildConfig.minOSVersion;
+         }
+      }
+   }
+
    return anySuccess;
 }
 
@@ -1020,9 +1179,62 @@ bool MetadataExtractor::extractMachOBuildConfig(ComponentInfo& component)
 
 bool MetadataExtractor::extractMachOPlatformInfo(ComponentInfo& component)
 {
-   // This would need to be implemented using the Mach-O extractor
-   // For now, return false as a placeholder
+#ifdef __APPLE__
+   std::ifstream file(component.filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return false;
+   }
+
+   uint32_t magic = 0;
+   file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+   file.seekg(0);
+
+   // Handle fat binaries - use first architecture
+   if (magic == FAT_MAGIC || magic == FAT_CIGAM)
+   {
+      struct fat_header fatHeader{};
+      file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+      uint32_t        nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+      struct fat_arch arch{};
+      file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+      uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+      file.seekg(offset);
+      file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+      file.seekg(offset);
+   }
+
+   bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+   if (is64)
+   {
+      struct mach_header_64 mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+
+      component.platformInfo.architecture = getArchitectureString(mh.cputype, mh.cpusubtype);
+      component.platformInfo.platform = "macos";  // Default for Mach-O files
+      component.platformInfo.minVersion = 0;
+      component.platformInfo.sdkVersion = 0;
+      component.platformInfo.isSimulator = false;
+
+      return true;
+   }
+   else
+   {
+      struct mach_header mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+
+      component.platformInfo.architecture = getArchitectureString(mh.cputype, mh.cpusubtype);
+      component.platformInfo.platform = "macos";  // Default for Mach-O files
+      component.platformInfo.minVersion = 0;
+      component.platformInfo.sdkVersion = 0;
+      component.platformInfo.isSimulator = false;
+
+      return true;
+   }
+#else
    return false;
+#endif
 }
 
 bool MetadataExtractor::extractMachOEntitlements(ComponentInfo& component)
@@ -1034,9 +1246,89 @@ bool MetadataExtractor::extractMachOEntitlements(ComponentInfo& component)
 
 bool MetadataExtractor::extractMachOArchitectures(ComponentInfo& component)
 {
-   // This would need to be implemented using the Mach-O extractor
-   // For now, return false as a placeholder
+#ifdef __APPLE__
+   std::ifstream file(component.filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return false;
+   }
+
+   uint32_t magic = 0;
+   file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+   file.seekg(0);
+
+   // Handle fat binaries
+   if (magic == FAT_MAGIC || magic == FAT_CIGAM)
+   {
+      struct fat_header fatHeader{};
+      file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+      uint32_t nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+
+      for (uint32_t i = 0; i < nfat_arch; ++i)
+      {
+         struct fat_arch arch{};
+         file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+
+         // Handle endianness
+         if (fatHeader.magic == FAT_CIGAM || fatHeader.magic == FAT_CIGAM_64)
+         {
+            arch.cputype    = OSSwapBigToHostInt32(arch.cputype);
+            arch.cpusubtype = OSSwapBigToHostInt32(arch.cpusubtype);
+         }
+
+         ArchitectureInfo archInfo;
+         archInfo.name = getArchitectureString(arch.cputype, arch.cpusubtype);
+         archInfo.cpuType = arch.cputype;
+         archInfo.cpuSubtype = arch.cpusubtype;
+         archInfo.offset = OSSwapBigToHostInt32(arch.offset);
+         archInfo.size = OSSwapBigToHostInt32(arch.size);
+         archInfo.align = OSSwapBigToHostInt32(arch.align);
+
+         component.architectures.push_back(archInfo);
+      }
+      return !component.architectures.empty();
+   }
+   else
+   {
+      // Single architecture
+      bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+      if (is64)
+      {
+         struct mach_header_64 mh{};
+         file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+
+         ArchitectureInfo archInfo;
+         archInfo.name = getArchitectureString(mh.cputype, mh.cpusubtype);
+         archInfo.cpuType = mh.cputype;
+         archInfo.cpuSubtype = mh.cpusubtype;
+         archInfo.offset = 0;
+         archInfo.size = 0;
+         archInfo.align = 0;
+
+         component.architectures.push_back(archInfo);
+      }
+      else
+      {
+         struct mach_header mh{};
+         file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+
+         ArchitectureInfo archInfo;
+         archInfo.name = getArchitectureString(mh.cputype, mh.cpusubtype);
+         archInfo.cpuType = mh.cputype;
+         archInfo.cpuSubtype = mh.cpusubtype;
+         archInfo.offset = 0;
+         archInfo.size = 0;
+         archInfo.align = 0;
+
+         component.architectures.push_back(archInfo);
+      }
+
+      return !component.architectures.empty();
+   }
+#else
    return false;
+#endif
 }
 
 bool MetadataExtractor::extractMachOFrameworks(ComponentInfo& component)
@@ -1048,9 +1340,207 @@ bool MetadataExtractor::extractMachOFrameworks(ComponentInfo& component)
 
 bool MetadataExtractor::extractMacOSAppBundleMetadata(ComponentInfo& component)
 {
-   // This would need to be implemented using the Mach-O extractor
-   // For now, return false as a placeholder
+#ifdef __APPLE__
+   std::string infoPlistPath;
+
+   // Detect if we have an executable path within an app bundle
+   if (component.filePath.find(".app/Contents/MacOS/") != std::string::npos)
+   {
+      // Extract the .app bundle path
+      size_t appPos = component.filePath.find(".app/Contents/MacOS/");
+      if (appPos != std::string::npos)
+      {
+         std::string appBundleRoot = component.filePath.substr(0, appPos + 4);  // Include ".app"
+         infoPlistPath             = appBundleRoot + "/Contents/Info.plist";
+      }
+   }
+   else if (component.filePath.find(".app") != std::string::npos)
+   {
+      // Assume it's already the app bundle path
+      infoPlistPath = component.filePath + "/Contents/Info.plist";
+   }
+   else
+   {
+      return false;
+   }
+
+   std::ifstream file(infoPlistPath);
+   if (!file.is_open())
+   {
+      return false;
+   }
+
+   std::string line;
+   bool        foundVersionKey = false;
+   bool        foundNameKey    = false;
+   bool        foundBundleNameKey = false;
+
+   while (std::getline(file, line))
+   {
+      // Look for CFBundleShortVersionString key
+      if (line.find("<key>CFBundleShortVersionString</key>") != std::string::npos)
+      {
+         foundVersionKey = true;
+         continue;
+      }
+
+      // Look for CFBundleName key
+      if (line.find("<key>CFBundleName</key>") != std::string::npos)
+      {
+         foundNameKey = true;
+         continue;
+      }
+
+      // Look for CFBundleDisplayName key
+      if (line.find("<key>CFBundleDisplayName</key>") != std::string::npos)
+      {
+         foundBundleNameKey = true;
+         continue;
+      }
+
+      // Extract version value after finding the key
+      if (foundVersionKey && line.find("<string>") != std::string::npos)
+      {
+         size_t start = line.find("<string>") + 8;
+         size_t end   = line.find("</string>");
+         if (end != std::string::npos && end > start)
+         {
+            component.version = line.substr(start, end - start);
+            foundVersionKey = false;
+         }
+      }
+
+      // Extract bundle name value after finding the key
+      if ((foundNameKey || foundBundleNameKey) && line.find("<string>") != std::string::npos)
+      {
+         size_t start = line.find("<string>") + 8;
+         size_t end   = line.find("</string>");
+         if (end != std::string::npos && end > start)
+         {
+            std::string bundleName = line.substr(start, end - start);
+            if (!bundleName.empty() && component.name != bundleName)
+            {
+               component.name = bundleName;
+            }
+            foundNameKey = false;
+            foundBundleNameKey = false;
+         }
+      }
+
+      // Stop if we found both
+      if (!component.version.empty() && !component.name.empty())
+      {
+         break;
+      }
+   }
+
+   return !component.version.empty() || !component.name.empty();
+#else
    return false;
+#endif
+}
+
+// Helper function for architecture string conversion
+std::string getArchitectureString(uint32_t cputype, uint32_t cpusubtype)
+{
+#ifdef __APPLE__
+   switch (cputype)
+   {
+      case CPU_TYPE_X86:
+         return "i386";
+      case CPU_TYPE_X86_64:
+         return "x86_64";
+      case CPU_TYPE_ARM:
+         return "arm";
+      case CPU_TYPE_ARM64:
+         return "arm64";
+      case CPU_TYPE_POWERPC:
+         return "ppc";
+      case CPU_TYPE_POWERPC64:
+         return "ppc64";
+      default:
+         return "Unknown";
+   }
+#else
+   return "Unknown";
+#endif
+}
+
+// Helper function for component name extraction
+std::string extractComponentName(const std::string& filePath)
+{
+   std::string fileName = heimdall::FileUtils::getFileName(filePath);
+
+   // Special handling for macOS app bundles
+   if (filePath.find(".app/Contents/MacOS/") != std::string::npos)
+   {
+      // Extract app name from bundle path
+      size_t appPos = filePath.find(".app/");
+      if (appPos != std::string::npos)
+      {
+         size_t lastSlash = filePath.rfind('/', appPos);
+         if (lastSlash != std::string::npos)
+         {
+            std::string appName = filePath.substr(lastSlash + 1, appPos - lastSlash - 1);
+            if (!appName.empty())
+            {
+               return appName;
+            }
+         }
+      }
+   }
+
+   // Remove common prefixes and extensions
+   if (fileName.substr(0, 3) == "lib")
+   {
+      fileName = fileName.substr(3);
+   }
+
+   std::string extension = heimdall::FileUtils::getFileExtension(fileName);
+   if (!extension.empty())
+   {
+      fileName = fileName.substr(0, fileName.length() - extension.length());
+   }
+
+   // Remove version numbers and suffixes (e.g., -1.2.3, _debug)
+   size_t dashPos = fileName.find('-');
+   if (dashPos != std::string::npos)
+   {
+      // Check if what follows is a version number (contains digits and dots)
+      std::string suffix    = fileName.substr(dashPos + 1);
+      bool        isVersion = false;
+      bool        hasDigit  = false;
+      for (char c : suffix)
+      {
+         if (std::isdigit(c))
+         {
+            hasDigit = true;
+         }
+         else if (c != '.' && c != '-')
+         {
+            isVersion = false;
+            break;
+         }
+      }
+      if (hasDigit && suffix.find('.') != std::string::npos)
+      {
+         fileName = fileName.substr(0, dashPos);
+      }
+   }
+
+   // Remove _debug, _release, etc. suffixes
+   size_t underscorePos = fileName.find('_');
+   if (underscorePos != std::string::npos)
+   {
+      std::string suffix = fileName.substr(underscorePos + 1);
+      if (suffix == "debug" || suffix == "release" || suffix == "static" || suffix == "shared" ||
+          suffix == "dll" || suffix == "so")
+      {
+         fileName = fileName.substr(0, underscorePos);
+      }
+   }
+
+   return fileName;
 }
 
 }  // namespace heimdall

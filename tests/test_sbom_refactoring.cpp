@@ -82,10 +82,17 @@ TEST_F(SBOMRefactoringTest, BasicSBOMGenerationWithDependencies)
     generator.generateSBOM();
     
     // The generator processes dependencies automatically
+    // The generator processes dependencies automatically
     // mainComponent has 2 dependencies: libc.so.6, libstdc++.so.6
-    // With transitive dependencies enabled, we expect 7 components total
+    // On Linux: With transitive dependencies enabled, we expect 7 components total
     // (test-app + libc + libc.so.6 + libstdc++.so.6 + their transitive deps)
+    // On macOS: These Linux-specific library names don't exist, so we get 4 components
+    // (test-app + libc + the 2 unresolved dependencies)
+#ifdef __linux__
     EXPECT_EQ(generator.getComponentCount(), 7);
+#else
+    EXPECT_EQ(generator.getComponentCount(), 4);
+#endif
     EXPECT_TRUE(generator.hasComponent("test-app"));
     EXPECT_TRUE(generator.hasComponent("libc"));
 }
@@ -189,8 +196,13 @@ TEST_F(SBOMRefactoringTest, ComponentStatistics)
     generator.processComponent(mainComponent);
     generator.processComponent(libComponent);
     
-    // With dependencies, expect 7 components (including transitive deps)
+    // With dependencies, expect 7 components on Linux, 4 on macOS
+    // (Linux-specific library names don't resolve on macOS)
+#ifdef __linux__
     EXPECT_EQ(generator.getComponentCount(), 7);
+#else
+    EXPECT_EQ(generator.getComponentCount(), 4);
+#endif
     EXPECT_TRUE(generator.hasComponent("test-app"));
     EXPECT_TRUE(generator.hasComponent("libc"));
     EXPECT_FALSE(generator.hasComponent("nonexistent"));
@@ -208,7 +220,13 @@ TEST_F(SBOMRefactoringTest, TransitiveDependencies)
     generator.processComponent(libComponent);
     
     // Should include both direct and transitive dependencies
+    // On Linux: 7 components (with resolved transitive deps)
+    // On macOS: 4 components (unresolved Linux-specific deps)
+#ifdef __linux__
     EXPECT_EQ(generator.getComponentCount(), 7);
+#else
+    EXPECT_EQ(generator.getComponentCount(), 4);
+#endif
 }
 
 // Test format switching
@@ -227,7 +245,13 @@ TEST_F(SBOMRefactoringTest, FormatSwitching)
     generator.processComponent(libComponent);
     
     // Should have both components plus dependencies
+    // On Linux: 7 components (with resolved transitive deps)
+    // On macOS: 4 components (unresolved Linux-specific deps)
+#ifdef __linux__
     EXPECT_EQ(generator.getComponentCount(), 7);
+#else
+    EXPECT_EQ(generator.getComponentCount(), 4);
+#endif
 }
 
 // Test SBOM validation

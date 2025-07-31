@@ -23,6 +23,7 @@ limitations under the License.
  */
 
 #include "MachOExtractor.hpp"
+#include "DWARFExtractor.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -128,31 +129,25 @@ std::vector<std::string> MachOExtractor::extractDependencies(const std::string& 
 bool MachOExtractor::extractFunctions(const std::string&        filePath,
                                       std::vector<std::string>& functions)
 {
-   // MachOExtractor doesn't support DWARF extraction by default
-   // This would need to be implemented with DWARF parsing libraries
-   (void)filePath;   // Suppress unused parameter warning
-   (void)functions;  // Suppress unused parameter warning
-   return false;
+   // Use DWARFExtractor for DWARF extraction
+   DWARFExtractor dwarfExtractor;
+   return dwarfExtractor.extractFunctions(filePath, functions);
 }
 
 bool MachOExtractor::extractCompileUnits(const std::string&        filePath,
                                          std::vector<std::string>& compileUnits)
 {
-   // MachOExtractor doesn't support DWARF extraction by default
-   // This would need to be implemented with DWARF parsing libraries
-   (void)filePath;      // Suppress unused parameter warning
-   (void)compileUnits;  // Suppress unused parameter warning
-   return false;
+   // Use DWARFExtractor for DWARF extraction
+   DWARFExtractor dwarfExtractor;
+   return dwarfExtractor.extractCompileUnits(filePath, compileUnits);
 }
 
 bool MachOExtractor::extractSourceFiles(const std::string&        filePath,
                                         std::vector<std::string>& sourceFiles)
 {
-   // MachOExtractor doesn't support DWARF extraction by default
-   // This would need to be implemented with DWARF parsing libraries
-   (void)filePath;     // Suppress unused parameter warning
-   (void)sourceFiles;  // Suppress unused parameter warning
-   return false;
+   // Use DWARFExtractor for DWARF extraction
+   DWARFExtractor dwarfExtractor;
+   return dwarfExtractor.extractSourceFiles(filePath, sourceFiles);
 }
 
 bool MachOExtractor::canHandle(const std::string& filePath) const
@@ -294,17 +289,108 @@ int MachOExtractor::Impl::getPriorityImpl() const
 
 bool MachOExtractor::Impl::extractBuildIdImpl(const std::string& filePath, std::string& buildId)
 {
+#ifdef __APPLE__
    buildId.clear();
 
-   if (!validateMachOHeaderImpl(filePath))
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
    {
       return false;
    }
 
-   // Implementation would parse LC_UUID load command
-   // For now, return a placeholder
-   buildId = "Unknown";
-   return true;
+   // Handle fat binaries
+   uint32_t magic = 0;
+   file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+   file.seekg(0);
+
+   if (magic == FAT_MAGIC || magic == FAT_CIGAM)
+   {
+      struct fat_header fatHeader{};
+      file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+      uint32_t        nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+      struct fat_arch arch{};
+      file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+      uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+      file.seekg(offset);
+      file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+      file.seekg(offset);
+   }
+
+   bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+   // Read Mach-O header
+   if (is64)
+   {
+      struct mach_header_64 mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      // Iterate load commands
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_UUID)
+         {
+            struct uuid_command uuid_cmd{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&uuid_cmd), sizeof(uuid_cmd));
+
+            // Format UUID as string
+            char uuid_str[37];
+            snprintf(uuid_str, sizeof(uuid_str),
+                     "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                     uuid_cmd.uuid[0], uuid_cmd.uuid[1], uuid_cmd.uuid[2], uuid_cmd.uuid[3],
+                     uuid_cmd.uuid[4], uuid_cmd.uuid[5], uuid_cmd.uuid[6], uuid_cmd.uuid[7],
+                     uuid_cmd.uuid[8], uuid_cmd.uuid[9], uuid_cmd.uuid[10], uuid_cmd.uuid[11],
+                     uuid_cmd.uuid[12], uuid_cmd.uuid[13], uuid_cmd.uuid[14], uuid_cmd.uuid[15]);
+            buildId = uuid_str;
+            return true;
+         }
+
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+   else
+   {
+      struct mach_header mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_UUID)
+         {
+            struct uuid_command uuid_cmd{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&uuid_cmd), sizeof(uuid_cmd));
+
+            char uuid_str[37];
+            snprintf(uuid_str, sizeof(uuid_str),
+                     "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                     uuid_cmd.uuid[0], uuid_cmd.uuid[1], uuid_cmd.uuid[2], uuid_cmd.uuid[3],
+                     uuid_cmd.uuid[4], uuid_cmd.uuid[5], uuid_cmd.uuid[6], uuid_cmd.uuid[7],
+                     uuid_cmd.uuid[8], uuid_cmd.uuid[9], uuid_cmd.uuid[10], uuid_cmd.uuid[11],
+                     uuid_cmd.uuid[12], uuid_cmd.uuid[13], uuid_cmd.uuid[14], uuid_cmd.uuid[15]);
+            buildId = uuid_str;
+            return true;
+         }
+
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+
+   return false;
+#else
+   buildId.clear();
+   return false;
+#endif
 }
 
 std::string MachOExtractor::Impl::getArchitectureImpl(const std::string& filePath)
@@ -475,27 +561,379 @@ bool MachOExtractor::Impl::validateMachOHeaderImpl(const std::string& filePath) 
 bool MachOExtractor::Impl::processSymbolTableImpl(const std::string&       filePath,
                                                   std::vector<SymbolInfo>& symbols)
 {
-   // Implementation would parse LC_SYMTAB load command and symbol table
-   // For now, return empty vector
+#ifdef __APPLE__
    symbols.clear();
-   return true;
+
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return false;
+   }
+
+   // Read magic to check for fat or thin
+   uint32_t magic = 0;
+   file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+   file.seekg(0);
+
+   if (magic == FAT_MAGIC || magic == FAT_CIGAM)
+   {
+      // Fat binary: read first architecture only for now
+      struct fat_header fatHeader{};
+      file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+      uint32_t        nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+      struct fat_arch arch{};
+      file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+      uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+      file.seekg(offset);
+      file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+      file.seekg(offset);
+   }
+
+   bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+   // Read Mach-O header
+   if (is64)
+   {
+      struct mach_header_64 mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      // Iterate load commands
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_SYMTAB)
+         {
+            struct symtab_command symtab{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&symtab), sizeof(symtab));
+
+            // Read string table
+            std::vector<char> strtab(symtab.strsize);
+            file.seekg(symtab.stroff);
+            file.read(strtab.data(), symtab.strsize);
+
+            // Read symbol table
+            file.seekg(symtab.symoff);
+            for (uint32_t j = 0; j < symtab.nsyms; ++j)
+            {
+               struct nlist_64 nlsym{};
+               file.read(reinterpret_cast<char*>(&nlsym), sizeof(nlsym));
+
+               SymbolInfo sym;
+               if (nlsym.n_un.n_strx < symtab.strsize)
+               {
+                  std::string raw_name = &strtab[nlsym.n_un.n_strx];
+                  // Strip leading underscore for Mach-O symbols
+                  if (!raw_name.empty() && raw_name[0] == '_')
+                      sym.name = raw_name.substr(1);
+                  else
+                      sym.name = raw_name;
+               }
+               else
+                  sym.name = "<badstrx>";
+
+               sym.address   = nlsym.n_value;
+               sym.size      = 0;  // Mach-O doesn't store symbol size
+               sym.isDefined = !(nlsym.n_type & N_STAB) && (nlsym.n_type & N_TYPE) != N_UNDF;
+               sym.isGlobal  = (nlsym.n_type & N_EXT);
+               sym.section   = std::to_string(nlsym.n_sect);
+               symbols.push_back(sym);
+            }
+
+            break;
+         }
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+   else
+   {
+      struct mach_header mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_SYMTAB)
+         {
+            struct symtab_command symtab{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&symtab), sizeof(symtab));
+
+            std::vector<char> strtab(symtab.strsize);
+            file.seekg(symtab.stroff);
+            file.read(strtab.data(), symtab.strsize);
+
+            file.seekg(symtab.symoff);
+            for (uint32_t j = 0; j < symtab.nsyms; ++j)
+            {
+               struct nlist nlsym{};
+               file.read(reinterpret_cast<char*>(&nlsym), sizeof(nlsym));
+
+               SymbolInfo sym;
+               if (nlsym.n_un.n_strx < symtab.strsize)
+               {
+                  std::string raw_name = &strtab[nlsym.n_un.n_strx];
+                  // Strip leading underscore for Mach-O symbols
+                  if (!raw_name.empty() && raw_name[0] == '_')
+                      sym.name = raw_name.substr(1);
+                  else
+                      sym.name = raw_name;
+               }
+               else
+                  sym.name = "<badstrx>";
+
+               sym.address   = nlsym.n_value;
+               sym.size      = 0;
+               sym.isDefined = !(nlsym.n_type & N_STAB) && (nlsym.n_type & N_TYPE) != N_UNDF;
+               sym.isGlobal  = (nlsym.n_type & N_EXT);
+               sym.section   = std::to_string(nlsym.n_sect);
+               symbols.push_back(sym);
+            }
+            break;
+         }
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+
+   return !symbols.empty();
+#else
+   symbols.clear();
+   return false;
+#endif
 }
 
 bool MachOExtractor::Impl::processLoadCommandsImpl(const std::string&        filePath,
                                                    std::vector<SectionInfo>& sections)
 {
-   // Implementation would parse load commands and extract section information
-   // For now, return empty vector
+#ifdef __APPLE__
    sections.clear();
-   return true;
+
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return false;
+   }
+
+   uint32_t magic = 0;
+   file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+   file.seekg(0);
+
+   if (magic == FAT_MAGIC || magic == FAT_CIGAM)
+   {
+      struct fat_header fatHeader{};
+      file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+      uint32_t        nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+      struct fat_arch arch{};
+      file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+      uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+      file.seekg(offset);
+      file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+      file.seekg(offset);
+   }
+
+   bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+   if (is64)
+   {
+      struct mach_header_64 mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_SEGMENT_64)
+         {
+            struct segment_command_64 seg{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&seg), sizeof(seg));
+
+            // Process sections in this segment
+            for (uint32_t j = 0; j < seg.nsects; ++j)
+            {
+               struct section_64 sect{};
+               file.read(reinterpret_cast<char*>(&sect), sizeof(sect));
+
+               SectionInfo section;
+               section.name = sect.sectname;
+               section.address = sect.addr;
+               section.size = sect.size;
+               section.flags = sect.flags;
+               section.type = "SECT";
+               sections.push_back(section);
+            }
+         }
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+   else
+   {
+      struct mach_header mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_SEGMENT)
+         {
+            struct segment_command seg{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&seg), sizeof(seg));
+
+            // Process sections in this segment
+            for (uint32_t j = 0; j < seg.nsects; ++j)
+            {
+               struct section sect{};
+               file.read(reinterpret_cast<char*>(&sect), sizeof(sect));
+
+               SectionInfo section;
+               section.name = sect.sectname;
+               section.address = sect.addr;
+               section.size = sect.size;
+               section.flags = sect.flags;
+               section.type = "SECT";
+               sections.push_back(section);
+            }
+         }
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+
+   return !sections.empty();
+#else
+   sections.clear();
+   return false;
+#endif
 }
 
 std::vector<std::string> MachOExtractor::Impl::extractDependenciesFromLoadCommandsImpl(
    const std::string& filePath)
 {
-   // Implementation would parse LC_LOAD_DYLIB load commands
-   // For now, return empty vector
+#ifdef __APPLE__
+   std::vector<std::string> libraries;
+
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return libraries;
+   }
+
+   // Handle fat binaries
+   uint32_t magic = 0;
+   file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+   file.seekg(0);
+
+   if (magic == FAT_MAGIC || magic == FAT_CIGAM)
+   {
+      struct fat_header fatHeader{};
+      file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+      uint32_t        nfat_arch = OSSwapBigToHostInt32(fatHeader.nfat_arch);
+      struct fat_arch arch{};
+      file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+      uint32_t offset = OSSwapBigToHostInt32(arch.offset);
+      file.seekg(offset);
+      file.read(reinterpret_cast<char*>(&magic), sizeof(magic));
+      file.seekg(offset);
+   }
+
+   bool is64 = (magic == MH_MAGIC_64 || magic == MH_CIGAM_64);
+
+   // Read Mach-O header
+   if (is64)
+   {
+      struct mach_header_64 mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      // Iterate load commands
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         // Check for dynamic library load commands
+         if (lc.cmd == LC_LOAD_DYLIB || lc.cmd == LC_LOAD_WEAK_DYLIB ||
+             lc.cmd == LC_REEXPORT_DYLIB || lc.cmd == LC_LAZY_LOAD_DYLIB)
+         {
+            struct dylib_command dylib_cmd{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&dylib_cmd), sizeof(dylib_cmd));
+
+            // Read library name
+            std::string libName;
+            char        ch;
+            file.seekg(cmdStart + static_cast<std::streamoff>(dylib_cmd.dylib.name.offset));
+            while (file.get(ch) && ch != '\0')
+            {
+               libName += ch;
+            }
+
+            if (!libName.empty())
+            {
+               libraries.push_back(libName);
+            }
+         }
+
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+   else
+   {
+      struct mach_header mh{};
+      file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
+      uint32_t ncmds = mh.ncmds;
+
+      for (uint32_t i = 0; i < ncmds; ++i)
+      {
+         std::streampos      cmdStart = file.tellg();
+         struct load_command lc{};
+         file.read(reinterpret_cast<char*>(&lc), sizeof(lc));
+
+         if (lc.cmd == LC_LOAD_DYLIB || lc.cmd == LC_LOAD_WEAK_DYLIB ||
+             lc.cmd == LC_REEXPORT_DYLIB || lc.cmd == LC_LAZY_LOAD_DYLIB)
+         {
+            struct dylib_command dylib_cmd{};
+            file.seekg(cmdStart);
+            file.read(reinterpret_cast<char*>(&dylib_cmd), sizeof(dylib_cmd));
+
+            std::string libName;
+            char        ch;
+            file.seekg(cmdStart + static_cast<std::streamoff>(dylib_cmd.dylib.name.offset));
+            while (file.get(ch) && ch != '\0')
+            {
+               libName += ch;
+            }
+
+            if (!libName.empty())
+            {
+               libraries.push_back(libName);
+            }
+         }
+
+         file.seekg(cmdStart + static_cast<std::streamoff>(lc.cmdsize));
+      }
+   }
+
+   return libraries;
+#else
    return {};
+#endif
 }
 
 template <typename T>
