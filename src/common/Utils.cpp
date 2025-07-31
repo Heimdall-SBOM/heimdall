@@ -850,7 +850,7 @@ std::string extractPackageName(const std::string& filePath)
 void debugPrint(const std::string& message)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   std::cerr << "[DEBUG] " << message << std::endl;
+   std::cout << "[DEBUG] " << message << std::endl;
 #endif
 }
 
@@ -861,7 +861,7 @@ void debugPrint(const std::string& message)
 void infoPrint(const std::string& message)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   std::cerr << "[INFO] " << message << std::endl;
+   std::cout << "[INFO] " << message << std::endl;
 #endif
 }
 

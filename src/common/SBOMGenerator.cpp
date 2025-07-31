@@ -42,7 +42,7 @@ namespace heimdall
 class SBOMGenerator::Impl
 {
    public:
-   std::unordered_map<std::string, ComponentInfo> components;       ///< Map of processed components
+   std::unordered_map<std::string, ComponentInfo> components;  ///< Map of processed components
    std::string                                    outputPath;       ///< Output file path
    std::string                                    format = "spdx";  ///< Output format
    std::string cyclonedxVersion = "1.6";  ///< CycloneDX specification version
@@ -1562,19 +1562,32 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
 
 std::string SBOMGenerator::Impl::getCurrentTimestamp()
 {
-   auto              now    = std::chrono::system_clock::now();
-   auto              time_t = std::chrono::system_clock::to_time_t(now);
+   auto now = std::chrono::system_clock::now();
+   auto time_t = std::chrono::system_clock::to_time_t(now);
 
-   std::stringstream ss;
 #if defined(_POSIX_VERSION)
    struct tm tm_buf{};
    gmtime_r(&time_t, &tm_buf);
-   ss << std::put_time(&tm_buf, "%Y-%m-%dT%H:%M:%SZ");
+   std::stringstream ss;
+   ss << std::setfill('0') << std::setw(4) << tm_buf.tm_year + 1900 << "-"
+      << std::setw(2) << tm_buf.tm_mon + 1 << "-"
+      << std::setw(2) << tm_buf.tm_mday << "T"
+      << std::setw(2) << tm_buf.tm_hour << ":"
+      << std::setw(2) << tm_buf.tm_min << ":"
+      << std::setw(2) << tm_buf.tm_sec << "Z";
+   return ss.str();
 #else
    // Fallback: not thread-safe
-   ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
-#endif
+   auto* tm_ptr = std::gmtime(&time_t);
+   std::stringstream ss;
+   ss << std::setfill('0') << std::setw(4) << tm_ptr->tm_year + 1900 << "-"
+      << std::setw(2) << tm_ptr->tm_mon + 1 << "-"
+      << std::setw(2) << tm_ptr->tm_mday << "T"
+      << std::setw(2) << tm_ptr->tm_hour << ":"
+      << std::setw(2) << tm_ptr->tm_min << ":"
+      << std::setw(2) << tm_ptr->tm_sec << "Z";
    return ss.str();
+#endif
 }
 
 std::string SBOMGenerator::Impl::generateSPDXId(const std::string& name)
@@ -1608,9 +1621,7 @@ std::string SBOMGenerator::Impl::generateSPDXId(const std::string& name)
 
 std::string SBOMGenerator::Impl::generateDocumentNamespace()
 {
-   std::stringstream ss;
-   ss << "https://spdx.org/spdxdocs/heimdall-" << getCurrentTimestamp();
-   return ss.str();
+   return "https://spdx.org/spdxdocs/heimdall-" + getCurrentTimestamp();
 }
 
 std::string SBOMGenerator::Impl::generateSPDXElementId(const std::string& name)

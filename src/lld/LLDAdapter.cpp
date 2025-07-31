@@ -57,7 +57,7 @@ class LLDAdapter::Impl
    {
       return processedFiles;
    }
-   const std::vector<std::string>& getProcessedLibraries() const
+   const std::set<std::string>& getProcessedLibraries() const
    {
       return processedLibraries;
    }
@@ -68,16 +68,16 @@ class LLDAdapter::Impl
    void processFilesParallel(const std::vector<std::string>& filePaths);  // Add this line
 
    private:
-   std::vector<std::string>       processedFiles;
-   std::vector<std::string>       processedLibraries;
-   bool                           initialized{false};
-   bool                           verbose{false};
-   bool                           extractDebugInfo{true};
-   bool                           includeSystemLibraries{false};
-   std::string                    outputPath{"heimdall-lld-sbom.json"};
-   std::string                    format{"spdx"};
-   std::string                    cycloneDXVersion{"1.4"};
-   std::unique_ptr<SBOMGenerator> sbomGenerator;
+   std::vector<std::string>                    processedFiles;
+   std::set<std::string>                        processedLibraries;
+   bool                                        initialized{false};
+   bool                                        verbose{false};
+   bool                                        extractDebugInfo{true};
+   bool                                        includeSystemLibraries{false};
+   std::string                                 outputPath{"heimdall-lld-sbom.json"};
+   std::string                                 format{"spdx"};
+   std::string                                 cycloneDXVersion{"1.4"};
+   std::unique_ptr<SBOMGenerator>              sbomGenerator;
 
    static void                    logProcessing(const std::string& message);
 };
@@ -137,8 +137,7 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
 
    if (verbose)
    {
-      logProcessing("Debug: extractDebugInfo = " +
-                    std::string(extractDebugInfo ? "true" : "false"));
+      logProcessing("Debug: extractDebugInfo = " + std::string(extractDebugInfo ? "true" : "false"));
    }
 
    extractor.extractMetadata(component);
@@ -151,12 +150,9 @@ void LLDAdapter::Impl::processInputFile(const std::string& filePath)
 
    if (verbose)
    {
-      logProcessing("Debug: Extracted " + std::to_string(component.functions.size()) +
-                    " functions");
-      logProcessing("Debug: Extracted " + std::to_string(component.compileUnits.size()) +
-                    " compile units");
-      logProcessing("Debug: Extracted " + std::to_string(component.sourceFiles.size()) +
-                    " source files");
+      logProcessing("Debug: Extracted " + std::to_string(component.functions.size()) + " functions");
+      logProcessing("Debug: Extracted " + std::to_string(component.compileUnits.size()) + " compile units");
+      logProcessing("Debug: Extracted " + std::to_string(component.sourceFiles.size()) + " source files");
    }
 
    // Add to SBOM generator
@@ -183,13 +179,12 @@ void LLDAdapter::Impl::processLibrary(const std::string& libraryPath)
    }
 
    // Check if already processed
-   if (std::find(processedLibraries.begin(), processedLibraries.end(), libraryPath) !=
-       processedLibraries.end())
+   if (processedLibraries.find(libraryPath) != processedLibraries.end())
    {
       return;
    }
 
-   processedLibraries.push_back(libraryPath);
+   processedLibraries.insert(libraryPath);
    if (verbose)
    {
       logProcessing("Processing library: " + libraryPath);
@@ -256,8 +251,7 @@ void LLDAdapter::Impl::finalize()
    if (initialized)
    {
       // Debug: Print component count before generation
-      logProcessing("Finalizing with " + std::to_string(sbomGenerator->getComponentCount()) +
-                    " components");
+            logProcessing("Finalizing with " + std::to_string(sbomGenerator->getComponentCount()) + " components");
       logProcessing("Format: " + format + ", Output: " + outputPath);
 
       // Generate the final SBOM
@@ -265,8 +259,7 @@ void LLDAdapter::Impl::finalize()
       sbomGenerator->setFormat(format);
       sbomGenerator->generateSBOM();
 
-      logProcessing("LLDAdapter finalized - processed " + std::to_string(processedFiles.size()) +
-                    " files and " + std::to_string(processedLibraries.size()) + " libraries");
+            logProcessing("LLDAdapter finalized - processed " + std::to_string(processedFiles.size()) + " files and " + std::to_string(processedLibraries.size()) + " libraries");
       logProcessing("SBOM generated at: " + outputPath);
       initialized = false;
    }
@@ -301,8 +294,7 @@ void LLDAdapter::Impl::setVerbose(bool v)
    if (verbose)
    {
       logProcessing("Debug: LLDAdapter verbose mode enabled");
-      logProcessing("Debug: extractDebugInfo = " +
-                    std::string(extractDebugInfo ? "true" : "false"));
+      logProcessing("Debug: extractDebugInfo = " + std::string(extractDebugInfo ? "true" : "false"));
    }
 }
 
@@ -318,8 +310,7 @@ void LLDAdapter::Impl::setIncludeSystemLibraries(bool include)
 
 void LLDAdapter::Impl::setTransitiveDependencies(bool transitive)
 {
-   std::cout << "Adapter: setTransitiveDependencies called with: "
-             << (transitive ? "true" : "false") << std::endl;
+   std::cout << "Adapter: setTransitiveDependencies called with: " << (transitive ? "true" : "false") << std::endl;
    if (sbomGenerator)
    {
       sbomGenerator->setTransitiveDependencies(transitive);
@@ -350,7 +341,7 @@ void LLDAdapter::Impl::printStatistics() const
 
 void LLDAdapter::Impl::logProcessing(const std::string& message)
 {
-   std::cout << "[Heimdall LLD] " << message << '\n';
+   std::cout << "[Heimdall LLD] " << message << std::endl;
 }
 
 // LLDAdapter implementation
@@ -435,7 +426,7 @@ std::vector<std::string> LLDAdapter::getProcessedFiles() const
    return pImpl->getProcessedFiles();
 }
 
-std::vector<std::string> LLDAdapter::getProcessedLibraries() const
+const std::set<std::string>& LLDAdapter::getProcessedLibraries() const
 {
    return pImpl->getProcessedLibraries();
 }

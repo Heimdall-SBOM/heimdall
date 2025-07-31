@@ -23,6 +23,7 @@ limitations under the License.
 
 #pragma once
 
+#include "../compat/compatibility.hpp"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -147,9 +148,9 @@ class LLDAdapter
 
    /**
     * @brief Get the list of processed libraries
-    * @return Vector of processed library paths
+    * @return Set of processed library paths
     */
-   std::vector<std::string> getProcessedLibraries() const;
+   const std::set<std::string>& getProcessedLibraries() const;
 
    /**
     * @brief Get the list of processed symbols

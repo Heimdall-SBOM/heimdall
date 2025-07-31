@@ -41,7 +41,7 @@ limitations under the License.
 namespace heimdall
 {
 
-// Implementation class
+// Implementation class - must be defined before any unique_ptr usage
 class AdaExtractor::Impl
 {
    public:

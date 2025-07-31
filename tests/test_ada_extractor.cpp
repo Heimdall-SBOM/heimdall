@@ -79,7 +79,7 @@ TEST_F(AdaExtractorTest, FindAliFiles)
    std::vector<std::string> aliFiles;
    extractor.findAliFiles(test_dir.string(), aliFiles);
    ASSERT_EQ(aliFiles.size(), 1);
-       EXPECT_EQ(fs::path(aliFiles[0]).filename(), "my_package.ali");
+   EXPECT_EQ(fs::path(aliFiles[0]).filename(), "my_package.ali");
 }
 
 TEST_F(AdaExtractorTest, ExtractAdaMetadata)

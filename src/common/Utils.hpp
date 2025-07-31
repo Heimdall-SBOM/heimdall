@@ -259,11 +259,12 @@ std::string extractPackageName(const std::string& filePath);
  */
 std::vector<std::string> splitPath(const std::string& path);
 
-/**
- * @brief Print a debug message (only if HEIMDALL_DEBUG_ENABLED is defined)
- * @param message The message to print
- */
-void debugPrint(const std::string& message);
+   /**
+    * @brief Print a debug message (only if HEIMDALL_DEBUG_ENABLED is defined)
+    * @param message The message to print
+    * @param location Source location information
+    */
+   void debugPrint(const std::string& message);
 
 /**
  * @brief Print an informational message (only if HEIMDALL_DEBUG_ENABLED is defined)

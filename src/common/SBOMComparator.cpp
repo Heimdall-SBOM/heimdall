@@ -656,12 +656,17 @@ std::string UnifiedSBOMComparator::getDifferenceTypeStringLowercase(SBOMDifferen
 
 std::string UnifiedSBOMComparator::getCurrentTimestamp()
 {
-   auto              now    = std::chrono::system_clock::now();
-   auto              time_t = std::chrono::system_clock::to_time_t(now);
+   auto now = std::chrono::system_clock::now();
+   auto time_t = std::chrono::system_clock::to_time_t(now);
 
+   auto* tm_ptr = std::gmtime(&time_t);
    std::stringstream ss;
-   ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
-
+   ss << std::setfill('0') << std::setw(4) << tm_ptr->tm_year + 1900 << "-"
+      << std::setw(2) << tm_ptr->tm_mon + 1 << "-"
+      << std::setw(2) << tm_ptr->tm_mday << "T"
+      << std::setw(2) << tm_ptr->tm_hour << ":"
+      << std::setw(2) << tm_ptr->tm_min << ":"
+      << std::setw(2) << tm_ptr->tm_sec << "Z";
    return ss.str();
 }
 

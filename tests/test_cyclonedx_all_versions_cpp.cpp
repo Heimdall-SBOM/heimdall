@@ -7,7 +7,6 @@
 #include "src/compat/compatibility.hpp"
 
 using namespace heimdall::llvm;
-// Use standard library types for C++17+
 using std::optional;
 using std::string_view;
 using std::variant;

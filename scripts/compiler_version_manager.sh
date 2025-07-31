@@ -70,7 +70,7 @@ detect_gcc_versions() {
     # Check for SCL GCC toolset versions
     for version in {7..20}; do
         if scl list-collections 2>/dev/null | grep -q "gcc-toolset-${version}" 2>/dev/null; then
-            local gcc_version=$(scl enable gcc-toolset-${version} -- gcc --version 2>/dev/null | head -n1 | sed 's/.*version \([0-9.]*\).*/\1/')
+            local gcc_version=$(scl enable gcc-toolset-${version} -- gcc --version 2>/dev/null | head -n1 | sed -n 's/.*(GCC)[[:space:]]\+\([0-9]\+\.[0-9]\+\).*/\1/p')
             if [ -n "$gcc_version" ]; then
                 # Test if the compiler actually works
                 scl enable gcc-toolset-${version} -- gcc --version >/dev/null 2>&1
@@ -154,8 +154,9 @@ select_compiler() {
     local available_clang_string="$4"
     
     # Convert space-separated strings back to arrays
-    IFS=' ' read -ra available_gcc <<< "$available_gcc_string"
-    IFS=' ' read -ra available_clang <<< "$available_clang_string"
+    local _US=$'\x1f'
+    IFS="$_US" read -ra available_gcc <<< "$available_gcc_string"
+    IFS="$_US" read -ra available_clang <<< "$available_clang_string"
     
 
     case $cxx_standard in
@@ -167,7 +168,7 @@ select_compiler() {
                     local version_name=$(echo "$version_info" | cut -d':' -f1)
                     local version_number=$(echo "$version_info" | cut -d':' -f2)
                     local major_version=$(get_compiler_major_version "$version_number")
-                    if [ "$major_version" -ge 3 ]; then
+                    if [[ -n "$major_version" ]] && [ "$major_version" -ge 3 ]; then
                         echo "clang:${version_name}"
                         return 0
                     fi
@@ -179,7 +180,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 4 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [[ -n "$major_version" ]] && [ "$major_version" -ge 4 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -188,7 +189,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [ "$major_version" -ge 3 ]; then
+                if [[ -n "$major_version" ]] && [ "$major_version" -ge 3 ]; then
                     echo "clang:${version_name}"
                     return 0
                 fi
@@ -202,7 +203,7 @@ select_compiler() {
                     local version_name=$(echo "$version_info" | cut -d':' -f1)
                     local version_number=$(echo "$version_info" | cut -d':' -f2)
                     local major_version=$(get_compiler_major_version "$version_number")
-                    if [ "$major_version" -ge 3 ]; then
+                    if [[ -n "$major_version" ]] && [ "$major_version" -ge 3 ]; then
                         echo "clang:${version_name}"
                         return 0
                     fi
@@ -214,7 +215,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 6 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [[ -n "$major_version" ]] && [ "$major_version" -ge 6 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -223,7 +224,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [ "$major_version" -ge 3 ]; then
+                if [[ -n "$major_version" ]] && [ "$major_version" -ge 3 ]; then
                     echo "clang:${version_name}"
                     return 0
                 fi
@@ -237,7 +238,7 @@ select_compiler() {
                     local version_name=$(echo "$version_info" | cut -d':' -f1)
                     local version_number=$(echo "$version_info" | cut -d':' -f2)
                     local major_version=$(get_compiler_major_version "$version_number")
-                    if [ "$major_version" -ge 5 ]; then
+                    if [[ -n "$major_version" ]] && [ "$major_version" -ge 5 ]; then
                         echo "clang:${version_name}"
                         return 0
                     fi
@@ -249,7 +250,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 7 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [[ -n "$major_version" ]] && [ "$major_version" -ge 7 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -258,7 +259,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [ "$major_version" -ge 5 ]; then
+                if [[ -n "$major_version" ]] && [ "$major_version" -ge 5 ]; then
                     echo "clang:${version_name}"
                     return 0
                 fi
@@ -272,7 +273,7 @@ select_compiler() {
                     local version_name=$(echo "$version_info" | cut -d':' -f1)
                     local version_number=$(echo "$version_info" | cut -d':' -f2)
                     local major_version=$(get_compiler_major_version "$version_number")
-                    if [ "$major_version" -ge 14 ]; then
+                    if [[ -n "$major_version" ]] && [ "$major_version" -ge 14 ]; then
                         echo "clang:${version_name}"
                         return 0
                     fi
@@ -284,7 +285,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 13 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [[ -n "$major_version" ]] && [ "$major_version" -ge 13 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -293,7 +294,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [ "$major_version" -ge 14 ]; then
+                if [[ -n "$major_version" ]] && [ "$major_version" -ge 14 ]; then
                     echo "clang:${version_name}"
                     return 0
                 fi
@@ -307,7 +308,7 @@ select_compiler() {
                     local version_name=$(echo "$version_info" | cut -d':' -f1)
                     local version_number=$(echo "$version_info" | cut -d':' -f2)
                     local major_version=$(get_compiler_major_version "$version_number")
-                    if [ "$major_version" -ge 14 ]; then
+                    if [[ -n "$major_version" ]] && [ "$major_version" -ge 14 ]; then
                         echo "clang:${version_name}"
                         return 0
                     fi
@@ -319,7 +320,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [ "$major_version" -ge 13 ]; then
+                if [[ "$version_name" =~ ^(gcc|scl-gcc-toolset-|homebrew-gcc-) ]] && [[ -n "$major_version" ]] && [ "$major_version" -ge 13 ]; then
                     echo "${version_name}:${version_number}"
                     return 0
                 fi
@@ -328,7 +329,7 @@ select_compiler() {
                 local version_name=$(echo "$version_info" | cut -d':' -f1)
                 local version_number=$(echo "$version_info" | cut -d':' -f2)
                 local major_version=$(get_compiler_major_version "$version_number")
-                if [ "$major_version" -ge 14 ]; then
+                if [[ -n "$major_version" ]] && [ "$major_version" -ge 14 ]; then
                     echo "clang:${version_name}"
                     return 0
                 fi
@@ -500,6 +501,11 @@ show_available_compilers() {
     fi
 }
 
+# Add a function to join array elements with a delimiter
+join_by() {
+  local d="$1"; shift; local f="$1"; shift; printf %s "$f"; for f; do printf "%s%s" "$d" "$f"; done
+}
+
 # Main function
 main() {
     local quiet=0
@@ -548,7 +554,8 @@ main() {
         fi
     else
         # On Linux, support both Clang and GCC
-        local selected_compiler=$(select_compiler "$cxx_standard" "$compiler_preference" "${available_gcc[*]}" "${available_clang[*]}")
+        local _US=$'\x1f'
+        local selected_compiler=$(select_compiler "$cxx_standard" "$compiler_preference" "$(join_by "$_US" "${available_gcc[@]}")" "$(join_by "$_US" "${available_clang[@]}")")
     fi
     
     if [ $? -ne 0 ]; then

@@ -149,6 +149,8 @@ limitations under the License.
 namespace fs = boost::filesystem;
 #else
 // Fallback filesystem implementation for C++11/14 without Boost
+namespace heimdall {
+namespace compat {
 namespace fs
 {
 class path
@@ -484,6 +486,8 @@ class filesystem_error : public std::runtime_error
    filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
 };
 }  // namespace fs
+}  // namespace compat
+}  // namespace heimdall
 #endif
 #endif
 
