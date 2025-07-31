@@ -240,7 +240,7 @@ bool LightweightDWARFParser::extractSourceFiles(const std::string&        filePa
 #endif
 
    // Fallback to heuristic extraction
-   std::cout << "DEBUG: Calling heuristic extraction for " << filePath << std::endl;
+   Utils::debugPrint(std::string("Calling hueristic extraction for ") + filePath);
    return extractSourceFilesHeuristic(filePath, sourceFiles);
 }
 
@@ -248,7 +248,7 @@ bool LightweightDWARFParser::extractCompileUnits(const std::string&        fileP
                                                  std::vector<std::string>& compileUnits)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractCompileUnits called for " + filePath);
+   Utils::debugPrint(std::string("LightweightDWARFParser: extractCompileUnits called for ") + filePath);
 #endif
 
    // Clear previous results
@@ -270,7 +270,7 @@ bool LightweightDWARFParser::extractFunctions(const std::string&        filePath
                                               std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractFunctions called for " + filePath);
+   Utils::debugPrint(std::string("LightweightDWARFParser: extractFunctions called for ") + filePath);
 #endif
 
    // Clear previous results
@@ -294,7 +294,7 @@ bool LightweightDWARFParser::extractAllDebugInfo(const std::string&        fileP
                                                  std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractAllDebugInfo called for " + filePath);
+   Utils::debugPrint(std::string("LightweightDWARFParser: extractAllDebugInfo called for ") + filePath);
 #endif
 
    // Clear previous results
@@ -344,7 +344,7 @@ bool LightweightDWARFParser::parseDWARFDebugInfo(const std::string&        fileP
                                                  std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: parseDWARFDebugInfo called for " + filePath);
+   Utils::debugPrint(std::string("LightweightDWARFParser: parseDWARFDebugInfo called for ") + filePath);
 #endif
 
    uint64_t debugInfoOffset, debugLineOffset, debugAbbrevOffset;
@@ -461,7 +461,7 @@ bool LightweightDWARFParser::parseDWARFDebugLine(const std::string&        fileP
                                                  std::vector<std::string>& sourceFiles)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: parseDWARFDebugLine called for " + filePath);
+   Utils::debugPrint(std::string("LightweightDWARFParser: parseDWARFDebugLine called for ") + filePath);
 #endif
 
    uint64_t debugInfoOffset, debugLineOffset, debugAbbrevOffset;
@@ -651,7 +651,7 @@ bool LightweightDWARFParser::extractFunctionsFromSymbolTable(const std::string& 
                                                              std::vector<std::string>& functions)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractFunctionsFromSymbolTable called for " +
+   Utils::debugPrint(std::string("LightweightDWARFParser: extractFunctionsFromSymbolTable called for ") +
                      filePath);
 #endif
 
@@ -719,7 +719,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
                                                          std::vector<std::string>& sourceFiles)
 {
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: extractSourceFilesHeuristic called for " + filePath);
+   Utils::debugPrint(std::string("LightweightDWARFParser: extractSourceFilesHeuristic called for ") + filePath);
 #endif
 
    // This is a heuristic approach that tries to extract source file information
@@ -763,16 +763,16 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
    }
 
 #ifdef HEIMDALL_DEBUG_ENABLED
-   Utils::debugPrint("LightweightDWARFParser: File size for heuristic extraction: " +
+   Utils::debugPrint(std::string("LightweightDWARFParser: File size for heuristic extraction: ") +
                      std::to_string(fileSize));
    std::string fileContent(fileData.begin(), fileData.end());
-   Utils::debugPrint("LightweightDWARFParser: File content: " + fileContent);
+   Utils::debugPrint(std::string("LightweightDWARFParser: File content: ") + fileContent);
 #endif
 
    // Look for common source file patterns
    std::vector<std::string> extensions = {".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx"};
 
-   std::cout << "DEBUG: Looking for extensions in file of size " << fileData.size() << std::endl;
+   Utils::debugPrint(std::string("Looking for extensions in file of zie ") + std::to_string(fileData.size()));
 
    for (size_t i = 0; i < fileData.size() - 1; ++i)
    {
@@ -792,8 +792,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
 
             if (match)
             {
-               std::cout << "DEBUG: Found extension match at position " << i << ": " << ext
-                         << std::endl;
+               Utils::debugPrint(std::string("Found extension match at position ") + std::to_string(i) + std::string(": ") + ext);
                // Try to extract the full filename
                size_t       start              = i;
                size_t       startIterations    = 0;
@@ -821,11 +820,11 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
                if (end - start > 0 && end - start < 512)
                {  // Increased reasonable filename length
                   std::string filename(fileData.begin() + start, fileData.begin() + end);
-                  std::cout << "DEBUG: Extracted filename: '" << filename << "'" << std::endl;
+                  Utils::debugPrint(std::string("Extracted filename: ") + filename + "'");
                   if (filename.find('.') != std::string::npos)
                   {
                      uniqueSourceFiles.insert(filename);
-                     std::cout << "DEBUG: Added source file: " << filename << std::endl;
+                     Utils::debugPrint(std::string("Added source file: ") + filename);
                   }
                }
             }
