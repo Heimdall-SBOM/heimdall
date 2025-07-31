@@ -6,9 +6,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../../src/extractors/AdaExtractor.hpp"
 #include "../../src/common/ComponentInfo.hpp"
 #include "../../src/common/MetadataExtractor.hpp"
+#include "../../src/extractors/AdaExtractor.hpp"
 
 void printComponentInfo(const heimdall::ComponentInfo& component, const std::string& title)
 {

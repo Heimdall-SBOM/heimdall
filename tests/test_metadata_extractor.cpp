@@ -20,9 +20,9 @@ limitations under the License.
 #include <iostream>
 #include "common/ComponentInfo.hpp"
 #include "common/MetadataExtractor.hpp"
+#include "factories/BinaryFormatFactory.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
-#include "factories/BinaryFormatFactory.hpp"
 
 using namespace heimdall;
 

@@ -42,14 +42,14 @@ namespace heimdall
 class SBOMGenerator::Impl
 {
    public:
-   std::unordered_map<std::string, ComponentInfo> components;  ///< Map of processed components
+   std::unordered_map<std::string, ComponentInfo> components;       ///< Map of processed components
    std::string                                    outputPath;       ///< Output file path
    std::string                                    format = "spdx";  ///< Output format
    std::string cyclonedxVersion = "1.6";  ///< CycloneDX specification version
    std::string spdxVersion =
       "2.3";  ///< SPDX specification version (default to 2.3 for compatibility)
    std::unique_ptr<MetadataExtractor> metadataExtractor;  ///< Metadata extractor instance
-   BuildInfo                            buildInfo;          ///< Build information
+   BuildInfo                          buildInfo;          ///< Build information
    bool transitiveDependencies = true;  ///< Whether to include transitive dependencies
 
    /**
@@ -1562,30 +1562,26 @@ std::string SBOMGenerator::Impl::generateCycloneDXComponent(const ComponentInfo&
 
 std::string SBOMGenerator::Impl::getCurrentTimestamp()
 {
-   auto now = std::chrono::system_clock::now();
+   auto now    = std::chrono::system_clock::now();
    auto time_t = std::chrono::system_clock::to_time_t(now);
 
 #if defined(_POSIX_VERSION)
    struct tm tm_buf{};
    gmtime_r(&time_t, &tm_buf);
    std::stringstream ss;
-   ss << std::setfill('0') << std::setw(4) << tm_buf.tm_year + 1900 << "-"
-      << std::setw(2) << tm_buf.tm_mon + 1 << "-"
-      << std::setw(2) << tm_buf.tm_mday << "T"
-      << std::setw(2) << tm_buf.tm_hour << ":"
-      << std::setw(2) << tm_buf.tm_min << ":"
-      << std::setw(2) << tm_buf.tm_sec << "Z";
+   ss << std::setfill('0') << std::setw(4) << tm_buf.tm_year + 1900 << "-" << std::setw(2)
+      << tm_buf.tm_mon + 1 << "-" << std::setw(2) << tm_buf.tm_mday << "T" << std::setw(2)
+      << tm_buf.tm_hour << ":" << std::setw(2) << tm_buf.tm_min << ":" << std::setw(2)
+      << tm_buf.tm_sec << "Z";
    return ss.str();
 #else
    // Fallback: not thread-safe
-   auto* tm_ptr = std::gmtime(&time_t);
+   auto*             tm_ptr = std::gmtime(&time_t);
    std::stringstream ss;
-   ss << std::setfill('0') << std::setw(4) << tm_ptr->tm_year + 1900 << "-"
-      << std::setw(2) << tm_ptr->tm_mon + 1 << "-"
-      << std::setw(2) << tm_ptr->tm_mday << "T"
-      << std::setw(2) << tm_ptr->tm_hour << ":"
-      << std::setw(2) << tm_ptr->tm_min << ":"
-      << std::setw(2) << tm_ptr->tm_sec << "Z";
+   ss << std::setfill('0') << std::setw(4) << tm_ptr->tm_year + 1900 << "-" << std::setw(2)
+      << tm_ptr->tm_mon + 1 << "-" << std::setw(2) << tm_ptr->tm_mday << "T" << std::setw(2)
+      << tm_ptr->tm_hour << ":" << std::setw(2) << tm_ptr->tm_min << ":" << std::setw(2)
+      << tm_ptr->tm_sec << "Z";
    return ss.str();
 #endif
 }

@@ -23,11 +23,11 @@ limitations under the License.
  */
 
 #include "MachOExtractor.hpp"
-#include "DWARFExtractor.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include "DWARFExtractor.hpp"
 
 #ifdef __APPLE__
 #include <mach-o/fat.h>
@@ -629,9 +629,9 @@ bool MachOExtractor::Impl::processSymbolTableImpl(const std::string&       fileP
                   std::string raw_name = &strtab[nlsym.n_un.n_strx];
                   // Strip leading underscore for Mach-O symbols
                   if (!raw_name.empty() && raw_name[0] == '_')
-                      sym.name = raw_name.substr(1);
+                     sym.name = raw_name.substr(1);
                   else
-                      sym.name = raw_name;
+                     sym.name = raw_name;
                }
                else
                   sym.name = "<badstrx>";
@@ -683,9 +683,9 @@ bool MachOExtractor::Impl::processSymbolTableImpl(const std::string&       fileP
                   std::string raw_name = &strtab[nlsym.n_un.n_strx];
                   // Strip leading underscore for Mach-O symbols
                   if (!raw_name.empty() && raw_name[0] == '_')
-                      sym.name = raw_name.substr(1);
+                     sym.name = raw_name.substr(1);
                   else
-                      sym.name = raw_name;
+                     sym.name = raw_name;
                }
                else
                   sym.name = "<badstrx>";
@@ -766,11 +766,11 @@ bool MachOExtractor::Impl::processLoadCommandsImpl(const std::string&        fil
                file.read(reinterpret_cast<char*>(&sect), sizeof(sect));
 
                SectionInfo section;
-               section.name = sect.sectname;
+               section.name    = sect.sectname;
                section.address = sect.addr;
-               section.size = sect.size;
-               section.flags = sect.flags;
-               section.type = "SECT";
+               section.size    = sect.size;
+               section.flags   = sect.flags;
+               section.type    = "SECT";
                sections.push_back(section);
             }
          }
@@ -802,11 +802,11 @@ bool MachOExtractor::Impl::processLoadCommandsImpl(const std::string&        fil
                file.read(reinterpret_cast<char*>(&sect), sizeof(sect));
 
                SectionInfo section;
-               section.name = sect.sectname;
+               section.name    = sect.sectname;
                section.address = sect.addr;
-               section.size = sect.size;
-               section.flags = sect.flags;
-               section.type = "SECT";
+               section.size    = sect.size;
+               section.flags   = sect.flags;
+               section.type    = "SECT";
                sections.push_back(section);
             }
          }
@@ -827,7 +827,7 @@ std::vector<std::string> MachOExtractor::Impl::extractDependenciesFromLoadComman
 #ifdef __APPLE__
    std::vector<std::string> libraries;
 
-   std::ifstream file(filePath, std::ios::binary);
+   std::ifstream            file(filePath, std::ios::binary);
    if (!file.is_open())
    {
       return libraries;

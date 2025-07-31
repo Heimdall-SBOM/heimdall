@@ -170,9 +170,9 @@ struct SBOMDifference
       UNCHANGED  // Component unchanged
    };
 
-   Type                                      type;
-   SBOMComponent                             component;
-   std::optional<SBOMComponent>              oldComponent;
+   Type                         type;
+   SBOMComponent                component;
+   std::optional<SBOMComponent> oldComponent;
 
    // Default constructor
    SBOMDifference() = default;

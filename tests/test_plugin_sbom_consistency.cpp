@@ -245,10 +245,10 @@ int main() {
       source.close();
 
       // Compile the test binary with platform-specific settings
-      fs::path binaryPath = testDir / "test_binary";
-      fs::path sourcePath = sourceFile;
+      fs::path    binaryPath = testDir / "test_binary";
+      fs::path    sourcePath = sourceFile;
 
-      std::string                compileCmd;
+      std::string compileCmd;
 
 // Detect platform at runtime and set appropriate compiler and library paths
 #ifdef __APPLE__
@@ -457,10 +457,10 @@ int main() {
       return fs::exists(outputPath);
    }
 
-   fs::path testDir;
-   std::string                lldPluginPath;
-   std::string                goldPluginPath;
-   std::string                testBinaryPath;
+   fs::path    testDir;
+   std::string lldPluginPath;
+   std::string goldPluginPath;
+   std::string testBinaryPath;
 };
 
 TEST_F(PluginSBOMConsistencyTest, PluginPathsExist)
@@ -469,24 +469,18 @@ TEST_F(PluginSBOMConsistencyTest, PluginPathsExist)
    // On macOS, only check for LLD plugin
    EXPECT_FALSE(lldPluginPath.empty())
       << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
-   EXPECT_TRUE(fs::exists(lldPluginPath))
-      << "LLD plugin file does not exist: " << lldPluginPath;
-   EXPECT_GT(fs::file_size(lldPluginPath), 0)
-      << "LLD plugin file is empty: " << lldPluginPath;
+   EXPECT_TRUE(fs::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
+   EXPECT_GT(fs::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
 #else
    // On Linux, check for both LLD and Gold plugins
    EXPECT_FALSE(lldPluginPath.empty())
       << "LLD plugin not found. Searched in build/, install/, and current directory tree.";
    EXPECT_FALSE(goldPluginPath.empty())
       << "Gold plugin not found. Searched in build/, install/, and current directory tree.";
-   EXPECT_TRUE(fs::exists(lldPluginPath))
-      << "LLD plugin file does not exist: " << lldPluginPath;
-   EXPECT_TRUE(fs::exists(goldPluginPath))
-      << "Gold plugin file does not exist: " << goldPluginPath;
-   EXPECT_GT(fs::file_size(lldPluginPath), 0)
-      << "LLD plugin file is empty: " << lldPluginPath;
-   EXPECT_GT(fs::file_size(goldPluginPath), 0)
-      << "Gold plugin file is empty: " << goldPluginPath;
+   EXPECT_TRUE(fs::exists(lldPluginPath)) << "LLD plugin file does not exist: " << lldPluginPath;
+   EXPECT_TRUE(fs::exists(goldPluginPath)) << "Gold plugin file does not exist: " << goldPluginPath;
+   EXPECT_GT(fs::file_size(lldPluginPath), 0) << "LLD plugin file is empty: " << lldPluginPath;
+   EXPECT_GT(fs::file_size(goldPluginPath), 0) << "Gold plugin file is empty: " << goldPluginPath;
 #endif
 }
 

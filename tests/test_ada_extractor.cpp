@@ -23,9 +23,9 @@ limitations under the License.
 #include <fstream>
 #include <sstream>
 #include <thread>
-#include "src/extractors/AdaExtractor.hpp"
 #include "src/common/ComponentInfo.hpp"
 #include "src/compat/compatibility.hpp"
+#include "src/extractors/AdaExtractor.hpp"
 #include "test_utils.hpp"
 
 using namespace heimdall;
@@ -140,13 +140,13 @@ TEST_F(AdaExtractorTest, ExtractAdaMetadata_RuntimeOnly)
    std::string   runtime_ali = "runtime.ali";
    std::ofstream(runtime_ali) << "V \"GNAT Lib v2022\"\nW ada%b runtime.adb runtime.ali\n";
    std::vector<std::string> aliFiles = {runtime_ali};
-   
+
    // Test default behavior: runtime packages should be included (like ELF extractors)
    extractor.extractAdaMetadata(component, aliFiles);
    // Should include runtime package as dependency by default
    EXPECT_EQ(component.dependencies.size(), 1);
    EXPECT_EQ(component.dependencies[0], "ada");
-   
+
    // Test explicit exclusion
    ComponentInfo component2;
    extractor.setExcludeRuntimePackages(true);

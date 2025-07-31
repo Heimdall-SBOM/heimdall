@@ -61,9 +61,10 @@ std::vector<std::string> BaseSPDXHandler::getSupportedVersions() const
 ValidationResult BaseSPDXHandler::validateContent(const std::string& content)
 {
    ValidationResult result;
-   
+
    // Check if this is JSON format (SPDX 3.0)
-   if (content.find("\"@context\"") != std::string::npos && content.find("\"@graph\"") != std::string::npos)
+   if (content.find("\"@context\"") != std::string::npos &&
+       content.find("\"@graph\"") != std::string::npos)
    {
       // SPDX 3.0 JSON format validation
       if (content.find("\"specVersion\"") == std::string::npos)
@@ -74,7 +75,7 @@ ValidationResult BaseSPDXHandler::validateContent(const std::string& content)
       {
          // Extract specVersion
          size_t specVersionPos = content.find("\"specVersion\"");
-         size_t valueStart = content.find("\"", specVersionPos + 14);
+         size_t valueStart     = content.find("\"", specVersionPos + 14);
          if (valueStart != std::string::npos)
          {
             size_t valueEnd = content.find("\"", valueStart + 1);
@@ -93,22 +94,22 @@ ValidationResult BaseSPDXHandler::validateContent(const std::string& content)
             }
          }
       }
-      
+
       if (content.find("\"name\"") == std::string::npos)
       {
          result.addError("Missing required field: name");
       }
-      
+
       if (content.find("\"documentNamespace\"") == std::string::npos)
       {
          result.addError("Missing required field: documentNamespace");
       }
-      
+
       if (content.find("\"creationInfo\"") == std::string::npos)
       {
          result.addError("Missing required field: creationInfo");
       }
-      
+
       if (content.find("\"dataLicense\"") == std::string::npos)
       {
          result.addError("Missing required field: dataLicense");
@@ -118,26 +119,26 @@ ValidationResult BaseSPDXHandler::validateContent(const std::string& content)
    {
       // SPDX 2.3 tag-value format validation
       std::istringstream iss(content);
-      std::string line;
-      bool hasSPDXVersion = false;
-      bool hasDataLicense = false;
-      bool hasDocumentName = false;
-      bool hasDocumentNamespace = false;
-      bool hasCreator = false;
-      bool hasCreated = false;
-      
+      std::string        line;
+      bool               hasSPDXVersion       = false;
+      bool               hasDataLicense       = false;
+      bool               hasDocumentName      = false;
+      bool               hasDocumentNamespace = false;
+      bool               hasCreator           = false;
+      bool               hasCreated           = false;
+
       while (std::getline(iss, line))
       {
          std::string trimmed = line;
          trimmed.erase(0, trimmed.find_first_not_of(" \t"));
          trimmed.erase(trimmed.find_last_not_of(" \t") + 1);
-         
+
          if (trimmed.empty() || trimmed[0] == '#')
             continue;
-            
+
          if (trimmed.find("SPDXVersion:") == 0)
          {
-            hasSPDXVersion = true;
+            hasSPDXVersion      = true;
             std::string version = trimmed.substr(12);
             version.erase(0, version.find_first_not_of(" \t"));
             if (version == "SPDX-2.3")
@@ -176,27 +177,29 @@ ValidationResult BaseSPDXHandler::validateContent(const std::string& content)
             std::string spdxid = trimmed.substr(7);
             spdxid.erase(0, spdxid.find_first_not_of(" \t"));
             spdxid.erase(spdxid.find_last_not_of(" \t") + 1);
-            
-            // SPDXID should start with "SPDXRef-" and contain only alphanumeric characters, hyphens, and underscores
+
+            // SPDXID should start with "SPDXRef-" and contain only alphanumeric characters,
+            // hyphens, and underscores
             if (spdxid.find("SPDXRef-") != 0)
             {
                result.addError("Invalid SPDXID format: must start with 'SPDXRef-'");
             }
             else
             {
-               std::string idPart = spdxid.substr(8); // Skip "SPDXRef-"
+               std::string idPart = spdxid.substr(8);  // Skip "SPDXRef-"
                for (char c : idPart)
                {
                   if (!std::isalnum(c) && c != '-' && c != '_')
                   {
-                     result.addError("Invalid SPDXID format: contains invalid character '" + std::string(1, c) + "'");
+                     result.addError("Invalid SPDXID format: contains invalid character '" +
+                                     std::string(1, c) + "'");
                      break;
                   }
                }
             }
          }
       }
-      
+
       // Check required fields
       if (!hasSPDXVersion)
          result.addError("Missing required field: SPDXVersion");
@@ -211,7 +214,7 @@ ValidationResult BaseSPDXHandler::validateContent(const std::string& content)
       if (!hasCreated)
          result.addError("Missing required field: Created");
    }
-   
+
    return result;
 }
 

@@ -181,7 +181,8 @@ class DWARFExtractor : public IBinaryExtractor
     * @param sourceFiles Vector to populate with source file paths
     * @return true if extraction was successful, false otherwise
     */
-   bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles) override;
+   bool extractSourceFiles(const std::string&        filePath,
+                           std::vector<std::string>& sourceFiles) override;
 
    /**
     * @brief Extract compile units from DWARF debug information
@@ -189,7 +190,8 @@ class DWARFExtractor : public IBinaryExtractor
     * @param compileUnits Vector to populate with compile unit names
     * @return true if extraction was successful, false otherwise
     */
-   bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits) override;
+   bool extractCompileUnits(const std::string&        filePath,
+                            std::vector<std::string>& compileUnits) override;
 
    /**
     * @brief Extract function names from DWARF debug information

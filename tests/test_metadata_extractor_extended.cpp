@@ -23,9 +23,9 @@ limitations under the License.
 #include "common/ComponentInfo.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/Utils.hpp"
+#include "factories/BinaryFormatFactory.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
-#include "factories/BinaryFormatFactory.hpp"
 
 using namespace heimdall;
 
@@ -315,25 +315,21 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithUnreadableFile)
    ASSERT_NE(extractor, nullptr);
 
    // Create a file with no read permissions
-   fs::path unreadable_file = test_dir / "unreadable.o";
-   std::ofstream              file(unreadable_file);
+   fs::path      unreadable_file = test_dir / "unreadable.o";
+   std::ofstream file(unreadable_file);
    file << "content";
    file.close();
 
    // Remove read permissions
-   fs::permissions(
-      unreadable_file,
-      fs::perms::owner_read | fs::perms::owner_write,
-      fs::perm_options::remove);
+   fs::permissions(unreadable_file, fs::perms::owner_read | fs::perms::owner_write,
+                   fs::perm_options::remove);
 
    ComponentInfo component("unreadable.o", unreadable_file.string());
    bool          result = extractor->extractMetadata(component);
 
    // Restore permissions for cleanup
-   fs::permissions(
-      unreadable_file,
-      fs::perms::owner_read | fs::perms::owner_write,
-      fs::perm_options::add);
+   fs::permissions(unreadable_file, fs::perms::owner_read | fs::perms::owner_write,
+                   fs::perm_options::add);
 
    EXPECT_FALSE(result);
 }
@@ -343,8 +339,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithLargeFile)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path large_file = test_dir / "large.o";
-   std::ofstream              file(large_file);
+   fs::path      large_file = test_dir / "large.o";
+   std::ofstream file(large_file);
    file << std::string(1024 * 1024, 'A');  // 1MB of data
    file.close();
 
@@ -360,8 +356,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithBinaryFile)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path binary_file = test_dir / "binary.o";
-   std::ofstream              file(binary_file, std::ios::binary);
+   fs::path      binary_file = test_dir / "binary.o";
+   std::ofstream file(binary_file, std::ios::binary);
    for (int i = 0; i < 1000; ++i)
    {
       file.put(static_cast<char>(i % 256));
@@ -380,8 +376,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithCorruptedFile)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path corrupted_file = test_dir / "corrupted.o";
-   std::ofstream              file(corrupted_file);
+   fs::path      corrupted_file = test_dir / "corrupted.o";
+   std::ofstream file(corrupted_file);
    file << "This is not a valid ELF file at all";
    file.close();
 
@@ -397,8 +393,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSpecialCharacters)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path special_file = test_dir / "test-file_with_special_chars.o";
-   std::ofstream              file(special_file);
+   fs::path      special_file = test_dir / "test-file_with_special_chars.o";
+   std::ofstream file(special_file);
    file << "ELF object file content with special chars";
    file.close();
 
@@ -414,8 +410,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithUnicodeCharacters)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path unicode_file = test_dir / "test-unicode-测试.o";
-   std::ofstream              file(unicode_file);
+   fs::path      unicode_file = test_dir / "test-unicode-测试.o";
+   std::ofstream file(unicode_file);
    file << "ELF object file content with unicode";
    file.close();
 
@@ -439,8 +435,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithLongPath)
       fs::create_directories(deep_dir);
    }
 
-   fs::path deep_file = deep_dir / "test.o";
-   std::ofstream              file(deep_file);
+   fs::path      deep_file = deep_dir / "test.o";
+   std::ofstream file(deep_file);
    file << "ELF object file content in deep path";
    file.close();
 
@@ -488,8 +484,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithZeroSizeFile)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path empty_file = test_dir / "empty.o";
-   std::ofstream              file(empty_file);
+   fs::path      empty_file = test_dir / "empty.o";
+   std::ofstream file(empty_file);
    file.close();
 
    ComponentInfo component("empty.o", empty_file.string());
@@ -504,8 +500,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithVeryLargeFile)
    auto extractor = std::make_unique<MetadataExtractor>();
    ASSERT_NE(extractor, nullptr);
 
-   fs::path large_file = test_dir / "very_large.o";
-   std::ofstream              file(large_file);
+   fs::path      large_file = test_dir / "very_large.o";
+   std::ofstream file(large_file);
    file << std::string(10 * 1024 * 1024, 'B');  // 10MB of data
    file.close();
 
@@ -557,8 +553,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithMemoryPressure)
    std::vector<fs::path> files;
    for (int i = 0; i < 10; ++i)
    {
-      fs::path file = test_dir / ("test" + std::to_string(i) + ".o");
-      std::ofstream              f(file);
+      fs::path      file = test_dir / ("test" + std::to_string(i) + ".o");
+      std::ofstream f(file);
       f << "ELF object file content " << i;
       f.close();
       files.push_back(file);
@@ -584,8 +580,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithInvalidFileTypes)
 
    for (const auto& ext : invalid_extensions)
    {
-      fs::path file = test_dir / ("test" + ext);
-      std::ofstream              f(file);
+      fs::path      file = test_dir / ("test" + ext);
+      std::ofstream f(file);
       f << "This is not a binary file";
       f.close();
 
@@ -661,8 +657,8 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithMockSystemPaths)
 
    for (const auto& [filename, content] : mock_files)
    {
-      fs::path mock_file = test_dir / filename;
-      std::ofstream              file(mock_file, std::ios::binary);
+      fs::path      mock_file = test_dir / filename;
+      std::ofstream file(mock_file, std::ios::binary);
       file.write(content.c_str(), content.length());
       file.close();
 
@@ -680,8 +676,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithTemporaryFiles)
    ASSERT_NE(extractor, nullptr);
 
    // Test with temporary files
-   fs::path temp_file =
-      fs::temp_directory_path() / "temp_test.o";
+   fs::path      temp_file = fs::temp_directory_path() / "temp_test.o";
    std::ofstream file(temp_file);
    file << "ELF object file content";
    file.close();
@@ -807,8 +802,7 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithSpecialCharactersInPath
    ASSERT_NE(extractor, nullptr);
 
    // Create file with special characters in path
-   fs::path special_path =
-      test_dir / "path-with-special-chars-!@#$%^&*()" / "test.o";
+   fs::path special_path = test_dir / "path-with-special-chars-!@#$%^&*()" / "test.o";
    fs::create_directories(special_path.parent_path());
    std::ofstream file(special_path);
    file << "ELF object file content";
@@ -827,38 +821,46 @@ TEST_F(MetadataExtractorExtendedTest, ExtractMetadataWithEnhancedProperties)
    ASSERT_NE(extractor, nullptr);
 
    // Create a simple test file
-   fs::path test_file = test_dir / "test_enhanced.o";
+   fs::path      test_file = test_dir / "test_enhanced.o";
    std::ofstream file(test_file);
    file << "ELF object file content";
    file.close();
 
    ComponentInfo component("test_enhanced.o", test_file.string());
-   bool result = extractor->extractMetadata(component);
+   bool          result = extractor->extractMetadata(component);
 
    // The result may be false for dummy files, but we should still have evidence properties
    EXPECT_TRUE(component.wasProcessed);
 
    // Check that evidence properties are being extracted
    EXPECT_FALSE(component.properties.empty());
-   
+
    // Check for specific evidence properties that should be present
-   EXPECT_TRUE(component.properties.find("evidence_extractor_version") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence_extractor_version") !=
+               component.properties.end());
    EXPECT_TRUE(component.properties.find("evidence_extraction_date") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence_confidence_threshold") != component.properties.end());
-   
+   EXPECT_TRUE(component.properties.find("evidence_confidence_threshold") !=
+               component.properties.end());
+
    // Check for identity evidence properties
-   EXPECT_TRUE(component.properties.find("evidence:identity:symbols") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence:identity:sections") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence:occurrence:location") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:symbols") !=
+               component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:sections") !=
+               component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:occurrence:location") !=
+               component.properties.end());
    EXPECT_TRUE(component.properties.find("evidence:occurrence:size") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence:identity:fileType") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence:identity:hasDebugInfo") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence:identity:isStripped") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:fileType") !=
+               component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:hasDebugInfo") !=
+               component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:isStripped") !=
+               component.properties.end());
 
    // Verify the evidence values
    EXPECT_EQ(component.properties["evidence_extractor_version"], "2.0");
-   EXPECT_EQ(component.properties["evidence:identity:symbols"], "0");  // No symbols in dummy file
-   EXPECT_EQ(component.properties["evidence:identity:sections"], "0"); // No sections in dummy file
+   EXPECT_EQ(component.properties["evidence:identity:symbols"], "0");   // No symbols in dummy file
+   EXPECT_EQ(component.properties["evidence:identity:sections"], "0");  // No sections in dummy file
    EXPECT_EQ(component.properties["evidence:occurrence:location"], test_file.string());
 }
 
@@ -868,19 +870,20 @@ TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedProperties)
    ASSERT_NE(extractor, nullptr);
 
    // Create a simple test file
-   fs::path test_file = test_dir / "test_demo.o";
+   fs::path      test_file = test_dir / "test_demo.o";
    std::ofstream file(test_file);
    file << "ELF object file content";
    file.close();
 
    ComponentInfo component("test_demo.o", test_file.string());
-   bool result = extractor->extractMetadata(component);
+   bool          result = extractor->extractMetadata(component);
 
    // Print out the evidence properties to demonstrate they are being extracted
    std::cout << "\n=== Enhanced Properties Demonstration ===" << std::endl;
-   std::cout << "Component was processed: " << (component.wasProcessed ? "true" : "false") << std::endl;
+   std::cout << "Component was processed: " << (component.wasProcessed ? "true" : "false")
+             << std::endl;
    std::cout << "Number of properties: " << component.properties.size() << std::endl;
-   
+
    for (const auto& [key, value] : component.properties)
    {
       if (key.find("evidence") != std::string::npos)
@@ -893,8 +896,10 @@ TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedProperties)
    // Verify that evidence properties are present
    EXPECT_TRUE(component.wasProcessed);
    EXPECT_FALSE(component.properties.empty());
-   EXPECT_TRUE(component.properties.find("evidence_extractor_version") != component.properties.end());
-   EXPECT_TRUE(component.properties.find("evidence:identity:symbols") != component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence_extractor_version") !=
+               component.properties.end());
+   EXPECT_TRUE(component.properties.find("evidence:identity:symbols") !=
+               component.properties.end());
 }
 
 TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedPropertiesWithRealELF)
@@ -904,8 +909,8 @@ TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedPropertiesWithRealELF)
 
    // Create a real ELF file by compiling a simple C program
    fs::path test_source = test_dir / "test_real.c";
-   fs::path test_elf = test_dir / "test_real.so";
-   
+   fs::path test_elf    = test_dir / "test_real.so";
+
    // Create a simple C source file
    std::ofstream source_file(test_source);
    source_file << "#include <stdio.h>\n";
@@ -914,22 +919,25 @@ TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedPropertiesWithRealELF)
 
    // Compile it to create a real binary file
 #ifdef __APPLE__
-   std::string compile_cmd = "clang -dynamiclib -g " + test_source.string() + " -o " + test_elf.string();
+   std::string compile_cmd =
+      "clang -dynamiclib -g " + test_source.string() + " -o " + test_elf.string();
 #else
-   std::string compile_cmd = "gcc -shared -fPIC -g " + test_source.string() + " -o " + test_elf.string();
+   std::string compile_cmd =
+      "gcc -shared -fPIC -g " + test_source.string() + " -o " + test_elf.string();
 #endif
    int compile_result = system(compile_cmd.c_str());
-   
+
    if (compile_result == 0 && fs::exists(test_elf))
    {
       ComponentInfo component("test_real.so", test_elf.string());
-      bool result = extractor->extractMetadata(component);
+      bool          result = extractor->extractMetadata(component);
 
       // Print out the evidence properties to demonstrate they are being extracted
       std::cout << "\n=== Enhanced Properties with Real ELF File ===" << std::endl;
-      std::cout << "Component was processed: " << (component.wasProcessed ? "true" : "false") << std::endl;
+      std::cout << "Component was processed: " << (component.wasProcessed ? "true" : "false")
+                << std::endl;
       std::cout << "Number of properties: " << component.properties.size() << std::endl;
-      
+
       for (const auto& [key, value] : component.properties)
       {
          if (key.find("evidence") != std::string::npos)
@@ -942,16 +950,18 @@ TEST_F(MetadataExtractorExtendedTest, DemonstrateEnhancedPropertiesWithRealELF)
       // Verify that evidence properties are present and meaningful
       EXPECT_TRUE(component.wasProcessed);
       EXPECT_FALSE(component.properties.empty());
-      EXPECT_TRUE(component.properties.find("evidence_extractor_version") != component.properties.end());
-      EXPECT_TRUE(component.properties.find("evidence:identity:symbols") != component.properties.end());
-      
+      EXPECT_TRUE(component.properties.find("evidence_extractor_version") !=
+                  component.properties.end());
+      EXPECT_TRUE(component.properties.find("evidence:identity:symbols") !=
+                  component.properties.end());
+
       // With a real ELF file, we should have some symbols and sections
       if (component.properties.find("evidence:identity:symbols") != component.properties.end())
       {
          int symbol_count = std::stoi(component.properties["evidence:identity:symbols"]);
          EXPECT_GT(symbol_count, 0);  // Should have some symbols
       }
-      
+
       if (component.properties.find("evidence:identity:sections") != component.properties.end())
       {
          int section_count = std::stoi(component.properties["evidence:identity:sections"]);

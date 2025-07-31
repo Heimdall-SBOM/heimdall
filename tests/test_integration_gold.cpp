@@ -64,7 +64,7 @@ class GoldIntegrationTest : public ::testing::Test
    fs::path test_executable;
    fs::path test_archive;
 
-   void                       createTestFiles()
+   void     createTestFiles()
    {
       test_object_file  = test_dir / "test.o";
       test_library_file = test_dir / "libtest.a";
@@ -185,8 +185,8 @@ TEST_F(GoldIntegrationTest, LargeScaleProcessingWorkflow)
    std::vector<fs::path> test_files;
    for (int i = 0; i < 50; ++i)
    {
-      fs::path file_path = test_dir / ("file_" + std::to_string(i) + ".o");
-      std::ofstream              file(file_path);
+      fs::path      file_path = test_dir / ("file_" + std::to_string(i) + ".o");
+      std::ofstream file(file_path);
       file << "Content for file " << i;
       file.close();
       test_files.push_back(file_path);
@@ -297,8 +297,7 @@ TEST_F(GoldIntegrationTest, MemoryStressTest)
       // Process many files and symbols
       for (int i = 0; i < 100; ++i)
       {
-         fs::path file_path =
-            test_dir / ("stress_file_" + std::to_string(i) + ".o");
+         fs::path      file_path = test_dir / ("stress_file_" + std::to_string(i) + ".o");
          std::ofstream file(file_path);
          file << "Stress test content " << i;
          file.close();
@@ -316,8 +315,7 @@ TEST_F(GoldIntegrationTest, MemoryStressTest)
       adapter->finalize();
 
       // Verify SBOM was created
-      fs::path sbom_file =
-         test_dir / ("stress_" + std::to_string(cycle) + ".sbom");
+      fs::path sbom_file = test_dir / ("stress_" + std::to_string(cycle) + ".sbom");
       EXPECT_TRUE(fs::exists(sbom_file));
    }
 }
@@ -356,8 +354,7 @@ TEST_F(GoldIntegrationTest, SequentialAdapterTest)
    // Verify all SBOMs were created
    for (int i = 0; i < 3; ++i)
    {
-      fs::path sbom_file =
-         test_dir / ("sequential_" + std::to_string(i) + ".sbom");
+      fs::path sbom_file = test_dir / ("sequential_" + std::to_string(i) + ".sbom");
       EXPECT_TRUE(fs::exists(sbom_file));
       EXPECT_GT(fs::file_size(sbom_file), 0);
    }
@@ -382,8 +379,8 @@ TEST_F(GoldIntegrationTest, ArchiveFileProcessing)
    // Create additional archive files
    for (int i = 0; i < 5; ++i)
    {
-      fs::path archive_path = test_dir / ("archive_" + std::to_string(i) + ".a");
-      std::ofstream              archive_file(archive_path);
+      fs::path      archive_path = test_dir / ("archive_" + std::to_string(i) + ".a");
+      std::ofstream archive_file(archive_path);
       archive_file << "Archive content " << i;
       archive_file.close();
 
@@ -415,8 +412,7 @@ TEST_F(GoldIntegrationTest, SharedLibraryProcessing)
    // Create additional shared libraries
    for (int i = 0; i < 5; ++i)
    {
-      fs::path shared_path =
-         test_dir / ("libshared_" + std::to_string(i) + ".so");
+      fs::path      shared_path = test_dir / ("libshared_" + std::to_string(i) + ".so");
       std::ofstream shared_file(shared_path);
       shared_file << "Shared library content " << i;
       shared_file.close();

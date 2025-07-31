@@ -23,11 +23,11 @@ limitations under the License.
 
 #pragma once
 
-#include "../compat/compatibility.hpp"
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
+#include "../compat/compatibility.hpp"
 
 namespace heimdall
 {

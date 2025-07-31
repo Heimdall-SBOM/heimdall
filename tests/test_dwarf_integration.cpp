@@ -25,10 +25,10 @@ limitations under the License.
 #include <random>
 #include <thread>
 #include "common/ComponentInfo.hpp"
-#include "extractors/DWARFExtractor.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/PluginInterface.hpp"
 #include "common/Utils.hpp"
+#include "extractors/DWARFExtractor.hpp"
 #include "src/common/MetadataExtractor.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
@@ -190,23 +190,24 @@ char* concatenate_strings(const char* str1, const char* str2) {
       // Choose compiler based on platform
 #ifdef __APPLE__
       std::string compiler = "clang";
-      std::string lib_ext = ".dylib";
+      std::string lib_ext  = ".dylib";
 #else
       std::string compiler = "gcc";
-      std::string lib_ext = ".so";
+      std::string lib_ext  = ".so";
 #endif
 
       // Compile object files
       math_object              = test_dir / "math_utils.o";
-      std::string math_obj_cmd = compiler + " -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-                                 math_object.string() + " " + math_source.string() + " 2>/dev/null";
+      std::string math_obj_cmd = compiler +
+                                 " -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+                                 math_object.string() + " " + math_source.string();
       int math_obj_result = system(math_obj_cmd.c_str());
       (void)math_obj_result;  // Suppress unused variable warning
 
       string_object              = test_dir / "string_utils.o";
-      std::string string_obj_cmd = compiler + " -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-                                   string_object.string() + " " + string_source.string() +
-                                   " 2>/dev/null";
+      std::string string_obj_cmd = compiler +
+                                   " -c -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
+                                   string_object.string() + " " + string_source.string();
       int string_obj_result = system(string_obj_cmd.c_str());
       (void)string_obj_result;  // Suppress unused variable warning
 
@@ -214,7 +215,7 @@ char* concatenate_strings(const char* str1, const char* str2) {
       main_executable      = test_dir / "integration_test";
       std::string main_cmd = compiler + " -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
                              main_executable.string() + " " + main_source.string() + " " +
-                             math_object.string() + " " + string_object.string() + " 2>/dev/null";
+                             math_object.string() + " " + string_object.string();
       int main_result = system(main_cmd.c_str());
       (void)main_result;  // Suppress unused variable warning
 
@@ -227,7 +228,7 @@ char* concatenate_strings(const char* str1, const char* str2) {
 #else
       std::string math_lib_cmd =
          compiler + " -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-         math_library.string() + " " + math_source.string() + " 2>/dev/null";
+         math_library.string() + " " + math_source.string();
 #endif
       int math_lib_result = system(math_lib_cmd.c_str());
       (void)math_lib_result;  // Suppress unused variable warning
@@ -240,7 +241,7 @@ char* concatenate_strings(const char* str1, const char* str2) {
 #else
       std::string string_lib_cmd =
          compiler + " -shared -fPIC -g3 -O0 -fno-omit-frame-pointer -Wall -Wextra -o " +
-         string_library.string() + " " + string_source.string() + " 2>/dev/null";
+         string_library.string() + " " + string_source.string();
 #endif
       int string_lib_result = system(string_lib_cmd.c_str());
       (void)string_lib_result;  // Suppress unused variable warning
@@ -248,8 +249,7 @@ char* concatenate_strings(const char* str1, const char* str2) {
       // Create static library
       static_library             = test_dir / "libutils.a";
       std::string static_lib_cmd = "ar rcs " + static_library.string() + " " +
-                                   math_object.string() + " " + string_object.string() +
-                                   " 2>/dev/null";
+                                   math_object.string() + " " + string_object.string();
       int static_lib_result = system(static_lib_cmd.c_str());
       (void)static_lib_result;  // Suppress unused variable warning
 
@@ -456,8 +456,7 @@ TEST_F(DWARFIntegrationTest, MemoryLeakStressTest)
             // Test DWARF extraction - only on valid ELF files
             for (const auto& path : component_paths)
             {
-               if (fs::file_size(path) > 100 &&
-                   Utils::getFileExtension(path) != ".a")
+               if (fs::file_size(path) > 100 && Utils::getFileExtension(path) != ".a")
                {  // Skip static libraries for DWARF
                   dwarf_extractor->extractSourceFiles(path, sourceFiles);
                   dwarf_extractor->extractFunctions(path, functions);

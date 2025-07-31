@@ -55,8 +55,7 @@ class UtilsExtendedTest : public ::testing::Test
       if (!fs::exists(test_dir))
       {
          std::cerr << "ERROR: Failed to create test directory: " << test_dir << std::endl;
-         std::cerr << "ERROR: Temp directory path: " << fs::temp_directory_path()
-                   << std::endl;
+         std::cerr << "ERROR: Temp directory path: " << fs::temp_directory_path() << std::endl;
          return;
       }
 
@@ -78,8 +77,8 @@ class UtilsExtendedTest : public ::testing::Test
          // Verify the file was created and has content
          if (fs::exists(test_file))
          {
-            std::cout << "DEBUG: Test file created successfully, size: "
-                      << fs::file_size(test_file) << std::endl;
+            std::cout << "DEBUG: Test file created successfully, size: " << fs::file_size(test_file)
+                      << std::endl;
          }
          else
          {
@@ -125,14 +124,13 @@ class UtilsExtendedTest : public ::testing::Test
 
       // Final verification
       std::cout << "DEBUG: Final test setup verification:" << std::endl;
-      std::cout << "  - Test directory exists: "
-                << (fs::exists(test_dir) ? "YES" : "NO") << std::endl;
-      std::cout << "  - Test file exists: "
-                << (fs::exists(test_file) ? "YES" : "NO") << std::endl;
-      std::cout << "  - Large file exists: "
-                << (fs::exists(large_file) ? "YES" : "NO") << std::endl;
-      std::cout << "  - Sub directory exists: "
-                << (fs::exists(sub_dir) ? "YES" : "NO") << std::endl;
+      std::cout << "  - Test directory exists: " << (fs::exists(test_dir) ? "YES" : "NO")
+                << std::endl;
+      std::cout << "  - Test file exists: " << (fs::exists(test_file) ? "YES" : "NO") << std::endl;
+      std::cout << "  - Large file exists: " << (fs::exists(large_file) ? "YES" : "NO")
+                << std::endl;
+      std::cout << "  - Sub directory exists: " << (fs::exists(sub_dir) ? "YES" : "NO")
+                << std::endl;
    }
 
    void TearDown() override
@@ -179,13 +177,12 @@ TEST_F(UtilsExtendedTest, GetFileSize)
 {
    // Add debugging to understand what's happening in CI
    std::cout << "DEBUG: Test file path: " << test_file.string() << std::endl;
-   std::cout << "DEBUG: Test file exists: "
-             << (fs::exists(test_file) ? "YES" : "NO") << std::endl;
+   std::cout << "DEBUG: Test file exists: " << (fs::exists(test_file) ? "YES" : "NO") << std::endl;
 
    if (fs::exists(test_file))
    {
-      std::cout << "DEBUG: Test file size via filesystem: "
-                << fs::file_size(test_file) << std::endl;
+      std::cout << "DEBUG: Test file size via filesystem: " << fs::file_size(test_file)
+                << std::endl;
 
       // Try to read the file content to verify it was written correctly
       std::ifstream debug_file(test_file.string());
@@ -205,8 +202,8 @@ TEST_F(UtilsExtendedTest, GetFileSize)
    else
    {
       std::cout << "DEBUG: Test file does not exist - checking directory" << std::endl;
-      std::cout << "DEBUG: Test directory exists: "
-                << (fs::exists(test_dir) ? "YES" : "NO") << std::endl;
+      std::cout << "DEBUG: Test directory exists: " << (fs::exists(test_dir) ? "YES" : "NO")
+                << std::endl;
       if (fs::exists(test_dir))
       {
          std::cout << "DEBUG: Test directory contents:" << std::endl;

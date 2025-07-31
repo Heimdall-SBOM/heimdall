@@ -306,7 +306,7 @@ std::unique_ptr<SBOMValidator> SBOMValidatorFactory::createValidator(const std::
       // Return a UnifiedSBOMValidator with the specified format
       return std::make_unique<UnifiedSBOMValidator>(format);
    }
-   
+
    // Return nullptr for unsupported formats
    return nullptr;
 }

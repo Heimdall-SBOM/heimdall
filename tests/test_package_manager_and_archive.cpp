@@ -24,7 +24,7 @@ using namespace heimdall;
 
 // Helper: Only run if file exists
 #define REQUIRE_FILE(path)                               \
-   if (!fs::exists(path))              \
+   if (!fs::exists(path))                                \
    {                                                     \
       GTEST_SKIP() << "Test file not found: " << (path); \
    }
@@ -36,8 +36,7 @@ TEST(PackageManagerIntegration, DetectRpm)
    GTEST_SKIP()
       << "Disabled due to known issues with mock ELF files and package manager detection.";
    // Create a mock RPM file in a test directory
-   fs::path test_dir =
-      fs::temp_directory_path() / "heimdall_rpm_test";
+   fs::path test_dir = fs::temp_directory_path() / "heimdall_rpm_test";
    fs::create_directories(test_dir);
    fs::path mock_rpm_path = test_dir / "usr" / "lib" / "librpm.so";
    fs::create_directories(mock_rpm_path.parent_path());
@@ -62,11 +61,9 @@ TEST(PackageManagerIntegration, DetectRpm)
 TEST(PackageManagerIntegration, DetectDeb)
 {
    // Create a mock Debian file in a test directory
-   fs::path test_dir =
-      fs::temp_directory_path() / "heimdall_deb_test";
+   fs::path test_dir = fs::temp_directory_path() / "heimdall_deb_test";
    fs::create_directories(test_dir);
-   fs::path mock_deb_path =
-      test_dir / "usr" / "lib" / "x86_64-linux-gnu" / "libc.so.6";
+   fs::path mock_deb_path = test_dir / "usr" / "lib" / "x86_64-linux-gnu" / "libc.so.6";
    fs::create_directories(mock_deb_path.parent_path());
 
    // Create a minimal ELF file
@@ -93,8 +90,7 @@ TEST(PackageManagerIntegration, DetectPacman)
    GTEST_SKIP()
       << "Disabled due to known issues with mock ELF files and package manager detection.";
    // Create a mock Pacman file in a test directory
-   fs::path test_dir =
-      fs::temp_directory_path() / "heimdall_pacman_test";
+   fs::path test_dir = fs::temp_directory_path() / "heimdall_pacman_test";
    fs::create_directories(test_dir);
    fs::path mock_pacman_path = test_dir / "usr" / "lib" / "libc.so.6";
    fs::create_directories(mock_pacman_path.parent_path());

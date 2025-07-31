@@ -21,10 +21,10 @@ limitations under the License.
 #include "common/ComponentInfo.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/MetadataHelpers.hpp"
+#include "extractors/DWARFExtractor.hpp"
+#include "factories/BinaryFormatFactory.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
-#include "factories/BinaryFormatFactory.hpp"
-#include "extractors/DWARFExtractor.hpp"
 
 using namespace heimdall;
 
@@ -168,7 +168,7 @@ TEST_F(LinuxSupportTest, ELFDependencyExtraction)
       bool result = extractor.extractDependencyInfo(component);
       // May or may not have dependencies, but should not crash
       // Note: extractDependencyInfo doesn't set wasProcessed, only extractMetadata does
-      EXPECT_TRUE(result || !result); // Accept any result, just don't crash
+      EXPECT_TRUE(result || !result);  // Accept any result, just don't crash
    }
 }
 

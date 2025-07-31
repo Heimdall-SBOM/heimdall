@@ -9,8 +9,8 @@
 #include <thread>
 #include <vector>
 #include "src/common/ComponentInfo.hpp"
-#include "src/extractors/LightweightDWARFParser.hpp"
 #include "src/compat/compatibility.hpp"
+#include "src/extractors/LightweightDWARFParser.hpp"
 #include "test_utils.hpp"
 
 using namespace heimdall;
@@ -69,8 +69,8 @@ class LightweightDWARFParserTest : public ::testing::Test
       test_elf_path = elf_path;
    }
 
-   fs::path test_dir;
-   std::string                test_elf_path;
+   fs::path    test_dir;
+   std::string test_elf_path;
 };
 
 // Basic functionality tests

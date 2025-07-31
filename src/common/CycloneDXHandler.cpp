@@ -54,7 +54,7 @@ std::vector<std::string> BaseCycloneDXHandler::getSupportedVersions() const
 ValidationResult BaseCycloneDXHandler::validateContent(const std::string& content)
 {
    ValidationResult result;
-   
+
    // Basic CycloneDX validation
    if (content.find("\"bomFormat\"") == std::string::npos)
    {
@@ -64,7 +64,7 @@ ValidationResult BaseCycloneDXHandler::validateContent(const std::string& conten
    {
       // Check if bomFormat is "CycloneDX"
       size_t bomFormatPos = content.find("\"bomFormat\"");
-      size_t valueStart = content.find("\"", bomFormatPos + 12);
+      size_t valueStart   = content.find("\"", bomFormatPos + 12);
       if (valueStart != std::string::npos)
       {
          size_t valueEnd = content.find("\"", valueStart + 1);
@@ -78,7 +78,7 @@ ValidationResult BaseCycloneDXHandler::validateContent(const std::string& conten
          }
       }
    }
-   
+
    if (content.find("\"specVersion\"") == std::string::npos)
    {
       result.addError("Missing specVersion field");
@@ -87,7 +87,7 @@ ValidationResult BaseCycloneDXHandler::validateContent(const std::string& conten
    {
       // Extract and validate specVersion
       size_t specVersionPos = content.find("\"specVersion\"");
-      size_t valueStart = content.find("\"", specVersionPos + 14);
+      size_t valueStart     = content.find("\"", specVersionPos + 14);
       if (valueStart != std::string::npos)
       {
          size_t valueEnd = content.find("\"", valueStart + 1);
@@ -98,17 +98,17 @@ ValidationResult BaseCycloneDXHandler::validateContent(const std::string& conten
          }
       }
    }
-   
+
    if (content.find("\"version\"") == std::string::npos)
    {
       result.addError("Missing version field");
    }
-   
+
    if (content.find("\"metadata\"") == std::string::npos)
    {
       result.addError("Missing metadata field");
    }
-   
+
    if (content.find("\"components\"") == std::string::npos)
    {
       result.addError("Missing components field");

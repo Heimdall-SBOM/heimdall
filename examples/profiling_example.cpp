@@ -22,51 +22,51 @@ class ProfilingExample
    std::string test_binary_path_;
 
    public:
-       ProfilingExample(std::string binary_path) : test_binary_path_(std::move(binary_path)) {}
+   ProfilingExample(std::string binary_path) : test_binary_path_(std::move(binary_path)) {}
 
-       void run_basic_profiling()
-       {
-          std::cout << "=== Basic Profiling Example ===" << std::endl;
+   void run_basic_profiling()
+   {
+      std::cout << "=== Basic Profiling Example ===" << std::endl;
 
-          // Enable the profiler
-          Profiler::get_instance().enable(true);
+      // Enable the profiler
+      Profiler::get_instance().enable(true);
 
-          // Profile a simple operation
-          {
-             HEIMDALL_PROFILE_SESSION("simple_operation");
+      // Profile a simple operation
+      {
+         HEIMDALL_PROFILE_SESSION("simple_operation");
 
-             // Simulate some work
-             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+         // Simulate some work
+         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-             // Add custom metrics
-             auto session = Profiler::get_instance().start_session("simple_operation");
-             if (session)
-             {
-                session->add_metric("items_processed", 42);
-                session->add_metric("memory_allocated", 1024);
-             }
-          }
+         // Add custom metrics
+         auto session = Profiler::get_instance().start_session("simple_operation");
+         if (session)
+         {
+            session->add_metric("items_processed", 42);
+            session->add_metric("memory_allocated", 1024);
+         }
+      }
 
-          // Profile multiple operations
-          for (int i = 0; i < 3; ++i)
-          {
-             std::string session_name = "iteration_" + std::to_string(i);
-             HEIMDALL_PROFILE_SESSION(session_name);
+      // Profile multiple operations
+      for (int i = 0; i < 3; ++i)
+      {
+         std::string session_name = "iteration_" + std::to_string(i);
+         HEIMDALL_PROFILE_SESSION(session_name);
 
-             // Simulate different workloads
-             std::this_thread::sleep_for(std::chrono::milliseconds(50 + i * 25));
+         // Simulate different workloads
+         std::this_thread::sleep_for(std::chrono::milliseconds(50 + i * 25));
 
-             auto session = Profiler::get_instance().start_session(session_name);
-             if (session)
-             {
-                session->add_metric("iteration", i);
-                session->add_metric("workload_factor", 1.0 + i * 0.5);
-             }
-          }
+         auto session = Profiler::get_instance().start_session(session_name);
+         if (session)
+         {
+            session->add_metric("iteration", i);
+            session->add_metric("workload_factor", 1.0 + i * 0.5);
+         }
+      }
 
-          // Print results
-          Profiler::get_instance().print_summary();
-       }
+      // Print results
+      Profiler::get_instance().print_summary();
+   }
 
    void run_sbom_profiling()
    {

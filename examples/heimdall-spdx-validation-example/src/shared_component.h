@@ -7,23 +7,23 @@
  */
 class SharedComponent
 {
-  public:
-  SharedComponent();
-  ~SharedComponent();
+   public:
+   SharedComponent();
+   ~SharedComponent();
 
-  /**
-   * @brief Process shared data
-   * @param data Input data to process
-   * @return Processed result
-   */
-  std::string process(const std::string& data);
+   /**
+    * @brief Process shared data
+    * @param data Input data to process
+    * @return Processed result
+    */
+   std::string process(const std::string& data);
 
-  /**
-   * @brief Get component version
-   * @return Version string
-   */
-  std::string getVersion() const;
+   /**
+    * @brief Get component version
+    * @return Version string
+    */
+   std::string getVersion() const;
 
-  private:
-  std::string version;
+   private:
+   std::string version;
 };

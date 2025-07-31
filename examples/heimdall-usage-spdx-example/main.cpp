@@ -1,8 +1,8 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-#include "utils.h"
 #include "math.h"
+#include "utils.h"
 
 int main()
 {

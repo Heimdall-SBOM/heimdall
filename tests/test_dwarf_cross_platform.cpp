@@ -19,12 +19,12 @@ limitations under the License.
 #include <fstream>
 #include <iostream>
 #include "common/ComponentInfo.hpp"
-#include "extractors/DWARFExtractor.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/Utils.hpp"
+#include "extractors/DWARFExtractor.hpp"
+#include "factories/BinaryFormatFactory.hpp"
 #include "src/compat/compatibility.hpp"
 #include "test_utils.hpp"
-#include "factories/BinaryFormatFactory.hpp"
 
 using namespace heimdall;
 
@@ -168,26 +168,33 @@ TEST_F(DWARFCrossPlatformTest, PlatformDetection)
 #ifdef __linux__
       // On Linux, should detect ELF format
       auto elfExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::ELF);
-      if (elfExtractor) {
+      if (elfExtractor)
+      {
          EXPECT_TRUE(elfExtractor->canHandle(test_elf_executable.string()));
          EXPECT_EQ(elfExtractor->getFormatName(), "ELF");
-      } else {
+      }
+      else
+      {
          // ELF extractor not available, skip this test
          GTEST_SKIP() << "ELF extractor not available";
       }
 #elif defined(__APPLE__)
       // On macOS, should detect Mach-O format
-      auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
-      if (machoExtractor) {
+      auto machoExtractor =
+         BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
+      if (machoExtractor)
+      {
          EXPECT_TRUE(machoExtractor->canHandle(test_elf_executable.string()));
          EXPECT_EQ(machoExtractor->getFormatName(), "Mach-O");
-      } else {
+      }
+      else
+      {
          // Mach-O extractor not available, skip this test
          GTEST_SKIP() << "Mach-O extractor not available";
       }
 #else
       // On other platforms, just check that some format is detected
-      bool hasFormat = false;
+      bool hasFormat    = false;
       auto elfExtractor = BinaryFormatFactory::createExtractor("ELF");
       if (elfExtractor && elfExtractor->canHandle(test_elf_executable.string()))
       {
@@ -206,19 +213,20 @@ TEST_F(DWARFCrossPlatformTest, PlatformDetection)
 #ifdef __APPLE__
    // On macOS, Mach-O detection might work for some files
    auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
-   EXPECT_TRUE(machoExtractor &&
-               machoExtractor->canHandle(test_macho_executable.string()) ||
+   EXPECT_TRUE(machoExtractor && machoExtractor->canHandle(test_macho_executable.string()) ||
                !machoExtractor->canHandle(test_macho_executable.string()));
 #else
    auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
-   if (machoExtractor) {
+   if (machoExtractor)
+   {
       EXPECT_FALSE(machoExtractor->canHandle(test_macho_executable.string()));
    }
 #endif
 
    // Test PE detection (should fail on non-Windows)
    auto peExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::PE);
-   if (peExtractor) {
+   if (peExtractor)
+   {
       EXPECT_FALSE(peExtractor->canHandle(test_pe_executable.string()));
    }
 }
@@ -469,7 +477,8 @@ TEST_F(DWARFCrossPlatformTest, ArchitectureDetection)
 
       // Extract section info to detect architecture
       auto elfExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::ELF);
-      if (!elfExtractor) {
+      if (!elfExtractor)
+      {
          GTEST_SKIP() << "ELF extractor not available";
       }
       std::vector<SectionInfo> sections;
@@ -561,17 +570,18 @@ TEST_F(DWARFCrossPlatformTest, MetadataHelpersCrossPlatform)
    if (executable_exists && executable_size > 100)
    {
       // Test DWARFExtractor with ELF file
-      ComponentInfo component("test_elf", test_elf_executable.string());
-      DWARFExtractor dwarfExtractor;
+      ComponentInfo            component("test_elf", test_elf_executable.string());
+      DWARFExtractor           dwarfExtractor;
       std::vector<std::string> sourceFiles, compileUnits, functions, lineInfo;
-      bool result = dwarfExtractor.extractAllDebugInfo(test_elf_executable.string(), sourceFiles, compileUnits, functions, lineInfo);
+      bool result = dwarfExtractor.extractAllDebugInfo(test_elf_executable.string(), sourceFiles,
+                                                       compileUnits, functions, lineInfo);
 
       if (result)
       {
          component.containsDebugInfo = true;
-         component.sourceFiles = sourceFiles;
-         component.compileUnits = compileUnits;
-         component.functions = functions;
+         component.sourceFiles       = sourceFiles;
+         component.compileUnits      = compileUnits;
+         component.functions         = functions;
          // Source files might not be found due to heuristic limitations
          // The important thing is that debug info extraction works
          EXPECT_TRUE(true);  // Accept any result for source files
@@ -652,24 +662,31 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
 #ifdef __linux__
       // On Linux, should detect ELF format
       auto elfExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::ELF);
-      if (elfExtractor) {
+      if (elfExtractor)
+      {
          EXPECT_TRUE(elfExtractor->canHandle(test_elf_executable.string()));
          EXPECT_EQ(elfExtractor->getFormatName(), "ELF");
-      } else {
+      }
+      else
+      {
          GTEST_SKIP() << "ELF extractor not available";
       }
 #elif defined(__APPLE__)
       // On macOS, should detect Mach-O format
-      auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
-      if (machoExtractor) {
+      auto machoExtractor =
+         BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
+      if (machoExtractor)
+      {
          EXPECT_TRUE(machoExtractor->canHandle(test_elf_executable.string()));
          EXPECT_EQ(machoExtractor->getFormatName(), "Mach-O");
-      } else {
+      }
+      else
+      {
          GTEST_SKIP() << "Mach-O extractor not available";
       }
 #else
       // On other platforms, just check that some format is detected
-      bool hasFormat = false;
+      bool hasFormat    = false;
       auto elfExtractor = BinaryFormatFactory::createExtractor("ELF");
       if (elfExtractor && elfExtractor->canHandle(test_elf_executable.string()))
       {
@@ -691,11 +708,12 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
       EXPECT_TRUE(elfExtractor && elfExtractor->canHandle(test_elf_library.string()));
       EXPECT_EQ(elfExtractor->getFormatName(), "ELF");
 #elif defined(__APPLE__)
-      auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
+      auto machoExtractor =
+         BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
       EXPECT_TRUE(machoExtractor && machoExtractor->canHandle(test_elf_library.string()));
       EXPECT_EQ(machoExtractor->getFormatName(), "Mach-O");
 #else
-      bool hasFormat = false;
+      bool hasFormat    = false;
       auto elfExtractor = BinaryFormatFactory::createExtractor("ELF");
       if (elfExtractor && elfExtractor->canHandle(test_elf_library.string()))
       {
@@ -717,11 +735,12 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
       EXPECT_TRUE(elfExtractor && elfExtractor->canHandle(test_elf_object.string()));
       EXPECT_EQ(elfExtractor->getFormatName(), "ELF");
 #elif defined(__APPLE__)
-      auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
+      auto machoExtractor =
+         BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
       EXPECT_TRUE(machoExtractor && machoExtractor->canHandle(test_elf_object.string()));
       EXPECT_EQ(machoExtractor->getFormatName(), "Mach-O");
 #else
-      bool hasFormat = false;
+      bool hasFormat    = false;
       auto elfExtractor = BinaryFormatFactory::createExtractor("ELF");
       if (elfExtractor && elfExtractor->canHandle(test_elf_object.string()))
       {
@@ -740,20 +759,24 @@ TEST_F(DWARFCrossPlatformTest, FileFormatDetectionCrossPlatform)
 #ifdef __linux__
    // On Linux, Mach-O and PE should fail
    auto machoExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::MachO);
-   if (machoExtractor) {
+   if (machoExtractor)
+   {
       EXPECT_FALSE(machoExtractor->canHandle(test_macho_executable.string()));
    }
    auto peExtractor = BinaryFormatFactory::createExtractor(BinaryFormatFactory::Format::PE);
-   if (peExtractor) {
+   if (peExtractor)
+   {
       EXPECT_FALSE(peExtractor->canHandle(test_pe_executable.string()));
    }
 #elif defined(__APPLE__)
    // On macOS, ELF and PE should fail
-   EXPECT_FALSE(BinaryFormatFactory::createExtractor("ELF")->canHandle(test_macho_executable.string()));
+   EXPECT_FALSE(
+      BinaryFormatFactory::createExtractor("ELF")->canHandle(test_macho_executable.string()));
    EXPECT_FALSE(BinaryFormatFactory::createExtractor("PE")->canHandle(test_pe_executable.string()));
 #else
    // On other platforms, just test that cross-format detection fails
-   EXPECT_FALSE(BinaryFormatFactory::createExtractor("Mach-O")->canHandle(test_macho_executable.string()));
+   EXPECT_FALSE(
+      BinaryFormatFactory::createExtractor("Mach-O")->canHandle(test_macho_executable.string()));
    EXPECT_FALSE(BinaryFormatFactory::createExtractor("PE")->canHandle(test_pe_executable.string()));
 #endif
 }

@@ -24,9 +24,9 @@ limitations under the License.
 #include <random>
 #include <thread>
 #include "common/ComponentInfo.hpp"
-#include "extractors/DWARFExtractor.hpp"
 #include "common/MetadataExtractor.hpp"
 #include "common/Utils.hpp"
+#include "extractors/DWARFExtractor.hpp"
 #include "src/compat/compatibility.hpp"
 
 using namespace heimdall;
@@ -378,9 +378,9 @@ TEST_F(DWARFAdvancedTest, TruncatedFileHandling)
    if (fs::file_size(test_executable) > 100)
    {
       // Create a truncated copy of the executable
-      fs::path truncated_file = test_dir / "truncated.elf";
-      std::ifstream              src(test_executable, std::ios::binary);
-      std::ofstream              dst(truncated_file, std::ios::binary);
+      fs::path      truncated_file = test_dir / "truncated.elf";
+      std::ifstream src(test_executable, std::ios::binary);
+      std::ofstream dst(truncated_file, std::ios::binary);
 
       // Copy only first 1000 bytes
       char buffer[1000];
@@ -468,9 +468,7 @@ TEST_F(DWARFAdvancedTest, PermissionDeniedHandling)
    EXPECT_FALSE(extractor.hasDWARFInfo(no_permission_file.string()));
 
    // Restore permissions for cleanup
-   fs::permissions(
-      no_permission_file,
-      fs::perms::owner_read | fs::perms::owner_write);
+   fs::permissions(no_permission_file, fs::perms::owner_read | fs::perms::owner_write);
 }
 
 // Performance and Stress Tests
@@ -594,7 +592,8 @@ TEST_F(DWARFAdvancedTest, MetadataExtractorIntegration)
          // The new extractor should set containsDebugInfo if debug info is present
          // and populate sourceFiles, functions, etc. if available
          // Accept any result for source files due to DWARF format limitations
-         EXPECT_TRUE(component.containsDebugInfo || component.sourceFiles.size() > 0 || component.functions.size() > 0);
+         EXPECT_TRUE(component.containsDebugInfo || component.sourceFiles.size() > 0 ||
+                     component.functions.size() > 0);
       }
       else
       {
@@ -621,17 +620,18 @@ TEST_F(DWARFAdvancedTest, MetadataHelpersIntegration)
    if (executable_exists && executable_size > 100)
    {
       // Use DWARFExtractor directly instead of MetadataHelpers
-      ComponentInfo component("complex_test", test_executable.string());
+      ComponentInfo  component("complex_test", test_executable.string());
       DWARFExtractor dwarfExtractor;
 
       // Extract all debug info
       std::vector<std::string> sourceFiles, compileUnits, functions, lineInfo;
-      bool result = dwarfExtractor.extractAllDebugInfo(test_executable.string(), sourceFiles, compileUnits, functions, lineInfo);
+      bool result = dwarfExtractor.extractAllDebugInfo(test_executable.string(), sourceFiles,
+                                                       compileUnits, functions, lineInfo);
 
       // Set fields in component for compatibility with old test
-      component.sourceFiles = sourceFiles;
-      component.compileUnits = compileUnits;
-      component.functions = functions;
+      component.sourceFiles       = sourceFiles;
+      component.compileUnits      = compileUnits;
+      component.functions         = functions;
       component.containsDebugInfo = result && (!sourceFiles.empty() || !functions.empty());
 
       if (result)
@@ -642,7 +642,8 @@ TEST_F(DWARFAdvancedTest, MetadataHelpersIntegration)
 
       // Test extractSourceFiles
       std::vector<std::string> sourceFiles2;
-      bool source_result = dwarfExtractor.extractSourceFiles(test_executable.string(), sourceFiles2);
+      bool                     source_result =
+         dwarfExtractor.extractSourceFiles(test_executable.string(), sourceFiles2);
       if (source_result)
       {
          EXPECT_TRUE(true);  // Accept any result
@@ -650,7 +651,8 @@ TEST_F(DWARFAdvancedTest, MetadataHelpersIntegration)
 
       // Test extractCompileUnits
       std::vector<std::string> compileUnits2;
-      bool unit_result = dwarfExtractor.extractCompileUnits(test_executable.string(), compileUnits2);
+      bool                     unit_result =
+         dwarfExtractor.extractCompileUnits(test_executable.string(), compileUnits2);
       if (unit_result)
       {
          EXPECT_TRUE(true);  // Accept any result
@@ -711,8 +713,7 @@ TEST_F(DWARFAdvancedTest, HeuristicFallbackBehavior)
    if (fs::file_size(test_executable) > 100)
    {
       // Copy the executable to test fallback behavior
-      fs::copy_file(test_executable, fallback_file,
-                                      fs::copy_options::overwrite_existing);
+      fs::copy_file(test_executable, fallback_file, fs::copy_options::overwrite_existing);
 
       std::vector<std::string> sourceFiles;
       bool result = extractor.extractSourceFiles(fallback_file.string(), sourceFiles);
@@ -811,11 +812,11 @@ TEST_F(DWARFAdvancedTest, LargeOutputVectorHandling)
 TEST_F(DWARFAdvancedTest, DSYMDebugInfoDetection)
 {
    DWARFExtractor extractor;
-   
+
    // Create a test executable with debug info that generates a .dSYM file
    fs::path dsym_test_dir = fs::temp_directory_path() / "heimdall_dsym_test";
    fs::create_directories(dsym_test_dir);
-   
+
    fs::path dsym_source = dsym_test_dir / "dsym_test.c";
    std::ofstream(dsym_source) << R"(
 #include <stdio.h>
@@ -825,44 +826,47 @@ int main() {
     return 0;
 }
 )";
-   
-   fs::path dsym_executable = dsym_test_dir / "dsym_test";
-   std::string compile_cmd = "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
+
+   fs::path    dsym_executable = dsym_test_dir / "dsym_test";
+   std::string compile_cmd =
+      "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
    int compile_result = system(compile_cmd.c_str());
-   
+
    if (compile_result == 0 && fs::exists(dsym_executable))
    {
       // Check if .dSYM file was created
       fs::path dsym_file = dsym_executable.string() + ".dSYM";
-      bool has_dsym = fs::exists(dsym_file);
-      
+      bool     has_dsym  = fs::exists(dsym_file);
+
       // Test hasDWARFInfo with .dSYM file
       bool has_debug_info = extractor.hasDWARFInfo(dsym_executable.string());
-      
+
       if (has_dsym)
       {
          // If .dSYM exists, should detect debug info
          EXPECT_TRUE(has_debug_info) << "hasDWARFInfo should detect .dSYM file";
-         
+
          // Test that getDWARFFilePath returns the correct path
          std::string dwarf_path = extractor.getDWARFFilePath(dsym_executable.string());
-         fs::path expected_dwarf_path = dsym_file / "Contents" / "Resources" / "DWARF" / dsym_executable.filename();
-         EXPECT_EQ(dwarf_path, expected_dwarf_path.string()) << "getDWARFFilePath should return correct .dSYM path";
-         
+         fs::path    expected_dwarf_path =
+            dsym_file / "Contents" / "Resources" / "DWARF" / dsym_executable.filename();
+         EXPECT_EQ(dwarf_path, expected_dwarf_path.string())
+            << "getDWARFFilePath should return correct .dSYM path";
+
          // Test that the returned path actually exists
          EXPECT_TRUE(fs::exists(dwarf_path)) << "DWARF file path should exist";
       }
       else
       {
          // If no .dSYM, should fall back to checking the executable itself
-         EXPECT_TRUE(has_debug_info || !has_debug_info); // Either result is acceptable
+         EXPECT_TRUE(has_debug_info || !has_debug_info);  // Either result is acceptable
       }
    }
    else
    {
       GTEST_SKIP() << "Could not create test executable with debug info";
    }
-   
+
    // Cleanup
    fs::remove_all(dsym_test_dir);
 }
@@ -870,11 +874,11 @@ int main() {
 TEST_F(DWARFAdvancedTest, DSYMExtractionFunctionality)
 {
    DWARFExtractor extractor;
-   
+
    // Create a test executable with debug info
    fs::path dsym_test_dir = fs::temp_directory_path() / "heimdall_dsym_extraction_test";
    fs::create_directories(dsym_test_dir);
-   
+
    fs::path dsym_source = dsym_test_dir / "dsym_extraction_test.c";
    std::ofstream(dsym_source) << R"(
 #include <stdio.h>
@@ -889,23 +893,24 @@ int main() {
     return result;
 }
 )";
-   
-   fs::path dsym_executable = dsym_test_dir / "dsym_extraction_test";
-   std::string compile_cmd = "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
+
+   fs::path    dsym_executable = dsym_test_dir / "dsym_extraction_test";
+   std::string compile_cmd =
+      "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
    int compile_result = system(compile_cmd.c_str());
-   
+
    if (compile_result == 0 && fs::exists(dsym_executable))
    {
       // Test function extraction from .dSYM
       std::vector<std::string> functions;
       bool functions_result = extractor.extractFunctions(dsym_executable.string(), functions);
-      
+
       if (functions_result)
       {
          EXPECT_FALSE(functions.empty()) << "Should extract functions from .dSYM";
-         
+
          // Check for expected functions
-         bool found_main = false;
+         bool found_main   = false;
          bool found_helper = false;
          for (const auto& func : functions)
          {
@@ -914,19 +919,19 @@ int main() {
             if (func.find("helper_function") != std::string::npos)
                found_helper = true;
          }
-         
+
          EXPECT_TRUE(found_main) << "Should find main function in .dSYM";
          EXPECT_TRUE(found_helper) << "Should find helper_function in .dSYM";
       }
-      
+
       // Test source file extraction from .dSYM
       std::vector<std::string> sourceFiles;
       bool sources_result = extractor.extractSourceFiles(dsym_executable.string(), sourceFiles);
-      
+
       if (sources_result)
       {
          EXPECT_FALSE(sourceFiles.empty()) << "Should extract source files from .dSYM";
-         
+
          // Check for the source file
          bool found_source = false;
          for (const auto& source : sourceFiles)
@@ -934,14 +939,14 @@ int main() {
             if (source.find("dsym_extraction_test.c") != std::string::npos)
                found_source = true;
          }
-         
+
          EXPECT_TRUE(found_source) << "Should find source file in .dSYM";
       }
-      
+
       // Test compile unit extraction from .dSYM
       std::vector<std::string> compileUnits;
       bool units_result = extractor.extractCompileUnits(dsym_executable.string(), compileUnits);
-      
+
       if (units_result)
       {
          EXPECT_FALSE(compileUnits.empty()) << "Should extract compile units from .dSYM";
@@ -951,7 +956,7 @@ int main() {
    {
       GTEST_SKIP() << "Could not create test executable with debug info";
    }
-   
+
    // Cleanup
    fs::remove_all(dsym_test_dir);
 }
@@ -959,11 +964,11 @@ int main() {
 TEST_F(DWARFAdvancedTest, DSYMFallbackBehavior)
 {
    DWARFExtractor extractor;
-   
+
    // Test with a file that has no .dSYM
    fs::path no_dsym_test_dir = fs::temp_directory_path() / "heimdall_no_dsym_test";
    fs::create_directories(no_dsym_test_dir);
-   
+
    fs::path no_dsym_source = no_dsym_test_dir / "no_dsym_test.c";
    std::ofstream(no_dsym_source) << R"(
 #include <stdio.h>
@@ -973,21 +978,24 @@ int main() {
     return 0;
 }
 )";
-   
-   fs::path no_dsym_executable = no_dsym_test_dir / "no_dsym_test";
-   std::string compile_cmd = "gcc -O0 -o " + no_dsym_executable.string() + " " + no_dsym_source.string() + " 2>/dev/null";
+
+   fs::path    no_dsym_executable = no_dsym_test_dir / "no_dsym_test";
+   std::string compile_cmd =
+      "gcc -O0 -o " + no_dsym_executable.string() + " " + no_dsym_source.string() + " 2>/dev/null";
    int compile_result = system(compile_cmd.c_str());
-   
+
    if (compile_result == 0 && fs::exists(no_dsym_executable))
    {
       // Verify no .dSYM file was created
       fs::path dsym_file = no_dsym_executable.string() + ".dSYM";
-      EXPECT_FALSE(fs::exists(dsym_file)) << "Should not have .dSYM file when compiled without debug info";
-      
+      EXPECT_FALSE(fs::exists(dsym_file))
+         << "Should not have .dSYM file when compiled without debug info";
+
       // Test that getDWARFFilePath falls back to original file
       std::string dwarf_path = extractor.getDWARFFilePath(no_dsym_executable.string());
-      EXPECT_EQ(dwarf_path, no_dsym_executable.string()) << "getDWARFFilePath should fall back to original file";
-      
+      EXPECT_EQ(dwarf_path, no_dsym_executable.string())
+         << "getDWARFFilePath should fall back to original file";
+
       // Test hasDWARFInfo behavior
       bool has_debug_info = extractor.hasDWARFInfo(no_dsym_executable.string());
       // Either result is acceptable - the file might or might not have embedded debug info
@@ -997,7 +1005,7 @@ int main() {
    {
       GTEST_SKIP() << "Could not create test executable";
    }
-   
+
    // Cleanup
    fs::remove_all(no_dsym_test_dir);
 }
@@ -1006,11 +1014,11 @@ TEST_F(DWARFAdvancedTest, DSYMMetadataExtractorIntegration)
 {
    // Test that MetadataExtractor properly uses .dSYM files
    MetadataExtractor extractor;
-   
+
    // Create a test executable with debug info
    fs::path dsym_test_dir = fs::temp_directory_path() / "heimdall_dsym_metadata_test";
    fs::create_directories(dsym_test_dir);
-   
+
    fs::path dsym_source = dsym_test_dir / "dsym_metadata_test.c";
    std::ofstream(dsym_source) << R"(
 #include <stdio.h>
@@ -1025,27 +1033,29 @@ int main() {
     return result;
 }
 )";
-   
-   fs::path dsym_executable = dsym_test_dir / "dsym_metadata_test";
-   std::string compile_cmd = "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
+
+   fs::path    dsym_executable = dsym_test_dir / "dsym_metadata_test";
+   std::string compile_cmd =
+      "gcc -g -O0 -o " + dsym_executable.string() + " " + dsym_source.string() + " 2>/dev/null";
    int compile_result = system(compile_cmd.c_str());
-   
+
    if (compile_result == 0 && fs::exists(dsym_executable))
    {
       ComponentInfo component("dsym_metadata_test", dsym_executable.string());
-      bool result = extractor.extractMetadata(component);
-      
+      bool          result = extractor.extractMetadata(component);
+
       // Should extract metadata successfully
       EXPECT_TRUE(result) << "MetadataExtractor should extract metadata from .dSYM";
-      
+
       // Should have debug info if .dSYM exists
       fs::path dsym_file = dsym_executable.string() + ".dSYM";
       if (fs::exists(dsym_file))
       {
-         EXPECT_TRUE(component.containsDebugInfo || !component.functions.empty() || !component.sourceFiles.empty())
+         EXPECT_TRUE(component.containsDebugInfo || !component.functions.empty() ||
+                     !component.sourceFiles.empty())
             << "Should extract debug info from .dSYM file";
       }
-      
+
       // Should have basic metadata
       EXPECT_FALSE(component.filePath.empty()) << "Should have file path";
       EXPECT_FALSE(component.name.empty()) << "Should have component name";
@@ -1054,10 +1064,10 @@ int main() {
    {
       GTEST_SKIP() << "Could not create test executable with debug info";
    }
-   
+
    // Cleanup
    fs::remove_all(dsym_test_dir);
 }
-#endif // __APPLE__
+#endif  // __APPLE__
 
 }  // namespace heimdall

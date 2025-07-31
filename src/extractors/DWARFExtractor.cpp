@@ -378,11 +378,11 @@ bool DWARFExtractor::extractSourceFiles(const std::string&        filePath,
    {
       // Ensure LLVM is initialized
       ensureLLVMInitialized();
-      
+
       // Get the actual DWARF file path (handles .dSYM files on macOS)
       std::string dwarfFilePath = getDWARFFilePath(filePath);
-      
-      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
+
+      auto        buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return extractSourceFilesHeuristic(filePath, sourceFiles);
@@ -429,8 +429,8 @@ bool DWARFExtractor::extractCompileUnits(const std::string&        filePath,
    {
       // Get the actual DWARF file path (handles .dSYM files on macOS)
       std::string dwarfFilePath = getDWARFFilePath(filePath);
-      
-      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
+
+      auto        buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return false;
@@ -477,8 +477,8 @@ bool DWARFExtractor::extractFunctions(const std::string&        filePath,
    {
       // Get the actual DWARF file path (handles .dSYM files on macOS)
       std::string dwarfFilePath = getDWARFFilePath(filePath);
-      
-      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
+
+      auto        buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return extractFunctionsFromSymbolTable(filePath, functions);
@@ -525,8 +525,8 @@ bool DWARFExtractor::extractLineInfo(const std::string&        filePath,
    {
       // Get the actual DWARF file path (handles .dSYM files on macOS)
       std::string dwarfFilePath = getDWARFFilePath(filePath);
-      
-      auto buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
+
+      auto        buffer = llvm::MemoryBuffer::getFile(dwarfFilePath);
       if (!buffer)
       {
          return false;
@@ -579,7 +579,7 @@ std::string DWARFExtractor::getDWARFFilePath(const std::string& filePath) const
    if (std::filesystem::exists(dsymPath))
    {
       // Check if the .dSYM file contains a DWARF file
-      std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" + 
+      std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" +
                               std::filesystem::path(filePath).filename().string();
       if (std::filesystem::exists(dwarfPath))
       {
@@ -622,7 +622,7 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) const
 
    bool     hasDWARF = false;
    Elf_Scn* scn      = nullptr;
-   
+
    // Get the section header string table index
    size_t shstrndx;
    if (elf_getshstrndx(elf, &shstrndx) != 0)
@@ -632,7 +632,7 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) const
       close(fd);
       return false;
    }
-   
+
    while ((scn = elf_nextscn(elf, scn)) != nullptr)
    {
       GElf_Shdr shdr;
@@ -657,7 +657,7 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) const
    if (std::filesystem::exists(dsymPath))
    {
       // Check if the .dSYM file contains a DWARF file
-      std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" + 
+      std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" +
                               std::filesystem::path(filePath).filename().string();
       if (std::filesystem::exists(dwarfPath))
       {

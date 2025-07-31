@@ -350,7 +350,7 @@ class PluginInterfaceTest : public ::testing::Test
    }
 
    std::unique_ptr<TestPluginInterface> plugin;
-   fs::path           test_dir;
+   fs::path                             test_dir;
 };
 
 // Constructor and Destructor Tests
@@ -475,12 +475,11 @@ TEST_F(PluginInterfaceTest, ProcessMultipleComponents)
 // Configuration Tests
 TEST_F(PluginInterfaceTest, SetOutputPath)
 {
-   plugin->setOutputPath(
-      (fs::temp_directory_path() / "test_output.json").string());
+   plugin->setOutputPath((fs::temp_directory_path() / "test_output.json").string());
    // Note: We can't easily test the internal SBOM generator path setting
    // but we can test that the method doesn't crash
-   EXPECT_NO_THROW(plugin->setOutputPath(
-      (fs::temp_directory_path() / "test_output.json").string()));
+   EXPECT_NO_THROW(
+      plugin->setOutputPath((fs::temp_directory_path() / "test_output.json").string()));
 }
 
 TEST_F(PluginInterfaceTest, SetFormat)

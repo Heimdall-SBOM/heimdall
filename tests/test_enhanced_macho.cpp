@@ -147,8 +147,8 @@ TEST_F(EnhancedMachOTest, PlatformInfoExtraction)
 TEST_F(EnhancedMachOTest, ArchitectureExtraction)
 {
 #ifdef __APPLE__
-   heimdall::MetadataExtractor             extractor;
-   heimdall::ComponentInfo                 component;
+   heimdall::MetadataExtractor extractor;
+   heimdall::ComponentInfo     component;
    component.filePath = testMachOFile;
 
    bool result = extractor.extractMachOArchitectures(component);

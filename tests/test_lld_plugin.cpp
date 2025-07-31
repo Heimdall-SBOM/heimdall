@@ -37,7 +37,7 @@ class LLDPluginTest : public ::testing::Test
    fs::path test_library_file;
    fs::path test_executable;
 
-   void                       createTestFiles()
+   void     createTestFiles()
    {
       // Create test object file
       test_object_file = test_dir / "test.o";

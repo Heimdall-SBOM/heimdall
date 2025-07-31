@@ -118,10 +118,14 @@ FileType detectElfFileType(const std::string& filePath)
       uint16_t type = static_cast<uint8_t>(header[16]) | (static_cast<uint8_t>(header[17]) << 8);
       switch (type)
       {
-         case 1: return FileType::Object;      // ET_REL
-         case 2: return FileType::Executable;  // ET_EXEC
-         case 3: return FileType::SharedLibrary; // ET_DYN
-         default: return FileType::Unknown;
+         case 1:
+            return FileType::Object;  // ET_REL
+         case 2:
+            return FileType::Executable;  // ET_EXEC
+         case 3:
+            return FileType::SharedLibrary;  // ET_DYN
+         default:
+            return FileType::Unknown;
       }
    }
    else if (header[4] == 2)  // 64-bit
@@ -130,10 +134,14 @@ FileType detectElfFileType(const std::string& filePath)
       uint16_t type = static_cast<uint8_t>(header[16]) | (static_cast<uint8_t>(header[17]) << 8);
       switch (type)
       {
-         case 1: return FileType::Object;      // ET_REL
-         case 2: return FileType::Executable;  // ET_EXEC
-         case 3: return FileType::SharedLibrary; // ET_DYN
-         default: return FileType::Unknown;
+         case 1:
+            return FileType::Object;  // ET_REL
+         case 2:
+            return FileType::Executable;  // ET_EXEC
+         case 3:
+            return FileType::SharedLibrary;  // ET_DYN
+         default:
+            return FileType::Unknown;
       }
    }
 
@@ -173,11 +181,16 @@ FileType detectMachOFileType(const std::string& filePath)
 
       switch (filetype)
       {
-         case 1: return FileType::Object;      // MH_OBJECT
-         case 2: return FileType::Executable;  // MH_EXECUTE
-         case 6: return FileType::SharedLibrary; // MH_DYLIB
-         case 8: return FileType::StaticLibrary; // MH_DYLINKER
-         default: return FileType::Unknown;
+         case 1:
+            return FileType::Object;  // MH_OBJECT
+         case 2:
+            return FileType::Executable;  // MH_EXECUTE
+         case 6:
+            return FileType::SharedLibrary;  // MH_DYLIB
+         case 8:
+            return FileType::StaticLibrary;  // MH_DYLINKER
+         default:
+            return FileType::Unknown;
       }
    }
    else if (magic == 0xFEEDFACF)  // 64-bit Mach-O
@@ -191,11 +204,16 @@ FileType detectMachOFileType(const std::string& filePath)
 
       switch (filetype)
       {
-         case 1: return FileType::Object;      // MH_OBJECT
-         case 2: return FileType::Executable;  // MH_EXECUTE
-         case 6: return FileType::SharedLibrary; // MH_DYLIB
-         case 8: return FileType::StaticLibrary; // MH_DYLINKER
-         default: return FileType::Unknown;
+         case 1:
+            return FileType::Object;  // MH_OBJECT
+         case 2:
+            return FileType::Executable;  // MH_EXECUTE
+         case 6:
+            return FileType::SharedLibrary;  // MH_DYLIB
+         case 8:
+            return FileType::StaticLibrary;  // MH_DYLINKER
+         default:
+            return FileType::Unknown;
       }
    }
    else if (magic == 0xCAFEBABE)  // Universal binary
@@ -216,7 +234,7 @@ FileType determineFileType(const std::string& filePath)
 {
    // Check file extension first
    std::string extension;
-   size_t dotPos = filePath.find_last_of('.');
+   size_t      dotPos = filePath.find_last_of('.');
    if (dotPos != std::string::npos)
    {
       extension = filePath.substr(dotPos + 1);
@@ -421,18 +439,14 @@ void heimdall::ComponentInfo::setStripped(bool stripped)
 
 bool heimdall::ComponentInfo::hasSymbol(const std::string& symbolName) const
 {
-   return std::any_of(symbols.begin(), symbols.end(),
-                     [&symbolName](const SymbolInfo& symbol) {
-                        return symbol.name == symbolName;
-                     });
+   return std::any_of(symbols.begin(), symbols.end(), [&symbolName](const SymbolInfo& symbol)
+                      { return symbol.name == symbolName; });
 }
 
 bool heimdall::ComponentInfo::hasSection(const std::string& sectionName) const
 {
-   return std::any_of(sections.begin(), sections.end(),
-                     [&sectionName](const SectionInfo& section) {
-                        return section.name == sectionName;
-                     });
+   return std::any_of(sections.begin(), sections.end(), [&sectionName](const SectionInfo& section)
+                      { return section.name == sectionName; });
 }
 
 std::string heimdall::ComponentInfo::getFileTypeString(const std::string& spdxVersion) const

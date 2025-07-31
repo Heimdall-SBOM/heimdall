@@ -37,9 +37,9 @@ limitations under the License.
 #include "Utils.hpp"
 
 #ifdef __APPLE__
+#include <libkern/OSByteOrder.h>
 #include <mach-o/fat.h>
 #include <mach-o/loader.h>
-#include <libkern/OSByteOrder.h>
 #endif
 
 namespace heimdall
@@ -143,7 +143,7 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
 
       // Extract binary format metadata
       bool binaryExtractionSuccess = extractBinaryMetadata(component);
-      
+
       // Extract dependency information
       extractDependencyInfo(component);
 
@@ -156,28 +156,28 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
       // Extract package manager metadata
       extractPackageManagerMetadata(component);
 
-         // Extract enhanced metadata (Mach-O specific)
-   if (isMachO(component.filePath))
-   {
-      extractEnhancedMachOMetadata(component);
-   }
+      // Extract enhanced metadata (Mach-O specific)
+      if (isMachO(component.filePath))
+      {
+         extractEnhancedMachOMetadata(component);
+      }
 
-   // Extract enhanced package information
-   extractEnhancedPackageInfo(component);
+      // Extract enhanced package information
+      extractEnhancedPackageInfo(component);
 
-   // Add component evidence (matching pre-refactored behavior)
-   addComponentEvidence(component);
+      // Add component evidence (matching pre-refactored behavior)
+      addComponentEvidence(component);
 
-   // Post-process and validate metadata
-   postProcessMetadata(component);
-   validateMetadata(component);
+      // Post-process and validate metadata
+      postProcessMetadata(component);
+      validateMetadata(component);
 
-   // Mark the component as processed (it was attempted)
-   component.markAsProcessed();
+      // Mark the component as processed (it was attempted)
+      component.markAsProcessed();
 
-   // Return the success status of binary extraction (matching pre-refactored behavior)
-   // The pre-refactored version would return false if any critical extraction failed
-   return binaryExtractionSuccess;
+      // Return the success status of binary extraction (matching pre-refactored behavior)
+      // The pre-refactored version would return false if any critical extraction failed
+      return binaryExtractionSuccess;
    }
    catch (const std::exception& e)
    {
@@ -200,11 +200,13 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
    // Find the format-specific extractor (ELF, Mach-O, PE, etc.) and DWARF extractor
    std::unique_ptr<IBinaryExtractor> primaryExtractor;
    std::unique_ptr<IBinaryExtractor> dwarfExtractor;
-   
+
    for (auto& extractor : availableExtractors)
    {
       // Select format-specific extractor as primary (ELF, Mach-O, PE, etc.)
-      if (!primaryExtractor && extractor->getFormatName() != "DWARF" && extractor->getFormatName() != "Lazy Symbol Extractor")
+      if (!primaryExtractor && extractor->getFormatName() != "DWARF" &&
+          extractor->getFormatName() != "Lightweight DWARF Parser" &&
+          extractor->getFormatName() != "Lazy Symbol Extractor")
       {
          primaryExtractor = std::move(extractor);
       }
@@ -213,7 +215,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          dwarfExtractor = std::move(extractor);
       }
    }
-   
+
    // If no format-specific extractor found, use the first available one
    if (!primaryExtractor && !availableExtractors.empty())
    {
@@ -226,13 +228,13 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          }
       }
    }
-   
+
    // If no primary extractor found, use the first available one
    if (!primaryExtractor && !availableExtractors.empty())
    {
       primaryExtractor = std::move(availableExtractors[0]);
    }
-   
+
    if (!primaryExtractor)
    {
       pImpl->setLastError("No suitable extractor found for file: " + component.filePath);
@@ -252,7 +254,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
    if (primaryExtractor->extractSymbols(component.filePath, symbols))
    {
       component.symbols = symbols;
-      success = true;  // At least one extraction succeeded
+      success           = true;  // At least one extraction succeeded
    }
 
    // Extract sections
@@ -260,7 +262,7 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
    if (primaryExtractor->extractSections(component.filePath, sections))
    {
       component.sections = sections;
-      success = true;  // At least one extraction succeeded
+      success            = true;  // At least one extraction succeeded
    }
 
    // Extract version
@@ -282,11 +284,12 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
    }
 
    // Extract dependencies
-   std::vector<std::string> dependencies = primaryExtractor->extractDependencies(component.filePath);
+   std::vector<std::string> dependencies =
+      primaryExtractor->extractDependencies(component.filePath);
    if (!dependencies.empty())
    {
       component.dependencies = dependencies;
-      success = true;  // At least one extraction succeeded
+      success                = true;  // At least one extraction succeeded
    }
 
    // Extract DWARF debug information if enabled
@@ -302,8 +305,8 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          if (dwarfExtractor->extractFunctions(component.filePath, functions))
          {
             component.functions = functions;
-            debugInfoFound = true;
-            success = true;  // At least one extraction succeeded
+            debugInfoFound      = true;
+            success             = true;  // At least one extraction succeeded
          }
 
          // Extract compile units from DWARF
@@ -311,8 +314,8 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          if (dwarfExtractor->extractCompileUnits(component.filePath, compileUnits))
          {
             component.compileUnits = compileUnits;
-            debugInfoFound = true;
-            success = true;  // At least one extraction succeeded
+            debugInfoFound         = true;
+            success                = true;  // At least one extraction succeeded
          }
 
          // Extract source files from DWARF
@@ -320,8 +323,8 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          if (dwarfExtractor->extractSourceFiles(component.filePath, sourceFiles))
          {
             component.sourceFiles = sourceFiles;
-            debugInfoFound = true;
-            success = true;  // At least one extraction succeeded
+            debugInfoFound        = true;
+            success               = true;  // At least one extraction succeeded
          }
       }
       else
@@ -332,8 +335,8 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          if (primaryExtractor->extractFunctions(component.filePath, functions))
          {
             component.functions = functions;
-            debugInfoFound = true;
-            success = true;  // At least one extraction succeeded
+            debugInfoFound      = true;
+            success             = true;  // At least one extraction succeeded
          }
 
          // Extract compile units from DWARF
@@ -341,8 +344,8 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          if (primaryExtractor->extractCompileUnits(component.filePath, compileUnits))
          {
             component.compileUnits = compileUnits;
-            debugInfoFound = true;
-            success = true;  // At least one extraction succeeded
+            debugInfoFound         = true;
+            success                = true;  // At least one extraction succeeded
          }
 
          // Extract source files from DWARF
@@ -350,8 +353,8 @@ bool MetadataExtractor::extractBinaryMetadata(ComponentInfo& component)
          if (primaryExtractor->extractSourceFiles(component.filePath, sourceFiles))
          {
             component.sourceFiles = sourceFiles;
-            debugInfoFound = true;
-            success = true;  // At least one extraction succeeded
+            debugInfoFound        = true;
+            success               = true;  // At least one extraction succeeded
          }
       }
 
@@ -371,7 +374,7 @@ bool MetadataExtractor::extractPackageManagerMetadata(ComponentInfo& component)
    std::string detectedPackageManager = heimdall::Utils::detectPackageManager(component.filePath);
    if (!detectedPackageManager.empty() && detectedPackageManager != "unknown")
    {
-      component.packageManager = detectedPackageManager;
+      component.packageManager                = detectedPackageManager;
       component.properties["package_manager"] = detectedPackageManager;
       return true;
    }
@@ -395,7 +398,7 @@ bool MetadataExtractor::extractPackageManagerMetadata(ComponentInfo& component)
       // Store package manager information in component properties
       for (const auto& pm : packageManagers)
       {
-         component.packageManager = pm.name;
+         component.packageManager                         = pm.name;
          component.properties["package_manager"]          = pm.name;
          component.properties["package_manager_version"]  = pm.version;
          component.properties["package_manager_manifest"] = pm.manifestFile;
@@ -522,7 +525,8 @@ bool MetadataExtractor::extractAdaMetadata(ComponentInfo& component)
    std::vector<std::string> aliFiles;
    AdaExtractor             extractor;
    extractor.setVerbose(pImpl->verbose);
-   extractor.setExcludeRuntimePackages(false);  // Include runtime packages by default (like ELF extractor)
+   extractor.setExcludeRuntimePackages(
+      false);  // Include runtime packages by default (like ELF extractor)
 
    if (extractor.findAliFiles(component.filePath, aliFiles))
    {
@@ -543,7 +547,7 @@ bool MetadataExtractor::generateSBOM(ComponentInfo& component)
 }
 
 bool MetadataExtractor::compareSBOMs(const ComponentInfo& component1,
-                                       const ComponentInfo& component2)
+                                     const ComponentInfo& component2)
 {
    // TODO: Integrate SBOMComparator
    if (pImpl->verbose)
@@ -574,7 +578,7 @@ bool MetadataExtractor::validateSBOM(const ComponentInfo& component)
 }
 
 bool MetadataExtractor::extractMetadataBatched(const std::vector<std::string>& filePaths,
-                                                 std::vector<ComponentInfo>&     components)
+                                               std::vector<ComponentInfo>&     components)
 {
    components.clear();
    bool overallSuccess = true;
@@ -765,19 +769,20 @@ void MetadataExtractor::addComponentEvidence(ComponentInfo& component) const
       std::to_string(pImpl->confidenceThreshold);
 
    // Add identity evidence (matching pre-refactored behavior)
-   component.properties["evidence:identity:symbols"] = std::to_string(component.symbols.size());
+   component.properties["evidence:identity:symbols"]  = std::to_string(component.symbols.size());
    component.properties["evidence:identity:sections"] = std::to_string(component.sections.size());
 
    // Add occurrence evidence
    component.properties["evidence:occurrence:location"] = component.filePath;
-   component.properties["evidence:occurrence:size"] = std::to_string(component.fileSize);
+   component.properties["evidence:occurrence:size"]     = std::to_string(component.fileSize);
 
    // Add file type evidence
    component.properties["evidence:identity:fileType"] = component.getFileTypeString();
 
    // Add debug info evidence
-   component.properties["evidence:identity:hasDebugInfo"] = component.containsDebugInfo ? "true" : "false";
-   component.properties["evidence:identity:isStripped"] = component.isStripped ? "true" : "false";
+   component.properties["evidence:identity:hasDebugInfo"] = component.containsDebugInfo ? "true"
+                                                                                        : "false";
+   component.properties["evidence:identity:isStripped"]   = component.isStripped ? "true" : "false";
 }
 
 // Private helper methods
@@ -792,13 +797,13 @@ std::unique_ptr<IBinaryExtractor> MetadataExtractor::createExtractor(const std::
 }
 
 bool MetadataExtractor::extractDirectoryMetadata(const std::string& directoryPath,
-                                                   ComponentInfo&     component)
+                                                 ComponentInfo&     component)
 {
    return pImpl->extractDirectoryMetadataImpl(directoryPath, component);
 }
 
 void MetadataExtractor::mergeMetadata(ComponentInfo&       component,
-                                        const ComponentInfo& additionalMetadata)
+                                      const ComponentInfo& additionalMetadata)
 {
    pImpl->mergeMetadataImpl(component, additionalMetadata);
 }
@@ -848,7 +853,7 @@ std::unique_ptr<IBinaryExtractor> MetadataExtractor::Impl::createExtractorImpl(
 }
 
 bool MetadataExtractor::Impl::extractDirectoryMetadataImpl(const std::string& directoryPath,
-                                                             ComponentInfo&     component)
+                                                           ComponentInfo&     component)
 {
    // This method can be used to extract metadata that requires directory scanning
    // Currently handled by individual detector methods
@@ -856,7 +861,7 @@ bool MetadataExtractor::Impl::extractDirectoryMetadataImpl(const std::string& di
 }
 
 void MetadataExtractor::Impl::mergeMetadataImpl(ComponentInfo&       component,
-                                                  const ComponentInfo& additionalMetadata)
+                                                const ComponentInfo& additionalMetadata)
 {
    // Merge properties from additional source into component
    for (const auto& [key, value] : additionalMetadata.properties)
@@ -1081,7 +1086,7 @@ bool MetadataExtractor::extractEnhancedMachOMetadata(ComponentInfo& component)
       // First priority: Try to extract version from Info.plist for macOS apps
       std::string originalVersion = component.version;
 
-      bool versionSetFromInfoPlist = false;
+      bool        versionSetFromInfoPlist = false;
 
       // If Info.plist parsing was successful and returned a non-empty version, consider it set from
       // Info.plist
@@ -1140,7 +1145,8 @@ void MetadataExtractor::extractEnhancedPackageInfo(ComponentInfo& component)
       }
       // Set supplier for heimdall-sbom executable
       else if (component.fileType == FileType::Executable &&
-               (component.name == "heimdall-sbom" || component.filePath.find("heimdall-sbom") != std::string::npos))
+               (component.name == "heimdall-sbom" ||
+                component.filePath.find("heimdall-sbom") != std::string::npos))
       {
          component.setSupplier("Heimdall Project");
       }
@@ -1212,10 +1218,10 @@ bool MetadataExtractor::extractMachOPlatformInfo(ComponentInfo& component)
       file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
 
       component.platformInfo.architecture = getArchitectureString(mh.cputype, mh.cpusubtype);
-      component.platformInfo.platform = "macos";  // Default for Mach-O files
-      component.platformInfo.minVersion = 0;
-      component.platformInfo.sdkVersion = 0;
-      component.platformInfo.isSimulator = false;
+      component.platformInfo.platform     = "macos";  // Default for Mach-O files
+      component.platformInfo.minVersion   = 0;
+      component.platformInfo.sdkVersion   = 0;
+      component.platformInfo.isSimulator  = false;
 
       return true;
    }
@@ -1225,10 +1231,10 @@ bool MetadataExtractor::extractMachOPlatformInfo(ComponentInfo& component)
       file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
 
       component.platformInfo.architecture = getArchitectureString(mh.cputype, mh.cpusubtype);
-      component.platformInfo.platform = "macos";  // Default for Mach-O files
-      component.platformInfo.minVersion = 0;
-      component.platformInfo.sdkVersion = 0;
-      component.platformInfo.isSimulator = false;
+      component.platformInfo.platform     = "macos";  // Default for Mach-O files
+      component.platformInfo.minVersion   = 0;
+      component.platformInfo.sdkVersion   = 0;
+      component.platformInfo.isSimulator  = false;
 
       return true;
    }
@@ -1277,12 +1283,12 @@ bool MetadataExtractor::extractMachOArchitectures(ComponentInfo& component)
          }
 
          ArchitectureInfo archInfo;
-         archInfo.name = getArchitectureString(arch.cputype, arch.cpusubtype);
-         archInfo.cpuType = arch.cputype;
+         archInfo.name       = getArchitectureString(arch.cputype, arch.cpusubtype);
+         archInfo.cpuType    = arch.cputype;
          archInfo.cpuSubtype = arch.cpusubtype;
-         archInfo.offset = OSSwapBigToHostInt32(arch.offset);
-         archInfo.size = OSSwapBigToHostInt32(arch.size);
-         archInfo.align = OSSwapBigToHostInt32(arch.align);
+         archInfo.offset     = OSSwapBigToHostInt32(arch.offset);
+         archInfo.size       = OSSwapBigToHostInt32(arch.size);
+         archInfo.align      = OSSwapBigToHostInt32(arch.align);
 
          component.architectures.push_back(archInfo);
       }
@@ -1299,12 +1305,12 @@ bool MetadataExtractor::extractMachOArchitectures(ComponentInfo& component)
          file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
 
          ArchitectureInfo archInfo;
-         archInfo.name = getArchitectureString(mh.cputype, mh.cpusubtype);
-         archInfo.cpuType = mh.cputype;
+         archInfo.name       = getArchitectureString(mh.cputype, mh.cpusubtype);
+         archInfo.cpuType    = mh.cputype;
          archInfo.cpuSubtype = mh.cpusubtype;
-         archInfo.offset = 0;
-         archInfo.size = 0;
-         archInfo.align = 0;
+         archInfo.offset     = 0;
+         archInfo.size       = 0;
+         archInfo.align      = 0;
 
          component.architectures.push_back(archInfo);
       }
@@ -1314,12 +1320,12 @@ bool MetadataExtractor::extractMachOArchitectures(ComponentInfo& component)
          file.read(reinterpret_cast<char*>(&mh), sizeof(mh));
 
          ArchitectureInfo archInfo;
-         archInfo.name = getArchitectureString(mh.cputype, mh.cpusubtype);
-         archInfo.cpuType = mh.cputype;
+         archInfo.name       = getArchitectureString(mh.cputype, mh.cpusubtype);
+         archInfo.cpuType    = mh.cputype;
          archInfo.cpuSubtype = mh.cpusubtype;
-         archInfo.offset = 0;
-         archInfo.size = 0;
-         archInfo.align = 0;
+         archInfo.offset     = 0;
+         archInfo.size       = 0;
+         archInfo.align      = 0;
 
          component.architectures.push_back(archInfo);
       }
@@ -1371,8 +1377,8 @@ bool MetadataExtractor::extractMacOSAppBundleMetadata(ComponentInfo& component)
    }
 
    std::string line;
-   bool        foundVersionKey = false;
-   bool        foundNameKey    = false;
+   bool        foundVersionKey    = false;
+   bool        foundNameKey       = false;
    bool        foundBundleNameKey = false;
 
    while (std::getline(file, line))
@@ -1406,7 +1412,7 @@ bool MetadataExtractor::extractMacOSAppBundleMetadata(ComponentInfo& component)
          if (end != std::string::npos && end > start)
          {
             component.version = line.substr(start, end - start);
-            foundVersionKey = false;
+            foundVersionKey   = false;
          }
       }
 
@@ -1422,7 +1428,7 @@ bool MetadataExtractor::extractMacOSAppBundleMetadata(ComponentInfo& component)
             {
                component.name = bundleName;
             }
-            foundNameKey = false;
+            foundNameKey       = false;
             foundBundleNameKey = false;
          }
       }

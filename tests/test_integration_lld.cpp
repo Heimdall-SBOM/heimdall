@@ -64,7 +64,7 @@ class LLDIntegrationTest : public ::testing::Test
    fs::path test_bitcode;
    fs::path test_llvm_ir;
 
-   void                       createTestFiles()
+   void     createTestFiles()
    {
       test_object_file  = test_dir / "test.o";
       test_library_file = test_dir / "libtest.a";
@@ -180,8 +180,8 @@ TEST_F(LLDIntegrationTest, LargeScaleProcessingWorkflow)
    std::vector<fs::path> test_files;
    for (int i = 0; i < 50; ++i)
    {
-      fs::path file_path = test_dir / ("file_" + std::to_string(i) + ".o");
-      std::ofstream              file(file_path);
+      fs::path      file_path = test_dir / ("file_" + std::to_string(i) + ".o");
+      std::ofstream file(file_path);
       file << "Content for file " << i;
       file.close();
       test_files.push_back(file_path);
@@ -288,8 +288,7 @@ TEST_F(LLDIntegrationTest, MemoryStressTest)
       // Process many files and symbols
       for (int i = 0; i < 100; ++i)
       {
-         fs::path file_path =
-            test_dir / ("stress_file_" + std::to_string(i) + ".o");
+         fs::path      file_path = test_dir / ("stress_file_" + std::to_string(i) + ".o");
          std::ofstream file(file_path);
          file << "Stress test content " << i;
          file.close();
@@ -307,8 +306,7 @@ TEST_F(LLDIntegrationTest, MemoryStressTest)
       adapter->finalize();
 
       // Verify SBOM was created
-      fs::path sbom_file =
-         test_dir / ("stress_" + std::to_string(cycle) + ".sbom");
+      fs::path sbom_file = test_dir / ("stress_" + std::to_string(cycle) + ".sbom");
       EXPECT_TRUE(fs::exists(sbom_file));
    }
 }
@@ -338,8 +336,7 @@ TEST_F(LLDIntegrationTest, ConcurrentAccessTest)
    // Verify all SBOMs were created
    for (int i = 0; i < 3; ++i)
    {
-      fs::path sbom_file =
-         test_dir / ("concurrent_" + std::to_string(i) + ".sbom");
+      fs::path sbom_file = test_dir / ("concurrent_" + std::to_string(i) + ".sbom");
       EXPECT_TRUE(fs::exists(sbom_file));
       EXPECT_GT(fs::file_size(sbom_file), 0);
    }
@@ -363,8 +360,8 @@ TEST_F(LLDIntegrationTest, LLVMBitcodeProcessing)
    // Create additional bitcode files
    for (int i = 0; i < 5; ++i)
    {
-      fs::path bitcode_path = test_dir / ("bitcode_" + std::to_string(i) + ".bc");
-      std::ofstream              bitcode_file(bitcode_path);
+      fs::path      bitcode_path = test_dir / ("bitcode_" + std::to_string(i) + ".bc");
+      std::ofstream bitcode_file(bitcode_path);
       bitcode_file << "Bitcode content " << i;
       bitcode_file.close();
 
@@ -395,8 +392,8 @@ TEST_F(LLDIntegrationTest, LLVMIRProcessing)
    // Create additional LLVM IR files
    for (int i = 0; i < 5; ++i)
    {
-      fs::path ir_path = test_dir / ("ir_" + std::to_string(i) + ".ll");
-      std::ofstream              ir_file(ir_path);
+      fs::path      ir_path = test_dir / ("ir_" + std::to_string(i) + ".ll");
+      std::ofstream ir_file(ir_path);
       ir_file << "LLVM IR content " << i;
       ir_file.close();
 
@@ -447,8 +444,8 @@ TEST_F(LLDIntegrationTest, ArchiveFileProcessing)
    // Create additional archive files
    for (int i = 0; i < 5; ++i)
    {
-      fs::path archive_path = test_dir / ("archive_" + std::to_string(i) + ".a");
-      std::ofstream              archive_file(archive_path);
+      fs::path      archive_path = test_dir / ("archive_" + std::to_string(i) + ".a");
+      std::ofstream archive_file(archive_path);
       archive_file << "Archive content " << i;
       archive_file.close();
 

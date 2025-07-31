@@ -39,10 +39,10 @@ limitations under the License.
 #include "common/Utils.hpp"
 
 #ifdef __linux__
-#include <fcntl.h>
-#include <unistd.h>
 #include <elf.h>
+#include <fcntl.h>
 #include <libelf.h>
+#include <unistd.h>
 #else
 // Define ELF constants for non-Linux platforms
 #define ELFCLASS64 2
@@ -171,6 +171,7 @@ bool ELFExtractor::extractSymbols(const std::string& filePath, std::vector<Symbo
       close(fd);
       return success;
    }
+
 #endif
 
    // Fallback: basic symbol extraction without libelf

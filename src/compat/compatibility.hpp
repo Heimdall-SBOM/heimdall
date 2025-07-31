@@ -149,8 +149,10 @@ limitations under the License.
 namespace fs = boost::filesystem;
 #else
 // Fallback filesystem implementation for C++11/14 without Boost
-namespace heimdall {
-namespace compat {
+namespace heimdall
+{
+namespace compat
+{
 namespace fs
 {
 class path
@@ -164,42 +166,50 @@ class path
    path(const char* str) : path_str(str ? str : "") {}
 
    // Basic operations
-   std::string string() const { return path_str; }
-   
+   std::string string() const
+   {
+      return path_str;
+   }
+
    path filename() const
    {
       size_t pos = path_str.find_last_of("/\\");
       return (pos == std::string::npos) ? path(path_str) : path(path_str.substr(pos + 1));
    }
-   
+
    path parent_path() const
    {
       size_t pos = path_str.find_last_of("/\\");
       return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
    }
-   
+
    path& operator/=(const path& other)
    {
-      if (other.path_str.empty()) return *this;
-      if (path_str.empty()) {
+      if (other.path_str.empty())
+         return *this;
+      if (path_str.empty())
+      {
          path_str = other.path_str;
          return *this;
       }
-      if (path_str.back() == '/' || path_str.back() == '\\') {
+      if (path_str.back() == '/' || path_str.back() == '\\')
+      {
          path_str += other.path_str;
-      } else {
+      }
+      else
+      {
          path_str += "/" + other.path_str;
       }
       return *this;
    }
-   
+
    path operator/(const path& other) const
    {
       path result = *this;
       result /= other;
       return result;
    }
-   
+
    bool is_absolute() const
    {
       return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
@@ -230,7 +240,8 @@ inline bool remove_all(const path& p)
 inline path current_path()
 {
    char cwd[PATH_MAX];
-   if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+   if (getcwd(cwd, sizeof(cwd)) != nullptr)
+   {
       return path(cwd);
    }
    return path();
@@ -244,16 +255,20 @@ inline bool current_path(const path& p)
 inline path temp_directory_path()
 {
    const char* temp = getenv("TMPDIR");
-   if (!temp) temp = getenv("TMP");
-   if (!temp) temp = getenv("TEMP");
-   if (!temp) temp = "/tmp";
+   if (!temp)
+      temp = getenv("TMP");
+   if (!temp)
+      temp = getenv("TEMP");
+   if (!temp)
+      temp = "/tmp";
    return path(temp);
 }
 
 inline uintmax_t file_size(const path& p)
 {
    struct stat st;
-   if (stat(p.string().c_str(), &st) == 0) {
+   if (stat(p.string().c_str(), &st) == 0)
+   {
       return static_cast<uintmax_t>(st.st_size);
    }
    return 0;
@@ -368,7 +383,8 @@ inline void create_hard_link(const path& to, const path& new_hard_link)
 
 inline path absolute(const path& p)
 {
-   if (p.is_absolute()) return p;
+   if (p.is_absolute())
+      return p;
    return current_path() / p;
 }
 
@@ -383,10 +399,13 @@ class recursive_directory_iterator
    recursive_directory_iterator(const path& p) : current_index(0)
    {
       DIR* dir = opendir(p.string().c_str());
-      if (dir) {
+      if (dir)
+      {
          struct dirent* entry;
-         while ((entry = readdir(dir)) != nullptr) {
-            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+         while ((entry = readdir(dir)) != nullptr)
+         {
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+            {
                path full_path = p / entry->d_name;
                files.push_back(full_path);
             }
@@ -394,30 +413,33 @@ class recursive_directory_iterator
          closedir(dir);
       }
    }
-   
+
    recursive_directory_iterator& operator++()
    {
-      if (current_index < files.size()) {
+      if (current_index < files.size())
+      {
          ++current_index;
       }
       return *this;
    }
-   
+
    bool operator!=(const recursive_directory_iterator& other) const
    {
       return current_index != other.current_index;
    }
-   
+
    bool is_regular_file() const
    {
-      if (current_index >= files.size()) return false;
+      if (current_index >= files.size())
+         return false;
       struct stat st;
       return stat(files[current_index].string().c_str(), &st) == 0 && S_ISREG(st.st_mode);
    }
-   
+
    path get_path() const
    {
-      if (current_index < files.size()) {
+      if (current_index < files.size())
+      {
          return files[current_index];
       }
       return path();
@@ -428,7 +450,8 @@ struct DirCloser
 {
    void operator()(DIR* d) const
    {
-      if (d) closedir(d);
+      if (d)
+         closedir(d);
    }
 };
 
@@ -451,29 +474,34 @@ class directory_iterator
 
    directory_iterator& operator++()
    {
-      if (dir) {
+      if (dir)
+      {
          struct dirent* entry = readdir(dir.get());
-         if (entry) {
+         if (entry)
+         {
             current_path = entry->d_name;
-         } else {
+         }
+         else
+         {
             dir.reset();
          }
       }
       return *this;
    }
-   
+
    bool operator!=(const directory_iterator& other) const
    {
       return dir != other.dir;
    }
-   
+
    bool is_regular_file() const
    {
-      if (current_path.empty()) return false;
+      if (current_path.empty())
+         return false;
       struct stat st;
       return stat(current_path.c_str(), &st) == 0 && S_ISREG(st.st_mode);
    }
-   
+
    path get_path() const
    {
       return path(current_path);
@@ -582,51 +610,62 @@ void print_string(const std::string& fmt, Args&&... args)
 // Range utilities for C++20/23
 #if __cplusplus >= 202002L
 template <range R, typename F>
-auto filter(R&& r, F&& f) {
+auto filter(R&& r, F&& f)
+{
    return std::views::filter(std::forward<R>(r), std::forward<F>(f));
 }
 
 template <range R, typename F>
-auto transform(R&& r, F&& f) {
+auto transform(R&& r, F&& f)
+{
    return std::views::transform(std::forward<R>(r), std::forward<F>(f));
 }
 
 template <range R>
-auto take(R&& r, std::size_t n) {
+auto take(R&& r, std::size_t n)
+{
    return std::views::take(std::forward<R>(r), n);
 }
 
 template <range R>
-auto drop(R&& r, std::size_t n) {
+auto drop(R&& r, std::size_t n)
+{
    return std::views::drop(std::forward<R>(r), n);
 }
 
 template <range R>
-auto reverse(R&& r) {
+auto reverse(R&& r)
+{
    return std::views::reverse(std::forward<R>(r));
 }
 
 template <typename Container, range R>
-Container to_container(R&& r) {
+Container to_container(R&& r)
+{
    return Container(std::begin(r), std::end(r));
 }
 
 template <range R>
-auto to_vector(R&& r) {
+auto to_vector(R&& r)
+{
    return std::vector<std::ranges::range_value_t<R>>(std::begin(r), std::end(r));
 }
 
 template <range R>
-auto to_set(R&& r) {
+auto to_set(R&& r)
+{
    return std::set<std::ranges::range_value_t<R>>(std::begin(r), std::end(r));
 }
 #else
 // C++11/14/17 fallbacks
 template <typename R, typename F>
-auto filter(R&& r, F&& f) {
+auto filter(R&& r, F&& f)
+{
    std::vector<typename std::decay_t<R>::value_type> result;
-   for (const auto& item : r) {
-      if (f(item)) {
+   for (const auto& item : r)
+   {
+      if (f(item))
+      {
          result.push_back(item);
       }
    }
@@ -634,60 +673,72 @@ auto filter(R&& r, F&& f) {
 }
 
 template <typename R, typename F>
-auto transform(R&& r, F&& f) {
+auto transform(R&& r, F&& f)
+{
    std::vector<decltype(f(std::declval<typename std::decay_t<R>::value_type>()))> result;
-   for (const auto& item : r) {
+   for (const auto& item : r)
+   {
       result.push_back(f(item));
    }
    return result;
 }
 
 template <typename R>
-auto take(R&& r, std::size_t n) {
+auto take(R&& r, std::size_t n)
+{
    std::vector<typename std::decay_t<R>::value_type> result;
-   auto it = std::begin(r);
-   auto end = std::end(r);
-   for (std::size_t i = 0; i < n && it != end; ++i, ++it) {
+   auto                                              it  = std::begin(r);
+   auto                                              end = std::end(r);
+   for (std::size_t i = 0; i < n && it != end; ++i, ++it)
+   {
       result.push_back(*it);
    }
    return result;
 }
 
 template <typename R>
-auto drop(R&& r, std::size_t n) {
+auto drop(R&& r, std::size_t n)
+{
    std::vector<typename std::decay_t<R>::value_type> result;
-   auto it = std::begin(r);
-   auto end = std::end(r);
-   for (std::size_t i = 0; i < n && it != end; ++i, ++it) {
+   auto                                              it  = std::begin(r);
+   auto                                              end = std::end(r);
+   for (std::size_t i = 0; i < n && it != end; ++i, ++it)
+   {
       // Skip first n elements
    }
-   for (; it != end; ++it) {
+   for (; it != end; ++it)
+   {
       result.push_back(*it);
    }
    return result;
 }
 
 template <typename R>
-auto reverse(R&& r) {
+auto reverse(R&& r)
+{
    std::vector<typename std::decay_t<R>::value_type> result;
-   for (auto it = std::rbegin(r); it != std::rend(r); ++it) {
+   for (auto it = std::rbegin(r); it != std::rend(r); ++it)
+   {
       result.push_back(*it);
    }
    return result;
 }
 
 template <typename Container, typename R>
-Container to_container(R&& r) {
+Container to_container(R&& r)
+{
    return Container(std::begin(r), std::end(r));
 }
 
 template <typename R>
-auto to_vector(R&& r) {
+auto to_vector(R&& r)
+{
    return std::vector<typename std::decay_t<R>::value_type>(std::begin(r), std::end(r));
 }
 
 template <typename R>
-auto to_set(R&& r) {
+auto to_set(R&& r)
+{
    return std::set<typename std::decay_t<R>::value_type>(std::begin(r), std::end(r));
 }
 #endif
@@ -710,7 +761,7 @@ constexpr bool HEIMDALL_CPP17_AVAILABLE = __cplusplus >= 201703L;
 constexpr bool HEIMDALL_CPP14_AVAILABLE = __cplusplus >= 201402L;
 constexpr bool HEIMDALL_CPP11_AVAILABLE = __cplusplus >= 201103L;
 
-constexpr bool HEIMDALL_FULL_DWARF = HEIMDALL_CPP17_AVAILABLE;
-constexpr bool HEIMDALL_BASIC_DWARF = HEIMDALL_CPP14_AVAILABLE;
-constexpr bool HEIMDALL_NO_DWARF = HEIMDALL_CPP11_AVAILABLE;
-constexpr bool HEIMDALL_MODERN_FEATURES = HEIMDALL_CPP20_AVAILABLE; 
+constexpr bool HEIMDALL_FULL_DWARF      = HEIMDALL_CPP17_AVAILABLE;
+constexpr bool HEIMDALL_BASIC_DWARF     = HEIMDALL_CPP14_AVAILABLE;
+constexpr bool HEIMDALL_NO_DWARF        = HEIMDALL_CPP11_AVAILABLE;
+constexpr bool HEIMDALL_MODERN_FEATURES = HEIMDALL_CPP20_AVAILABLE;

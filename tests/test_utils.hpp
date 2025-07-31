@@ -58,8 +58,7 @@ inline bool safeRemoveDirectory(const fs::path& path)
  * @param context Optional context string for logging
  * @return true if removal was successful or directory didn't exist, false on error
  */
-inline bool safeRemoveDirectoryWithLogging(const fs::path& path,
-                                           const std::string&                context = "")
+inline bool safeRemoveDirectoryWithLogging(const fs::path& path, const std::string& context = "")
 {
    try
    {

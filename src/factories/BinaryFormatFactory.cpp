@@ -89,7 +89,8 @@ static std::mutex                                     registeredExtractorsMutex;
  * @return true if magic number was read successfully
  * @return false if file could not be read
  */
-bool readMagicNumber(const std::string& filePath, uint32_t& magic, size_t bytesToRead = 4, bool bigEndian = true)
+bool readMagicNumber(const std::string& filePath, uint32_t& magic, size_t bytesToRead = 4,
+                     bool bigEndian = true)
 {
    std::ifstream file(filePath, std::ios::binary);
    if (!file.is_open())
@@ -288,20 +289,20 @@ BinaryFormatFactory::Format BinaryFormatFactory::detectFormat(const std::string&
 
    // Read magic number for binary format detection with appropriate byte order
    uint32_t magic;
-   
+
    // Try ELF first (big-endian)
    if (readMagicNumber(filePath, magic, 4, true) && magic == ELF_MAGIC)
    {
       return Format::ELF;
    }
-   
+
    // Try Mach-O (little-endian on x86)
-   if (readMagicNumber(filePath, magic, 4, false) && 
+   if (readMagicNumber(filePath, magic, 4, false) &&
        (magic == MACHO_MAGIC_32 || magic == MACHO_MAGIC_64 || magic == MACHO_MAGIC_FAT))
    {
       return Format::MachO;
    }
-   
+
    // Try PE (little-endian)
    if (readMagicNumber(filePath, magic, 4, false) && magic == PE_MAGIC)
    {

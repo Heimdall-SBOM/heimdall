@@ -538,26 +538,28 @@ bool AdaExtractor::isAliFile(const std::string& filePath) const
    return path.extension() == ".ali";
 }
 
-bool AdaExtractor::extractSourceFilesFromContent(const std::string& content, std::string& sourceFile)
+bool AdaExtractor::extractSourceFilesFromContent(const std::string& content,
+                                                 std::string&       sourceFile)
 {
    std::istringstream iss(content);
    std::string        line;
 
    while (std::getline(iss, line))
    {
-      // Handle "W " lines (with-clause dependencies) - format: W package_name%spec_or_body source_file.ads/adb source_file.ali
+      // Handle "W " lines (with-clause dependencies) - format: W package_name%spec_or_body
+      // source_file.ads/adb source_file.ali
       if (line.find("W ") == 0)
       {
          std::string depLine = line.substr(2);
          // Remove leading/trailing whitespace
          depLine.erase(0, depLine.find_first_not_of(" \t"));
          depLine.erase(depLine.find_last_not_of(" \t") + 1);
-         
+
          if (!depLine.empty())
          {
             // Parse the source file from the W line format
             std::istringstream lineStream(depLine);
-            std::string packagePart, sourceFilePart, aliFile;
+            std::string        packagePart, sourceFilePart, aliFile;
             if (lineStream >> packagePart >> sourceFilePart >> aliFile)
             {
                // Extract just the filename from the source file path
@@ -581,19 +583,20 @@ bool AdaExtractor::extractDependencies(const std::string&        content,
 
    while (std::getline(iss, line))
    {
-      // Handle "W " lines (with-clause dependencies) - format: W package_name%spec_or_body source_file.ads/adb source_file.ali
+      // Handle "W " lines (with-clause dependencies) - format: W package_name%spec_or_body
+      // source_file.ads/adb source_file.ali
       if (line.find("W ") == 0)
       {
          std::string depLine = line.substr(2);
          // Remove leading/trailing whitespace
          depLine.erase(0, depLine.find_first_not_of(" \t"));
          depLine.erase(depLine.find_last_not_of(" \t") + 1);
-         
+
          if (!depLine.empty())
          {
             // Parse the package name from the W line format
             std::istringstream lineStream(depLine);
-            std::string packagePart, sourceFile, aliFile;
+            std::string        packagePart, sourceFile, aliFile;
             if (lineStream >> packagePart >> sourceFile >> aliFile)
             {
                // Extract package name before the % symbol
@@ -602,7 +605,8 @@ bool AdaExtractor::extractDependencies(const std::string&        content,
                {
                   std::string packageName = packagePart.substr(0, percentPos);
                   // Only add if not already present (avoid duplicates)
-                  if (std::find(dependencies.begin(), dependencies.end(), packageName) == dependencies.end())
+                  if (std::find(dependencies.begin(), dependencies.end(), packageName) ==
+                      dependencies.end())
                   {
                      dependencies.push_back(packageName);
                   }
@@ -780,7 +784,7 @@ bool AdaExtractor::isRuntimePackage(const std::string& packageName) const
    {
       return true;
    }
-   
+
    // Check for hierarchical package names (e.g., "ada.strings" should match "ada")
    std::string::size_type pos = packageName.find('.');
    if (pos != std::string::npos)
@@ -789,7 +793,7 @@ bool AdaExtractor::isRuntimePackage(const std::string& packageName) const
       return std::find(pImpl->runtimePackages.begin(), pImpl->runtimePackages.end(), rootPackage) !=
              pImpl->runtimePackages.end();
    }
-   
+
    return false;
 }
 
