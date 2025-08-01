@@ -336,7 +336,7 @@ bool LightweightDWARFParser::extractSourceFiles(const std::string&        filePa
 #endif
 
    // Fallback to heuristic extraction
-   std::cout << "DEBUG: Calling heuristic extraction for " << filePath << std::endl;
+   Utils::debugPrint(std::string("Calling hueristic extraction for ") + filePath);
    return extractSourceFilesHeuristic(filePath, sourceFiles);
 }
 
@@ -871,7 +871,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
    // Look for common source file patterns
    std::vector<std::string> extensions = {".c", ".cpp", ".cc", ".cxx", ".h", ".hpp", ".hh", ".hxx"};
 
-   std::cout << "DEBUG: Looking for extensions in file of size " << fileData.size() << std::endl;
+   Utils::debugPrint(std::string("Looking for extensions in file of zie ") + std::to_string(fileData.size()));
 
    for (size_t i = 0; i < fileData.size() - 1; ++i)
    {
@@ -891,8 +891,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
 
             if (match)
             {
-               std::cout << "DEBUG: Found extension match at position " << i << ": " << ext
-                         << std::endl;
+               Utils::debugPrint(std::string("Found extension match at position ") + std::to_string(i) + std::string(": ") + ext);
                // Try to extract the full filename
                size_t       start              = i;
                size_t       startIterations    = 0;
@@ -920,7 +919,7 @@ bool LightweightDWARFParser::extractSourceFilesHeuristic(const std::string&     
                if (end - start > 0 && end - start < 512)
                {  // Increased reasonable filename length
                   std::string filename(fileData.begin() + start, fileData.begin() + end);
-                  std::cout << "DEBUG: Extracted filename: '" << filename << "'" << std::endl;
+                  Utils::debugPrint(std::string("Extracted filename: ") + filename + "'");
                   if (filename.find('.') != std::string::npos)
                   {
                      pImpl->uniqueSourceFiles.insert(filename);
