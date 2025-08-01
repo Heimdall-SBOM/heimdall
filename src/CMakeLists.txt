@@ -21,7 +21,6 @@ set(HEIMDALL_CORE_SOURCES
     extractors/AdaExtractor.cpp
                extractors/LazySymbolExtractor.cpp
    extractors/LightweightDWARFParser.cpp
-   extractors/DWARFExtractor.cpp
     common/Utils.cpp
     common/PluginInterface.cpp
     common/SBOMValidator.cpp
@@ -71,6 +70,14 @@ set(HEIMDALL_CORE_SOURCES
 # DWARF support is now handled by LightweightDWARFParser in extractors/
 # The old DWARFExtractor.cpp has been moved to archive/
 message(STATUS "Using lightweight DWARF parser for DWARF functionality")
+
+# Conditionally add DWARFExtractor for C++17+ (LLVM compatibility)
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 17)
+    list(APPEND HEIMDALL_CORE_SOURCES extractors/DWARFExtractor.cpp)
+    message(STATUS "Adding DWARFExtractor for C++17+ (LLVM compatibility)")
+else()
+    message(STATUS "Using LightweightDWARFParser for C++11/14 compatibility")
+endif()
 
 add_library(heimdall-core SHARED ${HEIMDALL_CORE_SOURCES})
 

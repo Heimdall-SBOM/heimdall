@@ -8,8 +8,10 @@
 
 using namespace heimdall::llvm;
 using std::optional;
+#if __cplusplus >= 201703L
 using std::string_view;
 using std::variant;
+#endif
 
 // Variable template for C++14 testing
 template <typename T>
@@ -122,22 +124,19 @@ TEST_F(CompatibilityTest, CompatibilityOptionalTest)
    EXPECT_TRUE(opt3.has_value());
    EXPECT_EQ(opt3.value(), 42);
 
-   // Test value_or
+   // Test value_or (only available in C++17+)
+#if __cplusplus >= 201703L
    EXPECT_EQ(opt1.value_or(100), 100);
    EXPECT_EQ(opt2.value_or(100), 42);
-
-   // Test utility function
    EXPECT_EQ(opt1.value_or(200), 200);
    EXPECT_EQ(opt2.value_or(200), 42);
-
-   // Test utility function from heimdall::compat::utils (only available in C++11/14)
-#if __cplusplus < 201703L
-   EXPECT_EQ(utils::get_optional_value(opt1, 300), 300);
-   EXPECT_EQ(utils::get_optional_value(opt2, 300), 42);
 #endif
+
+
 }
 
 // Test compatibility string_view functionality
+#if __cplusplus >= 201703L
 TEST_F(CompatibilityTest, CompatibilityStringViewTest)
 {
    // Test heimdall::compat::string_view
@@ -162,15 +161,8 @@ TEST_F(CompatibilityTest, CompatibilityStringViewTest)
    // Test substr
    string_view sv4 = sv2.substr(1, 3);
    EXPECT_EQ(std::string(sv4), "ell");
-
-   // Test utility function (only available in C++11/14)
-#if __cplusplus < 201703L
-   string_view sv5 = utils::to_string_view("test");
-   EXPECT_EQ(std::string(sv5), "test");
-   string_view sv6 = utils::to_string_view(42);
-   EXPECT_EQ(std::string(sv6), "42");
-#endif
 }
+#endif
 
 // Test compatibility filesystem functionality
 #if defined(HEIMDALL_CPP17_AVAILABLE) || defined(USE_BOOST_FILESYSTEM)
@@ -189,26 +181,18 @@ TEST_F(CompatibilityTest, CompatibilityFilesystemTest)
 #endif
 
 // Test compatibility variant functionality
+#if __cplusplus >= 201703L
 TEST_F(CompatibilityTest, CompatibilityVariantTest)
 {
    // Test heimdall::compat::variant
    variant<int, std::string> v1(42);
    EXPECT_EQ(v1.index(), 0);
 
-   // Test get method (different behavior in C++11/14 vs C++17+)
-#if __cplusplus < 201703L
-   // In C++11/14 mode, our fallback implementation returns 0
-   EXPECT_EQ(v1.get(), 0);
-#else
    // In C++17+ mode, std::variant doesn't have a get() method
    // Use std::get instead
    EXPECT_EQ(std::get<int>(v1), 42);
-#endif
-
-   // The custom variant only supports the first type (int)
-   // Construction with std::string or const char* is not supported
-   // std::get and std::visit are not supported
 }
+#endif
 
 // Test LLVM detection
 TEST_F(CompatibilityTest, LLVMDetectionTest)

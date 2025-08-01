@@ -6,9 +6,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <filesystem>
+#include <algorithm>
 #include <fstream>
 #include <sstream>
+#include "compat/compatibility.hpp"
 
 #include "factories/BinaryFormatFactory.hpp"
 #include "interfaces/IBinaryExtractor.hpp"
@@ -78,9 +79,9 @@ class BinaryFormatFactoryTest : public ::testing::Test
 
       for (const auto& file : testFiles)
       {
-         if (std::filesystem::exists(file))
+         if (fs::exists(file))
          {
-            std::filesystem::remove(file);
+            fs::remove(file);
          }
       }
    }

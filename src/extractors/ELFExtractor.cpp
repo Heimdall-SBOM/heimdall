@@ -28,6 +28,7 @@ limitations under the License.
 
 #include "ELFExtractor.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -35,7 +36,12 @@ limitations under the License.
 #include <sstream>
 #include "../utils/BinaryReader.hpp"
 #include "../utils/FileUtils.hpp"
+// Conditionally include DWARFExtractor for C++17+
+#if __cplusplus >= 201703L
 #include "DWARFExtractor.hpp"
+#else
+#include "LightweightDWARFParser.hpp"
+#endif
 #include "common/Utils.hpp"
 
 #ifdef __linux__
@@ -43,22 +49,6 @@ limitations under the License.
 #include <fcntl.h>
 #include <libelf.h>
 #include <unistd.h>
-#else
-// Define ELF constants for non-Linux platforms
-#define ELFCLASS64 2
-#define EM_X86_64 62
-#define EM_386 3
-#define EM_AARCH64 183
-#define EM_ARM 40
-#define EM_MIPS 8
-#define EM_PPC64 21
-#define EM_S390 22
-#define EM_RISCV 243
-#define ET_NONE 0
-#define ET_REL 1
-#define ET_EXEC 2
-#define ET_DYN 3
-#define ET_CORE 4
 #endif
 
 namespace heimdall
@@ -324,6 +314,7 @@ bool ELFExtractor::extractVersion(const std::string& filePath, std::string& vers
    oss << "-v" << static_cast<int>(elfVersion);
 
    // Add machine architecture
+#ifdef __linux__
    switch (machine)
    {
       case EM_X86_64:
@@ -354,6 +345,9 @@ bool ELFExtractor::extractVersion(const std::string& filePath, std::string& vers
          oss << "-unknown";
          break;
    }
+#else
+   oss << "-unknown";
+#endif
 
    version = oss.str();
    return true;
@@ -440,24 +434,36 @@ std::vector<std::string> ELFExtractor::extractDependencies(const std::string& fi
 bool ELFExtractor::extractFunctions(const std::string&        filePath,
                                     std::vector<std::string>& functions)
 {
-   // Use DWARFExtractor for DWARF extraction
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractFunctions(filePath, functions);
 }
 
 bool ELFExtractor::extractCompileUnits(const std::string&        filePath,
                                        std::vector<std::string>& compileUnits)
 {
-   // Use DWARFExtractor for DWARF extraction
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractCompileUnits(filePath, compileUnits);
 }
 
 bool ELFExtractor::extractSourceFiles(const std::string&        filePath,
                                       std::vector<std::string>& sourceFiles)
 {
-   // Use DWARFExtractor for DWARF extraction
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractSourceFiles(filePath, sourceFiles);
 }
 
@@ -599,6 +605,7 @@ std::string ELFExtractor::getArchitecture(const std::string& filePath)
       return "unknown";
    }
 
+#ifdef __linux__
    switch (machine)
    {
       case EM_X86_64:
@@ -620,6 +627,9 @@ std::string ELFExtractor::getArchitecture(const std::string& filePath)
       default:
          return "unknown";
    }
+#else
+   return "unknown";
+#endif
 }
 
 bool ELFExtractor::is64Bit(const std::string& filePath)
@@ -649,7 +659,11 @@ bool ELFExtractor::is64Bit(const std::string& filePath)
       return false;
    }
 
+#ifdef __linux__
    return (elfClass == ELFCLASS64);
+#else
+   return false;
+#endif
 }
 
 std::string ELFExtractor::getFileType(const std::string& filePath)
@@ -679,6 +693,7 @@ std::string ELFExtractor::getFileType(const std::string& filePath)
       return "unknown";
    }
 
+#ifdef __linux__
    switch (elfType)
    {
       case ET_NONE:
@@ -694,6 +709,9 @@ std::string ELFExtractor::getFileType(const std::string& filePath)
       default:
          return "unknown";
    }
+#else
+   return "unknown";
+#endif
 }
 
 // Private helper methods

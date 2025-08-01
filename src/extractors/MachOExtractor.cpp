@@ -27,12 +27,164 @@ limitations under the License.
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+// Conditionally include DWARFExtractor for C++17+
+#if __cplusplus >= 201703L
 #include "DWARFExtractor.hpp"
+#else
+#include "LightweightDWARFParser.hpp"
+#endif
 
 #ifdef __APPLE__
 #include <mach-o/fat.h>
 #include <mach-o/loader.h>
 #include <mach-o/nlist.h>
+#else
+// Define Mach-O constants for non-Apple platforms
+#define FAT_MAGIC     0xcafebabe
+#define FAT_CIGAM     0xbebafeca
+#define FAT_MAGIC_64  0xcafebabf
+#define FAT_CIGAM_64  0xbfbafeca
+#define MH_MAGIC      0xfeedface
+#define MH_CIGAM      0xcefaedfe
+#define MH_MAGIC_64   0xfeedfacf
+#define MH_CIGAM_64   0xcffaedfe
+
+// Define basic Mach-O structures for cross-platform compatibility
+struct mach_header {
+    uint32_t magic;
+    uint32_t cputype;
+    uint32_t cpusubtype;
+    uint32_t filetype;
+    uint32_t ncmds;
+    uint32_t sizeofcmds;
+    uint32_t flags;
+};
+
+struct mach_header_64 {
+    uint32_t magic;
+    uint32_t cputype;
+    uint32_t cpusubtype;
+    uint32_t filetype;
+    uint32_t ncmds;
+    uint32_t sizeofcmds;
+    uint32_t flags;
+    uint32_t reserved;
+};
+
+struct fat_header {
+    uint32_t magic;
+    uint32_t nfat_arch;
+};
+
+struct fat_arch {
+    uint32_t cputype;
+    uint32_t cpusubtype;
+    uint32_t offset;
+    uint32_t size;
+    uint32_t align;
+};
+
+struct load_command {
+    uint32_t cmd;
+    uint32_t cmdsize;
+};
+
+struct uuid_command {
+    uint32_t cmd;
+    uint32_t cmdsize;
+    uint8_t uuid[16];
+};
+
+struct symtab_command {
+    uint32_t cmd;
+    uint32_t cmdsize;
+    uint32_t symoff;
+    uint32_t nsyms;
+    uint32_t stroff;
+    uint32_t strsize;
+};
+
+struct segment_command {
+    uint32_t cmd;
+    uint32_t cmdsize;
+    char segname[16];
+    uint32_t vmaddr;
+    uint32_t vmsize;
+    uint32_t fileoff;
+    uint32_t filesize;
+    uint32_t maxprot;
+    uint32_t initprot;
+    uint32_t nsects;
+    uint32_t flags;
+};
+
+struct segment_command_64 {
+    uint32_t cmd;
+    uint32_t cmdsize;
+    char segname[16];
+    uint64_t vmaddr;
+    uint64_t vmsize;
+    uint64_t fileoff;
+    uint64_t filesize;
+    uint32_t maxprot;
+    uint32_t initprot;
+    uint32_t nsects;
+    uint32_t flags;
+};
+
+struct section {
+    char sectname[16];
+    char segname[16];
+    uint32_t addr;
+    uint32_t size;
+    uint32_t offset;
+    uint32_t align;
+    uint32_t reloff;
+    uint32_t nreloc;
+    uint32_t flags;
+    uint32_t reserved1;
+    uint32_t reserved2;
+};
+
+struct section_64 {
+    char sectname[16];
+    char segname[16];
+    uint64_t addr;
+    uint64_t size;
+    uint32_t offset;
+    uint32_t align;
+    uint32_t reloff;
+    uint32_t nreloc;
+    uint32_t flags;
+    uint32_t reserved1;
+    uint32_t reserved2;
+    uint32_t reserved3;
+};
+
+struct dylib_command {
+    uint32_t cmd;
+    uint32_t cmdsize;
+    uint32_t dylib_name_offset;
+    uint32_t dylib_timestamp;
+    uint32_t dylib_current_version;
+    uint32_t dylib_compatibility_version;
+};
+
+struct nlist {
+    uint32_t n_strx;
+    uint8_t n_type;
+    uint8_t n_sect;
+    int16_t n_desc;
+    uint32_t n_value;
+};
+
+struct nlist_64 {
+    uint32_t n_strx;
+    uint8_t n_type;
+    uint8_t n_sect;
+    uint16_t n_desc;
+    uint64_t n_value;
+};
 #endif
 
 namespace heimdall
@@ -129,24 +281,36 @@ std::vector<std::string> MachOExtractor::extractDependencies(const std::string& 
 bool MachOExtractor::extractFunctions(const std::string&        filePath,
                                       std::vector<std::string>& functions)
 {
-   // Use DWARFExtractor for DWARF extraction
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractFunctions(filePath, functions);
 }
 
 bool MachOExtractor::extractCompileUnits(const std::string&        filePath,
                                          std::vector<std::string>& compileUnits)
 {
-   // Use DWARFExtractor for DWARF extraction
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractCompileUnits(filePath, compileUnits);
 }
 
 bool MachOExtractor::extractSourceFiles(const std::string&        filePath,
                                         std::vector<std::string>& sourceFiles)
 {
-   // Use DWARFExtractor for DWARF extraction
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractSourceFiles(filePath, sourceFiles);
 }
 

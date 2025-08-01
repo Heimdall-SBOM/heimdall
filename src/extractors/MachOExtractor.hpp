@@ -45,6 +45,7 @@ limitations under the License.
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -57,59 +58,6 @@ limitations under the License.
 #include <mach-o/fat.h>
 #include <mach-o/loader.h>
 #include <mach-o/nlist.h>
-#else
-// Define Mach-O constants for non-Apple platforms
-#define MH_MAGIC 0xFEEDFACE
-#define MH_CIGAM 0xCEFAEDFE
-#define MH_MAGIC_64 0xFEEDFACF
-#define MH_CIGAM_64 0xCFFAEDFE
-#define FAT_MAGIC 0xCAFEBABE
-#define FAT_CIGAM 0xBEBAFECA
-#define FAT_MAGIC_64 0xCAFEBABF
-#define FAT_CIGAM_64 0xBFBAFECA
-#define CPU_TYPE_X86 0x00000007
-#define CPU_TYPE_X86_64 0x01000007
-#define CPU_TYPE_ARM 0x0000000C
-#define CPU_TYPE_ARM64 0x0100000C
-#define CPU_TYPE_POWERPC 0x00000012
-#define CPU_TYPE_POWERPC64 0x01000012
-#define MH_OBJECT 0x1
-#define MH_EXECUTE 0x2
-#define MH_FVMLIB 0x3
-#define MH_CORE 0x4
-#define MH_PRELOAD 0x5
-#define MH_DYLIB 0x6
-#define MH_DYLINKER 0x7
-#define MH_BUNDLE 0x8
-#define MH_DYLIB_STUB 0x9
-#define MH_DSYM 0xA
-#define MH_KEXT_BUNDLE 0xB
-
-// Load commands
-#define LC_SEGMENT 0x1
-#define LC_SEGMENT_64 0x19
-#define LC_SYMTAB 0x2
-#define LC_DYSYMTAB 0xB
-#define LC_LOAD_DYLIB 0xC
-#define LC_LOAD_WEAK_DYLIB 0x18
-#define LC_REEXPORT_DYLIB 0x1F
-#define LC_LAZY_LOAD_DYLIB 0x20
-#define LC_UUID 0x1B
-#define LC_CODE_SIGNATURE 0x1D
-#define LC_SEGMENT_SPLIT_INFO 0x1E
-#define LC_FUNCTION_STARTS 0x26
-#define LC_DATA_IN_CODE 0x29
-#define LC_DYLIB_CODE_SIGN_DRS 0x2B
-#define LC_LINKER_OPTIMIZATION_HINT 0x2E
-#define LC_DYLD_EXPORTS_TRIE 0x33
-#define LC_DYLD_CHAINED_FIXUPS 0x34
-#define LC_FILESET_ENTRY 0x35
-
-// Symbol types
-#define N_STAB 0xE0
-#define N_TYPE 0x0E
-#define N_UNDF 0x0
-#define N_EXT 0x01
 #endif
 
 namespace heimdall

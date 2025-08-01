@@ -23,7 +23,12 @@ limitations under the License.
 
 #include "MetadataHelpers.hpp"
 #include <iostream>
+// Conditionally include DWARFExtractor for C++17+
+#if __cplusplus >= 201703L
 #include "../extractors/DWARFExtractor.hpp"
+#else
+#include "../extractors/LightweightDWARFParser.hpp"
+#endif
 #include "../factories/BinaryFormatFactory.hpp"
 
 namespace heimdall
@@ -57,22 +62,41 @@ bool isPE(const std::string& filePath)
 
 bool extractSourceFiles(const std::string& filePath, std::vector<std::string>& sourceFiles)
 {
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractSourceFiles(filePath, sourceFiles);
 }
 
 bool extractCompileUnits(const std::string& filePath, std::vector<std::string>& compileUnits)
 {
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
    DWARFExtractor dwarfExtractor;
+#else
+   LightweightDWARFParser dwarfExtractor;
+#endif
    return dwarfExtractor.extractCompileUnits(filePath, compileUnits);
 }
 
 bool extractDebugInfo(const std::string& filePath, ComponentInfo& component)
 {
-   DWARFExtractor           dwarfExtractor;
+   // Use appropriate DWARF extractor based on C++ standard
+#if __cplusplus >= 201703L
+   DWARFExtractor dwarfExtractor;
    std::vector<std::string> sourceFiles, compileUnits, functions, lineInfo;
    bool                     result =
       dwarfExtractor.extractAllDebugInfo(filePath, sourceFiles, compileUnits, functions, lineInfo);
+#else
+   LightweightDWARFParser dwarfExtractor;
+   std::vector<std::string> sourceFiles, compileUnits, functions;
+   bool                     result =
+      dwarfExtractor.extractAllDebugInfo(filePath, sourceFiles, compileUnits, functions);
+   std::vector<std::string> lineInfo; // LightweightDWARFParser doesn't support lineInfo
+#endif
 
    if (result)
    {

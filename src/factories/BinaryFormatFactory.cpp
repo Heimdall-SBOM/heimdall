@@ -26,11 +26,15 @@ limitations under the License.
 
 #include "BinaryFormatFactory.hpp"
 #include "../extractors/ArchiveExtractor.hpp"
-#include "../extractors/DWARFExtractor.hpp"
 #include "../extractors/ELFExtractor.hpp"
 #include "../extractors/LazySymbolExtractor.hpp"
 #include "../extractors/LightweightDWARFParser.hpp"
 #include "../extractors/MachOExtractor.hpp"
+
+// Conditionally include DWARFExtractor for C++17+
+#if __cplusplus >= 201703L
+#include "../extractors/DWARFExtractor.hpp"
+#endif
 #include "../extractors/PEExtractor.hpp"
 #include "../interfaces/IBinaryExtractor.hpp"
 
@@ -316,8 +320,10 @@ BinaryFormatFactory::Format BinaryFormatFactory::detectFormat(const std::string&
    }
 
    // Fallback to extension-based detection
-   for (const auto& [format, extensions] : FORMAT_EXTENSIONS)
+   for (const auto& format_extensions : FORMAT_EXTENSIONS)
    {
+      const auto& format = format_extensions.first;
+      const auto& extensions = format_extensions.second;
       if (std::find(extensions.begin(), extensions.end(), extension) != extensions.end())
       {
          return format;
@@ -367,7 +373,11 @@ std::vector<std::unique_ptr<IBinaryExtractor>> BinaryFormatFactory::getAvailable
    auto archiveExtractor    = std::make_unique<ArchiveExtractor>();
    auto lazySymbolExtractor = std::make_unique<LazySymbolExtractor>();
    auto dwarfParser         = std::make_unique<LightweightDWARFParser>();
+   
+   // Conditionally create DWARFExtractor for C++17+
+#if __cplusplus >= 201703L
    auto dwarfExtractor      = std::make_unique<DWARFExtractor>();
+#endif
 
    // Check which extractors can handle the file
    if (elfExtractor->canHandle(filePath))
@@ -394,10 +404,14 @@ std::vector<std::unique_ptr<IBinaryExtractor>> BinaryFormatFactory::getAvailable
    {
       availableExtractors.push_back(std::move(dwarfParser));
    }
+   
+   // Conditionally check DWARFExtractor for C++17+
+#if __cplusplus >= 201703L
    if (dwarfExtractor->canHandle(filePath))
    {
       availableExtractors.push_back(std::move(dwarfExtractor));
    }
+#endif
 
    // Add registered extractors
    {

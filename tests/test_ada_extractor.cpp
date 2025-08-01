@@ -36,9 +36,11 @@ class AdaExtractorTest : public ::testing::Test
    void SetUp() override
    {
       // Create a temporary test directory and change to it (same approach as PluginInterfaceTest)
-      // Use process ID to make directory unique and avoid test interference
+      // Use process ID and timestamp to make directory unique and avoid test interference
       auto pid = std::to_string(getpid());
-      test_dir = fs::temp_directory_path() / ("heimdall_ada_test_" + pid);
+      auto timestamp = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(
+         std::chrono::system_clock::now().time_since_epoch()).count());
+      test_dir = fs::temp_directory_path() / ("heimdall_ada_test_" + pid + "_" + timestamp);
 
       // Clean up any existing test directory first
       if (fs::exists(test_dir))

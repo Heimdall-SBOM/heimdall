@@ -28,10 +28,11 @@ limitations under the License.
 
 #include <algorithm>
 #include <cstring>
-#include <filesystem>
+#include <chrono>
 #include <fstream>
 #include <sstream>
 #include <system_error>
+#include "../compat/compatibility.hpp"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -47,21 +48,21 @@ limitations under the License.
 namespace heimdall
 {
 
-namespace fs = std::filesystem;
+// namespace fs = heimdall::compat::fs;  // Removed to avoid conflicts
 
 bool FileUtils::fileExists(const std::string& filePath)
 {
-   return fs::exists(filePath);
+   return heimdall::compat::fs::exists(filePath);
 }
 
 bool FileUtils::isDirectory(const std::string& path)
 {
-   return fs::is_directory(path);
+   return heimdall::compat::fs::is_directory(path);
 }
 
 bool FileUtils::isRegularFile(const std::string& path)
 {
-   return fs::is_regular_file(path);
+   return heimdall::compat::fs::is_regular_file(path);
 }
 
 bool FileUtils::isExecutable(const std::string& filePath)
@@ -78,7 +79,7 @@ bool FileUtils::isExecutable(const std::string& filePath)
    return (ext == ".exe" || ext == ".bat" || ext == ".cmd" || ext == ".com");
 #else
    // On Unix-like systems, check execute permission
-   return (fs::status(filePath).permissions() & fs::perms::owner_exec) != fs::perms::none;
+   return (heimdall::compat::fs::status(filePath).permissions() & heimdall::compat::fs::perms::owner_exec) != heimdall::compat::fs::perms::none;
 #endif
 }
 
@@ -90,9 +91,9 @@ int64_t FileUtils::getFileSize(const std::string& filePath)
       {
          return -1;
       }
-      return static_cast<int64_t>(fs::file_size(filePath));
+      return static_cast<int64_t>(heimdall::compat::fs::file_size(filePath));
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return -1;
    }
@@ -106,10 +107,14 @@ int64_t FileUtils::getModificationTime(const std::string& filePath)
       {
          return -1;
       }
-      auto time = fs::last_write_time(filePath);
-      return std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
+      auto time = heimdall::compat::fs::last_write_time(filePath);
+      #if __cplusplus >= 201703L
+       return std::chrono::duration_cast<std::chrono::seconds>(time.time_since_epoch()).count();
+#else
+       return time.duration_cast<int64_t, std::ratio<1>>().count();
+#endif
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return -1;
    }
@@ -117,26 +122,26 @@ int64_t FileUtils::getModificationTime(const std::string& filePath)
 
 std::string FileUtils::getFileExtension(const std::string& filePath)
 {
-   fs::path    path(filePath);
+   heimdall::compat::fs::path    path(filePath);
    std::string ext = path.extension().string();
    return ext;
 }
 
 std::string FileUtils::getFileNameWithoutExtension(const std::string& filePath)
 {
-   fs::path path(filePath);
+   heimdall::compat::fs::path path(filePath);
    return path.stem().string();
 }
 
 std::string FileUtils::getFileName(const std::string& filePath)
 {
-   fs::path path(filePath);
+   heimdall::compat::fs::path path(filePath);
    return path.filename().string();
 }
 
 std::string FileUtils::getDirectoryPath(const std::string& filePath)
 {
-   fs::path path(filePath);
+   heimdall::compat::fs::path path(filePath);
    return path.parent_path().string();
 }
 
@@ -144,10 +149,10 @@ std::string FileUtils::getAbsolutePath(const std::string& filePath)
 {
    try
    {
-      fs::path path(filePath);
-      return fs::absolute(path).string();
+      heimdall::compat::fs::path path(filePath);
+      return heimdall::compat::fs::absolute(path).string();
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return filePath;
    }
@@ -157,13 +162,13 @@ std::string FileUtils::normalizePath(const std::string& filePath)
 {
    try
    {
-      fs::path path(filePath);
-      return fs::canonical(path).string();
+      heimdall::compat::fs::path path(filePath);
+      return heimdall::compat::fs::canonical(path).string();
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       // If canonical fails, try to normalize without resolving symlinks
-      fs::path path(filePath);
+      heimdall::compat::fs::path path(filePath);
       return path.lexically_normal().string();
    }
 }
@@ -175,7 +180,7 @@ std::string FileUtils::joinPath(const std::vector<std::string>& components)
       return "";
    }
 
-   fs::path result(components[0]);
+   heimdall::compat::fs::path result(components[0]);
    for (size_t i = 1; i < components.size(); ++i)
    {
       result /= components[i];
@@ -185,21 +190,26 @@ std::string FileUtils::joinPath(const std::vector<std::string>& components)
 
 std::string FileUtils::joinPath(const std::string& path1, const std::string& path2)
 {
-   fs::path result(path1);
+   heimdall::compat::fs::path result(path1);
    result /= path2;
    return result.string();
 }
 
 std::vector<std::string> FileUtils::splitPath(const std::string& filePath)
 {
-   fs::path                 path(filePath);
+   heimdall::compat::fs::path                 path_obj(filePath);
    std::vector<std::string> components;
 
-   for (const auto& component : path)
+   // Split the path string manually for C++14 compatibility
+   std::string path_str = path_obj.string();
+   std::string component;
+   std::istringstream iss(path_str);
+   
+   while (std::getline(iss, component, '/'))
    {
       if (!component.empty())
       {
-         components.push_back(component.string());
+         components.push_back(component);
       }
    }
 
@@ -210,9 +220,9 @@ bool FileUtils::createDirectory(const std::string& dirPath)
 {
    try
    {
-      return fs::create_directories(dirPath);
+      return heimdall::compat::fs::create_directories(dirPath);
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return false;
    }
@@ -220,7 +230,7 @@ bool FileUtils::createDirectory(const std::string& dirPath)
 
 bool FileUtils::createParentDirectories(const std::string& filePath)
 {
-   fs::path path(filePath);
+   heimdall::compat::fs::path path(filePath);
    return createDirectory(path.parent_path().string());
 }
 
@@ -228,9 +238,9 @@ bool FileUtils::removeFile(const std::string& filePath)
 {
    try
    {
-      return fs::remove(filePath);
+      return heimdall::compat::fs::remove(filePath);
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return false;
    }
@@ -240,9 +250,9 @@ bool FileUtils::removeDirectory(const std::string& dirPath)
 {
    try
    {
-      return fs::remove_all(dirPath) > 0;
+      return heimdall::compat::fs::remove_all(dirPath) > 0;
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return false;
    }
@@ -252,10 +262,10 @@ bool FileUtils::copyFile(const std::string& sourcePath, const std::string& destP
 {
    try
    {
-      fs::copy_file(sourcePath, destPath, fs::copy_options::overwrite_existing);
+      heimdall::compat::fs::copy_file(sourcePath, destPath, heimdall::compat::fs::copy_options::overwrite_existing);
       return true;
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return false;
    }
@@ -265,10 +275,10 @@ bool FileUtils::moveFile(const std::string& sourcePath, const std::string& destP
 {
    try
    {
-      fs::rename(sourcePath, destPath);
+      heimdall::compat::fs::rename(sourcePath, destPath);
       return true;
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return false;
    }
@@ -282,26 +292,44 @@ std::vector<std::string> FileUtils::getFilesInDirectory(const std::string& dirPa
    {
       if (recursive)
       {
-         for (const auto& entry : fs::recursive_directory_iterator(dirPath))
+         heimdall::compat::fs::recursive_directory_iterator iter(dirPath);
+         while (iter != heimdall::compat::fs::recursive_directory_iterator())
          {
-            if (fs::is_regular_file(entry))
+#if __cplusplus >= 201703L
+            if (heimdall::compat::fs::is_regular_file(iter->path()))
             {
-               files.push_back(entry.path().string());
+               files.push_back(iter->path().string());
             }
+#else
+            if (heimdall::compat::fs::is_regular_file(iter.get_path()))
+            {
+               files.push_back(iter.get_path().string());
+            }
+#endif
+            ++iter;
          }
       }
       else
       {
-         for (const auto& entry : fs::directory_iterator(dirPath))
+         heimdall::compat::fs::directory_iterator iter(dirPath);
+         while (iter != heimdall::compat::fs::directory_iterator())
          {
-            if (fs::is_regular_file(entry))
+#if __cplusplus >= 201703L
+            if (heimdall::compat::fs::is_regular_file(iter->path()))
             {
-               files.push_back(entry.path().string());
+               files.push_back(iter->path().string());
             }
+#else
+            if (heimdall::compat::fs::is_regular_file(iter.get_path()))
+            {
+               files.push_back(iter.get_path().string());
+            }
+#endif
+            ++iter;
          }
       }
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       // Return empty vector on error
    }
@@ -318,26 +346,44 @@ std::vector<std::string> FileUtils::getDirectoriesInDirectory(const std::string&
    {
       if (recursive)
       {
-         for (const auto& entry : fs::recursive_directory_iterator(dirPath))
+         heimdall::compat::fs::recursive_directory_iterator iter(dirPath);
+         while (iter != heimdall::compat::fs::recursive_directory_iterator())
          {
-            if (fs::is_directory(entry))
+#if __cplusplus >= 201703L
+            if (heimdall::compat::fs::is_directory(iter->path()))
             {
-               directories.push_back(entry.path().string());
+               directories.push_back(iter->path().string());
             }
+#else
+            if (heimdall::compat::fs::is_directory(iter.get_path()))
+            {
+               directories.push_back(iter.get_path().string());
+            }
+#endif
+            ++iter;
          }
       }
       else
       {
-         for (const auto& entry : fs::directory_iterator(dirPath))
+         heimdall::compat::fs::directory_iterator iter(dirPath);
+         while (iter != heimdall::compat::fs::directory_iterator())
          {
-            if (fs::is_directory(entry))
+#if __cplusplus >= 201703L
+            if (heimdall::compat::fs::is_directory(iter->path()))
             {
-               directories.push_back(entry.path().string());
+               directories.push_back(iter->path().string());
             }
+#else
+            if (heimdall::compat::fs::is_directory(iter.get_path()))
+            {
+               directories.push_back(iter.get_path().string());
+            }
+#endif
+            ++iter;
          }
       }
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       // Return empty vector on error
    }
@@ -374,9 +420,9 @@ std::string FileUtils::getCurrentWorkingDirectory()
 {
    try
    {
-      return fs::current_path().string();
+      return heimdall::compat::fs::current_path().string();
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return "";
    }
@@ -386,10 +432,10 @@ bool FileUtils::changeWorkingDirectory(const std::string& dirPath)
 {
    try
    {
-      fs::current_path(dirPath);
+      heimdall::compat::fs::current_path(dirPath);
       return true;
    }
-   catch (const fs::filesystem_error&)
+   catch (const heimdall::compat::fs::filesystem_error&)
    {
       return false;
    }

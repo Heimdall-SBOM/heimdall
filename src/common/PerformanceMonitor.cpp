@@ -156,8 +156,10 @@ ScopedTimer::~ScopedTimer()
    monitor.endOperation(operationName, success, itemsProcessed, memoryUsage);
 
    // Add custom metrics
-   for (const auto& [name, value] : customMetrics)
+   for (const auto& metric : customMetrics)
    {
+      const auto& name = metric.first;
+      const auto& value = metric.second;
       monitor.addCustomMetric(name, value);
    }
 }
@@ -247,8 +249,10 @@ PerformanceMetrics PerformanceMonitor::Impl::getMetricsImpl(const std::string& o
 std::vector<PerformanceMetrics> PerformanceMonitor::Impl::getAllMetricsImpl() const
 {
    std::vector<PerformanceMetrics> allMetrics;
-   for (const auto& [operationName, metrics] : operationHistory)
+   for (const auto& operation : operationHistory)
    {
+      const auto& operationName = operation.first;
+      const auto& metrics = operation.second;
       allMetrics.insert(allMetrics.end(), metrics.begin(), metrics.end());
    }
    return allMetrics;
@@ -259,8 +263,10 @@ PerformanceMonitor::Impl::getSummaryStatisticsImpl() const
 {
    std::map<std::string, std::map<std::string, double>> summary;
 
-   for (const auto& [operationName, metrics] : operationHistory)
+   for (const auto& operation : operationHistory)
    {
+      const auto& operationName = operation.first;
+      const auto& metrics = operation.second;
       if (metrics.empty())
          continue;
 
@@ -348,8 +354,10 @@ std::string PerformanceMonitor::Impl::generateReportImpl(const std::string& outp
       report << "    \"operations\": [\n";
 
       bool firstOperation = true;
-      for (const auto& [operationName, metrics] : operationHistory)
+      for (const auto& operation : operationHistory)
       {
+         const auto& operationName = operation.first;
+         const auto& metrics = operation.second;
          if (!firstOperation)
             report << ",\n";
          firstOperation = false;
@@ -377,8 +385,10 @@ std::string PerformanceMonitor::Impl::generateReportImpl(const std::string& outp
    {
       report << "Operation,Executions,AvgTime_us,MaxTime_us,AvgMemory_bytes,SuccessRate\n";
 
-      for (const auto& [operationName, metrics] : operationHistory)
+      for (const auto& operation : operationHistory)
       {
+         const auto& operationName = operation.first;
+         const auto& metrics = operation.second;
          if (metrics.empty())
             continue;
 
@@ -409,8 +419,10 @@ std::string PerformanceMonitor::Impl::generateReportImpl(const std::string& outp
       report << "Performance Report\n";
       report << "==================\n\n";
 
-      for (const auto& [operationName, metrics] : operationHistory)
+      for (const auto& operation : operationHistory)
       {
+         const auto& operationName = operation.first;
+         const auto& metrics = operation.second;
          if (metrics.empty())
             continue;
 
@@ -458,8 +470,10 @@ bool PerformanceMonitor::Impl::exportMetricsImpl(const std::string& filePath,
          file << "  \"metrics\": [\n";
 
          bool firstMetric = true;
-         for (const auto& [operationName, metrics] : operationHistory)
+         for (const auto& operation : operationHistory)
          {
+            const auto& operationName = operation.first;
+            const auto& metrics = operation.second;
             for (const auto& metric : metrics)
             {
                if (!firstMetric)
@@ -483,8 +497,10 @@ bool PerformanceMonitor::Impl::exportMetricsImpl(const std::string& filePath,
       {
          file << "Operation,ExecutionTime_us,Memory_bytes,ItemsProcessed,Success\n";
 
-         for (const auto& [operationName, metrics] : operationHistory)
+         for (const auto& operation : operationHistory)
          {
+            const auto& operationName = operation.first;
+            const auto& metrics = operation.second;
             for (const auto& metric : metrics)
             {
                file << metric.operationName << "," << metric.executionTime.count() << ","
@@ -507,8 +523,10 @@ std::map<std::string, size_t> PerformanceMonitor::Impl::getMemoryUsageStatsImpl(
 {
    std::map<std::string, size_t> stats;
 
-   for (const auto& [operationName, metrics] : operationHistory)
+   for (const auto& operation : operationHistory)
    {
+      const auto& operationName = operation.first;
+      const auto& metrics = operation.second;
       if (metrics.empty())
          continue;
 
@@ -529,8 +547,10 @@ std::map<std::string, std::chrono::microseconds> PerformanceMonitor::Impl::getTi
 {
    std::map<std::string, std::chrono::microseconds> stats;
 
-   for (const auto& [operationName, metrics] : operationHistory)
+   for (const auto& operation : operationHistory)
    {
+      const auto& operationName = operation.first;
+      const auto& metrics = operation.second;
       if (metrics.empty())
          continue;
 

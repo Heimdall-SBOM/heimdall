@@ -23,7 +23,6 @@ limitations under the License.
 
 #include "MetadataExtractor.hpp"
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -35,6 +34,7 @@ limitations under the License.
 #include "../interfaces/IBinaryExtractor.hpp"
 #include "../utils/FileUtils.hpp"
 #include "Utils.hpp"
+#include "../compat/compatibility.hpp"
 
 #ifdef __APPLE__
 #include <libkern/OSByteOrder.h>
@@ -135,7 +135,7 @@ bool MetadataExtractor::extractMetadata(ComponentInfo& component)
    try
    {
       // Check if file exists (matching pre-refactored behavior)
-      if (!std::filesystem::exists(component.filePath))
+      if (!heimdall::compat::fs::exists(component.filePath))
       {
          pImpl->setLastError("File does not exist: " + component.filePath);
          return false;
@@ -864,8 +864,10 @@ void MetadataExtractor::Impl::mergeMetadataImpl(ComponentInfo&       component,
                                                 const ComponentInfo& additionalMetadata)
 {
    // Merge properties from additional source into component
-   for (const auto& [key, value] : additionalMetadata.properties)
+   for (const auto& property : additionalMetadata.properties)
    {
+      const auto& key = property.first;
+      const auto& value = property.second;
       if (component.properties.find(key) == component.properties.end())
       {
          component.properties[key] = value;

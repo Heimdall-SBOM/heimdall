@@ -143,8 +143,21 @@ limitations under the License.
 #include <optional>
 #include <string_view>
 #include <variant>
+
+// Provide compatibility namespace for C++17+ as well
+namespace heimdall
+{
+namespace compat
+{
+namespace fs     = std::filesystem;
+}
+}
 #else
 // C++11/14: Custom implementations or Boost
+#include <chrono>
+
+// C++14 optional implementation will be defined in heimdall::compat namespace
+
 #if defined(USE_BOOST_FILESYSTEM) && USE_BOOST_FILESYSTEM
 namespace fs = boost::filesystem;
 #else
@@ -153,6 +166,126 @@ namespace heimdall
 {
 namespace compat
 {
+
+// bad_optional_access exception (needs to be declared before optional)
+class bad_optional_access : public std::exception
+{
+public:
+    const char* what() const noexcept override
+    {
+        return "bad optional access";
+    }
+};
+
+// C++14 optional implementation
+template<typename T>
+class optional
+{
+private:
+    bool has_value_;
+    union {
+        T value_;
+        char dummy_;
+    };
+
+public:
+    // Constructors
+    optional() : has_value_(false), dummy_() {}
+    
+    optional(const T& value) : has_value_(true), value_(value) {}
+    
+    optional(T&& value) : has_value_(true), value_(std::move(value)) {}
+    
+    optional(const optional& other) : has_value_(other.has_value_)
+    {
+        if (has_value_) {
+            new (&value_) T(other.value_);
+        }
+    }
+    
+    optional(optional&& other) : has_value_(other.has_value_)
+    {
+        if (has_value_) {
+            new (&value_) T(std::move(other.value_));
+        }
+    }
+    
+    // Destructor
+    ~optional()
+    {
+        if (has_value_) {
+            value_.~T();
+        }
+    }
+    
+    // Assignment operators
+    optional& operator=(const optional& other)
+    {
+        if (this != &other) {
+            if (has_value_) {
+                value_.~T();
+            }
+            has_value_ = other.has_value_;
+            if (has_value_) {
+                new (&value_) T(other.value_);
+            }
+        }
+        return *this;
+    }
+    
+    optional& operator=(optional&& other)
+    {
+        if (this != &other) {
+            if (has_value_) {
+                value_.~T();
+            }
+            has_value_ = other.has_value_;
+            if (has_value_) {
+                new (&value_) T(std::move(other.value_));
+            }
+        }
+        return *this;
+    }
+    
+    // Value access
+    T& operator*() { return value_; }
+    const T& operator*() const { return value_; }
+    
+    T* operator->() { return &value_; }
+    const T* operator->() const { return &value_; }
+    
+    // Boolean conversion
+    explicit operator bool() const { return has_value_; }
+    
+    // Value access with checks
+    T& value() { 
+        if (!has_value_) throw bad_optional_access();
+        return value_; 
+    }
+    
+    const T& value() const { 
+        if (!has_value_) throw bad_optional_access();
+        return value_; 
+    }
+    
+    // Has value check
+    bool has_value() const { return has_value_; }
+    
+    // Reset
+    void reset() 
+    { 
+        if (has_value_) {
+            value_.~T();
+            has_value_ = false;
+        }
+    }
+};
+
+// nullopt implementation
+struct nullopt_t {
+    explicit constexpr nullopt_t(int) {}
+};
+constexpr nullopt_t nullopt{0};
 namespace fs
 {
 class path
@@ -181,6 +314,20 @@ class path
    {
       size_t pos = path_str.find_last_of("/\\");
       return (pos == std::string::npos) ? path() : path(path_str.substr(0, pos));
+   }
+
+   path extension() const
+   {
+      std::string filename_str = filename().string();
+      size_t pos = filename_str.find_last_of('.');
+      return (pos == std::string::npos) ? path() : path(filename_str.substr(pos));
+   }
+
+   path stem() const
+   {
+      std::string filename_str = filename().string();
+      size_t pos = filename_str.find_last_of('.');
+      return (pos == std::string::npos) ? path(filename_str) : path(filename_str.substr(0, pos));
    }
 
    path& operator/=(const path& other)
@@ -214,12 +361,176 @@ class path
    {
       return !path_str.empty() && (path_str[0] == '/' || path_str[0] == '\\');
    }
+
+   // Comparison operators
+   bool operator==(const path& other) const
+   {
+      return path_str == other.path_str;
+   }
+
+   bool operator==(const std::string& other) const
+   {
+      return path_str == other;
+   }
+
+   bool operator==(const char* other) const
+   {
+      return path_str == other;
+   }
+
+   bool operator!=(const path& other) const
+   {
+      return path_str != other.path_str;
+   }
+
+   bool operator!=(const std::string& other) const
+   {
+      return path_str != other;
+   }
+
+   bool operator!=(const char* other) const
+   {
+      return path_str != other;
+   }
+
+   path lexically_normal() const
+   {
+      // Simplified implementation - just return the path as-is
+      return *this;
+   }
+
+   // Iterator support for path components
+   class iterator
+   {
+   private:
+      std::string path_str;
+      size_t pos;
+      std::string current;
+
+   public:
+      iterator() : pos(std::string::npos) {}
+      iterator(const std::string& str, size_t p) : path_str(str), pos(p)
+      {
+         if (pos != std::string::npos)
+         {
+            size_t next_pos = path_str.find('/', pos);
+            if (next_pos == std::string::npos)
+            {
+               current = path_str.substr(pos);
+               pos = std::string::npos;
+            }
+            else
+            {
+               current = path_str.substr(pos, next_pos - pos);
+               pos = next_pos + 1;
+            }
+         }
+      }
+
+      iterator& operator++()
+      {
+         if (pos != std::string::npos)
+         {
+            size_t next_pos = path_str.find('/', pos);
+            if (next_pos == std::string::npos)
+            {
+               current = path_str.substr(pos);
+               pos = std::string::npos;
+            }
+            else
+            {
+               current = path_str.substr(pos, next_pos - pos);
+               pos = next_pos + 1;
+            }
+         }
+         return *this;
+      }
+
+      const std::string& operator*() const { return current; }
+      bool operator!=(const iterator& other) const { return pos != other.pos; }
+   };
+
+   iterator begin() const
+   {
+      return iterator(path_str, 0);
+   }
+
+   iterator end() const
+   {
+      return iterator();
+   }
 };
 
 inline bool exists(const path& p)
 {
    struct stat st;
    return stat(p.string().c_str(), &st) == 0;
+}
+
+inline bool is_directory(const path& p)
+{
+   struct stat st;
+   return stat(p.string().c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+inline bool is_regular_file(const path& p)
+{
+   struct stat st;
+   return stat(p.string().c_str(), &st) == 0 && S_ISREG(st.st_mode);
+}
+
+inline uintmax_t file_size(const path& p)
+{
+   struct stat st;
+   if (stat(p.string().c_str(), &st) == 0)
+   {
+      return static_cast<uintmax_t>(st.st_size);
+   }
+   return static_cast<uintmax_t>(-1);
+}
+
+inline path canonical(const path& p)
+{
+   char resolved_path[PATH_MAX];
+   if (realpath(p.string().c_str(), resolved_path) != nullptr)
+   {
+      return path(resolved_path);
+   }
+   return p;
+}
+
+
+
+
+
+// Simplified file_time_type
+class file_time_type
+{
+private:
+    std::chrono::system_clock::time_point time_;
+
+public:
+    file_time_type() : time_(std::chrono::system_clock::now()) {}
+    file_time_type(std::chrono::system_clock::time_point t) : time_(t) {}
+    
+    std::chrono::system_clock::time_point time_since_epoch() const { return time_; }
+    
+    // Add duration_cast support
+    template<typename Rep, typename Period>
+    auto duration_cast() const {
+        return std::chrono::duration_cast<std::chrono::duration<Rep, Period>>(time_.time_since_epoch());
+    }
+};
+
+inline file_time_type last_write_time(const path& p)
+{
+   struct stat st;
+   if (stat(p.string().c_str(), &st) == 0)
+   {
+      auto time_point = std::chrono::system_clock::from_time_t(st.st_mtime);
+      return file_time_type(time_point);
+   }
+   return file_time_type();
 }
 
 inline bool create_directories(const path& p)
@@ -264,15 +575,7 @@ inline path temp_directory_path()
    return path(temp);
 }
 
-inline uintmax_t file_size(const path& p)
-{
-   struct stat st;
-   if (stat(p.string().c_str(), &st) == 0)
-   {
-      return static_cast<uintmax_t>(st.st_size);
-   }
-   return 0;
-}
+
 
 enum class perms
 {
@@ -296,6 +599,22 @@ enum class perms
    mask         = all | set_uid | set_gid | sticky_bit,
    unknown      = 0xFFFF
 };
+
+// Simplified file_status class
+class file_status
+{
+private:
+    perms permissions_;
+
+public:
+       file_status() : permissions_(perms::none) {}
+   file_status(perms p) : permissions_(p) {}
+   
+   perms permissions() const { return permissions_; }
+   void permissions(perms p) { permissions_ = p; }
+};
+
+
 
 inline perms operator|(perms lhs, perms rhs)
 {
@@ -333,6 +652,26 @@ inline perms& operator^=(perms& lhs, perms rhs)
 {
    lhs = lhs ^ rhs;
    return lhs;
+}
+
+inline file_status status(const path& p)
+{
+   struct stat st;
+   if (stat(p.string().c_str(), &st) == 0)
+   {
+      perms p = perms::none;
+      if (st.st_mode & S_IRUSR) p |= perms::owner_read;
+      if (st.st_mode & S_IWUSR) p |= perms::owner_write;
+      if (st.st_mode & S_IXUSR) p |= perms::owner_exec;
+      if (st.st_mode & S_IRGRP) p |= perms::group_read;
+      if (st.st_mode & S_IWGRP) p |= perms::group_write;
+      if (st.st_mode & S_IXGRP) p |= perms::group_exec;
+      if (st.st_mode & S_IROTH) p |= perms::others_read;
+      if (st.st_mode & S_IWOTH) p |= perms::others_write;
+      if (st.st_mode & S_IXOTH) p |= perms::others_exec;
+      return file_status(p);
+   }
+   return file_status();
 }
 
 enum class copy_options
@@ -391,32 +730,67 @@ inline path absolute(const path& p)
 class recursive_directory_iterator
 {
    private:
-   std::vector<path> files;
-   size_t            current_index;
+   std::vector<std::string> all_files;
+   size_t current_index;
+   std::string root_path;
 
-   public:
-   recursive_directory_iterator() : current_index(0) {}
-   recursive_directory_iterator(const path& p) : current_index(0)
+   void collect_files_recursively(const std::string& root_path)
    {
-      DIR* dir = opendir(p.string().c_str());
-      if (dir)
+      std::vector<std::string> dirs_to_process;
+      dirs_to_process.push_back(root_path);
+      
+      while (!dirs_to_process.empty())
       {
+         std::string current_dir = dirs_to_process.back();
+         dirs_to_process.pop_back();
+         
+         DIR* dir = opendir(current_dir.c_str());
+         if (!dir) 
+         {
+            continue;
+         }
+         
          struct dirent* entry;
          while ((entry = readdir(dir)) != nullptr)
          {
-            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+            if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+               continue;
+               
+            std::string full_path = current_dir + "/" + entry->d_name;
+            
+            struct stat st;
+            if (stat(full_path.c_str(), &st) == 0)
             {
-               path full_path = p / entry->d_name;
-               files.push_back(full_path);
+               if (S_ISDIR(st.st_mode))
+               {
+                  // Add subdirectory to processing list
+                  dirs_to_process.push_back(full_path);
+               }
+               else if (S_ISREG(st.st_mode))
+               {
+                  // Add regular file to results
+                  all_files.push_back(full_path);
+               }
             }
          }
          closedir(dir);
       }
    }
 
+   public:
+   recursive_directory_iterator() : current_index(0) {}
+   
+   recursive_directory_iterator(const path& p) : current_index(0), root_path(p.string())
+   {
+      if (fs::exists(p) && fs::is_directory(p))
+      {
+         collect_files_recursively(p.string());
+      }
+   }
+
    recursive_directory_iterator& operator++()
    {
-      if (current_index < files.size())
+      if (current_index < all_files.size())
       {
          ++current_index;
       }
@@ -425,26 +799,107 @@ class recursive_directory_iterator
 
    bool operator!=(const recursive_directory_iterator& other) const
    {
+      // If both iterators are at the end, they're equal
+      if (current_index >= all_files.size() && other.current_index >= other.all_files.size())
+         return false;
+      // If one is at the end and the other isn't, they're different
+      if (current_index >= all_files.size() || other.current_index >= other.all_files.size())
+         return true;
+      // If they have different root paths, they're different
+      if (root_path != other.root_path)
+         return true;
+      // If they have the same root path but different indices, they're different
       return current_index != other.current_index;
+   }
+
+   bool operator==(const recursive_directory_iterator& other) const
+   {
+      return !(*this != other);
+   }
+
+   const path operator*() const
+   {
+      if (current_index < all_files.size())
+      {
+         return path(all_files[current_index]);
+      }
+      return path();
+   }
+
+   const path* operator->() const
+   {
+      static path current_path;
+      if (current_index < all_files.size())
+      {
+         current_path = path(all_files[current_index]);
+      }
+      return &current_path;
    }
 
    bool is_regular_file() const
    {
-      if (current_index >= files.size())
-         return false;
+      if (current_index >= all_files.size()) return false;
       struct stat st;
-      return stat(files[current_index].string().c_str(), &st) == 0 && S_ISREG(st.st_mode);
+      return stat(all_files[current_index].c_str(), &st) == 0 && S_ISREG(st.st_mode);
    }
 
    path get_path() const
    {
-      if (current_index < files.size())
+      if (current_index < all_files.size())
       {
-         return files[current_index];
+         return path(all_files[current_index]);
       }
       return path();
    }
+
+   path current_path() const
+   {
+      return get_path();
+   }
+
+   // Additional methods needed by FileUtils
+   bool empty() const
+   {
+      return current_index >= all_files.size();
+   }
+
+   std::string string() const
+   {
+      if (current_index < all_files.size())
+      {
+         return all_files[current_index];
+      }
+      return "";
+   }
+
+   path get_current_path() const
+   {
+      return get_path();
+   }
 };
+
+// Free functions for range-based for loop support
+inline recursive_directory_iterator begin(recursive_directory_iterator& iter)
+{
+   return iter;
+}
+
+inline recursive_directory_iterator end(recursive_directory_iterator& iter)
+{
+   return recursive_directory_iterator();
+}
+
+inline recursive_directory_iterator begin(const recursive_directory_iterator& iter)
+{
+   return iter;
+}
+
+inline recursive_directory_iterator end(const recursive_directory_iterator& iter)
+{
+   return recursive_directory_iterator();
+}
+
+
 
 struct DirCloser
 {
@@ -460,17 +915,37 @@ class directory_iterator
    private:
    std::unique_ptr<DIR, DirCloser> dir;
    std::string                     current_path;
+   path                            current_path_obj;
 
    public:
    directory_iterator() : dir(nullptr) {}
-   directory_iterator(const path& p) : dir(opendir(p.string().c_str())) {}
+   directory_iterator(const path& p) : dir(opendir(p.string().c_str())), current_path_obj(p) {}
    ~directory_iterator() = default;
 
-   // Disable copy operations
-   directory_iterator(const directory_iterator&)            = delete;
-   directory_iterator& operator=(const directory_iterator&) = delete;
-   directory_iterator(directory_iterator&&)                 = delete;
-   directory_iterator& operator=(directory_iterator&&)      = delete;
+   // Enable copy operations for range-based for loops
+   directory_iterator(const directory_iterator& other) : dir(nullptr), current_path(other.current_path), current_path_obj(other.current_path_obj) 
+   {
+      if (other.dir) {
+         // Reopen the directory
+         dir.reset(opendir(current_path_obj.string().c_str()));
+      }
+   }
+   
+   directory_iterator& operator=(const directory_iterator& other)
+   {
+      if (this != &other) {
+         dir.reset();
+         current_path = other.current_path;
+         current_path_obj = other.current_path_obj;
+         if (other.dir) {
+            dir.reset(opendir(current_path_obj.string().c_str()));
+         }
+      }
+      return *this;
+   }
+
+   directory_iterator(directory_iterator&& other) = default;
+   directory_iterator& operator=(directory_iterator&& other) = default;
 
    directory_iterator& operator++()
    {
@@ -480,6 +955,7 @@ class directory_iterator
          if (entry)
          {
             current_path = entry->d_name;
+            current_path_obj = current_path_obj / current_path;
          }
          else
          {
@@ -494,25 +970,71 @@ class directory_iterator
       return dir != other.dir;
    }
 
+   bool operator==(const directory_iterator& other) const
+   {
+      return dir == other.dir;
+   }
+
    bool is_regular_file() const
    {
       if (current_path.empty())
          return false;
       struct stat st;
-      return stat(current_path.c_str(), &st) == 0 && S_ISREG(st.st_mode);
+      return stat(current_path_obj.string().c_str(), &st) == 0 && S_ISREG(st.st_mode);
    }
 
    path get_path() const
    {
-      return path(current_path);
+      return current_path_obj;
+   }
+
+   const path& operator*() const
+   {
+      return current_path_obj;
+   }
+
+   const path* operator->() const
+   {
+      return &current_path_obj;
    }
 };
+
+// Free functions for range-based for loop support
+inline directory_iterator begin(directory_iterator& iter)
+{
+   return iter;
+}
+
+inline directory_iterator end(directory_iterator& iter)
+{
+   return directory_iterator();
+}
+
+inline directory_iterator begin(const directory_iterator& iter)
+{
+   return iter;
+}
+
+inline directory_iterator end(const directory_iterator& iter)
+{
+   return directory_iterator();
+}
+
+
 
 class filesystem_error : public std::runtime_error
 {
    public:
    filesystem_error(const std::string& msg) : std::runtime_error(msg) {}
 };
+
+inline void rename(const path& from, const path& to)
+{
+   if (::rename(from.string().c_str(), to.string().c_str()) != 0)
+   {
+      throw filesystem_error("Failed to rename file");
+   }
+}
 }  // namespace fs
 }  // namespace compat
 }  // namespace heimdall
@@ -746,6 +1268,17 @@ auto to_set(R&& r)
 }  // namespace compat
 }  // namespace heimdall
 
+// std::optional alias for C++14 (always provide when C++17 is not available)
+#if __cplusplus < 201703L
+namespace std {
+    template<typename T>
+    using optional = heimdall::compat::optional<T>;
+    using nullopt_t = heimdall::compat::nullopt_t;
+    constexpr nullopt_t nullopt{0};
+    using bad_optional_access = heimdall::compat::bad_optional_access;
+}
+#endif
+
 // Namespace aliases for compatibility
 #if __cplusplus >= 201703L
 namespace fs = std::filesystem;
@@ -765,3 +1298,4 @@ constexpr bool HEIMDALL_FULL_DWARF      = HEIMDALL_CPP17_AVAILABLE;
 constexpr bool HEIMDALL_BASIC_DWARF     = HEIMDALL_CPP14_AVAILABLE;
 constexpr bool HEIMDALL_NO_DWARF        = HEIMDALL_CPP11_AVAILABLE;
 constexpr bool HEIMDALL_MODERN_FEATURES = HEIMDALL_CPP20_AVAILABLE;
+

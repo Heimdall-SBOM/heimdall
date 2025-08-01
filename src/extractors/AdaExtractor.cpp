@@ -29,7 +29,6 @@ limitations under the License.
 #include "AdaExtractor.hpp"
 #include <algorithm>
 #include <chrono>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -491,12 +490,12 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
 
    try
    {
-      if (!std::filesystem::exists(directory))
+      if (!fs::exists(directory))
       {
          return false;
       }
 
-      for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+      for (const fs::path& entry : fs::recursive_directory_iterator(directory))
       {
          // Check for timeout
          if (std::chrono::steady_clock::now() - startTime > timeout)
@@ -509,12 +508,12 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
             break;
          }
 
-         if (entry.is_regular_file() && isAliFile(entry.path().string()))
+         if (fs::is_regular_file(entry) && isAliFile(entry.string()))
          {
-            aliFiles.push_back(entry.path().string());
+            aliFiles.push_back(entry.string());
             if (pImpl->verbose)
             {
-               std::cerr << "AdaExtractor: Found ALI file: " << entry.path().string() << std::endl;
+               std::cerr << "AdaExtractor: Found ALI file: " << entry.string() << std::endl;
             }
          }
       }
@@ -534,7 +533,7 @@ bool AdaExtractor::findAliFiles(const std::string& directory, std::vector<std::s
 
 bool AdaExtractor::isAliFile(const std::string& filePath) const
 {
-   std::filesystem::path path(filePath);
+       fs::path path(filePath);
    return path.extension() == ".ali";
 }
 
@@ -563,7 +562,7 @@ bool AdaExtractor::extractSourceFilesFromContent(const std::string& content,
             if (lineStream >> packagePart >> sourceFilePart >> aliFile)
             {
                // Extract just the filename from the source file path
-               std::filesystem::path sourcePath(sourceFilePart);
+               fs::path sourcePath(sourceFilePart);
                sourceFile = sourcePath.filename().string();
                return true;  // Found the first source file
             }
@@ -799,7 +798,7 @@ bool AdaExtractor::isRuntimePackage(const std::string& packageName) const
 
 std::string AdaExtractor::extractPackageName(const std::string& aliFilePath) const
 {
-   std::filesystem::path path(aliFilePath);
+   fs::path path(aliFilePath);
    std::string           filename = path.stem().string();
 
    // Remove any suffixes that might be present
@@ -814,19 +813,19 @@ std::string AdaExtractor::extractPackageName(const std::string& aliFilePath) con
 
 std::string AdaExtractor::extractSourceFilePath(const std::string& aliFilePath) const
 {
-   std::filesystem::path path(aliFilePath);
+   fs::path path(aliFilePath);
    std::string           packageName = extractPackageName(aliFilePath);
 
    // Try to find corresponding .ads or .adb file
-   std::filesystem::path parentDir = path.parent_path();
-   std::filesystem::path adsFile   = parentDir / (packageName + ".ads");
-   std::filesystem::path adbFile   = parentDir / (packageName + ".adb");
+   fs::path parentDir = path.parent_path();
+   fs::path adsFile   = parentDir / (packageName + ".ads");
+   fs::path adbFile   = parentDir / (packageName + ".adb");
 
-   if (std::filesystem::exists(adsFile))
+   if (fs::exists(adsFile))
    {
       return adsFile.string();
    }
-   else if (std::filesystem::exists(adbFile))
+   else if (fs::exists(adbFile))
    {
       return adbFile.string();
    }

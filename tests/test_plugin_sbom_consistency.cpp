@@ -27,7 +27,7 @@ limitations under the License.
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
+// #include <filesystem>  // Removed to avoid conflict with compatibility layer
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -148,11 +148,11 @@ class PluginSBOMConsistencyTest : public ::testing::Test
 
       // Also try to find plugins in the current directory tree
       fs::path currentDir = fs::current_path();
-      for (const auto& entry : fs::recursive_directory_iterator(currentDir))
+      for (const fs::path& entry : fs::recursive_directory_iterator(currentDir))
       {
-         if (entry.is_regular_file() && entry.path().filename() == pluginName)
+         if (fs::is_regular_file(entry) && entry.filename() == pluginName)
          {
-            return entry.path().string();
+            return entry.string();
          }
       }
 

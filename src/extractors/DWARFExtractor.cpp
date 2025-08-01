@@ -31,12 +31,12 @@ limitations under the License.
 #include <algorithm>
 #include <atomic>
 #include <cstring>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include "../common/Utils.hpp"
+#include "../compat/compatibility.hpp"
 #ifdef __linux__
 #include <elf.h>
 #include <fcntl.h>
@@ -576,12 +576,12 @@ std::string DWARFExtractor::getDWARFFilePath(const std::string& filePath) const
 {
    // Check for .dSYM file first (macOS)
    std::string dsymPath = filePath + ".dSYM";
-   if (std::filesystem::exists(dsymPath))
+   if (heimdall::compat::fs::exists(dsymPath))
    {
       // Check if the .dSYM file contains a DWARF file
       std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" +
-                              std::filesystem::path(filePath).filename().string();
-      if (std::filesystem::exists(dwarfPath))
+                              heimdall::compat::fs::path(filePath).filename().string();
+      if (heimdall::compat::fs::exists(dwarfPath))
       {
          return dwarfPath;
       }
@@ -654,12 +654,12 @@ bool DWARFExtractor::hasDWARFInfo(const std::string& filePath) const
 #else
    // For non-Linux systems (including macOS), check for .dSYM files first
    std::string dsymPath = filePath + ".dSYM";
-   if (std::filesystem::exists(dsymPath))
+   if (heimdall::compat::fs::exists(dsymPath))
    {
       // Check if the .dSYM file contains a DWARF file
       std::string dwarfPath = dsymPath + "/Contents/Resources/DWARF/" +
-                              std::filesystem::path(filePath).filename().string();
-      if (std::filesystem::exists(dwarfPath))
+                              heimdall::compat::fs::path(filePath).filename().string();
+      if (heimdall::compat::fs::exists(dwarfPath))
       {
          return true;
       }

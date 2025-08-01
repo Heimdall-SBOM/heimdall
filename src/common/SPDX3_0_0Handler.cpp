@@ -94,11 +94,11 @@ std::string SPDX3_0_0Handler::generateSPDX3Elements(
 
    elements << "[\n";
    bool first = true;
-   for (const auto& [name, component] : components)
+   for (const auto& pair : components)
    {
       if (!first)
          elements << ",\n";
-      elements << generateSPDX3Element(component);
+      elements << generateSPDX3Element(pair.second);
       first = false;
    }
    elements << "\n]";
@@ -145,14 +145,14 @@ std::string SPDX3_0_0Handler::generateSPDX3Relationships(
    relationships << "[\n";
    bool first = true;
 
-   for (const auto& [name, component] : components)
+   for (const auto& pair : components)
    {
-      for (const auto& dep : component.dependencies)
+      for (const auto& dep : pair.second.dependencies)
       {
          if (!first)
             relationships << ",\n";
          relationships << "{\n";
-         relationships << "  \"spdxElementId\": \"" << generateSPDXId(name) << "\",\n";
+         relationships << "  \"spdxElementId\": \"" << generateSPDXId(pair.first) << "\",\n";
          relationships << "  \"relatedSpdxElement\": \"" << generateSPDXId(dep) << "\",\n";
          relationships << "  \"relationshipType\": \"DEPENDS_ON\"\n";
          relationships << "}";
