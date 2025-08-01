@@ -26,6 +26,7 @@ limitations under the License.
 #include "CycloneDXHandler.hpp"
 #include "SBOMFormats.hpp"
 #include "SPDXHandler.hpp"
+#include "../compat/compatibility.hpp"
 
 namespace heimdall
 {

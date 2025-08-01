@@ -23,6 +23,7 @@ limitations under the License.
  */
 
 #include "MachOExtractor.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>

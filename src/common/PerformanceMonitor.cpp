@@ -22,6 +22,7 @@ limitations under the License.
  */
 
 #include "PerformanceMonitor.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>

@@ -27,6 +27,7 @@ limitations under the License.
  */
 
 #include "ELFExtractor.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <cstring>

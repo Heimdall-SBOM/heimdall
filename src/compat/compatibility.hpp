@@ -108,6 +108,16 @@ limitations under the License.
 #if __has_include(<source_location>)
 #include <source_location>
 #endif
+
+// Provide compatibility namespace for C++23
+namespace heimdall
+{
+namespace compat
+{
+namespace fs = std::filesystem;
+}
+}
+
 #elif __cplusplus >= 202002L
 // C++20 includes
 #include <barrier>
@@ -137,6 +147,16 @@ limitations under the License.
 #if __has_include(<source_location>)
 #include <source_location>
 #endif
+
+// Provide compatibility namespace for C++20
+namespace heimdall
+{
+namespace compat
+{
+namespace fs = std::filesystem;
+}
+}
+
 #elif __cplusplus >= 201703L
 // C++17 includes
 #include <filesystem>
@@ -517,7 +537,7 @@ public:
     
     // Add duration_cast support
     template<typename Rep, typename Period>
-    auto duration_cast() const {
+    std::chrono::duration<Rep, Period> duration_cast() const {
         return std::chrono::duration_cast<std::chrono::duration<Rep, Period>>(time_.time_since_epoch());
     }
 };
@@ -1094,10 +1114,26 @@ using convertible_to_string = typename std::enable_if<
 
 // Utility functions
 template <typename T>
-constexpr auto to_underlying(T e) noexcept
+constexpr typename std::underlying_type<T>::type to_underlying(T e) noexcept
 {
-   return static_cast<std::underlying_type_t<T>>(e);
+   return static_cast<typename std::underlying_type<T>::type>(e);
 }
+
+} // namespace compat
+} // namespace heimdall
+
+// Add make_unique to std namespace for C++11
+#if __cplusplus < 201402L
+namespace std {
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+}
+#endif
+
+namespace heimdall {
+namespace compat {
 
 // String formatting utilities
 #if __cplusplus >= 202002L && __has_include(<format>)
@@ -1181,9 +1217,9 @@ auto to_set(R&& r)
 #else
 // C++11/14/17 fallbacks
 template <typename R, typename F>
-auto filter(R&& r, F&& f)
+std::vector<typename std::decay<R>::type::value_type> filter(R&& r, F&& f)
 {
-   std::vector<typename std::decay_t<R>::value_type> result;
+   std::vector<typename std::decay<R>::type::value_type> result;
    for (const auto& item : r)
    {
       if (f(item))
@@ -1195,9 +1231,9 @@ auto filter(R&& r, F&& f)
 }
 
 template <typename R, typename F>
-auto transform(R&& r, F&& f)
+std::vector<decltype(f(std::declval<typename std::decay<R>::type::value_type>()))> transform(R&& r, F&& f)
 {
-   std::vector<decltype(f(std::declval<typename std::decay_t<R>::value_type>()))> result;
+   std::vector<decltype(f(std::declval<typename std::decay<R>::type::value_type>()))> result;
    for (const auto& item : r)
    {
       result.push_back(f(item));
@@ -1206,9 +1242,9 @@ auto transform(R&& r, F&& f)
 }
 
 template <typename R>
-auto take(R&& r, std::size_t n)
+std::vector<typename std::decay<R>::type::value_type> take(R&& r, std::size_t n)
 {
-   std::vector<typename std::decay_t<R>::value_type> result;
+   std::vector<typename std::decay<R>::type::value_type> result;
    auto                                              it  = std::begin(r);
    auto                                              end = std::end(r);
    for (std::size_t i = 0; i < n && it != end; ++i, ++it)
@@ -1219,9 +1255,9 @@ auto take(R&& r, std::size_t n)
 }
 
 template <typename R>
-auto drop(R&& r, std::size_t n)
+std::vector<typename std::decay<R>::type::value_type> drop(R&& r, std::size_t n)
 {
-   std::vector<typename std::decay_t<R>::value_type> result;
+   std::vector<typename std::decay<R>::type::value_type> result;
    auto                                              it  = std::begin(r);
    auto                                              end = std::end(r);
    for (std::size_t i = 0; i < n && it != end; ++i, ++it)
@@ -1236,10 +1272,10 @@ auto drop(R&& r, std::size_t n)
 }
 
 template <typename R>
-auto reverse(R&& r)
+std::vector<typename std::decay<R>::type::value_type> reverse(R&& r)
 {
-   std::vector<typename std::decay_t<R>::value_type> result;
-   for (auto it = std::rbegin(r); it != std::rend(r); ++it)
+   std::vector<typename std::decay<R>::type::value_type> result;
+   for (auto it = r.rbegin(); it != r.rend(); ++it)
    {
       result.push_back(*it);
    }
@@ -1253,15 +1289,15 @@ Container to_container(R&& r)
 }
 
 template <typename R>
-auto to_vector(R&& r)
+std::vector<typename std::decay<R>::type::value_type> to_vector(R&& r)
 {
-   return std::vector<typename std::decay_t<R>::value_type>(std::begin(r), std::end(r));
+   return std::vector<typename std::decay<R>::type::value_type>(std::begin(r), std::end(r));
 }
 
 template <typename R>
-auto to_set(R&& r)
+std::set<typename std::decay<R>::type::value_type> to_set(R&& r)
 {
-   return std::set<typename std::decay_t<R>::value_type>(std::begin(r), std::end(r));
+   return std::set<typename std::decay<R>::type::value_type>(std::begin(r), std::end(r));
 }
 #endif
 

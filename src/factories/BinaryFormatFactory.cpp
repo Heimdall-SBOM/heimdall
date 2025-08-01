@@ -25,6 +25,7 @@ limitations under the License.
  */
 
 #include "BinaryFormatFactory.hpp"
+#include "../compat/compatibility.hpp"
 #include "../extractors/ArchiveExtractor.hpp"
 #include "../extractors/ELFExtractor.hpp"
 #include "../extractors/LazySymbolExtractor.hpp"

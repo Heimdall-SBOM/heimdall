@@ -30,6 +30,7 @@ limitations under the License.
  */
 
 #include "LightweightDWARFParser.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>

@@ -23,6 +23,7 @@ limitations under the License.
  */
 
 #include "ArchiveExtractor.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>

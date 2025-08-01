@@ -22,6 +22,7 @@ limitations under the License.
  */
 
 #include "VersionDetector.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
