@@ -154,14 +154,25 @@ ScopedTimer::ScopedTimer(PerformanceMonitor& monitor, const std::string& operati
 
 ScopedTimer::~ScopedTimer()
 {
-   monitor.endOperation(operationName, success, itemsProcessed, memoryUsage);
-
-   // Add custom metrics
-   for (const auto& metric : customMetrics)
+   try
    {
-      const auto& name = metric.first;
-      const auto& value = metric.second;
-      monitor.addCustomMetric(name, value);
+      monitor.endOperation(operationName, success, itemsProcessed, memoryUsage);
+
+      // Add custom metrics
+      for (const auto& metric : customMetrics)
+      {
+         const auto& name = metric.first;
+         const auto& value = metric.second;
+         monitor.addCustomMetric(name, value);
+      }
+   }
+   catch (const std::exception& e)
+   {
+      // Suppress exceptions in destructor to prevent termination
+   }
+   catch (...)
+   {
+      // Suppress any remaining exceptions in destructor to prevent termination  
    }
 }
 

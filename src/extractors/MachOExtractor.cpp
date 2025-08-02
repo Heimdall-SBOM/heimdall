@@ -614,9 +614,11 @@ bool MachOExtractor::Impl::is64BitImpl(const std::string& filePath)
    {
       return false;
    }
-#endif
 
    return false;
+#else
+   return false;
+#endif
 }
 
 std::string MachOExtractor::Impl::getFileTypeImpl(const std::string& filePath)
@@ -638,9 +640,11 @@ std::string MachOExtractor::Impl::getFileTypeImpl(const std::string& filePath)
    {
       return getFileTypeString(header64.filetype);
    }
-#endif
 
    return "Unknown";
+#else
+   return "Unknown";
+#endif
 }
 
 bool MachOExtractor::Impl::isUniversalBinaryImpl(const std::string& filePath)
@@ -679,10 +683,11 @@ std::vector<std::string> MachOExtractor::Impl::getUniversalArchitecturesImpl(
    fat_header fatHeader;
    file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
 
-   // Handle endianness
-   if (fatHeader.magic == FAT_CIGAM || fatHeader.magic == FAT_CIGAM_64)
+   // Check if byte swapping is needed (once for the whole file)
+   bool needsByteSwap = (fatHeader.magic == FAT_CIGAM || fatHeader.magic == FAT_CIGAM_64);
+   
+   if (needsByteSwap)
    {
-      // Swap bytes if needed
       fatHeader.nfat_arch = __builtin_bswap32(fatHeader.nfat_arch);
    }
 
@@ -691,8 +696,7 @@ std::vector<std::string> MachOExtractor::Impl::getUniversalArchitecturesImpl(
       fat_arch arch;
       file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
 
-      // Handle endianness
-      if (fatHeader.magic == FAT_CIGAM || fatHeader.magic == FAT_CIGAM_64)
+      if (needsByteSwap)
       {
          arch.cputype    = __builtin_bswap32(arch.cputype);
          arch.cpusubtype = __builtin_bswap32(arch.cpusubtype);

@@ -70,6 +70,9 @@ class PEExtractor::Impl
    template <typename T>
    bool        readPEHeader(const std::string& filePath, T& header) const;
 
+   // Helper method to read PE file header (reduces code duplication)
+   bool        readPEFileHeader(const std::string& filePath, uint16_t& machine) const;
+
    std::string getArchitectureString(uint16_t machine) const;
    std::string getFileTypeString(uint16_t machine) const;
 };
@@ -319,80 +322,26 @@ bool PEExtractor::Impl::extractBuildIdImpl(const std::string& filePath, std::str
 
 std::string PEExtractor::Impl::getArchitectureImpl(const std::string& filePath)
 {
-   if (!validatePEHeaderImpl(filePath))
+   uint16_t machine;
+   if (!readPEFileHeader(filePath, machine))
    {
       return "Unknown";
    }
 
-#ifdef _WIN32
-   IMAGE_DOS_HEADER dosHeader;
-   if (!readPEHeader(filePath, dosHeader))
-   {
-      return "Unknown";
-   }
-
-   // Seek to PE header
-   std::ifstream file(filePath, std::ios::binary);
-   if (!file.is_open())
-   {
-      return "Unknown";
-   }
-
-   file.seekg(dosHeader.e_lfanew);
-
-   uint32_t peSignature;
-   file.read(reinterpret_cast<char*>(&peSignature), sizeof(peSignature));
-
-   if (peSignature != IMAGE_NT_SIGNATURE)
-   {
-      return "Unknown";
-   }
-
-   IMAGE_FILE_HEADER fileHeader;
-   file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
-
-   return getArchitectureString(fileHeader.Machine);
-#else
-   return "Unknown";
-#endif
+   return getArchitectureString(machine);
 }
 
 bool PEExtractor::Impl::is64BitImpl(const std::string& filePath)
 {
-   if (!validatePEHeaderImpl(filePath))
+   uint16_t machine;
+   if (!readPEFileHeader(filePath, machine))
    {
       return false;
    }
 
 #ifdef _WIN32
-   IMAGE_DOS_HEADER dosHeader;
-   if (!readPEHeader(filePath, dosHeader))
-   {
-      return false;
-   }
-
-   std::ifstream file(filePath, std::ios::binary);
-   if (!file.is_open())
-   {
-      return false;
-   }
-
-   file.seekg(dosHeader.e_lfanew);
-
-   uint32_t peSignature;
-   file.read(reinterpret_cast<char*>(&peSignature), sizeof(peSignature));
-
-   if (peSignature != IMAGE_NT_SIGNATURE)
-   {
-      return false;
-   }
-
-   IMAGE_FILE_HEADER fileHeader;
-   file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
-
    // Check if it's a 64-bit PE file
-   return (fileHeader.Machine == IMAGE_FILE_MACHINE_AMD64 ||
-           fileHeader.Machine == IMAGE_FILE_MACHINE_ARM64);
+   return (machine == IMAGE_FILE_MACHINE_AMD64 || machine == IMAGE_FILE_MACHINE_ARM64);
 #else
    return false;
 #endif
@@ -400,41 +349,13 @@ bool PEExtractor::Impl::is64BitImpl(const std::string& filePath)
 
 std::string PEExtractor::Impl::getFileTypeImpl(const std::string& filePath)
 {
-   if (!validatePEHeaderImpl(filePath))
+   uint16_t machine;
+   if (!readPEFileHeader(filePath, machine))
    {
       return "Unknown";
    }
 
-#ifdef _WIN32
-   IMAGE_DOS_HEADER dosHeader;
-   if (!readPEHeader(filePath, dosHeader))
-   {
-      return "Unknown";
-   }
-
-   std::ifstream file(filePath, std::ios::binary);
-   if (!file.is_open())
-   {
-      return "Unknown";
-   }
-
-   file.seekg(dosHeader.e_lfanew);
-
-   uint32_t peSignature;
-   file.read(reinterpret_cast<char*>(&peSignature), sizeof(peSignature));
-
-   if (peSignature != IMAGE_NT_SIGNATURE)
-   {
-      return "Unknown";
-   }
-
-   IMAGE_FILE_HEADER fileHeader;
-   file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
-
-   return getFileTypeString(fileHeader.Machine);
-#else
-   return "Unknown";
-#endif
+   return getFileTypeString(machine);
 }
 
 bool PEExtractor::Impl::extractVersionInfoImpl(const std::string& filePath,
@@ -528,6 +449,46 @@ bool PEExtractor::Impl::readPEHeader(const std::string& filePath, T& header) con
 
    file.read(reinterpret_cast<char*>(&header), sizeof(header));
    return file.good();
+}
+
+bool PEExtractor::Impl::readPEFileHeader(const std::string& filePath, uint16_t& machine) const
+{
+   if (!validatePEHeaderImpl(filePath))
+   {
+      return false;
+   }
+
+#ifdef _WIN32
+   IMAGE_DOS_HEADER dosHeader;
+   if (!readPEHeader(filePath, dosHeader))
+   {
+      return false;
+   }
+
+   std::ifstream file(filePath, std::ios::binary);
+   if (!file.is_open())
+   {
+      return false;
+   }
+
+   file.seekg(dosHeader.e_lfanew);
+
+   uint32_t peSignature;
+   file.read(reinterpret_cast<char*>(&peSignature), sizeof(peSignature));
+
+   if (peSignature != IMAGE_NT_SIGNATURE)
+   {
+      return false;
+   }
+
+   IMAGE_FILE_HEADER fileHeader;
+   file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
+   
+   machine = fileHeader.Machine;
+   return file.good();
+#else
+   return false;
+#endif
 }
 
 std::string PEExtractor::Impl::getArchitectureString(uint16_t machine) const
