@@ -1,0 +1,13 @@
+# Manual workflow digest update patch
+# Apply this patch to update the container digest in .github/workflows/ci.yml
+# 
+# To apply: patch -p1 < .github/workflow-digest-update.patch
+# 
+# Generated on: Tue Aug  5 09:24:38 UTC 2025
+# New digest: sha256:df7479c708e3de167f7bbfba79cfa9b5c977e1cc33b3df31e31046c0c02cdf05
+
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+---
+-image: ghcr.io/heimdall-sbom/heimdall-devcontainer:latest
++image: ghcr.io/heimdall-sbom/heimdall-devcontainer@sha256:df7479c708e3de167f7bbfba79cfa9b5c977e1cc33b3df31e31046c0c02cdf05  # Pinned 2025-08-05
