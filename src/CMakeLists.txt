@@ -158,6 +158,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         lld/LLDAdapter.cpp
         lld/LLDAdapter.hpp
         lld/LLDPlugin.cpp
+        tools/EnhancedSBOMGenerator.cpp
+        tools/EnhancedSBOMGenerator.hpp
         common/MetadataExtractor.hpp
         common/SBOMGenerator.hpp
         common/Utils.hpp
@@ -219,6 +221,7 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     
     target_link_libraries(heimdall-lld PRIVATE
         heimdall-core
+        heimdall-compiler-common
         ${LLVM_LIBRARIES}
         ${LLD_LIBS}
     )
@@ -230,6 +233,8 @@ if(UNIX AND NOT APPLE)
         gold/GoldAdapter.cpp
         gold/GoldAdapter.hpp
         gold/GoldPlugin.cpp
+        gold/EnhancedGoldAdapter.cpp
+        gold/EnhancedGoldAdapter.hpp
         common/MetadataExtractor.hpp
         common/SBOMGenerator.hpp
         common/Utils.hpp
@@ -259,6 +264,7 @@ if(UNIX AND NOT APPLE)
     
     target_link_libraries(heimdall-gold PRIVATE
         heimdall-core
+        heimdall-compiler-common
     )
 endif()
 

@@ -48,7 +48,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.no-changes == 'false'
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38 # v5.0.2
+        uses: peter-evans/create-pull-request@b9725f65946d3e6ba4ed8c67e33a2e5a666e5a1c # v5.0.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "security(deps): auto-update container digests"

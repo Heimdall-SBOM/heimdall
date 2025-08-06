@@ -86,6 +86,7 @@ EXAMPLES:
 DEPENDENCIES INSTALLED:
     - Build tools (make, cmake, ninja)
     - GCC compilers (11, 13)
+    - GCC plugin development headers
     - LLVM/Clang toolchain (19)
     - Development libraries (OpenSSL, ELF, Boost)
     - Python 3 and pip
@@ -161,9 +162,9 @@ install_dev_libs() {
     print_subheader "Installing development libraries..."
     
     if [ "$DRY_RUN" = true ]; then
-        echo "Would install: libssl-dev libelf-dev pkg-config libboost-filesystem-dev libboost-system-dev"
+        echo "Would install: libssl-dev libelf-dev pkg-config libboost-filesystem-dev libboost-system-dev gcc-plugin-dev"
     else
-        apt-get install -y libssl-dev libelf-dev pkg-config libboost-filesystem-dev libboost-system-dev
+        apt-get install -y libssl-dev libelf-dev pkg-config libboost-filesystem-dev libboost-system-dev gcc-plugin-dev
     fi
 }
 

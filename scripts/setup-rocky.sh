@@ -175,9 +175,9 @@ install_dev_libs() {
     print_subheader "Installing development libraries..."
     
     if [ "$DRY_RUN" = true ]; then
-        echo "Would install: openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system"
+        echo "Would install: openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system gcc-plugin-devel"
     else
-        dnf install -y openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system
+        dnf install -y openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system gcc-plugin-devel
     fi
 }
 
