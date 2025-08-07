@@ -154,16 +154,16 @@ endif()
 
 # Link Clang libraries
 # Try to use the consolidated libclang-cpp if available (LLVM 19+)
-if(CLANG_CPP_LIB)
-    message(STATUS "Using consolidated libclang-cpp.so")
+if(CLANG_CPP_LIB AND LLVM_VERSION_MAJOR GREATER_EQUAL 19)
+    message(STATUS "Using consolidated libclang-cpp.so for LLVM ${LLVM_VERSION_MAJOR}")
     target_link_libraries(heimdall-clang-plugin PRIVATE
         clang-cpp
         OpenSSL::SSL
         OpenSSL::Crypto
     )
 elseif(CLANG_BASIC_LIB)
-    message(STATUS "Using individual Clang libraries")
-    # Fall back to individual libraries for older LLVM versions
+    message(STATUS "Using individual Clang libraries for LLVM ${LLVM_VERSION_MAJOR}")
+    # Fall back to individual libraries for older LLVM versions (including 18)
     target_link_libraries(heimdall-clang-plugin PRIVATE
         clangFrontend
         clangAST
