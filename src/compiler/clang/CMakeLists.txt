@@ -120,6 +120,10 @@ set_target_properties(heimdall-clang-plugin PROPERTIES
     CXX_STANDARD ${CMAKE_CXX_STANDARD}
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
+    MACOSX_RPATH ON
+    BUILD_WITH_INSTALL_RPATH ON
+    INSTALL_RPATH_USE_LINK_PATH ON
+    INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 # Include directories
@@ -148,12 +152,11 @@ if(NOT CLANG_BASIC_LIB AND NOT CLANG_CPP_LIB)
     return()
 endif()
 
-# Link libraries
+# Link Clang libraries
 # Try to use the consolidated libclang-cpp if available (LLVM 19+)
 if(CLANG_CPP_LIB)
     message(STATUS "Using consolidated libclang-cpp.so")
     target_link_libraries(heimdall-clang-plugin PRIVATE
-        ${LLVM_LIBS}
         clang-cpp
         OpenSSL::SSL
         OpenSSL::Crypto
@@ -162,7 +165,6 @@ elseif(CLANG_BASIC_LIB)
     message(STATUS "Using individual Clang libraries")
     # Fall back to individual libraries for older LLVM versions
     target_link_libraries(heimdall-clang-plugin PRIVATE
-        ${LLVM_LIBS}
         clangFrontend
         clangAST
         clangLex
@@ -194,9 +196,13 @@ target_compile_options(heimdall-clang-plugin PRIVATE
 )
 
 # Add dependency on heimdall core components
-if(TARGET heimdall-core)
-    target_link_libraries(heimdall-clang-plugin PRIVATE heimdall-core)
-endif()
+add_dependencies(heimdall-clang-plugin heimdall-core)
+
+# Link libraries - order matters for shared library dependencies
+target_link_libraries(heimdall-clang-plugin PRIVATE
+    heimdall-core
+    ${LLVM_LIBS}
+)
 
 # Installation
 install(TARGETS heimdall-clang-plugin
