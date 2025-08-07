@@ -157,6 +157,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
             if(ELF_LIBRARY)
                 target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
             endif()
+            # Add compiler common library if it exists
+            if(TARGET heimdall-compiler-common)
+                target_link_libraries(heimdall-tests PRIVATE heimdall-compiler-common)
+            endif()
         else()
             target_link_libraries(heimdall-tests PRIVATE
                 heimdall-core
@@ -167,6 +171,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
             )
             if(ELF_LIBRARY)
                 target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
+            endif()
+            # Add compiler common library if it exists
+            if(TARGET heimdall-compiler-common)
+                target_link_libraries(heimdall-tests PRIVATE heimdall-compiler-common)
             endif()
         endif()
     elseif(TARGET gtest_main)
@@ -182,6 +190,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
             if(ELF_LIBRARY)
                 target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
             endif()
+            # Add compiler common library if it exists
+            if(TARGET heimdall-compiler-common)
+                target_link_libraries(heimdall-tests PRIVATE heimdall-compiler-common)
+            endif()
         else()
             target_link_libraries(heimdall-tests PRIVATE
                 heimdall-core
@@ -192,6 +204,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
             )
             if(ELF_LIBRARY)
                 target_link_libraries(heimdall-tests PRIVATE ${ELF_LIBRARY})
+            endif()
+            # Add compiler common library if it exists
+            if(TARGET heimdall-compiler-common)
+                target_link_libraries(heimdall-tests PRIVATE heimdall-compiler-common)
             endif()
         endif()
     else()
@@ -247,6 +263,10 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
     # Only add dependency if the target exists
     if(TARGET copy_json_schema_header)
         add_dependencies(heimdall-tests copy_json_schema_header)
+    endif()
+    # Add dependency on compiler common library if it exists
+    if(TARGET heimdall-compiler-common)
+        add_dependencies(heimdall-tests heimdall-compiler-common)
     endif()
     # Add LLVM flags to this specific target
     target_compile_options(heimdall-tests PRIVATE ${LLVM_CXXFLAGS_CLEAN})

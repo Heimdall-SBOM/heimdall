@@ -27,7 +27,12 @@ set(CMAKE_BUILD_TYPE Debug)
 # =============================================================================
 
 # Heimdall installation path (can be overridden with -DHEIMDALL_ROOT=...)
-set(HEIMDALL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../build-gcc-cpp17" CACHE PATH "Path to Heimdall installation")
+# Use HEIMDALL_BUILD_DIR if provided, otherwise default to build-gcc-cpp17 for backwards compatibility
+if(DEFINED HEIMDALL_BUILD_DIR)
+    set(HEIMDALL_ROOT "${HEIMDALL_BUILD_DIR}" CACHE PATH "Path to Heimdall installation")
+else()
+    set(HEIMDALL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../build-gcc-cpp17" CACHE PATH "Path to Heimdall installation")
+endif()
 
 # Verify Heimdall installation
 if(NOT EXISTS "${HEIMDALL_ROOT}")

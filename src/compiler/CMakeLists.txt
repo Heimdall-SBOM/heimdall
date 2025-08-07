@@ -14,8 +14,8 @@
 
 # Heimdall Compiler Plugins
 
-# Option to build compiler plugins
-option(HEIMDALL_BUILD_COMPILER_PLUGINS "Build compiler plugins for enhanced SBOM generation" OFF)
+# Option to build compiler plugins (inherit from parent)
+set(HEIMDALL_BUILD_COMPILER_PLUGINS ${BUILD_COMPILER_PLUGINS})
 
 message(STATUS "Configuring Heimdall compiler plugins...")
 

@@ -28,6 +28,7 @@ Heimdall is a comprehensive SBOM generation tool that integrates directly with t
 ### Main Features and Goals
 
 - **Dual Linker Support**: Native plugins for both LLVM LLD and GNU Gold linkers
+- **Compiler Plugin Integration**: Enhanced SBOM generation with GCC and Clang compiler plugins
 - **Multi-Format Output**: Generates SPDX 2.3, 3.0, 3.0.1 and CycloneDX 1.4, 1.5, 1.6 compliant SBOMs
 - **Comprehensive Analysis**: Extracts versions, licenses, checksums, dependencies, and debug information
 - **Cross-Platform Support**: Native support for Linux and macOS with ELF, Mach-O, and PE formats

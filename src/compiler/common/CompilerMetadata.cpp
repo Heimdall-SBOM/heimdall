@@ -541,7 +541,7 @@ std::vector<CompilerMetadata> CompilerMetadataCollector::loadMetadataFiles(const
     
     for (const auto& entry : compat::fs::directory_iterator(directory)) {
         if (entry.path().extension() == ".json") {
-            std::ifstream file(entry.path());
+            std::ifstream file(entry.path().string());
             if (file.is_open()) {
                 try {
                     nlohmann::json j;
@@ -602,10 +602,8 @@ std::string CompilerMetadataCollector::getFileModificationTime(const std::string
     try {
         auto ftime = compat::fs::last_write_time(file_path);
         auto time_t = std::chrono::system_clock::to_time_t(
-            std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-                ftime - compat::fs::file_time_type::clock::now() + 
-                std::chrono::system_clock::now()
-            )
+            std::chrono::system_clock::time_point() + 
+            std::chrono::duration_cast<std::chrono::system_clock::duration>(ftime.time_since_epoch())
         );
         
         std::stringstream ss;
@@ -718,11 +716,10 @@ size_t CompilerMetadataCollector::cleanupOldMetadataFiles(const std::string& met
     try {
         for (const auto& entry : compat::fs::directory_iterator(metadata_dir)) {
             if (entry.path().extension() == ".json") {
-                auto file_time_fs = compat::fs::last_write_time(entry);
+                auto file_time_fs = compat::fs::last_write_time(entry.path());
                 // Convert filesystem time to system time
-                auto file_time = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-                    file_time_fs - compat::fs::file_time_type::clock::now() + std::chrono::system_clock::now()
-                );
+                auto file_time = std::chrono::system_clock::time_point() + 
+                    std::chrono::duration_cast<std::chrono::system_clock::duration>(file_time_fs.time_since_epoch());
                 auto file_age = now - file_time;
                 
                 if (file_age > max_age) {
@@ -757,7 +754,7 @@ std::pair<size_t, size_t> CompilerMetadataCollector::getMetadataStatistics(const
             if (entry.path().extension() == ".json") {
                 file_count++;
                 try {
-                    total_size += compat::fs::file_size(entry);
+                    total_size += compat::fs::file_size(entry.path());
                 } catch (const std::exception& e) {
                     Utils::warningPrint("Failed to get size of metadata file: " + 
                                        entry.path().string() + " - " + e.what());

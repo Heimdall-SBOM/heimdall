@@ -24,7 +24,7 @@ add_library(heimdall-compiler-common STATIC
 
 # Set target properties
 set_target_properties(heimdall-compiler-common PROPERTIES
-    CXX_STANDARD 17
+    CXX_STANDARD ${CMAKE_CXX_STANDARD}
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )

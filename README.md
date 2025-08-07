@@ -19,6 +19,7 @@ Heimdall is designed for both embedded software development and regular applicat
 
 ### Core Capabilities
 - **Dual Linker Support**: Seamless integration with LLVM LLD and GNU Gold linkers
+- **Compiler Plugin Integration**: Enhanced SBOM generation with GCC and Clang compiler plugins
 - **Multiple SBOM Formats**: Generates SPDX 2.3, 3.0, and 3.0.1 and CycloneDX 1.4, 1.5, and 1.6 compliant reports
 - **Comprehensive Component Analysis**: Extracts versions, licenses, checksums, and dependencies
 - **Package Manager Integration**: Recognizes Conan, vcpkg, and system packages
@@ -47,6 +48,7 @@ Heimdall is designed for both embedded software development and regular applicat
 - **CI/CD Ready**: Seamless integration with modern build systems using a provided CMake module
 - **Multi-Standard C++ Support**: Robust compatibility with C++11, C++14, C++17, C++20, and C++23
 - **Multi-Compiler Support**: Automatic detection and selection of GCC and Clang versions
+- **Enhanced Source Analysis**: Compiler plugins extract metadata during compilation for richer SBOMs
 
 ## Getting Started
 
@@ -79,7 +81,7 @@ Heimdall is designed for both embedded software development and regular applicat
 
 3. **Build Heimdall**:
    ```bash
-   # Build with specific settings (GCC, C++17)
+   # Build with specific settings (GCC, C++17) - compiler plugins enabled by default
    ./scripts/build.sh --standard 17 --compiler gcc --tests
    
    # Or build all compatible standards
@@ -379,6 +381,7 @@ done
 ## Documentation
 
 For detailed information about:
+- **Compiler Plugins**: [docs/compiler_plugins.md](docs/compiler_plugins.md)
 - **Multi-standard C++ support**: [docs/multi-standard-support.md](docs/multi-standard-support.md)
 - **Usage examples**: [docs/usage.md](docs/usage.md)
 - **DevContainer updates**: [docs/devcontainer-update-process.md](docs/devcontainer-update-process.md)

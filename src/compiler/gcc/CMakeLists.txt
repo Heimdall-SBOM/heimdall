@@ -84,7 +84,7 @@ add_library(heimdall-gcc-plugin SHARED
 set_target_properties(heimdall-gcc-plugin PROPERTIES
     PREFIX ""
     SUFFIX ".so"
-    CXX_STANDARD 17
+    CXX_STANDARD ${CMAKE_CXX_STANDARD}
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )

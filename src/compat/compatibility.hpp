@@ -67,6 +67,42 @@ limitations under the License.
 #include <utility>
 #include <vector>
 
+// C++11/14 type_traits compatibility for LLVM
+#if __cplusplus < 201703L
+namespace std {
+    // C++14 missing type traits for C++11 compatibility with LLVM
+    template<typename T>
+    using remove_reference_t = typename std::remove_reference<T>::type;
+    
+    #if __cplusplus >= 201402L
+    template<typename T>
+    constexpr bool is_class_v = std::is_class<T>::value;
+    
+    template<typename T>
+    constexpr bool is_pointer_v = std::is_pointer<T>::value;
+    #else
+    // C++11 doesn't support variable templates, use struct template
+    template<typename T>
+    struct is_class_v_impl : std::integral_constant<bool, std::is_class<T>::value> {};
+    
+    template<typename T>
+    struct is_pointer_v_impl : std::integral_constant<bool, std::is_pointer<T>::value> {};
+    
+    template<typename T>
+    const bool is_class_v = is_class_v_impl<T>::value;
+    
+    template<typename T>
+    const bool is_pointer_v = is_pointer_v_impl<T>::value;
+    #endif
+    
+    #if __cplusplus < 201402L
+    // C++14 features for C++11
+    template<bool B, typename T = void>
+    using enable_if_t = typename std::enable_if<B, T>::type;
+    #endif
+}
+#endif
+
 // System headers for filesystem operations
 #include <dirent.h>
 #include <sys/stat.h>
@@ -169,7 +205,79 @@ namespace heimdall
 {
 namespace compat
 {
-namespace fs     = std::filesystem;
+namespace fs = std::filesystem;
+
+// For C++17+, provide a directory_entry wrapper that maintains compatibility
+class directory_entry
+{
+private:
+    std::filesystem::directory_entry entry_;
+
+public:
+    directory_entry() = default;
+    explicit directory_entry(const std::filesystem::path& p) : entry_(p) {}
+    explicit directory_entry(const std::filesystem::directory_entry& e) : entry_(e) {}
+    
+    const std::filesystem::path& path() const { return entry_.path(); }
+    const std::filesystem::path& get_path() const { return entry_.path(); }
+    
+    // For compatibility - provide both methods
+    std::filesystem::path extension() const { return entry_.path().extension(); }
+    std::string string() const { return entry_.path().string(); }
+    
+    bool is_regular_file() const {
+        return entry_.is_regular_file();
+    }
+    
+    bool is_directory() const {
+        return entry_.is_directory();
+    }
+    
+    bool exists() const {
+        return entry_.exists();
+    }
+};
+
+// C++17 compatible directory iterator wrapper
+class directory_iterator
+{
+private:
+    std::filesystem::directory_iterator iter_;
+    directory_entry current_entry_;
+
+public:
+    directory_iterator() = default;
+    explicit directory_iterator(const std::filesystem::path& p) : iter_(p) {
+        if (iter_ != std::filesystem::directory_iterator{}) {
+            current_entry_ = directory_entry(*iter_);
+        }
+    }
+    
+    directory_iterator& operator++() {
+        ++iter_;
+        if (iter_ != std::filesystem::directory_iterator{}) {
+            current_entry_ = directory_entry(*iter_);
+        }
+        return *this;
+    }
+    
+    bool operator!=(const directory_iterator& other) const {
+        return iter_ != other.iter_;
+    }
+    
+    bool operator==(const directory_iterator& other) const {
+        return iter_ == other.iter_;
+    }
+    
+    const directory_entry& operator*() const {
+        return current_entry_;
+    }
+    
+    const directory_entry* operator->() const {
+        return &current_entry_;
+    }
+};
+
 }
 }
 #else
@@ -540,6 +648,9 @@ public:
     std::chrono::duration<Rep, Period> duration_cast() const {
         return std::chrono::duration_cast<std::chrono::duration<Rep, Period>>(time_.time_since_epoch());
     }
+    
+    // Add clock type for compatibility
+    using clock = std::chrono::system_clock;
 };
 
 inline file_time_type last_write_time(const path& p)
@@ -747,6 +858,26 @@ inline path absolute(const path& p)
    return current_path() / p;
 }
 
+inline path relative(const path& p, const path& base = current_path())
+{
+    // Simple relative path implementation
+    std::string p_str = p.string();
+    std::string base_str = base.string();
+    
+    // If base is not a prefix of p, return p as is
+    if (p_str.find(base_str) != 0) {
+        return p;
+    }
+    
+    // Remove the base prefix
+    std::string relative_str = p_str.substr(base_str.length());
+    if (!relative_str.empty() && relative_str[0] == '/') {
+        relative_str = relative_str.substr(1);
+    }
+    
+    return path(relative_str);
+}
+
 class recursive_directory_iterator
 {
    private:
@@ -930,24 +1061,59 @@ struct DirCloser
    }
 };
 
+// Directory entry class for C++11/14 compatibility  
+class directory_entry
+{
+private:
+    path path_;
+
+public:
+    directory_entry() = default;
+    explicit directory_entry(const path& p) : path_(p) {}
+    
+    const ::heimdall::compat::fs::path& get_path() const { return path_; }
+    
+    // For compatibility with pre-C++17
+    ::heimdall::compat::fs::path extension() const { return path_.extension(); }
+    std::string string() const { return path_.string(); }
+    
+    bool is_regular_file() const {
+        return fs::is_regular_file(path_);
+    }
+    
+    bool is_directory() const {
+        return fs::is_directory(path_);
+    }
+    
+    bool exists() const {
+        return fs::exists(path_);
+    }
+};
+
 class directory_iterator
 {
    private:
    std::unique_ptr<DIR, DirCloser> dir;
    std::string                     current_path;
    path                            current_path_obj;
+   path                            base_path;
+   directory_entry                 current_entry;
 
    public:
    directory_iterator() : dir(nullptr) {}
-   directory_iterator(const path& p) : dir(opendir(p.string().c_str())), current_path_obj(p) {}
+   directory_iterator(const path& p) : dir(opendir(p.string().c_str())), base_path(p) {
+       if (dir) {
+           operator++(); // Initialize to first entry
+       }
+   }
    ~directory_iterator() = default;
 
    // Enable copy operations for range-based for loops
-   directory_iterator(const directory_iterator& other) : dir(nullptr), current_path(other.current_path), current_path_obj(other.current_path_obj) 
+   directory_iterator(const directory_iterator& other) : dir(nullptr), current_path(other.current_path), current_path_obj(other.current_path_obj), base_path(other.base_path), current_entry(other.current_entry)
    {
       if (other.dir) {
          // Reopen the directory
-         dir.reset(opendir(current_path_obj.string().c_str()));
+         dir.reset(opendir(base_path.string().c_str()));
       }
    }
    
@@ -957,8 +1123,10 @@ class directory_iterator
          dir.reset();
          current_path = other.current_path;
          current_path_obj = other.current_path_obj;
+         base_path = other.base_path;
+         current_entry = other.current_entry;
          if (other.dir) {
-            dir.reset(opendir(current_path_obj.string().c_str()));
+            dir.reset(opendir(base_path.string().c_str()));
          }
       }
       return *this;
@@ -971,11 +1139,16 @@ class directory_iterator
    {
       if (dir)
       {
-         struct dirent* entry = readdir(dir.get());
+         struct dirent* entry;
+         do {
+            entry = readdir(dir.get());
+         } while (entry && (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0));
+         
          if (entry)
          {
             current_path = entry->d_name;
-            current_path_obj = current_path_obj / current_path;
+            current_path_obj = base_path / current_path;
+            current_entry = directory_entry(current_path_obj);
          }
          else
          {
@@ -1003,19 +1176,24 @@ class directory_iterator
       return stat(current_path_obj.string().c_str(), &st) == 0 && S_ISREG(st.st_mode);
    }
 
-   path get_path() const
+   ::heimdall::compat::fs::path get_path() const
    {
       return current_path_obj;
    }
 
-   const path& operator*() const
+   ::heimdall::compat::fs::path get_current_path() const
    {
       return current_path_obj;
    }
 
-   const path* operator->() const
+   const directory_entry& operator*() const
    {
-      return &current_path_obj;
+      return current_entry;
+   }
+
+   const directory_entry* operator->() const
+   {
+      return &current_entry;
    }
 };
 
@@ -1334,4 +1512,41 @@ constexpr bool HEIMDALL_FULL_DWARF      = HEIMDALL_CPP17_AVAILABLE;
 constexpr bool HEIMDALL_BASIC_DWARF     = HEIMDALL_CPP14_AVAILABLE;
 constexpr bool HEIMDALL_NO_DWARF        = HEIMDALL_CPP11_AVAILABLE;
 constexpr bool HEIMDALL_MODERN_FEATURES = HEIMDALL_CPP20_AVAILABLE;
+
+// Structured bindings compatibility
+#if __cplusplus >= 201703L
+    // C++17+: Use native structured bindings
+    #define HEIMDALL_STRUCTURED_BINDING(var1, var2, container, item) \
+        for (const auto& [var1, var2] : container)
+    
+    #define HEIMDALL_AUTO_PAIR(var1, var2, pair) \
+        const auto& [var1, var2] = pair
+        
+    // Empty macro for C++17+ since structured bindings don't need explicit end
+    #define HEIMDALL_STRUCTURED_BINDING_END
+        
+#else
+    // C++11/14: Use std::tie for compatibility
+    #define HEIMDALL_STRUCTURED_BINDING(var1, var2, container, item) \
+        for (const auto& item : container) { \
+            const auto& var1 = item.first; \
+            const auto& var2 = item.second;
+    
+    #define HEIMDALL_AUTO_PAIR(var1, var2, pair) \
+        const auto& var1 = pair.first; \
+        const auto& var2 = pair.second
+        
+    #define HEIMDALL_STRUCTURED_BINDING_END }
+#endif
+
+// Compatibility mode detection
+#ifdef HEIMDALL_CXX11_14_MODE
+    #if HEIMDALL_CXX11_14_MODE
+        constexpr bool HEIMDALL_COMPATIBILITY_MODE = true;
+    #else
+        constexpr bool HEIMDALL_COMPATIBILITY_MODE = false;
+    #endif
+#else
+    constexpr bool HEIMDALL_COMPATIBILITY_MODE = !HEIMDALL_CPP17_AVAILABLE;
+#endif
 

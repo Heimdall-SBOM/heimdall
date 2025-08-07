@@ -8,6 +8,7 @@ option(BUILD_SHARED_CORE "Build shared core library" ON)
 option(BUILD_TESTS "Build test suite" ON)
 option(BUILD_EXAMPLES "Build example projects" ON)
 option(BUILD_COMPILER_PLUGINS "Build compiler plugins for GCC and Clang" ON)
+option(HEIMDALL_CXX11_14_MODE "Enable C++11/14 compatibility mode" OFF)
 option(ENABLE_DEBUG "Enable debug output" OFF)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
@@ -279,6 +280,12 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(external/json)
 add_subdirectory(external/json-schema-validator)
 
+# Add compiler plugins first (needed by src)
+if(BUILD_COMPILER_PLUGINS)
+    message(STATUS "Building compiler plugins...")
+    add_subdirectory(src/compiler)
+endif()
+
 # Add src directory
 add_subdirectory(src)
 
@@ -294,10 +301,20 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-# Add compiler plugins if enabled
-if(BUILD_COMPILER_PLUGINS)
-    message(STATUS "Building compiler plugins...")
-    add_subdirectory(src/compiler)
+# Compiler plugins are now added before src directory above
+
+# Handle C++11/14 compatibility mode
+if(HEIMDALL_CXX11_14_MODE)
+    message(STATUS "C++11/14 compatibility mode enabled")
+    add_compile_definitions(HEIMDALL_CXX11_14_MODE=1)
+    
+    # Allow compiler plugins to build in C++11/14 mode
+    if(CMAKE_CXX_STANDARD LESS 17)
+        message(STATUS "Enabling compiler plugins for C++${CMAKE_CXX_STANDARD} with compatibility layer")
+        set(BUILD_COMPILER_PLUGINS ON CACHE BOOL "Enabled for C++11/14 with compatibility" FORCE)
+    endif()
+else()
+    add_compile_definitions(HEIMDALL_CXX11_14_MODE=0)
 endif()
 
 # Print configuration summary
