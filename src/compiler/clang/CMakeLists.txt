@@ -153,7 +153,8 @@ if(NOT CLANG_BASIC_LIB AND NOT CLANG_CPP_LIB)
 endif()
 
 # Link Clang libraries
-# Try to use the consolidated libclang-cpp if available (LLVM 19+)
+# LLVM 18 on macOS has libclang-cpp but it has linking issues, so avoid it
+# Container builds use LLVM 19 which works fine with libclang-cpp
 if(CLANG_CPP_LIB AND LLVM_VERSION_MAJOR GREATER_EQUAL 19)
     message(STATUS "Using consolidated libclang-cpp.so for LLVM ${LLVM_VERSION_MAJOR}")
     target_link_libraries(heimdall-clang-plugin PRIVATE
@@ -163,7 +164,7 @@ if(CLANG_CPP_LIB AND LLVM_VERSION_MAJOR GREATER_EQUAL 19)
     )
 elseif(CLANG_BASIC_LIB)
     message(STATUS "Using individual Clang libraries for LLVM ${LLVM_VERSION_MAJOR}")
-    # Fall back to individual libraries for older LLVM versions (including 18)
+    # For LLVM 18 and older, use individual libraries but avoid linking LLVM libs directly
     target_link_libraries(heimdall-clang-plugin PRIVATE
         clangFrontend
         clangAST
@@ -233,9 +234,9 @@ add_custom_target(clang-plugin DEPENDS heimdall-clang-plugin)
 # Test the plugin compilation
 add_custom_target(test-clang-plugin
     COMMAND ${CMAKE_COMMAND} -E echo "Testing Clang plugin compilation..."
-    COMMAND clang++ -load $<TARGET_FILE:heimdall-clang-plugin> 
-            -plugin heimdall-sbom
-            -plugin-arg-heimdall-sbom-verbose
+    COMMAND clang++ -Xclang -load -Xclang $<TARGET_FILE:heimdall-clang-plugin> 
+            -Xclang -plugin -Xclang heimdall-sbom
+            -Xclang -plugin-arg-heimdall-sbom -Xclang verbose
             -c -o /dev/null -x c++ /dev/null
     DEPENDS heimdall-clang-plugin
     COMMENT "Testing Clang plugin functionality"
