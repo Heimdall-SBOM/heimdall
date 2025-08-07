@@ -12,6 +12,7 @@ RUN zypper update -y && \
       gcc \
       gcc-c++ \
       gcc-gnat \
+      gcc-plugin-devel \
       cmake \
       ninja \
       python3 \
@@ -25,6 +26,13 @@ RUN zypper update -y && \
 
 # OpenSUSE Tumbleweed uses the latest GCC version by default
 # No need to set alternatives as gcc and g++ are already the default
+
+# Install Clang and Clang development packages
+RUN zypper install -y \
+      clang \
+      clang-devel \
+      clang-tools \
+      libclang-devel
 
 # Install LLVM - use unversioned packages which should provide llvm-config
 RUN zypper install -y \

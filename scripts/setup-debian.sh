@@ -203,7 +203,7 @@ install_llvm() {
     
     if [ "$DRY_RUN" = true ]; then
         echo "Would download and run LLVM installation script"
-        echo "Would install: llvm-${LLVM_VERSION}-dev lld-${LLVM_VERSION}"
+        echo "Would install: clang-${LLVM_VERSION} libclang-${LLVM_VERSION}-dev libclang-common-${LLVM_VERSION}-dev clang-tools-${LLVM_VERSION} llvm-${LLVM_VERSION}-dev lld-${LLVM_VERSION}"
     else
         # Download and run LLVM installation script
         wget https://apt.llvm.org/llvm.sh
@@ -211,7 +211,7 @@ install_llvm() {
         ./llvm.sh ${LLVM_VERSION}
         
         apt-get update
-        apt-get install -y llvm-${LLVM_VERSION}-dev lld-${LLVM_VERSION}
+        apt-get install -y clang-${LLVM_VERSION} libclang-${LLVM_VERSION}-dev libclang-common-${LLVM_VERSION}-dev clang-tools-${LLVM_VERSION} llvm-${LLVM_VERSION}-dev lld-${LLVM_VERSION}
     fi
 }
 

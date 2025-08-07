@@ -13,6 +13,7 @@ RUN dnf install -y epel-release && \
       gcc \
       gcc-c++ \
       gcc-gnat \
+      gcc-plugin-devel \
       cmake \
       python3 \
       python3-pip \
@@ -34,7 +35,7 @@ RUN curl -L -o /tmp/ninja.zip https://github.com/ninja-build/ninja/releases/down
 # Enable CRB repository for newer GCC versions if needed
 RUN if [ "$GCC_VERSION" = "13" ]; then \
       dnf config-manager --set-enabled crb && \
-      dnf install -y gcc-toolset-13; \
+      dnf install -y gcc-toolset-13 gcc-toolset-13-gcc-plugin-devel; \
     fi
 
 # Set GCC alternatives based on version
@@ -48,6 +49,7 @@ RUN dnf install -y \
       clang \
       clang-devel \
       clang-tools-extra \
+      libclang-devel \
       lldb \
       lld
 
