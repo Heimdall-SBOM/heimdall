@@ -524,7 +524,11 @@ std::string EnhancedSBOMGenerator::findMetadataDirectory() const
         if (compat::fs::exists(dir)) {
             // Check if directory contains metadata files
             for (const auto& entry : compat::fs::directory_iterator(dir)) {
+#if __cplusplus >= 201703L
                 if (entry.path().extension() == ".json") {
+#else
+                if (entry.get_path().extension() == ".json") {
+#endif
                     logEnhanced("Found metadata directory: " + dir);
                     return dir;
                 }

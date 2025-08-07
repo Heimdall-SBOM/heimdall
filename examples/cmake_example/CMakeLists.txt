@@ -27,16 +27,48 @@ set(CMAKE_BUILD_TYPE Debug)
 # =============================================================================
 
 # Heimdall installation path (can be overridden with -DHEIMDALL_ROOT=...)
-# Use HEIMDALL_BUILD_DIR if provided, otherwise default to build-gcc-cpp17 for backwards compatibility
 if(DEFINED HEIMDALL_BUILD_DIR)
     set(HEIMDALL_ROOT "${HEIMDALL_BUILD_DIR}" CACHE PATH "Path to Heimdall installation")
 else()
-    set(HEIMDALL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../build-gcc-cpp17" CACHE PATH "Path to Heimdall installation")
+    # Use the main project's build directory when building as part of the main project
+    get_filename_component(MAIN_BUILD_DIR "${CMAKE_BINARY_DIR}" ABSOLUTE)
+    if(EXISTS "${MAIN_BUILD_DIR}/lib" OR EXISTS "${MAIN_BUILD_DIR}/src")
+        set(HEIMDALL_ROOT "${MAIN_BUILD_DIR}" CACHE PATH "Path to Heimdall installation")
+    else()
+        # For standalone builds, try to find the correct build directory dynamically
+        set(SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+        
+        # Try to find existing build directories with different patterns
+        set(BUILD_CANDIDATES 
+            "${SOURCE_ROOT}/build-gcc-cpp23"
+            "${SOURCE_ROOT}/build-gcc-cpp20"  
+            "${SOURCE_ROOT}/build-gcc-cpp17"
+            "${SOURCE_ROOT}/build-gcc-cpp14"
+            "${SOURCE_ROOT}/build-gcc-cpp11"
+            "${SOURCE_ROOT}/build"
+            "${SOURCE_ROOT}/build-debug"
+            "${SOURCE_ROOT}/build-release"
+        )
+        
+        set(HEIMDALL_ROOT "")
+        foreach(BUILD_DIR ${BUILD_CANDIDATES})
+            if(EXISTS "${BUILD_DIR}/lib" OR EXISTS "${BUILD_DIR}/src")
+                set(HEIMDALL_ROOT "${BUILD_DIR}" CACHE PATH "Path to Heimdall installation")
+                message(STATUS "Found Heimdall build at: ${BUILD_DIR}")
+                break()
+            endif()
+        endforeach()
+        
+        # Final fallback if no build directory found
+        if(HEIMDALL_ROOT STREQUAL "")
+            set(HEIMDALL_ROOT "${SOURCE_ROOT}/build-gcc-cpp17" CACHE PATH "Path to Heimdall installation")
+        endif()
+    endif()
 endif()
 
-# Verify Heimdall installation
-if(NOT EXISTS "${HEIMDALL_ROOT}")
-    message(FATAL_ERROR "Heimdall not found at ${HEIMDALL_ROOT}. Please set HEIMDALL_ROOT correctly.")
+# Verify Heimdall installation (check for lib directory or src directory)
+if(NOT EXISTS "${HEIMDALL_ROOT}/lib" AND NOT EXISTS "${HEIMDALL_ROOT}/src")
+    message(FATAL_ERROR "Heimdall not found at ${HEIMDALL_ROOT}. Please set HEIMDALL_ROOT correctly or ensure lib/ or src/ directories exist.")
 endif()
 
 # Project configuration

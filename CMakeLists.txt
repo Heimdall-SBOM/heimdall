@@ -48,6 +48,9 @@ if(CMAKE_CXX_STANDARD LESS 17)
         if(NOT DEFINED USE_BOOST_FILESYSTEM)
             set(USE_BOOST_FILESYSTEM ON CACHE INTERNAL "Use Boost.Filesystem")
         endif()
+        # Disable compiler plugins for C++11 (LLVM/Clang headers require C++14+)
+        set(BUILD_COMPILER_PLUGINS OFF CACHE INTERNAL "Compiler plugins require C++14+")
+        message(STATUS "Compiler plugins disabled for C++11 (LLVM/Clang headers require C++14+)")
     else()
         # C++14 mode
         set(HEIMDALL_CPP14_AVAILABLE 1 CACHE INTERNAL "C++14 available")
@@ -280,11 +283,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(external/json)
 add_subdirectory(external/json-schema-validator)
 
-# Add compiler plugins first (needed by src)
-if(BUILD_COMPILER_PLUGINS)
-    message(STATUS "Building compiler plugins...")
-    add_subdirectory(src/compiler)
-endif()
+# Add compiler infrastructure (needed by Enhanced adapters)
+# Always build common infrastructure, conditionally build plugins
+add_subdirectory(src/compiler)
 
 # Add src directory
 add_subdirectory(src)

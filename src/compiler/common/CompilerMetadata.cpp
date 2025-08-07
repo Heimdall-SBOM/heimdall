@@ -540,8 +540,13 @@ std::vector<CompilerMetadata> CompilerMetadataCollector::loadMetadataFiles(const
     }
     
     for (const auto& entry : compat::fs::directory_iterator(directory)) {
+#if __cplusplus >= 201703L
         if (entry.path().extension() == ".json") {
             std::ifstream file(entry.path().string());
+#else
+        if (entry.get_path().extension() == ".json") {
+            std::ifstream file(entry.get_path().string());
+#endif
             if (file.is_open()) {
                 try {
                     nlohmann::json j;
@@ -551,7 +556,11 @@ std::vector<CompilerMetadata> CompilerMetadataCollector::loadMetadataFiles(const
                     metadata.from_json(j);
                     metadata_list.push_back(metadata);
                 } catch (const std::exception& e) {
-                    Utils::warningPrint("Failed to load metadata file: " + entry.path().string() + 
+#if __cplusplus >= 201703L
+                    Utils::warningPrint("Failed to load metadata file: " + entry.path().string() +
+#else
+                    Utils::warningPrint("Failed to load metadata file: " + entry.get_path().string() +
+#endif 
                                        " - " + e.what());
                 }
             }
@@ -601,10 +610,10 @@ std::string CompilerMetadataCollector::getFileModificationTime(const std::string
 {
     try {
         auto ftime = compat::fs::last_write_time(file_path);
-        auto time_t = std::chrono::system_clock::to_time_t(
-            std::chrono::system_clock::time_point() + 
-            std::chrono::duration_cast<std::chrono::system_clock::duration>(ftime.time_since_epoch())
-        );
+        // For C++11, use the duration correctly
+        auto duration_since_epoch = ftime.time_since_epoch();
+        auto system_time_point = std::chrono::system_clock::time_point(duration_since_epoch);
+        auto time_t = std::chrono::system_clock::to_time_t(system_time_point);
         
         std::stringstream ss;
         ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%SZ");
@@ -715,20 +724,33 @@ size_t CompilerMetadataCollector::cleanupOldMetadataFiles(const std::string& met
     
     try {
         for (const auto& entry : compat::fs::directory_iterator(metadata_dir)) {
+#if __cplusplus >= 201703L
             if (entry.path().extension() == ".json") {
                 auto file_time_fs = compat::fs::last_write_time(entry.path());
-                // Convert filesystem time to system time
-                auto file_time = std::chrono::system_clock::time_point() + 
-                    std::chrono::duration_cast<std::chrono::system_clock::duration>(file_time_fs.time_since_epoch());
+#else
+            if (entry.get_path().extension() == ".json") {
+                auto file_time_fs = compat::fs::last_write_time(entry.get_path());
+#endif
+                // Convert filesystem time to system time for C++11
+                auto duration_since_epoch = file_time_fs.time_since_epoch();
+                auto file_time = std::chrono::system_clock::time_point(duration_since_epoch);
                 auto file_age = now - file_time;
                 
                 if (file_age > max_age) {
                     try {
+#if __cplusplus >= 201703L
                         compat::fs::remove(entry.path());
+#else
+                        compat::fs::remove(entry.get_path());
+#endif
                         cleaned_count++;
                     } catch (const std::exception& e) {
                         Utils::warningPrint("Failed to remove old metadata file: " + 
+#if __cplusplus >= 201703L
                                            entry.path().string() + " - " + e.what());
+#else
+                                           entry.get_path().string() + " - " + e.what());
+#endif
                     }
                 }
             }
@@ -751,13 +773,25 @@ std::pair<size_t, size_t> CompilerMetadataCollector::getMetadataStatistics(const
     
     try {
         for (const auto& entry : compat::fs::directory_iterator(metadata_dir)) {
+#if __cplusplus >= 201703L
             if (entry.path().extension() == ".json") {
+#else
+            if (entry.get_path().extension() == ".json") {
+#endif
                 file_count++;
                 try {
+#if __cplusplus >= 201703L
                     total_size += compat::fs::file_size(entry.path());
+#else
+                    total_size += compat::fs::file_size(entry.get_path());
+#endif
                 } catch (const std::exception& e) {
                     Utils::warningPrint("Failed to get size of metadata file: " + 
+#if __cplusplus >= 201703L
                                        entry.path().string() + " - " + e.what());
+#else
+                                       entry.get_path().string() + " - " + e.what());
+#endif
                 }
             }
         }

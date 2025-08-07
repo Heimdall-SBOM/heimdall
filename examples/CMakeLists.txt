@@ -4,6 +4,11 @@
 # Add the OpenSSL/pthread demo
 add_subdirectory(openssl_pthread_demo)
 
+# Add the CMake example if the src directory exists
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake_example/src")
+    add_subdirectory(cmake_example)
+endif()
+
 # Add BOM reference demo
 add_executable(bom_ref_demo bom_ref_demo.cpp)
 target_link_libraries(bom_ref_demo PRIVATE heimdall-core ${OPENSSL_LIBRARIES} ${LLVM_LIBRARIES})

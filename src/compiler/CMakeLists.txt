@@ -19,10 +19,10 @@ set(HEIMDALL_BUILD_COMPILER_PLUGINS ${BUILD_COMPILER_PLUGINS})
 
 message(STATUS "Configuring Heimdall compiler plugins...")
 
-# Always build the common infrastructure
+# Always build the common infrastructure (needed by EnhancedGoldAdapter etc.)
 add_subdirectory(common)
 
-# Build GCC plugin if requested and available
+# Build GCC and Clang plugins only if requested and available
 if(HEIMDALL_BUILD_COMPILER_PLUGINS)
     message(STATUS "Building compiler plugins...")
     

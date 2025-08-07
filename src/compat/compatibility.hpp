@@ -88,11 +88,7 @@ namespace std {
     template<typename T>
     struct is_pointer_v_impl : std::integral_constant<bool, std::is_pointer<T>::value> {};
     
-    template<typename T>
-    const bool is_class_v = is_class_v_impl<T>::value;
-    
-    template<typename T>
-    const bool is_pointer_v = is_pointer_v_impl<T>::value;
+    // For C++11, use the struct implementations directly instead of variable templates
     #endif
     
     #if __cplusplus < 201402L
@@ -641,7 +637,7 @@ public:
     file_time_type() : time_(std::chrono::system_clock::now()) {}
     file_time_type(std::chrono::system_clock::time_point t) : time_(t) {}
     
-    std::chrono::system_clock::time_point time_since_epoch() const { return time_; }
+    std::chrono::system_clock::duration time_since_epoch() const { return time_.time_since_epoch(); }
     
     // Add duration_cast support
     template<typename Rep, typename Period>
