@@ -189,6 +189,22 @@ install_gcc_versions() {
     print_status "Available GCC version: 15 (latest)"
 }
 
+# Function to install Clang
+install_clang() {
+    if [ "$SKIP_LLVM" = true ]; then
+        print_warning "Skipping Clang installation as requested"
+        return
+    fi
+    
+    print_subheader "Installing Clang and plugin development packages..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would install: clang clang-devel clang-tools-extra libclang-devel"
+    else
+        dnf install -y clang clang-devel clang-tools-extra libclang-devel
+    fi
+}
+
 # Function to install LLVM
 install_llvm() {
     if [ "$SKIP_LLVM" = true ]; then
@@ -358,6 +374,7 @@ main() {
     install_build_tools
     install_dev_libs
     install_gcc_versions
+    install_clang
     install_llvm
     create_llvm_symlinks
     install_lld_headers

@@ -160,8 +160,10 @@ install_dev_libs() {
     
     if [ "$DRY_RUN" = true ]; then
         echo "Would install: openssl elfutils pkg-config boost boost-libs"
+        echo "Note: Arch includes GCC plugin dev headers in main gcc package"
     else
         pacman -S --noconfirm openssl elfutils pkg-config boost boost-libs
+        print_status "Note: GCC plugin development headers are included in the main gcc package"
     fi
 }
 
@@ -182,6 +184,24 @@ install_gcc_versions() {
     fi
     
     print_status "Available GCC versions: 14, 15 (default)"
+}
+
+# Function to install Clang
+install_clang() {
+    if [ "$SKIP_LLVM" = true ]; then
+        print_warning "Skipping Clang installation as requested"
+        return
+    fi
+    
+    print_subheader "Installing Clang and plugin development packages..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would install: clang clang-tools-extra"
+        echo "Note: Clang plugin development headers are included in main clang package"
+    else
+        pacman -S --noconfirm clang clang-tools-extra
+        print_status "Note: Clang plugin development headers are included in the main clang package"
+    fi
 }
 
 # Function to install LLVM
@@ -375,6 +395,7 @@ main() {
     install_build_tools
     install_dev_libs
     install_gcc_versions
+    install_clang
     install_llvm
     create_llvm_symlinks
     install_lld_headers

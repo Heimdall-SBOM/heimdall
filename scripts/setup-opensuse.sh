@@ -164,9 +164,9 @@ install_dev_libs() {
     print_subheader "Installing development libraries..."
     
     if [ "$DRY_RUN" = true ]; then
-        echo "Would install: openssl-devel libelf-devel pkg-config boost-devel"
+        echo "Would install: openssl-devel libelf-devel pkg-config boost-devel gcc-plugin-devel"
     else
-        zypper install -y openssl-devel libelf-devel pkg-config boost-devel
+        zypper install -y openssl-devel libelf-devel pkg-config boost-devel gcc-plugin-devel
     fi
 }
 
@@ -187,6 +187,22 @@ install_gcc_versions() {
     fi
     
     print_status "Available GCC version: latest"
+}
+
+# Function to install Clang
+install_clang() {
+    if [ "$SKIP_LLVM" = true ]; then
+        print_warning "Skipping Clang installation as requested"
+        return
+    fi
+    
+    print_subheader "Installing Clang and plugin development packages..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would install: clang clang-devel clang-tools libclang-devel"
+    else
+        zypper install -y clang clang-devel clang-tools libclang-devel
+    fi
 }
 
 # Function to install LLVM
@@ -375,6 +391,7 @@ main() {
     install_build_tools
     install_dev_libs
     install_gcc_versions
+    install_clang
     install_llvm
     create_llvm_symlinks
     install_lld_headers
