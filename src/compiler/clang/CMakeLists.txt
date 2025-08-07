@@ -201,7 +201,6 @@ add_dependencies(heimdall-clang-plugin heimdall-core)
 # Link libraries - order matters for shared library dependencies
 target_link_libraries(heimdall-clang-plugin PRIVATE
     heimdall-core
-    ${LLVM_LIBS}
 )
 
 # Installation
