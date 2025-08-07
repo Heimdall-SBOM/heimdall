@@ -40,6 +40,7 @@ limitations under the License.
 #include "clang/Lex/PreprocessorOptions.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Basic/Version.h"
+#include "llvm/Config/llvm-config.h"
 #include "../common/CompilerMetadata.hpp"
 #include <memory>
 #include <iostream>
@@ -65,14 +66,13 @@ struct ClangPluginConfig {
 class HeimdallASTVisitor : public RecursiveASTVisitor<HeimdallASTVisitor> {
 private:
     ASTContext &Context;
-    CompilerInstance &CI;
     CompilerMetadataCollector &Collector;
     ClangPluginConfig &Config;
     
 public:
     HeimdallASTVisitor(ASTContext &Context, CompilerInstance &CI,
                       CompilerMetadataCollector &Collector, ClangPluginConfig &Config)
-        : Context(Context), CI(CI), Collector(Collector), Config(Config) {}
+        : Context(Context), Collector(Collector), Config(Config) {}
     
     bool VisitTranslationUnitDecl(TranslationUnitDecl *TUD) {
         // Process the main source file
@@ -160,6 +160,7 @@ public:
                        ClangPluginConfig &Config)
         : CI(CI), Collector(Collector), Config(Config) {}
     
+#if LLVM_VERSION_MAJOR >= 19
     void InclusionDirective(
         SourceLocation HashLoc,
         const Token &IncludeTok,
@@ -172,6 +173,19 @@ public:
         const Module *SuggestedModule,
         bool ModuleImported,
         SrcMgr::CharacteristicKind FileType) override {
+#else
+    void InclusionDirective(
+        SourceLocation HashLoc,
+        const Token &IncludeTok,
+        StringRef FileName,
+        bool IsAngled,
+        CharSourceRange FilenameRange,
+        OptionalFileEntryRef File,
+        StringRef SearchPath,
+        StringRef RelativePath,
+        const Module *Imported,
+        SrcMgr::CharacteristicKind FileType) override {
+#endif
         
         SourceManager &SM = CI.getSourceManager();
         
