@@ -610,9 +610,11 @@ std::string CompilerMetadataCollector::getFileModificationTime(const std::string
 {
     try {
         auto ftime = compat::fs::last_write_time(file_path);
-        // For C++11, use the duration correctly
+        // For C++17+, handle the time_point conversion properly for different clock types
         auto duration_since_epoch = ftime.time_since_epoch();
-        auto system_time_point = std::chrono::system_clock::time_point(duration_since_epoch);
+        auto system_time_point = std::chrono::system_clock::time_point(
+            std::chrono::duration_cast<std::chrono::system_clock::duration>(duration_since_epoch)
+        );
         auto time_t = std::chrono::system_clock::to_time_t(system_time_point);
         
         std::stringstream ss;
@@ -733,7 +735,9 @@ size_t CompilerMetadataCollector::cleanupOldMetadataFiles(const std::string& met
 #endif
                 // Convert filesystem time to system time for C++11
                 auto duration_since_epoch = file_time_fs.time_since_epoch();
-                auto file_time = std::chrono::system_clock::time_point(duration_since_epoch);
+                auto file_time = std::chrono::system_clock::time_point(
+                    std::chrono::duration_cast<std::chrono::system_clock::duration>(duration_since_epoch)
+                );
                 auto file_age = now - file_time;
                 
                 if (file_age > max_age) {
