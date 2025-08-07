@@ -76,7 +76,7 @@ find_package(OpenSSL REQUIRED)
 
 # Build GCC plugin
 add_library(heimdall-gcc-plugin SHARED
-    HeimdallGCCPlugin.cpp
+    GCCPluginWrapper.cpp
     ../common/CompilerMetadata.cpp
 )
 
@@ -91,7 +91,6 @@ set_target_properties(heimdall-gcc-plugin PROPERTIES
 
 # Include directories
 target_include_directories(heimdall-gcc-plugin PRIVATE
-    ${GCC_PLUGIN_INCLUDES}
     ../common
     ../../common
     ../../detectors
@@ -112,11 +111,10 @@ target_compile_definitions(heimdall-gcc-plugin PRIVATE
     _GNU_SOURCE=1
 )
 
-# Compiler flags specific to GCC plugins
+# Compiler flags specific to GCC plugins - build in isolation
 target_compile_options(heimdall-gcc-plugin PRIVATE
     -fPIC
     -fno-rtti
-    -fno-exceptions
     -Wall
     -Wextra
     -Wno-unused-parameter

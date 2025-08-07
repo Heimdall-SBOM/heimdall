@@ -14,17 +14,50 @@
 
 # Clang Plugin build configuration for Heimdall
 
-# Find Clang and LLVM
-find_package(LLVM REQUIRED CONFIG)
-find_package(Clang REQUIRED CONFIG)
-
-if(NOT LLVM_FOUND)
-    message(WARNING "LLVM not found, skipping Clang plugin build")
+# Wrap the entire Clang plugin build in error handling to prevent CI failures
+if(CMAKE_CXX_STANDARD LESS 14)
+    message(WARNING "Clang plugins require C++14 or later, skipping Clang plugin build")
     return()
 endif()
 
+# Find LLVM first
+find_package(LLVM CONFIG QUIET)
+if(NOT LLVM_FOUND)
+    message(WARNING "LLVM not found, skipping Clang plugin build")
+    message(WARNING "Install LLVM development libraries to enable Clang plugin support")
+    return()
+endif()
+
+# Pre-check for essential Clang library files before attempting find_package
+# This prevents CMake errors when ClangTargets.cmake tries to import missing files
+set(CLANG_ESSENTIAL_LIBS
+    "${LLVM_LIBRARY_DIRS}/libclangBasic.a"
+    "${LLVM_LIBRARY_DIRS}/libclang-cpp.so"
+    "${LLVM_LIBRARY_DIRS}/libclang-cpp.so.19"
+)
+
+set(CLANG_LIB_FOUND FALSE)
+foreach(CLANG_LIB ${CLANG_ESSENTIAL_LIBS})
+    if(EXISTS "${CLANG_LIB}")
+        set(CLANG_LIB_FOUND TRUE)
+        message(STATUS "Found Clang library: ${CLANG_LIB}")
+        break()
+    endif()
+endforeach()
+
+if(NOT CLANG_LIB_FOUND)
+    message(WARNING "Clang development libraries not found in ${LLVM_LIBRARY_DIRS}")
+    message(WARNING "Looked for: libclangBasic.a, libclang-cpp.so*")
+    message(WARNING "Install Clang development packages (libclang-*-dev) to enable Clang plugin support")
+    message(WARNING "Skipping Clang plugin build")
+    return()
+endif()
+
+# Now try to find Clang package - should be safe since we verified files exist
+find_package(Clang CONFIG QUIET)
 if(NOT Clang_FOUND)
-    message(WARNING "Clang not found, skipping Clang plugin build")
+    message(WARNING "Clang package configuration not found, skipping Clang plugin build") 
+    message(WARNING "Install Clang development libraries (libclang-dev) to enable Clang plugin support")
     return()
 endif()
 
@@ -104,17 +137,29 @@ target_include_directories(heimdall-clang-plugin PRIVATE
 # Get LLVM and Clang libraries
 llvm_map_components_to_libnames(LLVM_LIBS support core irreader)
 
+# Check if required Clang libraries exist before trying to link
+find_library(CLANG_BASIC_LIB clangBasic PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
+find_library(CLANG_CPP_LIB clang-cpp PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
+
+if(NOT CLANG_BASIC_LIB AND NOT CLANG_CPP_LIB)
+    message(WARNING "Clang development libraries not found (libclangBasic.a or libclang-cpp.so)")
+    message(WARNING "Install clang development packages (libclang-*-dev) to enable Clang plugin support")
+    message(WARNING "Skipping Clang plugin build")
+    return()
+endif()
+
 # Link libraries
 # Try to use the consolidated libclang-cpp if available (LLVM 19+)
-find_library(CLANG_CPP_LIB clang-cpp PATHS /usr/lib64 /usr/lib)
 if(CLANG_CPP_LIB)
+    message(STATUS "Using consolidated libclang-cpp.so")
     target_link_libraries(heimdall-clang-plugin PRIVATE
         ${LLVM_LIBS}
         clang-cpp
         OpenSSL::SSL
         OpenSSL::Crypto
     )
-else()
+elseif(CLANG_BASIC_LIB)
+    message(STATUS "Using individual Clang libraries")
     # Fall back to individual libraries for older LLVM versions
     target_link_libraries(heimdall-clang-plugin PRIVATE
         ${LLVM_LIBS}
@@ -127,6 +172,9 @@ else()
         OpenSSL::SSL
         OpenSSL::Crypto
     )
+else()
+    message(WARNING "No suitable Clang libraries found, skipping Clang plugin build")
+    return()
 endif()
 
 # Compiler definitions
