@@ -142,10 +142,32 @@ else()
     add_definitions(${LLVM_DEFINITIONS})
 endif()
 
-# Fallback: if LLVM_LIBRARIES is empty, set it manually based on LLVM version (always run this)
+# Validate LLVM_LIBRARIES and fix if needed
 if(NOT LLVM_LIBRARIES OR LLVM_LIBRARIES STREQUAL "")
-    set(LLVM_LIBRARIES "-lLLVM-${LLVM_VERSION_MAJOR}" CACHE STRING "LLVM libraries fallback" FORCE)
-    message(STATUS "LLVM_LIBRARIES was empty, setting to: ${LLVM_LIBRARIES}")
+    message(STATUS "LLVM_LIBRARIES is empty, attempting to find LLVM library")
+    set(NEED_LLVM_FALLBACK TRUE)
+elseif(LLVM_LIBRARIES MATCHES "^-lLLVM-[0-9]+$")
+    # Check if the version-specific library actually exists
+    string(REGEX REPLACE "^-l" "" LLVM_LIB_NAME "${LLVM_LIBRARIES}")
+    find_library(LLVM_VERSION_SPECIFIC_LIB ${LLVM_LIB_NAME} PATHS ${LLVM_LIBRARY_DIRS})
+    if(NOT LLVM_VERSION_SPECIFIC_LIB)
+        message(STATUS "LLVM_LIBRARIES specifies ${LLVM_LIBRARIES} but library not found, attempting fallback")
+        set(NEED_LLVM_FALLBACK TRUE)
+    else()
+        message(STATUS "LLVM_LIBRARIES verified: ${LLVM_LIBRARIES} -> ${LLVM_VERSION_SPECIFIC_LIB}")
+    endif()
+endif()
+
+if(NEED_LLVM_FALLBACK)
+    # Try to find the LLVM dynamic library
+    find_library(LLVM_DYLIB LLVM PATHS ${LLVM_LIBRARY_DIRS})
+    if(LLVM_DYLIB)
+        set(LLVM_LIBRARIES "${LLVM_DYLIB}" CACHE STRING "LLVM libraries fallback" FORCE)
+        message(STATUS "Using LLVM fallback library: ${LLVM_LIBRARIES}")
+    else()
+        # Keep original if we can't find anything better
+        message(WARNING "Could not find suitable LLVM library, keeping original: ${LLVM_LIBRARIES}")
+    endif()
 endif()
 
 # Detect available LLVM targets

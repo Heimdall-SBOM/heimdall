@@ -160,7 +160,7 @@ public:
                        ClangPluginConfig &Config)
         : CI(CI), Collector(Collector), Config(Config) {}
     
-#if LLVM_VERSION_MAJOR >= 19
+#if LLVM_VERSION_MAJOR >= 20
     void InclusionDirective(
         SourceLocation HashLoc,
         const Token &IncludeTok,

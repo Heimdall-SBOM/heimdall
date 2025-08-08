@@ -120,6 +120,10 @@ set_target_properties(heimdall-clang-plugin PROPERTIES
     CXX_STANDARD ${CMAKE_CXX_STANDARD}
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
+    MACOSX_RPATH ON
+    BUILD_WITH_INSTALL_RPATH ON
+    INSTALL_RPATH_USE_LINK_PATH ON
+    INSTALL_RPATH "${CMAKE_BINARY_DIR}/lib;${CMAKE_INSTALL_PREFIX}/lib"
 )
 
 # Include directories
@@ -164,16 +168,15 @@ target_link_directories(heimdall-clang-plugin PRIVATE ${LLVM_LIBRARY_DIRS})
 if(CLANG_CPP_LIB)
     message(STATUS "Using consolidated libclang-cpp.so")
     target_link_libraries(heimdall-clang-plugin PRIVATE
-        ${LLVM_LIBS}
         clang-cpp
         OpenSSL::SSL
         OpenSSL::Crypto
     )
 elseif(CLANG_BASIC_LIB)
-    message(STATUS "Using individual Clang libraries")
-    # Fall back to individual libraries for older LLVM versions
+    message(STATUS "Using individual Clang libraries for LLVM ${LLVM_VERSION_MAJOR}")
+    # For LLVM 18 and older, use individual libraries and link with LLVM dylib
+    find_library(LLVM_DYLIB LLVM PATHS ${LLVM_LIBRARY_DIRS})
     target_link_libraries(heimdall-clang-plugin PRIVATE
-        ${LLVM_LIBS}
         clangFrontend
         clangAST
         clangLex
@@ -183,6 +186,10 @@ elseif(CLANG_BASIC_LIB)
         OpenSSL::SSL
         OpenSSL::Crypto
     )
+    # Link with LLVM dynamic library if available
+    if(LLVM_DYLIB)
+        target_link_libraries(heimdall-clang-plugin PRIVATE ${LLVM_DYLIB})
+    endif()
 else()
     message(WARNING "No suitable Clang libraries found, skipping Clang plugin build")
     return()
@@ -205,9 +212,12 @@ target_compile_options(heimdall-clang-plugin PRIVATE
 )
 
 # Add dependency on heimdall core components
-if(TARGET heimdall-core)
-    target_link_libraries(heimdall-clang-plugin PRIVATE heimdall-core)
-endif()
+add_dependencies(heimdall-clang-plugin heimdall-core)
+
+# Link libraries - order matters for shared library dependencies
+target_link_libraries(heimdall-clang-plugin PRIVATE
+    heimdall-core
+)
 
 # Installation
 install(TARGETS heimdall-clang-plugin
@@ -231,7 +241,7 @@ install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/heimdall-clang
 message(STATUS "Clang plugin will be built as: heimdall-clang-plugin.so")
 message(STATUS "LLVM include dirs: ${LLVM_INCLUDE_DIRS}")
 message(STATUS "Clang include dirs: ${CLANG_INCLUDE_DIRS}")
-message(STATUS "LLVM libraries: ${LLVM_LIBS}")
+# LLVM libraries are implicitly linked through Clang libraries
 
 # Add custom target for easy building
 add_custom_target(clang-plugin DEPENDS heimdall-clang-plugin)
@@ -239,9 +249,9 @@ add_custom_target(clang-plugin DEPENDS heimdall-clang-plugin)
 # Test the plugin compilation
 add_custom_target(test-clang-plugin
     COMMAND ${CMAKE_COMMAND} -E echo "Testing Clang plugin compilation..."
-    COMMAND clang++ -load $<TARGET_FILE:heimdall-clang-plugin> 
-            -plugin heimdall-sbom
-            -plugin-arg-heimdall-sbom-verbose
+    COMMAND clang++ -Xclang -load -Xclang $<TARGET_FILE:heimdall-clang-plugin> 
+            -Xclang -plugin -Xclang heimdall-sbom
+            -Xclang -plugin-arg-heimdall-sbom -Xclang verbose
             -c -o /dev/null -x c++ /dev/null
     DEPENDS heimdall-clang-plugin
     COMMENT "Testing Clang plugin functionality"
