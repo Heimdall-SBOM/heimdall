@@ -138,9 +138,6 @@ target_include_directories(heimdall-clang-plugin PRIVATE
     ${CMAKE_SOURCE_DIR}/external/json/include
 )
 
-# Get LLVM and Clang libraries
-llvm_map_components_to_libnames(LLVM_LIBS support core irreader)
-
 # Check if required Clang libraries exist before trying to link
 find_library(CLANG_BASIC_LIB clangBasic PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
 find_library(CLANG_CPP_LIB clang-cpp PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
@@ -164,7 +161,8 @@ if(CLANG_CPP_LIB AND LLVM_VERSION_MAJOR GREATER_EQUAL 19)
     )
 elseif(CLANG_BASIC_LIB)
     message(STATUS "Using individual Clang libraries for LLVM ${LLVM_VERSION_MAJOR}")
-    # For LLVM 18 and older, use individual libraries but avoid linking LLVM libs directly
+    # For LLVM 18 and older, use individual libraries and link with LLVM dylib
+    find_library(LLVM_DYLIB LLVM PATHS ${LLVM_LIBRARY_DIRS})
     target_link_libraries(heimdall-clang-plugin PRIVATE
         clangFrontend
         clangAST
@@ -175,6 +173,10 @@ elseif(CLANG_BASIC_LIB)
         OpenSSL::SSL
         OpenSSL::Crypto
     )
+    # Link with LLVM dynamic library if available
+    if(LLVM_DYLIB)
+        target_link_libraries(heimdall-clang-plugin PRIVATE ${LLVM_DYLIB})
+    endif()
 else()
     message(WARNING "No suitable Clang libraries found, skipping Clang plugin build")
     return()
@@ -226,7 +228,7 @@ install(PROGRAMS ${CMAKE_BINARY_DIR}/bin/heimdall-clang
 message(STATUS "Clang plugin will be built as: heimdall-clang-plugin.so")
 message(STATUS "LLVM include dirs: ${LLVM_INCLUDE_DIRS}")
 message(STATUS "Clang include dirs: ${CLANG_INCLUDE_DIRS}")
-message(STATUS "LLVM libraries: ${LLVM_LIBS}")
+# LLVM libraries are implicitly linked through Clang libraries
 
 # Add custom target for easy building
 add_custom_target(clang-plugin DEPENDS heimdall-clang-plugin)
