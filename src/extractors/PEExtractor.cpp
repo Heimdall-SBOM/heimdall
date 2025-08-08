@@ -353,6 +353,7 @@ std::string PEExtractor::Impl::getArchitectureImpl(const std::string& filePath)
 
    return getArchitectureString(fileHeader.Machine);
 #else
+   (void)filePath; // Suppress unused parameter warning
    return "Unknown";
 #endif
 }
@@ -394,6 +395,7 @@ bool PEExtractor::Impl::is64BitImpl(const std::string& filePath)
    return (fileHeader.Machine == IMAGE_FILE_MACHINE_AMD64 ||
            fileHeader.Machine == IMAGE_FILE_MACHINE_ARM64);
 #else
+   (void)filePath; // Suppress unused parameter warning
    return false;
 #endif
 }
@@ -433,6 +435,7 @@ std::string PEExtractor::Impl::getFileTypeImpl(const std::string& filePath)
 
    return getFileTypeString(fileHeader.Machine);
 #else
+   (void)filePath; // Suppress unused parameter warning
    return "Unknown";
 #endif
 }
@@ -553,6 +556,7 @@ std::string PEExtractor::Impl::getArchitectureString(uint16_t machine) const
          return "Unknown";
    }
 #else
+   (void)machine; // Suppress unused parameter warning
    return "Unknown";
 #endif
 }
@@ -580,6 +584,7 @@ std::string PEExtractor::Impl::getFileTypeString(uint16_t machine) const
          return "Unknown";
    }
 #else
+   (void)machine; // Suppress unused parameter warning
    return "Unknown";
 #endif
 }
