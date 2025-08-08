@@ -1,0 +1,160 @@
+#!/bin/bash
+# Copyright 2025 The Heimdall Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Heimdall Clang Wrapper Script
+# This script wraps Clang compilation with Heimdall compiler plugin
+
+set -e
+
+# Configuration
+HEIMDALL_CLANG_PLUGIN="@CMAKE_INSTALL_PREFIX@/lib/heimdall/compiler/heimdall-clang-plugin.so"
+HEIMDALL_METADATA_DIR="${HEIMDALL_METADATA_DIR:-/tmp/heimdall-metadata-$$}"
+HEIMDALL_VERBOSE="${HEIMDALL_VERBOSE:-0}"
+HEIMDALL_INCLUDE_SYSTEM_HEADERS="${HEIMDALL_INCLUDE_SYSTEM_HEADERS:-0}"
+
+# Default Clang executable
+CLANG_EXECUTABLE="${CLANG_EXECUTABLE:-clang++}"
+
+# Function to show usage
+show_usage() {
+    cat << EOF
+Heimdall Clang Wrapper - Enhanced SBOM Generation
+
+Usage: $0 [options] <clang-arguments>
+
+Heimdall-specific options:
+  --heimdall-help              Show this help message
+  --heimdall-metadata-dir DIR  Set metadata output directory
+  --heimdall-verbose           Enable verbose output
+  --heimdall-include-system    Include system headers in analysis
+  --heimdall-no-plugin         Disable Heimdall plugin (normal Clang)
+
+Environment variables:
+  HEIMDALL_METADATA_DIR        Metadata output directory
+  HEIMDALL_VERBOSE             Enable verbose mode (1 or 0)
+  HEIMDALL_INCLUDE_SYSTEM_HEADERS  Include system headers (1 or 0)
+  CLANG_EXECUTABLE             Clang executable to use
+
+Examples:
+  $0 -c source.cpp -o source.o
+  $0 --heimdall-metadata-dir ./sbom-data -c main.cpp -o main.o
+  HEIMDALL_VERBOSE=1 $0 -O2 -g -c file.cpp
+
+EOF
+}
+
+# Function to log messages
+log_info() {
+    if [ "$HEIMDALL_VERBOSE" = "1" ]; then
+        echo "[Heimdall-Clang] $1" >&2
+    fi
+}
+
+log_error() {
+    echo "[Heimdall-Clang Error] $1" >&2
+}
+
+# Parse Heimdall-specific arguments
+HEIMDALL_ARGS=()
+CLANG_ARGS=()
+USE_PLUGIN=1
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --heimdall-help)
+            show_usage
+            exit 0
+            ;;
+        --heimdall-metadata-dir)
+            HEIMDALL_METADATA_DIR="$2"
+            shift 2
+            ;;
+        --heimdall-verbose)
+            HEIMDALL_VERBOSE=1
+            shift
+            ;;
+        --heimdall-include-system)
+            HEIMDALL_INCLUDE_SYSTEM_HEADERS=1
+            shift
+            ;;
+        --heimdall-no-plugin)
+            USE_PLUGIN=0
+            shift
+            ;;
+        *)
+            CLANG_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Check if this is a compilation step (not just preprocessing or linking)
+IS_COMPILE=0
+for arg in "${CLANG_ARGS[@]}"; do
+    case "$arg" in
+        -c) IS_COMPILE=1 ;;
+        -E) IS_COMPILE=0; break ;;  # Preprocessing only
+        -S) IS_COMPILE=1 ;;         # Assembly output
+    esac
+done
+
+# If not compiling or plugin disabled, just run normal Clang
+if [ "$IS_COMPILE" = "0" ] || [ "$USE_PLUGIN" = "0" ]; then
+    log_info "Running Clang without Heimdall plugin"
+    exec "$CLANG_EXECUTABLE" "${CLANG_ARGS[@]}"
+fi
+
+# Check if plugin exists
+if [ ! -f "$HEIMDALL_CLANG_PLUGIN" ]; then
+    log_error "Heimdall Clang plugin not found: $HEIMDALL_CLANG_PLUGIN"
+    log_error "Running Clang without plugin"
+    exec "$CLANG_EXECUTABLE" "${CLANG_ARGS[@]}"
+fi
+
+# Create metadata directory
+if [ ! -d "$HEIMDALL_METADATA_DIR" ]; then
+    mkdir -p "$HEIMDALL_METADATA_DIR"
+    log_info "Created metadata directory: $HEIMDALL_METADATA_DIR"
+fi
+
+# Build plugin arguments
+PLUGIN_ARGS=(
+    "-Xclang" "-load"
+    "-Xclang" "$HEIMDALL_CLANG_PLUGIN"
+    "-Xclang" "-plugin"
+    "-Xclang" "heimdall-sbom"
+    "-Xclang" "-plugin-arg-heimdall-sbom"
+    "-Xclang" "output-dir=$HEIMDALL_METADATA_DIR"
+)
+
+if [ "$HEIMDALL_VERBOSE" = "1" ]; then
+    PLUGIN_ARGS+=(
+        "-Xclang" "-plugin-arg-heimdall-sbom"
+        "-Xclang" "verbose"
+    )
+fi
+
+if [ "$HEIMDALL_INCLUDE_SYSTEM_HEADERS" = "1" ]; then
+    PLUGIN_ARGS+=(
+        "-Xclang" "-plugin-arg-heimdall-sbom"
+        "-Xclang" "include-system-headers"
+    )
+fi
+
+log_info "Using plugin: $HEIMDALL_CLANG_PLUGIN"
+log_info "Metadata directory: $HEIMDALL_METADATA_DIR"
+
+# Execute Clang with Heimdall plugin
+exec "$CLANG_EXECUTABLE" "${PLUGIN_ARGS[@]}" "${CLANG_ARGS[@]}"

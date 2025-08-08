@@ -73,7 +73,50 @@ g++ -fuse-ld=lld file.cpp -o file
 heimdall-sbom ../../build-cpp23/lib/heimdall-lld.so file --format spdx --output file.spdx
 ```
 
-## Method 4: Using CMake 
+## Method 4: Using Compiler Plugins (Enhanced SBOM Generation)
+
+Heimdall provides compiler plugins for GCC and Clang that extract metadata during compilation for enhanced SBOM generation. These plugins are **automatically enabled** when using the Heimdall build script.
+
+### GCC Plugin Usage
+```bash
+# Compile with GCC plugin (automatic when built with Heimdall)
+gcc -fplugin=/path/to/heimdall-gcc-plugin.so \
+    -fplugin-arg-heimdall-gcc-plugin-output-dir=./sbom \
+    -fplugin-arg-heimdall-gcc-plugin-verbose \
+    -c source.cpp -o source.o
+
+# Link normally
+gcc source.o -o app
+
+# Generate final SBOM combining all metadata
+heimdall-sbom /usr/local/lib/heimdall-lld.so app --format spdx --output app.spdx
+```
+
+### Clang Plugin Usage
+```bash
+# Compile with Clang plugin (automatic when built with Heimdall)
+clang++ -load /path/to/heimdall-clang-plugin.so \
+        -plugin heimdall-sbom \
+        -plugin-arg-heimdall-sbom-output-dir=./sbom \
+        -plugin-arg-heimdall-sbom-verbose \
+        -c source.cpp -o source.o
+
+# Link normally
+clang++ source.o -o app
+
+# Generate final SBOM combining all metadata
+heimdall-sbom /usr/local/lib/heimdall-lld.so app --format spdx --output app.spdx
+```
+
+### Benefits of Compiler Plugins
+- **Source-level metadata**: Function names, class definitions, global variables
+- **Preprocessor information**: Include files, macro definitions, compiler flags
+- **Compilation context**: Compiler version, target architecture, optimization settings
+- **Enhanced accuracy**: Captures information not available in binary analysis alone
+
+For detailed information about compiler plugins, see [docs/compiler_plugins.md](compiler_plugins.md).
+
+## Method 5: Using CMake 
 
 Heimdall provides a powerful CMake module for seamless SBOM generation. This module supports:
 - Executables and libraries (static/shared/interface)
@@ -97,7 +140,7 @@ Heimdall provides a powerful CMake module for seamless SBOM generation. This mod
    add_executable(myapp main.cpp)
    heimdall_enable_sbom(myapp FORMAT spdx-2.3 VERBOSE ON)
    ```
-## Method 5: Using make
+## Method 6: Using make
 
 ```makefile
 CXX = g++

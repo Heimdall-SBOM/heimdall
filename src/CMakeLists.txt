@@ -158,6 +158,8 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         lld/LLDAdapter.cpp
         lld/LLDAdapter.hpp
         lld/LLDPlugin.cpp
+        tools/EnhancedSBOMGenerator.cpp
+        tools/EnhancedSBOMGenerator.hpp
         common/MetadataExtractor.hpp
         common/SBOMGenerator.hpp
         common/Utils.hpp
@@ -222,6 +224,12 @@ if(CMAKE_CXX_STANDARD GREATER_EQUAL 11)
         ${LLVM_LIBRARIES}
         ${LLD_LIBS}
     )
+    
+    # Only link heimdall-compiler-common if it exists (C++17+ with compiler plugins)
+    if(TARGET heimdall-compiler-common)
+        target_link_libraries(heimdall-lld PRIVATE heimdall-compiler-common)
+        add_dependencies(heimdall-lld heimdall-compiler-common)
+    endif()
 endif()
 
 # Gold Plugin (Linux only)
@@ -230,6 +238,8 @@ if(UNIX AND NOT APPLE)
         gold/GoldAdapter.cpp
         gold/GoldAdapter.hpp
         gold/GoldPlugin.cpp
+        gold/EnhancedGoldAdapter.cpp
+        gold/EnhancedGoldAdapter.hpp
         common/MetadataExtractor.hpp
         common/SBOMGenerator.hpp
         common/Utils.hpp
@@ -260,6 +270,12 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(heimdall-gold PRIVATE
         heimdall-core
     )
+    
+    # Only link heimdall-compiler-common if it exists (C++17+ with compiler plugins)
+    if(TARGET heimdall-compiler-common)
+        target_link_libraries(heimdall-gold PRIVATE heimdall-compiler-common)
+        add_dependencies(heimdall-gold heimdall-compiler-common)
+    endif()
 endif()
 
 # Check for <format> support in C++20 and C++23 builds

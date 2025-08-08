@@ -6,7 +6,9 @@ option(BUILD_LLD_PLUGIN "Build LLD plugin" ON)
 option(BUILD_GOLD_PLUGIN "Build Gold plugin" ON)
 option(BUILD_SHARED_CORE "Build shared core library" ON)
 option(BUILD_TESTS "Build test suite" ON)
-option(BUILD_EXAMPLES "Build example projects" ON)
+option(BUILD_EXAMPLES "Build example projects" OFF)
+option(BUILD_COMPILER_PLUGINS "Build compiler plugins for GCC and Clang" ON)
+option(HEIMDALL_CXX11_14_MODE "Enable C++11/14 compatibility mode" OFF)
 option(ENABLE_DEBUG "Enable debug output" OFF)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer and UBSan" OFF)
 option(ENABLE_COVERAGE "Enable code coverage" OFF)
@@ -46,6 +48,9 @@ if(CMAKE_CXX_STANDARD LESS 17)
         if(NOT DEFINED USE_BOOST_FILESYSTEM)
             set(USE_BOOST_FILESYSTEM ON CACHE INTERNAL "Use Boost.Filesystem")
         endif()
+        # Disable compiler plugins for C++11 (LLVM/Clang headers require C++14+)
+        set(BUILD_COMPILER_PLUGINS OFF CACHE INTERNAL "Compiler plugins require C++14+")
+        message(STATUS "Compiler plugins disabled for C++11 (LLVM/Clang headers require C++14+)")
     else()
         # C++14 mode
         set(HEIMDALL_CPP14_AVAILABLE 1 CACHE INTERNAL "C++14 available")
@@ -137,10 +142,32 @@ else()
     add_definitions(${LLVM_DEFINITIONS})
 endif()
 
-# Fallback: if LLVM_LIBRARIES is empty, set it manually based on LLVM version (always run this)
+# Validate LLVM_LIBRARIES and fix if needed
 if(NOT LLVM_LIBRARIES OR LLVM_LIBRARIES STREQUAL "")
-    set(LLVM_LIBRARIES "-lLLVM-${LLVM_VERSION_MAJOR}" CACHE STRING "LLVM libraries fallback" FORCE)
-    message(STATUS "LLVM_LIBRARIES was empty, setting to: ${LLVM_LIBRARIES}")
+    message(STATUS "LLVM_LIBRARIES is empty, attempting to find LLVM library")
+    set(NEED_LLVM_FALLBACK TRUE)
+elseif(LLVM_LIBRARIES MATCHES "^-lLLVM-[0-9]+$")
+    # Check if the version-specific library actually exists
+    string(REGEX REPLACE "^-l" "" LLVM_LIB_NAME "${LLVM_LIBRARIES}")
+    find_library(LLVM_VERSION_SPECIFIC_LIB ${LLVM_LIB_NAME} PATHS ${LLVM_LIBRARY_DIRS})
+    if(NOT LLVM_VERSION_SPECIFIC_LIB)
+        message(STATUS "LLVM_LIBRARIES specifies ${LLVM_LIBRARIES} but library not found, attempting fallback")
+        set(NEED_LLVM_FALLBACK TRUE)
+    else()
+        message(STATUS "LLVM_LIBRARIES verified: ${LLVM_LIBRARIES} -> ${LLVM_VERSION_SPECIFIC_LIB}")
+    endif()
+endif()
+
+if(NEED_LLVM_FALLBACK)
+    # Try to find the LLVM dynamic library
+    find_library(LLVM_DYLIB LLVM PATHS ${LLVM_LIBRARY_DIRS})
+    if(LLVM_DYLIB)
+        set(LLVM_LIBRARIES "${LLVM_DYLIB}" CACHE STRING "LLVM libraries fallback" FORCE)
+        message(STATUS "Using LLVM fallback library: ${LLVM_LIBRARIES}")
+    else()
+        # Keep original if we can't find anything better
+        message(WARNING "Could not find suitable LLVM library, keeping original: ${LLVM_LIBRARIES}")
+    endif()
 endif()
 
 # Detect available LLVM targets
@@ -278,11 +305,17 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(external/json)
 add_subdirectory(external/json-schema-validator)
 
+# Add compiler infrastructure (needed by Enhanced adapters)
+# Always build common infrastructure, conditionally build plugins
+add_subdirectory(src/compiler)
+
 # Add src directory
 add_subdirectory(src)
 
 # Add examples directory (for test binary)
-add_subdirectory(examples)
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 # Add cmake directory for CMake modules
 add_subdirectory(cmake)
@@ -293,10 +326,29 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Compiler plugins are now added before src directory above
+
+# Handle C++11/14 compatibility mode
+if(HEIMDALL_CXX11_14_MODE)
+    message(STATUS "C++11/14 compatibility mode enabled")
+    add_compile_definitions(HEIMDALL_CXX11_14_MODE=1)
+    
+    # Allow compiler plugins to build in C++11/14 mode
+    if(CMAKE_CXX_STANDARD LESS 17)
+        message(STATUS "Enabling compiler plugins for C++${CMAKE_CXX_STANDARD} with compatibility layer")
+        set(BUILD_COMPILER_PLUGINS ON CACHE BOOL "Enabled for C++11/14 with compatibility" FORCE)
+    endif()
+else()
+    add_compile_definitions(HEIMDALL_CXX11_14_MODE=0)
+endif()
+
 # Print configuration summary
 message(STATUS "Configuration Summary:")
 message(STATUS "  C++ Standard: ${CMAKE_CXX_STANDARD}")
 message(STATUS "  Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "  Build LLD Plugin: ${BUILD_LLD_PLUGIN}")
+message(STATUS "  Build Gold Plugin: ${BUILD_GOLD_PLUGIN}")
+message(STATUS "  Build Compiler Plugins: ${BUILD_COMPILER_PLUGINS}")
 message(STATUS "  Enable Tests: ${ENABLE_TESTS}")
 message(STATUS "  Enable Coverage: ${ENABLE_COVERAGE}")
 message(STATUS "  Enable Profiling: ${ENABLE_PROFILING}")

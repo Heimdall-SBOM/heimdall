@@ -25,6 +25,7 @@ limitations under the License.
  */
 
 #include "CycloneDXHandler.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -635,7 +636,7 @@ std::string BaseCycloneDXHandler::generateComponentProperties(const ComponentInf
    ss << "\"properties\": [";
 
    bool first = true;
-   for (const auto& [key, value] : component.properties)
+   HEIMDALL_STRUCTURED_BINDING(key, value, component.properties, prop)
    {
       if (!first)
       {
@@ -644,6 +645,7 @@ std::string BaseCycloneDXHandler::generateComponentProperties(const ComponentInf
       ss << "{\"name\": \"" << key << "\", \"value\": \"" << value << "\"}";
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "]";
    return ss.str();
@@ -780,7 +782,7 @@ std::string CycloneDX1_4Handler::generateMetadata(
    {
       ss << ",\n    \"properties\": [";
       bool first = true;
-      for (const auto& [key, value] : metadata)
+      HEIMDALL_STRUCTURED_BINDING(key, value, metadata, meta)
       {
          if (!first)
          {
@@ -792,6 +794,7 @@ std::string CycloneDX1_4Handler::generateMetadata(
          ss << "      }";
          first = false;
       }
+      HEIMDALL_STRUCTURED_BINDING_END
       ss << "\n    ]";
    }
 
@@ -806,7 +809,7 @@ std::string CycloneDX1_4Handler::generateComponents(
    ss << "[\n";
 
    bool first = true;
-   for (const auto& [name, component] : components)
+   HEIMDALL_STRUCTURED_BINDING(name, component, components, comp)
    {
       if (!first)
       {
@@ -815,6 +818,7 @@ std::string CycloneDX1_4Handler::generateComponents(
       ss << generateComponent(component);
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "\n  ]";
    return ss.str();
@@ -1009,7 +1013,7 @@ std::string CycloneDX1_4Handler::generateDependencies(
    ss << "[";
 
    bool first = true;
-   for (const auto& [name, component] : components)
+   HEIMDALL_STRUCTURED_BINDING(name, component, components, comp)
    {
       if (!first)
       {
@@ -1030,6 +1034,7 @@ std::string CycloneDX1_4Handler::generateDependencies(
       ss << "]}";
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "]";
    return ss.str();
@@ -1096,7 +1101,7 @@ std::string CycloneDX1_5Handler::generateMetadata(
    {
       ss << ",\"properties\": [";
       bool first = true;
-      for (const auto& [key, value] : metadata)
+      HEIMDALL_STRUCTURED_BINDING(key, value, metadata, meta)
       {
          if (!first)
          {
@@ -1105,6 +1110,7 @@ std::string CycloneDX1_5Handler::generateMetadata(
          ss << "{\"name\": \"" << key << "\", \"value\": \"" << value << "\"}";
          first = false;
       }
+      HEIMDALL_STRUCTURED_BINDING_END
       ss << "]";
    }
 
@@ -1119,7 +1125,7 @@ std::string CycloneDX1_5Handler::generateComponents(
    ss << "[";
 
    bool first = true;
-   for (const auto& [name, component] : components)
+   HEIMDALL_STRUCTURED_BINDING(name, component, components, comp)
    {
       if (!first)
       {
@@ -1128,6 +1134,7 @@ std::string CycloneDX1_5Handler::generateComponents(
       ss << generateComponent(component);
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "]";
    return ss.str();
@@ -1200,7 +1207,7 @@ std::string CycloneDX1_5Handler::generateDependencies(
    ss << "[";
 
    bool first = true;
-   for (const auto& [name, component] : components)
+   HEIMDALL_STRUCTURED_BINDING(name, component, components, comp)
    {
       if (!first)
       {
@@ -1221,6 +1228,7 @@ std::string CycloneDX1_5Handler::generateDependencies(
       ss << "]}";
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "]";
    return ss.str();
@@ -1299,7 +1307,7 @@ std::string CycloneDX1_6Handler::generateMetadata(
    {
       ss << ",\"properties\": [";
       bool first = true;
-      for (const auto& [key, value] : metadata)
+      HEIMDALL_STRUCTURED_BINDING(key, value, metadata, meta)
       {
          if (!first)
          {
@@ -1308,6 +1316,7 @@ std::string CycloneDX1_6Handler::generateMetadata(
          ss << "{\"name\": \"" << key << "\", \"value\": \"" << value << "\"}";
          first = false;
       }
+      HEIMDALL_STRUCTURED_BINDING_END
       ss << "]";
    }
 
@@ -1322,7 +1331,7 @@ std::string CycloneDX1_6Handler::generateComponents(
    ss << "[";
 
    bool first = true;
-   for (const auto& [name, component] : components)
+   HEIMDALL_STRUCTURED_BINDING(name, component, components, comp)
    {
       if (!first)
       {
@@ -1331,6 +1340,7 @@ std::string CycloneDX1_6Handler::generateComponents(
       ss << generateComponent(component);
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "]";
    return ss.str();
@@ -1403,7 +1413,7 @@ std::string CycloneDX1_6Handler::generateDependencies(
    ss << "[";
 
    bool first = true;
-   for (const auto& [name, component] : components)
+   HEIMDALL_STRUCTURED_BINDING(name, component, components, comp)
    {
       if (!first)
       {
@@ -1424,6 +1434,7 @@ std::string CycloneDX1_6Handler::generateDependencies(
       ss << "]}";
       first = false;
    }
+   HEIMDALL_STRUCTURED_BINDING_END
 
    ss << "]";
    return ss.str();

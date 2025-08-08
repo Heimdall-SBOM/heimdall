@@ -5,6 +5,8 @@ ARG LLVM_VERSION=18
 ARG LLVM_TAG=llvmorg-18.1.8
 
 # Install prerequisites
+# Note: Arch Linux includes GCC plugin development headers in the main gcc package
+# (part of base-devel), so no separate gcc-plugin-devel package is needed
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
       base-devel \
@@ -38,6 +40,11 @@ RUN if [ "$GCC_VERSION" = "14" ]; then \
     fi
 
 # Arch uses default GCC (currently 15), no symlinks needed
+
+# Install Clang and Clang development packages
+RUN pacman -S --noconfirm \
+      clang \
+      clang-tools-extra
 
 # Install requested LLVM version
 RUN pacman -S --noconfirm llvm${LLVM_VERSION} lld${LLVM_VERSION}

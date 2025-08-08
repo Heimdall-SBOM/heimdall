@@ -175,9 +175,9 @@ install_dev_libs() {
     print_subheader "Installing development libraries..."
     
     if [ "$DRY_RUN" = true ]; then
-        echo "Would install: openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system"
+        echo "Would install: openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system gcc-plugin-devel"
     else
-        dnf install -y openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system
+        dnf install -y openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system gcc-plugin-devel
     fi
 }
 
@@ -193,13 +193,29 @@ install_gcc_versions() {
     # Enable CRB repository for newer GCC versions
     if [ "$DRY_RUN" = true ]; then
         echo "Would enable CRB repository"
-        echo "Would install: gcc-toolset-13"
+        echo "Would install: gcc-toolset-13 gcc-toolset-13-gcc-plugin-devel"
     else
         dnf config-manager --set-enabled crb
-        dnf install -y gcc-toolset-13
+        dnf install -y gcc-toolset-13 gcc-toolset-13-gcc-plugin-devel
     fi
     
     print_status "Available GCC versions: 11 (default), 13"
+}
+
+# Function to install Clang
+install_clang() {
+    if [ "$SKIP_LLVM" = true ]; then
+        print_warning "Skipping Clang installation as requested"
+        return
+    fi
+    
+    print_subheader "Installing Clang and plugin development packages..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would install: clang clang-devel clang-tools-extra libclang-devel lldb lld"
+    else
+        dnf install -y clang clang-devel clang-tools-extra libclang-devel lldb lld
+    fi
 }
 
 # Function to install LLVM
@@ -383,6 +399,7 @@ main() {
     install_build_tools
     install_dev_libs
     install_gcc_versions
+    install_clang
     install_llvm
     create_llvm_symlinks
     install_lld_headers

@@ -164,9 +164,9 @@ install_dev_libs() {
     print_subheader "Installing development libraries..."
     
     if [ "$DRY_RUN" = true ]; then
-        echo "Would install: openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system"
+        echo "Would install: openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system gcc-plugin-devel"
     else
-        dnf install -y openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system
+        dnf install -y openssl-devel elfutils-libelf-devel pkgconfig boost-devel boost-filesystem boost-system gcc-plugin-devel
     fi
 }
 
@@ -187,6 +187,22 @@ install_gcc_versions() {
     fi
     
     print_status "Available GCC version: 15 (latest)"
+}
+
+# Function to install Clang
+install_clang() {
+    if [ "$SKIP_LLVM" = true ]; then
+        print_warning "Skipping Clang installation as requested"
+        return
+    fi
+    
+    print_subheader "Installing Clang and plugin development packages..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        echo "Would install: clang clang-devel clang-tools-extra libclang-devel"
+    else
+        dnf install -y clang clang-devel clang-tools-extra libclang-devel
+    fi
 }
 
 # Function to install LLVM
@@ -358,6 +374,7 @@ main() {
     install_build_tools
     install_dev_libs
     install_gcc_versions
+    install_clang
     install_llvm
     create_llvm_symlinks
     install_lld_headers

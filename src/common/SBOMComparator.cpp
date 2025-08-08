@@ -15,9 +15,9 @@ limitations under the License.
 */
 
 #include "SBOMComparator.hpp"
+#include "../compat/compatibility.hpp"
 #include <algorithm>
 #include <chrono>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -25,7 +25,6 @@ limitations under the License.
 #include <regex>
 #include <set>
 #include <sstream>
-#include "../compat/compatibility.hpp"
 #include "Utils.hpp"
 
 namespace heimdall
@@ -334,8 +333,10 @@ std::vector<SBOMDifference> UnifiedSBOMComparator::compareComponents(
    }
 
    // Find added components (components in new but not in old)
-   for (const auto& [name, newComponent] : newComponentMap)
+   for (const auto& componentPair : newComponentMap)
    {
+      const auto& name = componentPair.first;
+      const auto& newComponent = componentPair.second;
       if (oldComponentMap.find(name) == oldComponentMap.end())
       {
          SBOMComponent sbomComponent = convertToSBOMComponent(newComponent);
@@ -344,8 +345,10 @@ std::vector<SBOMDifference> UnifiedSBOMComparator::compareComponents(
    }
 
    // Find removed components (components in old but not in new)
-   for (const auto& [name, oldComponent] : oldComponentMap)
+   for (const auto& componentPair : oldComponentMap)
    {
+      const auto& name = componentPair.first;
+      const auto& oldComponent = componentPair.second;
       if (newComponentMap.find(name) == newComponentMap.end())
       {
          SBOMComponent sbomComponent = convertToSBOMComponent(oldComponent);
@@ -354,8 +357,10 @@ std::vector<SBOMDifference> UnifiedSBOMComparator::compareComponents(
    }
 
    // Find modified components (components with same name but different versions)
-   for (const auto& [name, newComponent] : newComponentMap)
+   for (const auto& componentPair : newComponentMap)
    {
+      const auto& name = componentPair.first;
+      const auto& newComponent = componentPair.second;
       auto oldIt = oldComponentMap.find(name);
       if (oldIt != oldComponentMap.end())
       {

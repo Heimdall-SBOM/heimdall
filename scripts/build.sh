@@ -276,6 +276,9 @@ print_status "Configuring with CMake..."
 # Build CMake options
 CMAKE_OPTS="-DCMAKE_CXX_STANDARD=${STANDARD} -DCMAKE_CXX_STANDARD_REQUIRED=ON -DLLVM_CONFIG=$LLVM_CONFIG -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX"
 
+# Enable compiler plugins by default for enhanced SBOM generation
+CMAKE_OPTS="$CMAKE_OPTS -DHEIMDALL_BUILD_COMPILER_PLUGINS=ON"
+
 # Handle SCL compilers
 if [ -n "$SCL_ENV" ]; then
     print_status "Using SCL environment: $SCL_ENV"

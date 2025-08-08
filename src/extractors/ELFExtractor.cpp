@@ -50,6 +50,11 @@ limitations under the License.
 #include <fcntl.h>
 #include <libelf.h>
 #include <unistd.h>
+#else
+// Define ELF constants for non-Linux systems
+#define ELFCLASS32 1
+#define ELFCLASS64 2
+#define EV_CURRENT 1
 #endif
 
 namespace heimdall
