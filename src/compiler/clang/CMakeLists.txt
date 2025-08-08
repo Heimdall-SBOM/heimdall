@@ -135,7 +135,15 @@ target_include_directories(heimdall-clang-plugin PRIVATE
 )
 
 # Get LLVM and Clang libraries
-llvm_map_components_to_libnames(LLVM_LIBS support core irreader)
+# First try to use the LLVM_LIBRARIES from main CMakeLists.txt
+if(DEFINED LLVM_LIBRARIES AND NOT LLVM_LIBRARIES STREQUAL "")
+    set(LLVM_LIBS ${LLVM_LIBRARIES})
+    message(STATUS "Using LLVM_LIBRARIES from main configuration: ${LLVM_LIBS}")
+else()
+    # Fall back to component mapping for individual libraries
+    llvm_map_components_to_libnames(LLVM_LIBS support core irreader)
+    message(STATUS "Using LLVM component libraries: ${LLVM_LIBS}")
+endif()
 
 # Check if required Clang libraries exist before trying to link
 find_library(CLANG_BASIC_LIB clangBasic PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
@@ -147,6 +155,9 @@ if(NOT CLANG_BASIC_LIB AND NOT CLANG_CPP_LIB)
     message(WARNING "Skipping Clang plugin build")
     return()
 endif()
+
+# Add library directories
+target_link_directories(heimdall-clang-plugin PRIVATE ${LLVM_LIBRARY_DIRS})
 
 # Link libraries
 # Try to use the consolidated libclang-cpp if available (LLVM 19+)
