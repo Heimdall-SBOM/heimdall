@@ -645,9 +645,6 @@ std::string MachOExtractor::Impl::getFileTypeImpl(const std::string& filePath)
    }
 
    return "Unknown";
-#else
-   return "Unknown";
-#endif
 }
 
 bool MachOExtractor::Impl::isUniversalBinaryImpl(const std::string& filePath)
