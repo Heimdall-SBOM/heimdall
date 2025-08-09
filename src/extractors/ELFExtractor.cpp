@@ -309,6 +309,7 @@ bool ELFExtractor::extractVersion(const std::string& filePath, std::string& vers
    // Build version string
    std::ostringstream oss;
    oss << "ELF";
+#ifdef __linux__
    if (elfClass == ELFCLASS64)
    {
       oss << "64";
@@ -317,6 +318,21 @@ bool ELFExtractor::extractVersion(const std::string& filePath, std::string& vers
    {
       oss << "32";
    }
+#else
+   // On non-Linux systems, use raw values
+   if (elfClass == 2)  // ELFCLASS64 = 2
+   {
+      oss << "64";
+   }
+   else if (elfClass == 1)  // ELFCLASS32 = 1
+   {
+      oss << "32";
+   }
+   else
+   {
+      oss << "unknown";
+   }
+#endif
    oss << "-v" << static_cast<int>(elfVersion);
 
    // Add machine architecture
@@ -668,7 +684,8 @@ bool ELFExtractor::is64Bit(const std::string& filePath)
 #ifdef __linux__
    return (elfClass == ELFCLASS64);
 #else
-   return false;
+   // On non-Linux systems, use raw value (ELFCLASS64 = 2)
+   return (elfClass == 2);
 #endif
 }
 

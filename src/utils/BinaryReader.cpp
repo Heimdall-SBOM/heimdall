@@ -47,18 +47,22 @@ namespace
 template <typename T>
 T byteSwap(T value)
 {
-   union
-   {
-      T       value;
-      uint8_t bytes[sizeof(T)];
-   } src, dst;
-
-   src.value = value;
+   uint8_t srcBytes[sizeof(T)];
+   uint8_t dstBytes[sizeof(T)];
+   
+   // Copy value to byte array using memcpy (avoids type punning)
+   std::memcpy(srcBytes, &value, sizeof(T));
+   
+   // Reverse byte order
    for (size_t i = 0; i < sizeof(T); ++i)
    {
-      dst.bytes[i] = src.bytes[sizeof(T) - 1 - i];
+      dstBytes[i] = srcBytes[sizeof(T) - 1 - i];
    }
-   return dst.value;
+   
+   // Copy byte array back to value using memcpy
+   T result;
+   std::memcpy(&result, dstBytes, sizeof(T));
+   return result;
 }
 
 }  // anonymous namespace
@@ -397,13 +401,13 @@ T BinaryReader::convertEndianness(T value) const
 
 bool BinaryReader::isLittleEndian()
 {
-   union
-   {
-      uint32_t value;
-      uint8_t  bytes[4];
-   } test = {0x01020304};
-
-   return test.bytes[0] == 4;
+   uint32_t testValue = 0x01020304;
+   uint8_t  bytes[4];
+   
+   // Copy value to byte array using memcpy (avoids type punning)
+   std::memcpy(bytes, &testValue, sizeof(testValue));
+   
+   return bytes[0] == 4;
 }
 
 }  // namespace heimdall

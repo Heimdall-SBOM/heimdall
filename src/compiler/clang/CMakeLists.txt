@@ -138,6 +138,17 @@ target_include_directories(heimdall-clang-plugin PRIVATE
     ${CMAKE_SOURCE_DIR}/external/json/include
 )
 
+# Get LLVM and Clang libraries
+# First try to use the LLVM_LIBRARIES from main CMakeLists.txt
+if(DEFINED LLVM_LIBRARIES AND NOT LLVM_LIBRARIES STREQUAL "")
+    set(LLVM_LIBS ${LLVM_LIBRARIES})
+    message(STATUS "Using LLVM_LIBRARIES from main configuration: ${LLVM_LIBS}")
+else()
+    # Fall back to component mapping for individual libraries
+    llvm_map_components_to_libnames(LLVM_LIBS support core irreader)
+    message(STATUS "Using LLVM component libraries: ${LLVM_LIBS}")
+endif()
+
 # Check if required Clang libraries exist before trying to link
 find_library(CLANG_BASIC_LIB clangBasic PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
 find_library(CLANG_CPP_LIB clang-cpp PATHS ${LLVM_LIBRARY_DIRS} /usr/lib64 /usr/lib)
@@ -149,11 +160,13 @@ if(NOT CLANG_BASIC_LIB AND NOT CLANG_CPP_LIB)
     return()
 endif()
 
-# Link Clang libraries
-# LLVM 18 on macOS has libclang-cpp but it has linking issues, so avoid it
-# Container builds use LLVM 19 which works fine with libclang-cpp
-if(CLANG_CPP_LIB AND LLVM_VERSION_MAJOR GREATER_EQUAL 19)
-    message(STATUS "Using consolidated libclang-cpp.so for LLVM ${LLVM_VERSION_MAJOR}")
+# Add library directories
+target_link_directories(heimdall-clang-plugin PRIVATE ${LLVM_LIBRARY_DIRS})
+
+# Link libraries
+# Try to use the consolidated libclang-cpp if available (LLVM 19+)
+if(CLANG_CPP_LIB)
+    message(STATUS "Using consolidated libclang-cpp.so")
     target_link_libraries(heimdall-clang-plugin PRIVATE
         clang-cpp
         OpenSSL::SSL
