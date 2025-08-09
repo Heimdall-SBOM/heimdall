@@ -612,7 +612,7 @@ bool MachOExtractor::Impl::is64BitImpl(const std::string& filePath)
    mach_header header;
    if (readMachOHeader(filePath, header))
    {
-      return false;
+      return true;
    }
 
    return false;
@@ -627,24 +627,24 @@ std::string MachOExtractor::Impl::getFileTypeImpl(const std::string& filePath)
    {
       return "Unknown";
    }
-
+   else
+   {
 #ifdef __APPLE__
-   mach_header header;
-   if (readMachOHeader(filePath, header))
-   {
-      return getFileTypeString(header.filetype);
-   }
+      mach_header header;
+      if (readMachOHeader(filePath, header))
+      {
+         return getFileTypeString(header.filetype);
+      }
 
-   mach_header_64 header64;
-   if (readMachOHeader(filePath, header64))
-   {
-      return getFileTypeString(header64.filetype);
-   }
-
-   return "Unknown";
-#else
-   return "Unknown";
+      mach_header_64 header64;
+      if (readMachOHeader(filePath, header64))
+      {
+         return getFileTypeString(header64.filetype);
+      }
 #endif
+   }
+
+   return "Unknown";
 }
 
 bool MachOExtractor::Impl::isUniversalBinaryImpl(const std::string& filePath)
@@ -672,39 +672,41 @@ std::vector<std::string> MachOExtractor::Impl::getUniversalArchitecturesImpl(
    {
       return architectures;
    }
-
+   else
+   {
 #ifdef __APPLE__
-   std::ifstream file(filePath, std::ios::binary);
-   if (!file.is_open())
-   {
-      return architectures;
-   }
+       std::ifstream file(filePath, std::ios::binary);
+       if (!file.is_open())
+       {
+          return architectures;
+       }
 
-   fat_header fatHeader;
-   file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
+       fat_header fatHeader;
+       file.read(reinterpret_cast<char*>(&fatHeader), sizeof(fatHeader));
 
-   // Check if byte swapping is needed (once for the whole file)
-   bool needsByteSwap = (fatHeader.magic == FAT_CIGAM || fatHeader.magic == FAT_CIGAM_64);
-   
-   if (needsByteSwap)
-   {
-      fatHeader.nfat_arch = __builtin_bswap32(fatHeader.nfat_arch);
-   }
+       // Check if byte swapping is needed (once for the whole file)
+       bool needsByteSwap = (fatHeader.magic == FAT_CIGAM || fatHeader.magic == FAT_CIGAM_64);
+       
+       if (needsByteSwap)
+       {
+          fatHeader.nfat_arch = __builtin_bswap32(fatHeader.nfat_arch);
+       }
 
-   for (uint32_t i = 0; i < fatHeader.nfat_arch; ++i)
-   {
-      fat_arch arch;
-      file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
+       for (uint32_t i = 0; i < fatHeader.nfat_arch; ++i)
+       {
+          fat_arch arch;
+          file.read(reinterpret_cast<char*>(&arch), sizeof(arch));
 
-      if (needsByteSwap)
-      {
-         arch.cputype    = __builtin_bswap32(arch.cputype);
-         arch.cpusubtype = __builtin_bswap32(arch.cpusubtype);
-      }
+          if (needsByteSwap)
+          {
+             arch.cputype    = __builtin_bswap32(arch.cputype);
+             arch.cpusubtype = __builtin_bswap32(arch.cpusubtype);
+          }
 
-      architectures.push_back(getArchitectureString(arch.cputype, arch.cpusubtype));
-   }
+          architectures.push_back(getArchitectureString(arch.cputype, arch.cpusubtype));
+       }
 #endif
+   }
 
    return architectures;
 }

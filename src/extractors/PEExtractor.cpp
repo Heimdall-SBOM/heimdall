@@ -343,6 +343,7 @@ bool PEExtractor::Impl::is64BitImpl(const std::string& filePath)
    // Check if it's a 64-bit PE file
    return (machine == IMAGE_FILE_MACHINE_AMD64 || machine == IMAGE_FILE_MACHINE_ARM64);
 #else
+   (void)filePath; // Suppress unused parameter warning
    return false;
 #endif
 }
@@ -514,6 +515,7 @@ std::string PEExtractor::Impl::getArchitectureString(uint16_t machine) const
          return "Unknown";
    }
 #else
+   (void)machine; // Suppress unused parameter warning
    return "Unknown";
 #endif
 }
@@ -541,6 +543,7 @@ std::string PEExtractor::Impl::getFileTypeString(uint16_t machine) const
          return "Unknown";
    }
 #else
+   (void)machine; // Suppress unused parameter warning
    return "Unknown";
 #endif
 }
