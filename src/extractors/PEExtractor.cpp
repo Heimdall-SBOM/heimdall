@@ -488,6 +488,8 @@ bool PEExtractor::Impl::readPEFileHeader(const std::string& filePath, uint16_t& 
    machine = fileHeader.Machine;
    return file.good();
 #else
+   (void)filePath; // Suppress unused parameter warning
+   (void)machine;  // Suppress unused parameter warning
    return false;
 #endif
 }
