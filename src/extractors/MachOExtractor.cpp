@@ -617,6 +617,7 @@ bool MachOExtractor::Impl::is64BitImpl(const std::string& filePath)
 
    return false;
 #else
+   (void)filePath; // Suppress unused parameter warning
    return false;
 #endif
 }
