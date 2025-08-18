@@ -14,6 +14,7 @@ Heimdall is designed for both embedded software development and regular applicat
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Heimdall-SBOM_heimdall&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Heimdall-SBOM_heimdall)
 ![Coverage](https://img.shields.io/badge/coverage-44.4%25-yellow.svg)](build/coverage/html/index.html)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FHeimdall-SBOM%2Fheimdall.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FHeimdall-SBOM%2Fheimdall?ref=badge_shield)
 
 ## Features
 
@@ -391,3 +392,6 @@ For detailed information about:
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FHeimdall-SBOM%2Fheimdall.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FHeimdall-SBOM%2Fheimdall?ref=badge_large)
