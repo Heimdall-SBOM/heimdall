@@ -78,6 +78,9 @@ find_package(OpenSSL REQUIRED)
 add_library(heimdall-gcc-plugin SHARED
     GCCPluginWrapper.cpp
     ../common/CompilerMetadata.cpp
+    ../../detectors/LicenseDetector.cpp
+    ../../common/Utils.cpp
+    ../../utils/FileUtils.cpp
 )
 
 # Set target properties
@@ -91,6 +94,7 @@ set_target_properties(heimdall-gcc-plugin PROPERTIES
 
 # Include directories
 target_include_directories(heimdall-gcc-plugin PRIVATE
+    ${GCC_PLUGIN_INCLUDES}
     ../common
     ../../common
     ../../detectors

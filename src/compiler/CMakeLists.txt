@@ -26,11 +26,21 @@ add_subdirectory(common)
 if(HEIMDALL_BUILD_COMPILER_PLUGINS)
     message(STATUS "Building compiler plugins...")
     
-    # Try to build GCC plugin
-    add_subdirectory(gcc)
-    
-    # Try to build Clang plugin
-    add_subdirectory(clang)
+    # Check for compiler-specific build flags
+    if(DEFINED HEIMDALL_BUILD_GCC_PLUGIN_ONLY AND HEIMDALL_BUILD_GCC_PLUGIN_ONLY)
+        message(STATUS "Building GCC plugin only")
+        add_subdirectory(gcc)
+    elseif(DEFINED HEIMDALL_BUILD_CLANG_PLUGIN_ONLY AND HEIMDALL_BUILD_CLANG_PLUGIN_ONLY)
+        message(STATUS "Building Clang plugin only")
+        add_subdirectory(clang)
+    else()
+        message(STATUS "Building all available compiler plugins")
+        # Try to build GCC plugin
+        add_subdirectory(gcc)
+        
+        # Try to build Clang plugin
+        add_subdirectory(clang)
+    endif()
     
     # Create unified targets
     add_custom_target(compiler-plugins)
